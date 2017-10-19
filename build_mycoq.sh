@@ -1,4 +1,4 @@
-pushd coq
+pushd my-coq
   echo "Building Coq..."
 #  make clean
   (time (make -j4 > build.log; make install)) 2> time.log
