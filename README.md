@@ -33,6 +33,8 @@ In the root directory:
    git checkout tags/mathcomp-odd-order.1.6.1
    ```
 
+TODO(deh): probably don't need to rename the mathcomp stuff.
+
 Build Coq:
 1. Configure coq first. (see MYHACK.md for my settings)
 2. Build coq, mathematical components, and feit-thompson
