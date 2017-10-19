@@ -3,7 +3,7 @@
 coq, mathcomp-1.6.1, and mathcomp-odd-order-1.6.1 come from different repos.
 
 ```
-+ coq (modified version of coq)
++ tcoq (modified version of coq)
 + odd-order (feit-thompson)
 + math-comp (ssreflect stuff)
 + notes (notes for ourselves)
@@ -17,7 +17,7 @@ coq, mathcomp-1.6.1, and mathcomp-odd-order-1.6.1 come from different repos.
    ```
    ./setup.sh
    ```
-   This gets coq, math-comp, and odd-order.
+   This gets tcoq, math-comp, and odd-order.
 
 
 # Build
@@ -25,13 +25,13 @@ coq, mathcomp-1.6.1, and mathcomp-odd-order-1.6.1 come from different repos.
 Build Coq:
 1. Configure coq first.
    ```
-   ./setup_mycoq.sh
+   ./setup_tcoq.sh
    ```
 2. Build coq, mathematical components, and Feit-Thompson (in this order).
    ```
    ./build_all.sh
    ```
-   Note that `./build_mycoq.sh`, `./build_mathcomp.sh`, and `./build_oddorder.sh` can be used to build each of the libraries separately, but they must be build in order.
+   Note that `./build_tcoq.sh`, `./build_mathcomp.sh`, and `./build_oddorder.sh` can be used to build each of the libraries separately, but they must be build in order.
 
 
 # Recurrent Building
