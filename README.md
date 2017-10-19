@@ -4,8 +4,8 @@ coq, mathcomp-1.6.1, and mathcomp-odd-order-1.6.1 come from different repos.
 
 ```
 + coq (modified version of coq)
-+ mathcomp-1.6.1 (ssreflect stuff)
-+ mathcomp-odd-order-1.6.1 (feit-thompson)
++ odd-order (feit-thompson)
++ math-comp (ssreflect stuff)
 + notes (notes for ourselves)
 + utils (right now, just python tools for preprocessing)
 ```
@@ -13,6 +13,14 @@ coq, mathcomp-1.6.1, and mathcomp-odd-order-1.6.1 come from different repos.
 
 # Initial Setup
 
+1. Run the setup script.
+   ```
+   ./setup.sh
+   ```
+   This gets coq, math-comp, and odd-order.
+
+
+TODO(deh): deprecated
 In the root directory:
 1. Get Coq
    ```
@@ -23,24 +31,28 @@ In the root directory:
 2. Get Mathcomp-1.6.1
    ```
    git clone https://github.com/math-comp/math-comp.git
-   mv math-comp mathcomp-odd-order-1.6.1
    git checkout tags/mathcomp-1.6.1
    ```
 3. Get Mathcomp-odd-order-1.6.1
    ```
-   git clone https://github.com/math-comp/math-comp.git
-   mv math-comp mathcomp-1.6.1
+   git clone https://github.com/math-comp/math-comp.git odd-order
    git checkout tags/mathcomp-odd-order.1.6.1
    ```
 
-TODO(deh): probably don't need to rename the mathcomp stuff.
+
+# Build
 
 Build Coq:
-1. Configure coq first. (see MYHACK.md for my settings)
-2. Build coq, mathematical components, and feit-thompson
+1. Configure coq first.
    ```
-   ./build_mycoq.sh
+   ./setup_mycoq.sh
    ```
+2. Build coq, mathematical components, and Feit-Thompson (in this order).
+   ```
+   ./build_all.sh
+   ```
+   Note that `./build_mycoq.sh`, `./build_mathcomp.sh`, and `./build_oddorder.sh` can be used to build each of the libraries separately, but they must be build in order.
+
 
 TODO(deh): automate this
 1. Get coq from repo

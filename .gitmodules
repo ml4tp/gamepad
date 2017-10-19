@@ -1,3 +1,3 @@
-[submodule "my-coq"]
-	path = my-coq
-	url = dan-e-huang@bitbucket.org:dan-e-huang/my-coq.git
+[submodule "tcoq"]
+	path = tcoq
+	url = https://github.com/prafullasd/tcoq.git
