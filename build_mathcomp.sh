@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-source myconfig.sh
+source build_config.sh
 pushd math-comp/mathcomp
   echo "Building Mathematical Components..."
   make clean

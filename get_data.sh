@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Get modified version of coq (probably should call tcoq for traced coq)
+# Get modified version of coq
 git submodule add https://github.com/prafullasd/tcoq.git
 git submodule init
 git submodule update --remote --merge

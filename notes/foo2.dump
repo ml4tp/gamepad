@@ -1,0 +1,195 @@
+begin(pf) {!} Classic {!} foo2
+begin(tacst)
+before {!} intro {!} LtacNotationCall {!} intro {!} 2 {!} 1 {!} (./foo2.v,94,94)
+============================
+forall n : nat, n + 0 = n
+end(tacst)
+begin(tacst)
+before {!} <coretactics::intro@0> {!} LtacMLCall {!} <coretactics::intro@0> {!} 2 {!} 1 {!} (,0,0)
+============================
+forall n : nat, n + 0 = n
+end(tacst)
+begin(tacst)
+after {!} <coretactics::intro@0> {!} LtacMLCall {!}  {!} 3 {!} 1 {!} (,0,0)
+n : nat
+============================
+n + 0 = n
+end(tacst)
+begin(tacst)
+after {!} intro {!} LtacNotationCall {!}  {!} 3 {!} 1 {!} (./foo2.v,94,94)
+n : nat
+============================
+n + 0 = n
+end(tacst)
+begin(tacst)
+before {!} induction n {!} LtacAtomCall {!} induction n {!} 3 {!} 1 {!} (./foo2.v,103,103)
+n : nat
+============================
+n + 0 = n
+end(tacst)
+begin(tacst)
+after {!} induction n {!} LtacAtomCall {!}  {!} 7 {!} 2 {!} (./foo2.v,103,103)
+============================
+0 + 0 = 0
+end(tacst)
+begin(tacst)
+after {!} induction n {!} LtacAtomCall {!}  {!} 10 {!} 2 {!} (./foo2.v,103,103)
+n : nat
+IHn : n + 0 = n
+============================
+S n + 0 = S n
+end(tacst)
+begin(subpf)
+begin(tacst)
+before {!} simpl {!} LtacAtomCall {!} simpl {!} 7 {!} 1 {!} (./foo2.v,122,122)
+============================
+0 + 0 = 0
+end(tacst)
+begin(tacst)
+after {!} simpl {!} LtacAtomCall {!}  {!} 12 {!} 1 {!} (./foo2.v,122,122)
+============================
+0 = 0
+end(tacst)
+begin(tacst)
+before {!} reflexivity {!} LtacNameCall {!}  {!} 12 {!} 1 {!} (./foo2.v,133,133)
+============================
+0 = 0
+end(tacst)
+begin(tacst)
+after {!} reflexivity {!} LtacNameCall {!}  {!} 12 {!} 1 {!} (./foo2.v,133,133)
+============================
+0 = 0
+end(tacst)
+begin(tacst)
+before {!} <coretactics::reflexivity@0> {!} LtacMLCall {!} <coretactics::reflexivity@0> {!} 12 {!} 1 {!} (,0,0)
+============================
+0 = 0
+end(tacst)
+end(subpf)
+begin(subpf)
+begin(tacst)
+before {!} simpl {!} LtacAtomCall {!} simpl {!} 10 {!} 1 {!} (./foo2.v,156,156)
+n : nat
+IHn : n + 0 = n
+============================
+S n + 0 = S n
+end(tacst)
+begin(tacst)
+after {!} simpl {!} LtacAtomCall {!}  {!} 15 {!} 1 {!} (./foo2.v,156,156)
+n : nat
+IHn : n + 0 = n
+============================
+S (n + 0) = S n
+end(tacst)
+begin(tacst)
+before {!} have (ssrhavefwdwbinders) {!} LtacNotationCall {!} have ihn:
+0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 +
+0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + n + 0 = nby assumption {!} 15 {!} 1 {!} (./foo2.v,167,167)
+n : nat
+IHn : n + 0 = n
+============================
+S (n + 0) = S n
+end(tacst)
+begin(tacst)
+before {!} <ssreflect_plugin::ssrhave@0> $fwd {!} LtacMLCall {!} <ssreflect_plugin::ssrhave@0> $fwd {!} 15 {!} 1 {!} (,0,0)
+n : nat
+IHn : n + 0 = n
+============================
+S (n + 0) = S n
+end(tacst)
+begin(tacst)
+before {!} assumption {!} LtacNameCall {!}  {!} 17 {!} 1 {!} (./foo2.v,336,336)
+n : nat
+IHn : n + 0 = n
+============================
+0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 +
+0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + n + 0 = n
+end(tacst)
+begin(tacst)
+after {!} assumption {!} LtacNameCall {!}  {!} 17 {!} 1 {!} (./foo2.v,336,336)
+n : nat
+IHn : n + 0 = n
+============================
+0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 +
+0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + n + 0 = n
+end(tacst)
+begin(tacst)
+before {!} <coretactics::assumption@0> {!} LtacMLCall {!} <coretactics::assumption@0> {!} 17 {!} 1 {!} (,0,0)
+n : nat
+IHn : n + 0 = n
+============================
+0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 +
+0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + n + 0 = n
+end(tacst)
+begin(tacst)
+after {!} <ssreflect_plugin::ssrhave@0> $fwd {!} LtacMLCall {!}  {!} 19 {!} 1 {!} (,0,0)
+n : nat
+IHn : n + 0 = n
+ihn : 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 +
+      0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 +
+      n + 0 = n
+============================
+S (n + 0) = S n
+end(tacst)
+begin(tacst)
+after {!} have (ssrhavefwdwbinders) {!} LtacNotationCall {!}  {!} 19 {!} 1 {!} (./foo2.v,167,167)
+n : nat
+IHn : n + 0 = n
+ihn : 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 +
+      0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 +
+      n + 0 = n
+============================
+S (n + 0) = S n
+end(tacst)
+begin(tacst)
+before {!} rewrite IHn {!} LtacAtomCall {!} rewrite IHn {!} 19 {!} 1 {!} (./foo2.v,352,352)
+n : nat
+IHn : n + 0 = n
+ihn : 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 +
+      0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 +
+      n + 0 = n
+============================
+S (n + 0) = S n
+end(tacst)
+begin(tacst)
+after {!} rewrite IHn {!} LtacAtomCall {!}  {!} 20 {!} 1 {!} (./foo2.v,352,352)
+n : nat
+IHn : n + 0 = n
+ihn : 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 +
+      0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 +
+      n + 0 = n
+============================
+S n = S n
+end(tacst)
+begin(tacst)
+before {!} reflexivity {!} LtacNameCall {!}  {!} 20 {!} 1 {!} (./foo2.v,372,372)
+n : nat
+IHn : n + 0 = n
+ihn : 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 +
+      0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 +
+      n + 0 = n
+============================
+S n = S n
+end(tacst)
+begin(tacst)
+after {!} reflexivity {!} LtacNameCall {!}  {!} 20 {!} 1 {!} (./foo2.v,372,372)
+n : nat
+IHn : n + 0 = n
+ihn : 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 +
+      0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 +
+      n + 0 = n
+============================
+S n = S n
+end(tacst)
+begin(tacst)
+before {!} <coretactics::reflexivity@0> {!} LtacMLCall {!} <coretactics::reflexivity@0> {!} 20 {!} 1 {!} (,0,0)
+n : nat
+IHn : n + 0 = n
+ihn : 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 +
+      0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 +
+      n + 0 = n
+============================
+S n = S n
+end(tacst)
+end(subpf)
+end(pf)
