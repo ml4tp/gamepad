@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+source myconfig.sh
 pushd odd-order/mathcomp
   pushd field
     echo "Building Field..."
