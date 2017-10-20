@@ -22,16 +22,30 @@ coq, mathcomp-1.6.1, and mathcomp-odd-order-1.6.1 come from different repos.
 
 # Build
 
-Build Coq:
+Build dataset:
 1. Configure coq first.
    ```
    ./setup_tcoq.sh
    ```
-2. Build coq, mathematical components, and Feit-Thompson (in this order).
+2. Build everything
    ```
-   ./build_all.sh
+   . ./build_all.sh
    ```
-   Note that `./build_tcoq.sh`, `./build_mathcomp.sh`, and `./build_oddorder.sh` can be used to build each of the libraries separately, but they must be build in order.
+
+Step 2 above can be broken down into:
+1. Build coq next.
+   ```
+   ./build_tcoq.sh
+   ```
+2. IMPORTANT: set your terminal to point to the built version of coq
+   ```
+   source myconfig.sh
+   ```
+3. Build mathematical components and Feit-Thompson
+   ```
+   ./build_mathcomp.sh; ./build_oddorder.sh
+   ```
+
 
 
 # Recurrent Building
