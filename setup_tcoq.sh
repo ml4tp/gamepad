@@ -4,5 +4,5 @@ pushd tcoq
   echo "Configuring Coq..."
   make clean
   mkdir build
-  ./configure -prefix ./build
+  ./configure -prefix build
 popd
