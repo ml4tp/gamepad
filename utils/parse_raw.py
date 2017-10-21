@@ -3,7 +3,14 @@ from lib.myfile import MyFile
 """
 [Note]
 
-decls ::= ignore | ignore '\n' decls | decl | decl '\n' decls
+Goal: String -> [TacStDecl]
+
+AST:
+[TacStDecl] ::= decls
+TacStDecl ::= decl
+
+BNF:
+decls ::= decl | decl '\n' decls
 decl ::= hdr '\n' ctx '============================' '\n' goal
 
 ctx ::= ldecl | ldecl '\n' ctx
@@ -33,7 +40,7 @@ TOK_END_PF = "end(pf)"
 
 
 # -------------------------------------------------
-# Data structures that parser produces
+# Data structures
 
 class TacStHdr(object):
     """
@@ -90,10 +97,12 @@ class LemTacSt(object):
         return "{}<{}>".format(self.name, msg)
 
 
+# TODO(deh): deprecate?
 def mk_root_decl():
     return TacStDecl(TacStHdr(TOK_AFTER, "root", "", "", 0, 0, ""), "", "")
 
 
+# TODO(deh): deprecate?
 def mk_term_decl(gid):
     return TacStDecl(TacStHdr(TOK_AFTER, "term", "", "", gid, 0, ""), "", "")
 
