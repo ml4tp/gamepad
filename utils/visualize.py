@@ -1,402 +1,39 @@
-import networkx as nx
+import argparse
 import matplotlib.pyplot as plt
+import networkx as nx
 import numpy as np
 
-"""
-decls ::= ignore | ignore '\n' decls | decl | decl '\n' decls
-decl ::= hdr '\n' ctx '============================' '\n' goal
-
-ctx ::= ldecl | 
-ldecl ::= id ':' string '\n'
-
-hdr ::= kind '{!}' tac '{!}' full_tac '{!}' int '{!}' int
-kind ::= 'AFTER' | 'BEFORE'
-tac ::= string
-full_tac ::= string
-int ::= [0-9]+
-"""
+from lib.myiter import MyIter
+from parse import *
 
 """
-AFTER {!} induction n {!}  {!} 10 {!} 2
+[Note]
 
-n : nat
-IHn : n + 0 = n
-============================
-S n + 0 = S n
+Reconstruct tactic trees.
+
+tstps ::= tstp | tstp tstps
+tstp ::= b(n) a(1) ... a(n)
+       | b(havefwd) b(have@0) nodes a(have@0) a(havefwd)
+
+Case:
+before(n-subgoal)
+after(subgoal-1)
+after(...)
+after(subgoal-n)
+
+Case:
+before(ssrhavefwdwbinders)
+  before(ssrhave@0)
+    TacTree
+  after(ssrhave@0)
+after(ssrhavefwdwbinders)
 """
-
-# -------------------------------------------------
-# Data structures
-
-class TacStHdr(object):
-    def __init__(self, mode, tac, kind, ftac, gid, ngs, loc):
-        self.mode = mode
-        self.tac = tac
-        self.kind = kind
-        self.ftac = ftac
-        self.gid = gid
-        self.ngs = ngs
-        self.loc = loc
-
-    def __str__(self):
-        return "({} tac: {}  ftac: {}  gid: {}  ngs: {})".format(
-            self.mode, self.tac, self.ftac, self.gid, self.ngs)
-
-class TacStDecl(object):
-    def __init__(self, tac_st_hdr, ctx, goal):
-        self.hdr = tac_st_hdr
-        self.ctx = ctx
-        self.goal = goal
-
-    def dump(self):
-        return "{}\n{}\n{}".format(str(self.hdr), str(self.ctx), str(self.goal))
-
-    def __str__(self):
-        if self.hdr.mode == "before":
-            return "B{}{}".format(self.hdr.gid, self.hdr.tac)
-        else:
-            return "A{}{}".format(self.hdr.gid, self.hdr.tac)
-
-    def __hash__(self):
-        s = "{}{}".format(self.hdr.loc, self.hdr.gid)
-        return int.from_bytes(s.encode(), "little")
-        """
-        if self.hdr.mode == "before":
-            return self.hdr.gid * 2
-        else:
-            return self.hdr.gid * 2 + 1
-        """
-
-class LemTacSt(object):
-    def __init__(self, name, decls):
-        self.name = name
-        self.decls = decls
-
-    def __str__(self):
-        return "{}<{}>".format(self.name, ", ".join([str(decl) for decl in self.decls]))
-
-def mk_root_decl():
-    return TacStDecl(TacStHdr("after", "root", "", "", 0, 0, ""), "", "")
-
-def mk_term_decl(gid):
-    return TacStDecl(TacStHdr("after", "term", "", "", gid, 0, ""), "", "")    
-
-# -------------------------------------------------
-# Parsing utility
-
-class MyFile(object):
-    def __init__(self, file):
-        self.f_head = file
-        self.line = 0
-
-    def raw_consume_line(self):
-        self.line += 1
-        return self.f_head.readline()
-
-    def consume_line(self):
-        self.line += 1
-        return self.f_head.readline().rstrip()
-
-    def raw_peek_line(self):
-        pos = self.f_head.tell()
-        line = self.f_head.readline()
-        self.f_head.seek(pos)
-        return line
-
-    def peek_line(self):
-        pos = self.f_head.tell()
-        line = self.f_head.readline().rstrip()
-        self.f_head.seek(pos)
-        return line
-
-    def advance_line(self):
-        self.raw_consume_line()
-        return self.peek_line()
 
 
 # -------------------------------------------------
-# Parsing
+# Preprocessing
 
-TOK_SEP = "{!}"
-TOK_DIV = "============================"
-TOK_BEFORE = "before"
-TOK_AFTER = "after"
-TOK_BEG_TAC_ST = "begin(tacst)"
-TOK_END_TAC_ST = "end(tacst)"
-TOK_BEG_SUB_PF = "begin(subpf)"
-TOK_END_SUB_PF = "end(subpf)"
-TOK_BEG_PF = "begin(pf)"
-TOK_END_PF = "end(pf)"
-
-def basic_have_stats(lemmas):
-    total = 0;
-    haves = 0;
-    pfsizes = [];
-    for lemma in lemmas:
-        size = 0
-        for decl in lemma.decls:
-            if decl.hdr.mode == "before":
-                if decl.hdr.tac == "<ssreflect_plugin::ssrhave@0> $fwd":
-                    haves += 1
-                total += 1
-                size += 1
-        pfsizes += [size]
-    return len(lemmas), haves, total, 1.0 * haves / (total + 1), np.mean(pfsizes)
-
-
-def is_goal_end(line):
-    """
-    return line.startswith(TOK_BEFORE) or \
-           line.startswith(TOK_AFTER) or \
-           line.startswith(TOK_BEG_SUB_PF) or \
-           line.startswith(TOK_END_SUB_PF) or \
-           line.startswith(TOK_QED)
-    """
-    return line.startswith(TOK_END_TAC_ST)
-
-class TacStParser(object):
-    def __init__(self, h_file, f_log=False):
-        self.f_head = MyFile(h_file)
-        self.f_log = f_log
-        self.log = []
-        self.lems = []
-        self.decls = []
-
-    def _mylog(self, msg):
-        if self.f_log:
-            #self.log.append(msg)
-            print(msg)
-
-    def parse_hdr(self):
-        # Internal
-        f_head = self.f_head
-        self._mylog("@parse_hdr:before<{}>".format(f_head.peek_line()))
-
-        # Parse header
-        hdr = f_head.consume_line()
-        toks = hdr.split(TOK_SEP)
-        while len(toks) != 7:
-            line = f_head.consume_line()
-            hdr += line
-            toks = hdr.split(TOK_SEP)
-
-        # Unpack header
-        mode = toks[0].strip()
-        tac = toks[1].strip()
-        kind = toks[2].strip()
-        ftac = toks[3].strip()
-        gid = int(toks[4].strip())
-        ngs = int(toks[5].strip())
-        loc = toks[6].strip()
-        tac_st_hdr = TacStHdr(mode, tac, kind, ftac, gid, ngs, loc)
-        return tac_st_hdr
-
-    def parse_local_decl(self):
-        # Internal
-        f_head = self.f_head
-        self._mylog("@parse_local_decl:before<{}>".format(f_head.peek_line()))
-
-        # Parse local decl
-        ldecl = f_head.consume_line()
-        idx = ldecl.find(':')
-        if idx < 0:
-            raise NameError("Parsing local declaration but found {}".format(line))
-        name = ldecl[:idx].strip()
-        typ = ldecl[idx:].strip()
-
-        # Parse rest of type it is on newline
-        line = f_head.peek_line()
-        while line != TOK_DIV and line.find(':') < 0:
-            typ += " " + line.strip()
-            line = f_head.advance_line()
-        return (name, typ)
-
-    def parse_local_ctx(self):
-        # Internal
-        f_head = self.f_head
-        self._mylog("@parse_local_ctx:before<{}>".format(f_head.peek_line()))
-
-        # Parse local context
-        local_decls = []
-        line = f_head.peek_line()
-        while line.find(':') >= 0:
-            name, typ = self.parse_local_decl()
-            local_decls += [(name, typ)]
-            line = f_head.peek_line()
-        return local_decls
-
-    def parse_newline(self):
-        # Internal
-        f_head = self.f_head
-        self._mylog("@parse_newline:before<{}>".format(f_head.peek_line()))
-
-        # Parse new line
-        line = f_head.consume_line()
-        return line
-
-    def parse_pf_div(self):
-        # Internal
-        f_head = self.f_head
-        self._mylog("@parse_pf_div:before<{}>".format(f_head.peek_line()))
-
-        # Parse proof divider
-        line = f_head.consume_line()
-        if line != TOK_DIV:
-            raise NameError("Found {} instead of {}".format(line, TOK_DIV))
-        return line
-
-    def parse_goal(self):
-        # Internal
-        f_head = self.f_head
-        self._mylog("@parse_goal:before<{}>".format(f_head.peek_line()))
-
-        # Parse goal
-        goal = f_head.consume_line()
-        line = f_head.peek_line()
-        while not is_goal_end(line):
-            goal += line
-            line = f_head.advance_line()
-        return goal
-
-    def parse_decl(self):
-        # Internal
-        f_head = self.f_head
-        self._mylog("@parse_decl:before<{}>".format(f_head.peek_line()))
-
-        # Parse declaration
-        tac_st_hdr = self.parse_hdr()
-        # self.parse_newline()
-        ctx = self.parse_local_ctx()
-        self.parse_pf_div()
-        goal = self.parse_goal()
-        return TacStDecl(tac_st_hdr, ctx, goal)
-
-    def parse_begin_pf(self):
-        # Internal
-        f_head = self.f_head
-        self._mylog("@parse_begin_pf:before<{}>".format(f_head.peek_line()))
-        
-        # Parse
-        line = f_head.consume_line()
-        toks = line.split(TOK_SEP)
-        lem_name = toks[2].strip()
-        return lem_name
-
-    def parse_begsubpf(self):
-        # Internal
-        f_head = self.f_head
-        self._mylog("@parse_begsubpf:before<{}>".format(f_head.peek_line()))
-
-        # Parse
-        return f_head.consume_line()
-
-    def parse_endsubpf(self):
-        # Internal
-        f_head = self.f_head
-        self._mylog("@parse_endsubpf:before<{}>".format(f_head.peek_line()))
-
-        # Parse
-        return f_head.consume_line()
-
-    def parse_qed(self):
-        # Internal
-        f_head = self.f_head
-        self._mylog("@parse_qed:before<{}>".format(f_head.peek_line()))
-
-        # Parse
-        return f_head.consume_line()
-
-    def parse_begtacst(self):
-        # Internal
-        f_head = self.f_head
-        self._mylog("@parse_begtacst:before<{}>".format(f_head.peek_line()))
-
-        # Parse
-        return f_head.consume_line()
-
-    def parse_endtacst(self):
-        # Internal
-        f_head = self.f_head
-        self._mylog("@parse_endtacst:before<{}>".format(f_head.peek_line()))
-
-        # Parse
-        return f_head.consume_line()
-
-    def parse(self):
-        # Internal
-        f_head = self.f_head
-        self._mylog("parse<{}>".format(f_head.peek_line()))
-
-        # Parse
-        first_time = True
-        cnt = 0
-        line = f_head.raw_peek_line()
-        while line != "":
-            line = line.rstrip()
-            if line.startswith("COQDEP"):
-                f_head.consume_line()
-            elif line.startswith("COQC"):
-                print("Processing...", line)
-                f_head.consume_line()
-                
-                lemmas = self.lems
-                if not first_time:
-                    print("HERE", first_time)
-                    for lemma in lemmas:
-                        lemma_p = cleanup_lemma(lemma)
-                    print(basic_have_stats(lemmas))
-                else:
-                    first_time = True
-                self.lems = []
-                return lemmas
-            elif line.startswith(TOK_BEG_PF):
-                lem_name = self.parse_begin_pf()
-                # TODO(deh): this does not handle opening a proof within a proof
-                self.decls = []
-            elif line.startswith(TOK_END_PF):
-                self.parse_qed()
-                # Accumulate lemma
-                self.lems.append(LemTacSt(lem_name, self.decls))
-            elif line.startswith(TOK_BEG_SUB_PF):
-                self.parse_begsubpf()
-                # TODO(deh): keep track of this?
-            elif line.startswith(TOK_END_SUB_PF):
-                self.parse_endsubpf()
-                # TODO(deh): keep track of this?
-            elif line.startswith(TOK_BEG_TAC_ST):
-                self.parse_begtacst()
-                decl = self.parse_decl()
-                self.decls += [decl]
-            elif line.startswith(TOK_END_TAC_ST):
-                self.parse_endtacst()
-            else:
-                raise NameError("Parsing error at line {}: {}".format(f_head.line, f_head.peek_line()))
-            line = f_head.raw_peek_line()
-        return self.lems
-
-
-class MyIter(object):
-    def __init__(self, data):
-        self.data = data
-        self.idx = 0
-
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        if self.idx < len(self.data):
-            elem = self.data[self.idx]
-            self.idx += 1
-            return elem
-        else:
-            raise StopIteration
-
-    def has_next(self):
-        return self.idx < len(self.data)
-
-    def peek(self):
-        return self.data[self.idx]
-
+# TODO(deh): deprecate?
 def cleanup_lemma(lemma):
     decls = []
     for decl in lemma.decls:
@@ -412,12 +49,363 @@ def cleanup_lemma(lemma):
     lemma.decls = decls
     return lemma
 
-def recon_tac_tree(lemma, f_draw=False):
+
+def cleanup_lemmas(lemmas):
+    for lemma in lemmas:
+        cleanup_lemma(lemma)
+    return lemmas
+
+
+# -------------------------------------------------
+# Data structure for reconstructing tactic tree.
+
+class Tac(object):
+    def __init__(self, uid):
+        self.uid = uid
+
+    def has_subtac(self):
+        # type: Tac -> bool
+        raise NotImplementedError
+
+    def in_edge(self):
+        # type: Tac -> GoalId
+        raise NotImplementedError
+
+    def out_edges(self):
+        # type: Tac -> [GoalId]
+        raise NotImplementedError
+
+    def __hash__(self):
+        return self.uid
+
+
+class BaseTac(Tac):
+    def __init__(self, uid, before, afters):
+        assert isinstance(before, TacStDecl)
+        for after in afters:
+            assert isinstance(after, TacStDecl)
+
+        super().__init__(uid)
+        self.before = before
+        self.afters = afters
+
+    def has_subtac(self):
+        return False
+
+    def in_edge(self):
+        return self.before.hdr.gid
+
+    def out_edges(self):
+        return [after.hdr.gid for after in self.afters]
+
+    def __str__(self):
+        if not self.afters:
+            return "Terminal({}; {})".format(self.uid, str(self.before))
+        elif len(self.afters) == 1:
+            return "Base({}; {}, {})".format(self.uid, str(self.before),
+                                             str(self.afters[0]))
+        else:
+            ps = ["({}, {})".format(self.before, after)
+                  for after in self.afters]
+            return "Base({}; {})".format(self.uid, ", ".join(ps))
+
+
+class IntroTac(Tac):
+    def __init__(self, uid, alias, core):
+        assert isinstance(alias[0], TacStDecl)
+        assert isinstance(alias[1], TacStDecl)
+        assert isinstance(core[0], TacStDecl)
+        assert isinstance(core[1], TacStDecl)
+
+        super().__init__(uid)
+        self.alias = alias
+        self.core = core
+
+    def has_subtac(self):
+        return False
+
+    def in_edge(self):
+        return self.alias[0].hdr.gid
+
+    def out_edges(self):
+        return [self.alias[1].hdr.gid]
+
+    def __str__(self):
+        es = [str(self.alias[0]), str(self.core[0]),
+              str(self.core[1]), str(self.alias[1])]
+        return "Intro({}; {})".format(self.uid, ", ".join(es))
+
+
+class ReflTac(Tac):
+    def __init__(self, uid, alias, core):
+        assert isinstance(alias[0], TacStDecl)
+        assert isinstance(alias[1], TacStDecl)
+        assert isinstance(core, TacStDecl)
+
+        super().__init__(uid)
+        self.alias = alias
+        self.core = core
+
+    def has_subtac(self):
+        return False
+
+    def in_edge(self):
+        return self.alias[0].hdr.gid
+
+    def out_edges(self):
+        return [self.alias[1].hdr.gid]
+
+    def __str__(self):
+        es = [str(self.alias[0]), str(self.alias[1]), str(self.core)]
+        return "Refl({}; {})".format(self.uid, ", ".join(es))
+
+
+class SsrhaveTac(Tac):
+    def __init__(self, uid, alias, core, body):
+        assert isinstance(alias[0], TacStDecl)
+        assert isinstance(alias[1], TacStDecl)
+        assert isinstance(core[0], TacStDecl)
+        assert isinstance(core[1], TacStDecl)
+        for tac in body:
+            assert isinstance(tac, Tac)
+
+        super().__init__(uid)
+        self.alias = alias
+        self.core = core
+        self.body = body
+
+    def has_subtac(self):
+        return True
+
+    def in_edge(self):
+        return self.alias[0].hdr.gid
+
+    def out_edges(self):
+        return [self.core[1].hdr.gid]
+
+    def __str__(self):
+        es = [str(self.alias[0]), str(self.core[0]),
+              str(self.core[1]), str(self.alias[1])]
+        body = [str(tac) for tac in self.body]
+        return "Srrhave({}; {}; {})".format(self.uid, ", ".join(es),
+                                            ", ".join(body))
+
+
+# -------------------------------------------------
+# Reconstructing tactic tree.
+
+class TacTreeParser(object):
+    def __init__(self, lemma, f_log=False):
+        self.lemma = lemma
+        self.it = MyIter(lemma.decls)
+        self.log = []
+        self.f_log = f_log
+        self.uidcnt = 0
+
+    def _mylog(self, msg, f_log=False):
+        if f_log or self.f_log:
+            # self.log.append(msg)
+            print(msg)
+
+    def _getuid(self):
+        uid = self.uidcnt
+        self.uidcnt += 1
+        return uid
+
+    def parse_base(self):
+        # Internal
+        it = self.it
+        self._mylog("@parse_base:before<{}>".format(it.peek()))
+
+        # Reconstruct base tactic
+        acc = []
+        decl = next(it)
+        if not it.has_next():
+            # TODO(deh): kludge, need to signal terminal state
+            self._mylog("Terminal 1")
+        elif decl.hdr.tac != it.peek().hdr.tac:
+            # TODO(deh): kludge, need to signal terminal state
+            self._mylog("Terminal 2")
+        else:
+            ngs = it.peek().hdr.ngs
+            for _ in range(0, ngs - decl.hdr.ngs + 1):
+                decl_p = next(it)
+                acc += [decl_p]
+        return BaseTac(self._getuid(), decl, acc)
+
+    def parse_intro(self):
+        # Internal
+        it = self.it
+        self._mylog("@parse_intro:before<{}>".format(it.peek()))
+
+        # Reconstruct intro tactic
+        bf_intro = next(it)
+        bf_intro0 = next(it)
+        af_intro0 = next(it)
+        af_intro = next(it)
+        return IntroTac(self._getuid(), (bf_intro, af_intro),
+                        (bf_intro0, af_intro0))
+
+    def parse_refl(self):
+        # Internal
+        it = self.it
+        self._mylog("@parse_refl:before<{}>".format(it.peek()))
+
+        bf_refl = next(it)
+        af_refl = next(it)
+        bf_refl0 = next(it)
+        return ReflTac(self._getuid(), (bf_refl, af_refl), bf_refl0)
+
+    def parse_ssrhave(self):
+        # Internal
+        it = self.it
+        self._mylog("@parse_srrhave:before<{}>".format(it.peek()))
+
+        # Reconstruct Ssreflect have tactic
+        bf_havefwd = next(it)
+        bf_have0 = next(it)
+        body = self.parse_tactree()
+        af_have0 = next(it)
+        af_havefwd = next(it)
+        return SsrhaveTac(self._getuid(), (bf_havefwd, af_havefwd),
+                          (bf_have0, af_have0), body)
+
+    def parse_tactree(self):
+        """
+        Top-level recon function.
+        """
+        # Internal
+        it = self.it
+        self._mylog("@parse_tactree:before<{}>".format(it.peek()))
+
+        # Reconstruct tactic tree
+        acc = []
+        while it.has_next():
+            decl = it.peek()
+            if decl.hdr.mode == TOK_BEFORE and \
+               decl.hdr.tac == "intro":
+                acc += [self.parse_intro()]
+            elif decl.hdr.mode == TOK_BEFORE and \
+                 decl.hdr.tac == "reflexivity":
+                acc += [self.parse_refl()]
+            elif decl.hdr.mode == TOK_BEFORE and \
+                 decl.hdr.tac == "have (ssrhavefwdwbinders)":
+                acc += [self.parse_ssrhave()]
+            elif decl.hdr.mode == TOK_AFTER and \
+                 decl.hdr.tac == "<ssreflect_plugin::ssrhave@0> $fwd":
+                 return acc
+            elif decl.hdr.mode == TOK_BEFORE:
+                acc += [self.parse_base()]
+            else:
+                self._mylog("Contents of accumulator before error")
+                for before, after in acc:
+                    self._mylog(before, after)
+                raise NameError("Parsing error {}".format(decl))
+        return acc
+
+
+# -------------------------------------------------
+# Building tactic tree.
+
+class TacTreeBuilder(object):
+    def __init__(self, tacs, f_log=False):
+        for tac in tacs:
+            assert isinstance(tac, Tac)
+
+        self.tree = nx.DiGraph()
+        self.tacs = tacs
+        self.it_tacs = MyIter(tacs)
+        self.f_log = f_log
+
+    def _mylog(self, msg, f_log=False):
+        if f_log or self.f_log:
+            # self.log.append(msg)
+            print(msg)
+
+    def _connect(self, curr_tac):
+        for out_gid in curr_tac.out_edges():
+            it = MyIter(self.tacs)
+            while it.has_next():
+                next_tac = next(it)
+                in_gid = next_tac.in_edge()
+                if out_gid == in_gid and curr_tac.uid != next_tac.uid:
+                    self.tree.add_edge(curr_tac.uid, next_tac.uid)
+                    self._mylog("Adding edge: {}-{}".
+                                format(curr_tac.uid, next_tac.uid),
+                                f_log=False)
+
+    def build_base(self):
+        # Internal
+        it_tacs = self.it_tacs
+        self._mylog("@build_base:before<{}>".format(it_tacs.peek()))
+
+        # Build tactics without subtrees
+        curr_tac = next(it_tacs)
+        self._connect(curr_tac)
+
+    def build_ssrhave(self):
+        # Internal
+        it_tacs = self.it_tacs
+        self._mylog("@build_ssrhave:before<{}>".format(it_tacs.peek()))
+
+        # Build ssrhave
+        curr_tac = next(it_tacs)
+
+        # Connect have goal
+        builder = TacTreeBuilder(curr_tac.body, self.f_log)
+        builder.build_tactree()
+        # Merge graph into tree
+        self.tree = nx.compose(self.tree, builder.tree)
+        self._mylog("Merging: {}".format(self.tree.edges), f_log=False)
+        if curr_tac.body:
+            self.tree.add_edge(curr_tac.uid, curr_tac.body[0].uid)
+
+        # Connect other goal
+        self._connect(curr_tac)
+
+    def build_subtac(self):
+        # Internal
+        it_tacs = self.it_tacs
+        self._mylog("@build_subtac:before<{}>".format(it_tacs.peek()))
+
+        # Build tactics with subtrees
+        curr_tac = next(it_tacs)
+        builder = TacTreeBuilder(curr_tac.body, self.f_log)
+        builder.build_tactree()
+        # Merge graph into tree
+        self.tree = nx.compose(self.tree, builder.tree)
+        self._mylog("Merging: {}".format(self.tree.edges), f_log=False)
+
+        # Connect other goal
+        self._connect(curr_tac)
+
+    def build_tactree(self):
+        # Internal
+        it_tacs = self.it_tacs
+        self._mylog("@build_tactree:before<{}>".format(it_tacs.peek()))
+
+        while it_tacs.has_next():
+            curr_tac = it_tacs.peek()
+            if isinstance(curr_tac, SsrhaveTac):
+                self.build_ssrhave()
+            elif curr_tac.has_subtac():
+                self.build_subtac()
+            else:
+                self.build_base()
+
+    def show(self):
+        nx.drawing.nx_pylab.draw_kamada_kawai(self.tree, with_labels=True)
+        plt.show()
+
+
+# -------------------------------------------------
+# Reconstructing tactic tree.
+
+def before_after(lemma):
     decls = lemma.decls
-    
-    # 1) Connect before/after tactics
     bfaf = []
     stk = []
+    foobar = []
     it = iter(MyIter(decls))
     while it.has_next():
         decl = next(it)
@@ -430,29 +418,20 @@ def recon_tac_tree(lemma, f_draw=False):
                 bfaf += [(bf_decl, bf_decl)]
                 bf_decl = stk.pop()
 
-            bfaf += [(bf_decl, decl)]
+            foobar += [(bf_decl, decl)]
             for _ in range(0, decl.hdr.ngs - bf_decl.hdr.ngs):
                 decl_p = next(it)
                 bfaf += [(bf_decl, decl_p)]
+    for bf, af in bfaf:
+        print(bf, af)
+    return bfaf
 
-            # TODO(deh): old code
-            """
-            while it.has_next():
-                decl_p = it.peek()
-                if decl_p.hdr.tac == bf_decl.hdr.tac:
-                    bfaf += [(bf_decl, decl_p)]
-                    next(it)
-                else:
-                    break
-            """
 
-    """
-    print("BEFORE/AFTER")
-    for b, a in bfaf:
-        print(b, a)
-    """
+def recon_tac_tree(lemma, f_draw=False):
+    # Connect before/after tactics
+    bfaf = before_after(lemma)
 
-    # 2) Build tree
+    # Build tree
     tree = nx.DiGraph()
     it = iter(MyIter(bfaf))
     root = it.peek()[1]
@@ -464,17 +443,20 @@ def recon_tac_tree(lemma, f_draw=False):
             next_before, next_after = next(it2)
             if curr_after.hdr.gid == next_before.hdr.gid:
                 tree.add_edge(curr_after, next_after)
-                # print("ADDING", curr_after, next_after)
 
-    # 3) Display tree
-    #pos = nx.spring_layout(G)
-    # nx.drawing.nx_pylab.draw_kamada_kawai(G, with_labels=True, font_weight='bold')
-    # nx.draw(G, with_labels=True, font_weight='bold')
+            #if ssreflect_plugin::ssrhave@0
+            # print("ADDING", curr_after, next_after)
+
+    # Display tree
     if f_draw:
         nx.drawing.nx_pylab.draw_kamada_kawai(tree, with_labels=True)
         plt.show()
 
     return root, tree
+
+
+# -------------------------------------------------
+# Compute statistics
 
 class TacStStats(object):
     def __init__(self, root, tree):
@@ -504,6 +486,70 @@ class TacStStats(object):
     def foobar(self):
         return nx.algorithms.simple_paths.all_simple_paths(self.tree, root=self.root)
 
+
+def basic_have_stats(lemmas):
+    total = 0
+    haves = 0
+    pfsizes = []
+    for lemma in lemmas:
+        size = 0
+        for decl in lemma.decls:
+            if decl.hdr.mode == TOK_BEFORE:
+                if decl.hdr.tac == "<ssreflect_plugin::ssrhave@0> $fwd":
+                    haves += 1
+                total += 1
+                size += 1
+        pfsizes += [size]
+    return (len(lemmas), haves, total, 1.0 * haves / (total + 1),
+            np.mean(pfsizes))
+
+
+def visualize(file):
+    ts_parser = TacStParser(file, f_log=False)
+    lemmas = ts_parser.parse_file()
+    # cleanup_lemmas(lemmas)
+
+    cnt = 0
+    for lemma in lemmas:
+        cnt += 1
+        # lemma_p = cleanup_lemma(lemma)
+
+        it = MyIter(lemma.decls)
+        tr_parser = TacTreeParser(lemma)
+        tacs = tr_parser.parse_tactree()
+        for tac in tacs:
+            print(tac)
+            # print("HERE", before, after)
+        tr_builder = TacTreeBuilder(tacs, False)
+        print("")
+        print("")
+        print("")
+        tr_builder.build_tactree()
+        tr_builder.show()
+
+        """
+        root, tree = recon_tac_tree(lemma_p, f_draw=True)
+        ts_stats = TacStStats(root, tree)
+        print("# tactic states: {}".format(ts_stats.cnt_tac_sts()))
+        print("# have: {}".format(ts_stats.cnt_have()))
+        print("chains: {}".format(ts_stats.cnt_term_tac_sts()))
+        """
+
+
+if __name__ == "__main__":
+    # Set up command line
+    argparser = argparse.ArgumentParser()
+    argparser.add_argument("file",
+                           help="Enter the file you want to visualize.")
+    args = argparser.parse_args()
+
+    visualize(args.file)
+
+    # test_foo()
+    # test_odd_order()
+
+
+"""
 def test_foo():
     filename = "./foo.dump"
     with open(filename, 'r') as f:
@@ -514,12 +560,13 @@ def test_foo():
             print(lemma)
             lemma_p = cleanup_lemma(lemma)
             print(lemma_p)
-            
+
             root, tree = recon_tac_tree(lemma_p, f_draw=True)
             ts_stats = TacStStats(root, tree)
             print("# tactic states: {}".format(ts_stats.cnt_tac_sts()))
             print("# have: {}".format(ts_stats.cnt_have()))
             print("chains: {}".format(ts_stats.cnt_term_tac_sts()))
+
 
 def test_odd_order():
     filename = "/Users/dehuang/Documents/research/pnh/mathcomp-odd-order-1.6.1/mathcomp/odd_order/build.log"
@@ -533,17 +580,4 @@ def test_odd_order():
                 lemma_p = cleanup_lemma(lemma)
                 # print(lemma_p)
             print(basic_have_stats(lemmas))
-
-if __name__=="__main__":
-    test_foo()
-    # test_odd_order()
-
-
-"""
-def count_pf_length(lemma):
-    cnt = 0
-    for decl in lemma.decls:
-        if decl.hdr.mode == TOK_BEFORE:
-            cnt += 1
-    return cnt
 """
