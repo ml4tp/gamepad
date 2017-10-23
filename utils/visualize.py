@@ -3,7 +3,6 @@ import networkx as nx
 import numpy as np
 
 from build_tactr import *
-from lib.myiter import MyIter
 from parse_raw import *
 from parse_tacst import *
 
@@ -57,28 +56,23 @@ def basic_have_stats(lemmas):
             np.mean(pfsizes))
 
 
+def visualize_lemma(lemma):
+    print("------------------------------------------------")
+    print("DOING", lemma)
+    tr_parser = TacTreeParser(lemma, True)
+    tacs = tr_parser.parse_tactree()
+    for tac in tacs:
+        print(tac)
+    tr_builder = TacTreeBuilder(tacs, False)
+    tr_builder.build_tactree()
+    tr_builder.show()
+
+
 def visualize(file):
     ts_parser = TacStParser(file, f_log=False)
-    lemmas = ts_parser.parse_file()
-    # cleanup_lemmas(lemmas)
-
-    cnt = 0
-    for lemma in lemmas:
-        cnt += 1
-        # lemma_p = cleanup_lemma(lemma)
-
-        it = MyIter(lemma.decls)
-        tr_parser = TacTreeParser(lemma)
-        tacs = tr_parser.parse_tactree()
-        for tac in tacs:
-            print(tac)
-            # print("HERE", before, after)
-        tr_builder = TacTreeBuilder(tacs, False)
-        print("")
-        print("")
-        print("")
-        tr_builder.build_tactree()
-        tr_builder.show()
+    while not ts_parser.exhausted:
+        lemma = ts_parser.parse_lemma()
+        visualize_lemma(lemma)
 
         """
         root, tree = recon_tac_tree(lemma_p, f_draw=True)

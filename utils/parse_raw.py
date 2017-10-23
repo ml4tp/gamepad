@@ -75,9 +75,9 @@ class TacStDecl(object):
 
     def __str__(self):
         if self.hdr.mode == TOK_BEFORE:
-            return "B{}{}".format(self.hdr.gid, self.hdr.tac)
+            return "B({},{})".format(self.hdr.gid, self.hdr.tac)
         else:
-            return "A{}{}".format(self.hdr.gid, self.hdr.tac)
+            return "A({},{})".format(self.hdr.gid, self.hdr.tac)
 
     def __hash__(self):
         msg = "{}{}".format(self.hdr.loc, self.hdr.gid)
@@ -93,7 +93,7 @@ class LemTacSt(object):
         self.decls = decls
 
     def __str__(self):
-        msg = ", ".join([str(decl) for decl in self.decls])
+        msg = "\n".join([str(decl) for decl in self.decls])
         return "{}<{}>".format(self.name, msg)
 
 
@@ -285,6 +285,51 @@ class TacStParser(object):
         # Parse
         return f_head.consume_line()
 
+    def parse_lemma(self):
+        """
+        Parse tactic states for an entire lemma.
+        """
+        # Internal
+        f_head = self.f_head
+        self._mylog("parse_lemma<{}>".format(f_head.peek_line()))
+
+        if self.exhausted:
+            raise NameError("Already parsed file {}".format(self.filename))
+
+        # Parse
+        line = f_head.raw_peek_line()
+        while line != "":
+            line = line.rstrip()
+            if line.startswith(TOK_BEG_PF):
+                lem_name = self.parse_begin_pf()
+                # TODO(deh): this does not handle opening a proof
+                # within a proof
+                self.decls = []
+            elif line.startswith(TOK_END_PF):
+                self.parse_qed()
+                # Accumulate lemma
+                lemma = LemTacSt(lem_name, self.decls)
+                self.lems.append(lemma)
+                if f_head.raw_peek_line() == "":
+                    self.exhausted = True
+                return lemma
+            elif line.startswith(TOK_BEG_SUB_PF):
+                self.parse_begsubpf()
+                # TODO(deh): keep track of this?
+            elif line.startswith(TOK_END_SUB_PF):
+                self.parse_endsubpf()
+                # TODO(deh): keep track of this?
+            elif line.startswith(TOK_BEG_TAC_ST):
+                self.parse_begtacst()
+                decl = self.parse_decl()
+                self.decls += [decl]
+            elif line.startswith(TOK_END_TAC_ST):
+                self.parse_endtacst()
+            else:
+                raise NameError("Parsing error at line {}: {}".format(
+                                f_head.line, f_head.peek_line()))
+            line = f_head.raw_peek_line()
+
     def parse_file(self):
         """
         Top-level parse function.
@@ -299,6 +344,7 @@ class TacStParser(object):
         # Parse
         line = f_head.raw_peek_line()
         while line != "":
+            """
             line = line.rstrip()
             if line.startswith(TOK_BEG_PF):
                 lem_name = self.parse_begin_pf()
@@ -324,6 +370,8 @@ class TacStParser(object):
             else:
                 raise NameError("Parsing error at line {}: {}".format(
                                 f_head.line, f_head.peek_line()))
+            """
+            self.parse_lemma()
             line = f_head.raw_peek_line()
         self.exhausted = True
         return self.lems
