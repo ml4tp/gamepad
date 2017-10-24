@@ -46,7 +46,7 @@ class TacStHdr(object):
     """
     Contains the header for a tactic state declaration.
     """
-    def __init__(self, mode, tac, kind, ftac, gid, ngs, loc):
+    def __init__(self, mode, tac, kind, ftac, gid, ngs, loc, depth):
         self.mode = mode
         self.tac = tac
         self.kind = kind
@@ -54,10 +54,11 @@ class TacStHdr(object):
         self.gid = gid
         self.ngs = ngs
         self.loc = loc
+        self.depth = depth
 
     def __str__(self):
-        return "({} tac: {}  ftac: {}  gid: {}  ngs: {})".format(
-               self.mode, self.tac, self.ftac, self.gid, self.ngs)
+        return "({} tac: {}  ftac: {}  gid: {}  ngs: {}  depth: {})".format(
+               self.mode, self.tac, self.ftac, self.gid, self.ngs, self.depth)
 
 
 class TacStDecl(object):
@@ -99,12 +100,12 @@ class LemTacSt(object):
 
 # TODO(deh): deprecate?
 def mk_root_decl():
-    return TacStDecl(TacStHdr(TOK_AFTER, "root", "", "", 0, 0, ""), "", "")
+    return TacStDecl(TacStHdr(TOK_AFTER, "root", "", "", 0, 0, ""), "", "", 0)
 
 
 # TODO(deh): deprecate?
 def mk_term_decl(gid):
-    return TacStDecl(TacStHdr(TOK_AFTER, "term", "", "", gid, 0, ""), "", "")
+    return TacStDecl(TacStHdr(TOK_AFTER, "term", "", "", gid, 0, ""), "", "", 0)
 
 
 # -------------------------------------------------
@@ -125,7 +126,7 @@ class TacStParser(object):
             # self.log.append(msg)
             print(msg)
 
-    def parse_hdr(self):
+    def parse_hdr(self, depth):
         # Internal
         f_head = self.f_head
         self._mylog("@parse_hdr:before<{}>".format(f_head.peek_line()))
@@ -133,20 +134,32 @@ class TacStParser(object):
         # Parse header
         hdr = f_head.consume_line()
         toks = hdr.split(TOK_SEP)
-        while len(toks) != 7:
+        while len(toks) < 4:
             line = f_head.consume_line()
             hdr += line
             toks = hdr.split(TOK_SEP)
 
-        # Unpack header
+        # Unpack initial header
         mode = toks[0].strip()
         tac = toks[1].strip()
         kind = toks[2].strip()
-        ftac = toks[3].strip()
-        gid = int(toks[4].strip())
-        ngs = int(toks[5].strip())
-        loc = toks[6].strip()
-        tac_st_hdr = TacStHdr(mode, tac, kind, ftac, gid, ngs, loc)
+        ngs = int(toks[3].strip())
+        loc = toks[4].strip()
+
+        if ngs == 0:
+            # Does not have rest of header
+            ftac = ""
+            gid = -1
+        else:
+            # Parse and unpack rest of header
+            while len(toks) != 7:
+                line = f_head.consume_line()
+                hdr += line
+                toks = hdr.split(TOK_SEP)
+            ftac = toks[5].strip()
+            gid = int(toks[6].strip())
+
+        tac_st_hdr = TacStHdr(mode, tac, kind, ftac, gid, ngs, loc, depth)
         return tac_st_hdr
 
     def parse_local_decl(self):
@@ -217,18 +230,19 @@ class TacStParser(object):
             line = f_head.advance_line()
         return goal
 
-    def parse_decl(self):
+    def parse_decl(self, depth):
         # Internal
         f_head = self.f_head
         self._mylog("@parse_decl:before<{}>".format(f_head.peek_line()))
 
         # Parse declaration
-        tac_st_hdr = self.parse_hdr()
-        # NOTE(deh): depending on the format, there may be a new line
-        # self.parse_newline()
+        tac_st_hdr = self.parse_hdr(depth)
         ctx = self.parse_local_ctx()
-        self.parse_pf_div()
-        goal = self.parse_goal()
+        if f_head.peek_line().startswith(TOK_END_TAC_ST):
+            goal = "DEH_SOLVED"
+        else:
+            self.parse_pf_div()
+            goal = self.parse_goal()
         return TacStDecl(tac_st_hdr, ctx, goal)
 
     def parse_begin_pf(self):
@@ -275,7 +289,9 @@ class TacStParser(object):
         self._mylog("@parse_begtacst:before<{}>".format(f_head.peek_line()))
 
         # Parse
-        return f_head.consume_line()
+        line = f_head.consume_line()
+        toks = line.split(TOK_SEP)
+        return int(toks[1])
 
     def parse_endtacst(self):
         # Internal
@@ -320,8 +336,8 @@ class TacStParser(object):
                 self.parse_endsubpf()
                 # TODO(deh): keep track of this?
             elif line.startswith(TOK_BEG_TAC_ST):
-                self.parse_begtacst()
-                decl = self.parse_decl()
+                depth = self.parse_begtacst()
+                decl = self.parse_decl(depth)
                 self.decls += [decl]
             elif line.startswith(TOK_END_TAC_ST):
                 self.parse_endtacst()
@@ -344,33 +360,6 @@ class TacStParser(object):
         # Parse
         line = f_head.raw_peek_line()
         while line != "":
-            """
-            line = line.rstrip()
-            if line.startswith(TOK_BEG_PF):
-                lem_name = self.parse_begin_pf()
-                # TODO(deh): this does not handle opening a proof
-                # within a proof
-                self.decls = []
-            elif line.startswith(TOK_END_PF):
-                self.parse_qed()
-                # Accumulate lemma
-                self.lems.append(LemTacSt(lem_name, self.decls))
-            elif line.startswith(TOK_BEG_SUB_PF):
-                self.parse_begsubpf()
-                # TODO(deh): keep track of this?
-            elif line.startswith(TOK_END_SUB_PF):
-                self.parse_endsubpf()
-                # TODO(deh): keep track of this?
-            elif line.startswith(TOK_BEG_TAC_ST):
-                self.parse_begtacst()
-                decl = self.parse_decl()
-                self.decls += [decl]
-            elif line.startswith(TOK_END_TAC_ST):
-                self.parse_endtacst()
-            else:
-                raise NameError("Parsing error at line {}: {}".format(
-                                f_head.line, f_head.peek_line()))
-            """
             self.parse_lemma()
             line = f_head.raw_peek_line()
         self.exhausted = True
