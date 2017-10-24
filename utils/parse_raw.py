@@ -76,9 +76,9 @@ class TacStDecl(object):
 
     def __str__(self):
         if self.hdr.mode == TOK_BEFORE:
-            return "B({},{})".format(self.hdr.gid, self.hdr.tac)
+            return "B({},{},{})".format(self.hdr.gid, self.hdr.tac, self.hdr.loc)
         else:
-            return "A({},{})".format(self.hdr.gid, self.hdr.tac)
+            return "A({},{},{})".format(self.hdr.gid, self.hdr.tac, self.hdr.loc)
 
     def __hash__(self):
         msg = "{}{}".format(self.hdr.loc, self.hdr.gid)
