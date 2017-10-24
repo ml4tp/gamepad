@@ -42,7 +42,7 @@ class Tac(object):
         return self.uid
 
 
-class QuadTac(Tac):
+class FixedTac(Tac):
     def __init__(self, uid, name, alias, core, terminal=False):
         assert isinstance(name, str)
         assert isinstance(alias[0], TacStDecl)
@@ -70,59 +70,36 @@ class QuadTac(Tac):
         return "{}({}; {})".format(self.name, self.uid, ", ".join(es))
 
 
-class ExactTac(Tac):
-    def __init__(self, uid, alias, core):
-        assert isinstance(alias, TacStDecl)
-        assert isinstance(core[0], TacStDecl)
-        assert isinstance(core[1], TacStDecl)
+class VaryTac(Tac):
+    def __init__(self, uid, name, alias, bf_core, af_cores, terminal=False):
+        assert isinstance(alias[0], TacStDecl)
+        assert isinstance(alias[1], TacStDecl)
+        assert isinstance(bf_core, TacStDecl)
+        for after in af_cores:
+            assert isinstance(after, TacStDecl)
 
-        super().__init__(uid, True)
+        super().__init__(uid, terminal)
+        self.name = name
         self.alias = alias
-        self.core = core
+        self.bf_core = bf_core
+        self.af_cores = af_cores
 
     def has_subtac(self):
         return False
 
     def in_edge(self):
-        return self.alias.hdr.gid
+        return self.before.hdr.gid
 
     def out_edges(self):
-        return [self.core[1].hdr.gid]
+        return [after.hdr.gid for after in self.af_cores]
 
     def __str__(self):
-        es = [str(self.alias), str(self.core[0]), str(self.core[1])]
-        return "Exact({}; {})".format(self.uid, ", ".join(es))
+        ps1 = [str(self.alias[0]), str(self.alias[1]), str(self.bf_core)]
+        ps2 = [str(after) for after in self.af_cores]
+        return "{}({}; {})".format(self.name, self.uid, ", ".join(ps1 + ps2))
 
 
-class NestTermTac(Tac):
-    def __init__(self, uid, alias_name, core_name, alias, core, extra):
-        assert isinstance(alias, TacStDecl)
-        assert isinstance(core, TacStDecl)
-        for decl in extra:
-            assert isinstance(decl, TacStDecl)
-
-        super().__init__(uid)
-        self.alias_name = alias_name
-        self.core_name = core_name
-        self.alias = alias
-        self.core = core
-        self.extra = extra
-
-    def has_subtac(self):
-        return False
-
-    def in_edge(self):
-        return self.alias.hdr.gid
-
-    def out_edges(self):
-        return [self.core.hdr.gid]
-
-    def __str__(self):
-        es = [str(self.alias), str(self.core)]
-        return "{}({}; {})".format(self.alias_name, self.uid, ", ".join(es))
-
-
-class QuadRecTac(Tac):
+class FixedNestedTac(Tac):
     def __init__(self, uid, name, alias, core, body):
         assert isinstance(alias[0], TacStDecl)
         assert isinstance(alias[1], TacStDecl)
@@ -154,35 +131,69 @@ class QuadRecTac(Tac):
                                        ", ".join(body))
 
 
-class SsrhaveTac(Tac):
-    def __init__(self, uid, alias, core, body):
-        assert isinstance(alias[0], TacStDecl)
-        assert isinstance(alias[1], TacStDecl)
-        assert isinstance(core[0], TacStDecl)
-        assert isinstance(core[1], TacStDecl)
+class VaryNestedTac(Tac):
+    def __init__(self, uid, name, bf_alias, bf_core,
+                 af_cores, af_aliases, body, terminal=False):
+        assert isinstance(bf_alias, TacStDecl)
+        assert isinstance(bf_core, TacStDecl)
+        for after in af_cores:
+            assert isinstance(after, TacStDecl)
+        for after in af_aliases:
+            assert isinstance(after, TacStDecl)
         for tac in body:
             assert isinstance(tac, Tac)
 
-        super().__init__(uid)
-        self.alias = alias
-        self.core = core
+        super().__init__(uid, terminal)
+        self.name = name
+        self.bf_alias = bf_alias
+        self.bf_core = bf_core
+        self.af_cores = af_cores
+        self.af_aliases = af_aliases
         self.body = body
 
     def has_subtac(self):
         return True
 
     def in_edge(self):
-        return self.alias[0].hdr.gid
+        return self.bf_alias.hdr.gid
 
     def out_edges(self):
-        return [self.core[1].hdr.gid]
+        return [after.hdr.gid for after in self.af_aliases]
 
     def __str__(self):
-        es = [str(self.alias[0]), str(self.core[0]),
-              str(self.core[1]), str(self.alias[1])]
-        body = [str(tac) for tac in self.body]
-        return "Srrhave({}; {}; {})".format(self.uid, ", ".join(es),
-                                            ", ".join(body))
+        ps = ["({}, {})".format(self.bf_alias, after)
+              for after in self.af_aliases]
+        body = ", ".join([str(x) for x in self.body])
+        return "{}({}; {}; {})".format(self.name, self.uid,
+                                       ", ".join(ps), body)
+
+
+class NestTermTac(Tac):
+    def __init__(self, uid, alias_name, core_name, alias, core, extra):
+        assert isinstance(alias, TacStDecl)
+        assert isinstance(core, TacStDecl)
+        for decl in extra:
+            assert isinstance(decl, TacStDecl)
+
+        super().__init__(uid)
+        self.alias_name = alias_name
+        self.core_name = core_name
+        self.alias = alias
+        self.core = core
+        self.extra = extra
+
+    def has_subtac(self):
+        return False
+
+    def in_edge(self):
+        return self.alias.hdr.gid
+
+    def out_edges(self):
+        return [self.core.hdr.gid]
+
+    def __str__(self):
+        es = [str(self.alias), str(self.core)]
+        return "{}({}; {})".format(self.alias_name, self.uid, ", ".join(es))
 
 
 class SsrtclseqTac(Tac):
@@ -232,119 +243,45 @@ class SsrtcldoTac(Tac):
         return "Srrtcldo({}; {})".format(self.uid, str(self.core))
 
 
-class QuadRecNTac(Tac):
-    def __init__(self, uid, name, bf_alias, bf_core,
-                 af_cores, af_aliases, body):
-        assert isinstance(bf_alias, TacStDecl)
-        assert isinstance(bf_core, TacStDecl)
-        for after in af_cores:
-            assert isinstance(after, TacStDecl)
-        for after in af_aliases:
-            assert isinstance(after, TacStDecl)
+# TODO(deh): deprecate
+class SsrhaveTac(Tac):
+    def __init__(self, uid, alias, core, body):
+        assert isinstance(alias[0], TacStDecl)
+        assert isinstance(alias[1], TacStDecl)
+        assert isinstance(core[0], TacStDecl)
+        assert isinstance(core[1], TacStDecl)
         for tac in body:
             assert isinstance(tac, Tac)
 
         super().__init__(uid)
-        self.name = name
-        self.bf_alias = bf_alias
-        self.bf_core = bf_core
-        self.af_cores = af_cores
-        self.af_aliases = af_aliases
+        self.alias = alias
+        self.core = core
         self.body = body
 
     def has_subtac(self):
         return True
 
     def in_edge(self):
-        return self.bf_alias.hdr.gid
+        return self.alias[0].hdr.gid
 
     def out_edges(self):
-        return [after.hdr.gid for after in self.af_aliases]
+        return [self.core[1].hdr.gid]
 
     def __str__(self):
-        ps = ["({}, {})".format(self.bf_alias, after)
-              for after in self.af_aliases]
-        body = ", ".join([str(x) for x in self.body])
-        return "{}({}; {}; {})".format(self.name, self.uid,
-                                       ", ".join(ps), body)
+        es = [str(self.alias[0]), str(self.core[0]),
+              str(self.core[1]), str(self.alias[1])]
+        body = [str(tac) for tac in self.body]
+        return "Srrhave({}; {}; {})".format(self.uid, ", ".join(es),
+                                            ", ".join(body))
 
-
-"""
-class SsrapplyTac(Tac):
-    def __init__(self, uid, bf_alias, bf_core, af_cores, af_aliases):
-        assert isinstance(bf_alias, TacStDecl)
-        assert isinstance(bf_core, TacStDecl)
-        for after in af_cores:
-            assert isinstance(after, TacStDecl)
-        for after in af_aliases:
-            assert isinstance(after, TacStDecl)
-
-        super().__init__(uid)
-        self.bf_alias = bf_alias
-        self.bf_core = bf_core
-        self.af_cores = af_cores
-        self.af_aliases = af_aliases
-
-    def has_subtac(self):
-        return False
-
-    def in_edge(self):
-        return self.bf_alias.hdr.gid
-
-    def out_edges(self):
-        return [after.hdr.gid for after in self.af_aliases]
-
-    def __str__(self):
-        ps = ["({}, {})".format(self.bf_alias, after)
-              for after in self.af_aliases]
-        body1 = ", ".join([str(x) for x in self.af_cores])
-        body2 = ", ".join([str(x) for x in self.af_aliases])
-        return "Ssrapply({}; {}; {}; {})".format(self.uid, ", ".join(ps),
-                                                 body1, body2)
-"""
-
-"""
-class SsrrwTac(Tac):
-    def __init__(self, uid, bf_alias, bf_core, af_cores, af_aliases, body):
-        assert isinstance(bf_alias, TacStDecl)
-        assert isinstance(bf_core, TacStDecl)
-        for after in af_cores:
-            assert isinstance(after, TacStDecl)
-        for after in af_aliases:
-            assert isinstance(after, TacStDecl)
-        for tac in body:
-            assert isinstance(tac, Tac)
-
-        super().__init__(uid)
-        self.bf_alias = bf_alias
-        self.bf_core = bf_core
-        self.af_cores = af_cores
-        self.af_aliases = af_aliases
-        self.body = body
-
-    def has_subtac(self):
-        return True
-
-    def in_edge(self):
-        return self.bf_alias.hdr.gid
-
-    def out_edges(self):
-        return [after.hdr.gid for after in self.af_aliases]
-
-    def __str__(self):
-        ps = ["({}, {})".format(self.bf_alias, after)
-              for after in self.af_aliases]
-        body = ", ".join([str(x) for x in self.body])
-        return "Ssrrw({}; {}; {})".format(self.uid, ", ".join(ps), body)
-"""
 
 class GenericTac(Tac):
-    def __init__(self, uid, before, afters):
+    def __init__(self, uid, before, afters, terminal=False):
         assert isinstance(before, TacStDecl)
         for after in afters:
             assert isinstance(after, TacStDecl)
 
-        super().__init__(uid)
+        super().__init__(uid, terminal)
         self.before = before
         self.afters = afters
 
@@ -393,7 +330,7 @@ class TacTreeParser(object):
         self.uidcnt += 1
         return uid
 
-    def parse_quad_nested(self, name, terminal=False):
+    def parse_fixed_stk(self, name, terminal=False):
         """
         before(name)
           before(name@0)
@@ -402,17 +339,17 @@ class TacTreeParser(object):
         """
         # Internal
         it = self.it
-        self._mylog("@parse_quad_nested:before<{}>".format(it.peek()))
+        self._mylog("@parse_fixed_stk:before<{}>".format(it.peek()))
 
         # Reconstruct quad tactic that is nested
         bf_name = next(it)
         bf_name0 = next(it)
         af_name0 = next(it)
         af_name = next(it)
-        return QuadTac(self._getuid(), name,
-                       (bf_name, af_name), (bf_name0, af_name0), terminal)
+        return FixedTac(self._getuid(), name,
+                        (bf_name, af_name), (bf_name0, af_name0), terminal)
 
-    def parse_quad_seq(self, name, terminal=False):
+    def parse_fixed_seq(self, name, terminal=False):
         """
         before(name)
         after(name)
@@ -421,30 +358,53 @@ class TacTreeParser(object):
         """
         # Internal
         it = self.it
-        self._mylog("@parse_quad_seq:before<{}>".format(it.peek()))
+        self._mylog("@parse_fixed_seq:before<{}>".format(it.peek()))
 
         # Reconstruct quad tactic that is sequential
         bf_name = next(it)
         af_name = next(it)
         bf_name0 = next(it)
         af_name0 = next(it)
-        return QuadTac(self._getuid(), name,
-                       (bf_name, af_name), (bf_name0, af_name0), terminal)
+        return FixedTac(self._getuid(), name,
+                        (bf_name, af_name), (bf_name0, af_name0), terminal)
 
-    def parse_exact(self):
+    def parse_vary_seq(self, name, terminal=False):
         """
-        before(exact)
-          before(exact@0)
-          after(exact@0)
+        before(name)
+        after(name)
+        before(name0)
+        after(name0-1)
+        after(name0-n)
         """
         # Internal
         it = self.it
-        self._mylog("@parse_exact:before<{}>".format(it.peek()))
+        self._mylog("@parse_vary_seq:before<{}>".format(it.peek()))
 
-        bf_exact = next(it)
-        bf_exact0 = next(it)
-        af_exact0 = next(it)
-        return ExactTac(self._getuid(), bf_exact, (bf_exact0, af_exact0))
+        # Reconstruct header
+        bf_name = next(it)
+        af_name = next(it)
+        bf_name0 = next(it)
+
+        # Reconstruct tail
+        acc = []
+        terminal = False
+        if not it.has_next():
+            # TODO(deh): kludge?
+            self._mylog("Terminal kludge1?")
+            terminal = True
+        elif it.peek().hdr.ngs == 0:
+            # Parse terminal state
+            self._mylog("Terminal number of goals is 0")
+            terminal = True
+            acc += [next(it)]
+        else:
+            # Parse constant or expanding number of goals
+            ngs = it.peek().hdr.ngs
+            for _ in range(0, ngs - bf_name0.hdr.ngs + 1):
+                # decl_p = next(it)
+                acc += [next(it)]
+        return VaryTac(self._getuid(), name, (bf_name, af_name),
+                       bf_name0, acc, terminal)
 
     def parse_nestterm(self, alias_name, core_name):
         """
@@ -471,7 +431,7 @@ class TacTreeParser(object):
         return NestTermTac(self._getuid(), alias_name, core_name,
                            bf_name, bf_name0, extra)
 
-    def parse_quadrec(self, name):
+    def parse_fixed_stk_nested(self, name):
         """
         before(name)
           before(name@0)
@@ -481,7 +441,7 @@ class TacTreeParser(object):
         """
         # Internal
         it = self.it
-        self._mylog("@parse_quadrec:before<{}>".format(it.peek()))
+        self._mylog("@parse_fixed_stk_nested:before<{}>".format(it.peek()))
 
         # Reconstruct Ssreflect have tactic
         bf_name = next(it)
@@ -491,8 +451,55 @@ class TacTreeParser(object):
         self.depth -= 1
         af_name0 = next(it)
         af_name = next(it)
-        return QuadRecTac(self._getuid(), name, (bf_name, af_name),
-                          (bf_name0, af_name0), body)
+        return FixedNestedTac(self._getuid(), name, (bf_name, af_name),
+                              (bf_name0, af_name0), body)
+
+    def parse_vary_stk_nested(self, name):
+        """
+        before(name)
+          before(name@0)
+            TacTree
+          after(name@0-1)
+          ...
+          after(name@0-n)
+        after(name-1)
+        ...
+        after(name-n)
+        """
+        # Internal
+        it = self.it
+        self._mylog("@parse_vary_stk_nested:before<{}>".format(it.peek()))
+
+        # Reconstruct tactic header
+        bf_name = next(it)
+        bf_name0 = next(it)
+        body = self.parse_tactree()
+
+        # Reconstruct tactic tail
+        acc0 = []
+        acc = []
+        terminal = False
+        if not it.has_next():
+            # TODO(deh): kludge? is this necessary
+            self._mylog("Terminal kludge?")
+            terminal = True
+        elif it.peek().hdr.ngs == 0:
+            # Parse terminal state
+            self._mylog("Terminal number of goals is 0")
+            terminal = True
+            acc0 += [next(it)]
+            acc += [next(it)]
+        else:
+            # Parse constant or expanding number of goals
+            ngs = it.peek().hdr.ngs
+            for _ in range(0, ngs - bf_name0.hdr.ngs + 1):
+                # decl_p = next(it)
+                acc0 += [next(it)]
+            for _ in range(0, ngs - bf_name.hdr.ngs + 1):
+                # decl_p = next(it)
+                acc += [next(it)]
+        return VaryNestedTac(self._getuid(), name, bf_name, bf_name0,
+                             acc0, acc, body, terminal)
 
     def parse_ssrtclseq(self):
         """
@@ -525,74 +532,6 @@ class TacTreeParser(object):
         bf_ssrtcldo0 = next(it)
         return SsrtcldoTac(self._getuid(), bf_ssrtcldo0)
 
-    # TODO(deh): Same as ssrrw
-    def parse_ssrapply(self):
-        """
-        before(srrapply)
-          before(ssrapply@0)
-            TacTree
-          after(ssrapply@0-1)
-          ...
-          after(ssrapply@0-n)
-        after(ssrapply-1)
-        ...
-        after(ssrapply-n)
-        """
-        # Internal
-        it = self.it
-        self._mylog("@parse_ssrapply:before<{}>".format(it.peek()))
-
-        # Reconstruct Ssreflect apply tactic
-        bf_apply = next(it)
-        bf_apply0 = next(it)
-        body = self.parse_tactree()
-
-        acc0 = []
-        ngs = it.peek().hdr.ngs
-        for _ in range(0, ngs - bf_apply0.hdr.ngs + 1):
-            decl_p = next(it)
-            acc0 += [decl_p]
-
-        acc = []
-        for _ in range(0, ngs - bf_apply.hdr.ngs + 1):
-            decl_p = next(it)
-            acc += [decl_p]
-        return SsrapplyTac(self._getuid(), bf_apply, bf_apply0, acc0, acc, body)
-
-    def parse_quadrecn(self, name):
-        """
-        before(rewrite)
-          before(rewrite@0)
-            TacTree
-          after(rewrite@0-1)
-          ...
-          after(rewrite@0-n)
-        after(rewrite-1)
-        ...
-        after(rewrite-n)
-        """
-        # Internal
-        it = self.it
-        self._mylog("@parse_quadrecn:before<{}>".format(it.peek()))
-
-        # Reconstruct Ssreflect rewrite tactic
-        bf_rewrite = next(it)
-        bf_rewrite0 = next(it)
-        body = self.parse_tactree()
-
-        acc0 = []
-        ngs = it.peek().hdr.ngs
-        for _ in range(0, ngs - bf_rewrite0.hdr.ngs + 1):
-            decl_p = next(it)
-            acc0 += [decl_p]
-
-        acc = []
-        for _ in range(0, ngs - bf_rewrite.hdr.ngs + 1):
-            decl_p = next(it)
-            acc += [decl_p]
-        return QuadRecNTac(self._getuid(), name, bf_rewrite, bf_rewrite0,
-                           acc0, acc, body)
-
     def parse_generic(self):
         # Internal
         it = self.it
@@ -601,18 +540,27 @@ class TacTreeParser(object):
         # Reconstruct base tactic
         acc = []
         decl = next(it)
+        terminal = False
         if not it.has_next():
-            # TODO(deh): kludge, need to signal terminal state
-            self._mylog("Terminal 1")
+            # TODO(deh): kludge?
+            self._mylog("Terminal kludge1?")
+            terminal = True
         elif decl.hdr.tac != it.peek().hdr.tac:
-            # TODO(deh): kludge, need to signal terminal state
-            self._mylog("Terminal 2")
+            # TODO(deh): kludge?
+            self._mylog("Terminal kludge2?")
+            terminal = True
+        elif it.peek().hdr.ngs == 0:
+            # Parse terminal state
+            self._mylog("Terminal number of goals is 0")
+            terminal = True
+            acc += [next(it)]
         else:
+            # Parse constant or expanding number of goals
             ngs = it.peek().hdr.ngs
             for _ in range(0, ngs - decl.hdr.ngs + 1):
-                decl_p = next(it)
-                acc += [decl_p]
-        return GenericTac(self._getuid(), decl, acc)
+                # decl_p = next(it)
+                acc += [next(it)]
+        return GenericTac(self._getuid(), decl, acc, terminal)
 
     def parse_tactree(self):
         """
@@ -626,65 +574,97 @@ class TacTreeParser(object):
         acc = []
         while it.has_next():
             decl = it.peek()
-            # Non-terminal nested cases
+
+            # ----------------------------------------------
+            # Coq tactics
+
+            # Non-terminal, fixed-width, stack cases
             if decl.hdr.mode == TOK_BEFORE and \
                decl.hdr.tac.startswith("intro") and \
                not decl.hdr.tac.startswith("intros"):
-                acc += [self.parse_quad_nested("Intro")]
+                acc += [self.parse_fixed_stk("Intro")]
             elif decl.hdr.mode == TOK_BEFORE and \
                  decl.hdr.tac.startswith("case"):
-                acc += [self.parse_quad_nested("Case")]
+                acc += [self.parse_fixed_stk("Case")]
 
-            # Terminal sequential cases
-            elif decl.hdr.mode == TOK_BEFORE and \
-                 decl.hdr.tac.startswith("assumption"):
-                acc += [self.parse_quad_seq("Assumption", True)]
-            elif decl.hdr.mode == TOK_BEFORE and \
-                 decl.hdr.tac.startswith("reflexivity"):
-                acc += [self.parse_quad_seq("Reflexivity", True)]
-
-            # Terminal nested cases
+            # Terminal, fixed-width, stack cases
             elif decl.hdr.mode == TOK_BEFORE and \
                  decl.hdr.tac.startswith("trivial"):
-                acc += [self.parse_quad_nested("trivial", True)]
-
-            # Terminal wtf cases
+                acc += [self.parse_fixed_stk("trivial", True)]
             elif decl.hdr.mode == TOK_BEFORE and \
                  decl.hdr.tac.startswith("exact"):
-                # TODO(deh): I don't know why this is missing an after
-                acc += [self.parse_exact()]
+                acc += [self.parse_fixed_stk("Exact", True)]
 
-            # apply (ssrapplyarg) sometimes missing after for NotationCall
+            # Terminal, fixed-width, sequential cases
+            elif decl.hdr.mode == TOK_BEFORE and \
+                 decl.hdr.tac.startswith("assumption"):
+                acc += [self.parse_fixed_seq("Assumption", True)]
+            elif decl.hdr.mode == TOK_BEFORE and \
+                 decl.hdr.tac.startswith("reflexivity"):
+                acc += [self.parse_fixed_seq("Reflexivity", True)]
 
-            # Terminal optional nested cases
+            # Variable-width, sequential cases
+            elif decl.hdr.mode == TOK_BEFORE and \
+                 decl.hdr.tac.startswith("split"):
+                acc += [self.parse_vary_seq("Split")]
+
+            # TODO(deh): look at this again, terminal optional nested cases
             elif decl.hdr.mode == TOK_BEFORE and \
                  decl.hdr.tac.startswith("discriminate"):
                 acc += [self.parse_nestterm("discriminate",
                                             "<extratactics::discriminate@0>")]
 
-            # Ssreflect
-            # Non-terminal nested cases
+            # See generic for variable-width, sequential cases
+
+            # ----------------------------------------------
+            # Ssreflect tactics
+
+            # Non-terminal, fixed-width, stack cases
             elif decl.hdr.mode == TOK_BEFORE and \
                  decl.hdr.tac.startswith("move (ssrmovearg) (ssrclauses)"):
-                acc += [self.parse_quad_nested("Ssrmove")]
+                acc += [self.parse_fixed_stk("Ssrmove")]
 
-            # Recursive case
+            # ----------------------
+            # Nested cases (paired)
+
+            # Fixed-width, nested cases
             elif decl.hdr.mode == TOK_BEFORE and \
                  decl.hdr.tac.startswith("by (ssrhintarg)"):
-                acc += [self.parse_quadrec("Ssrby")]
+                acc += [self.parse_fixed_stk_nested("Ssrby")]
             elif decl.hdr.mode == TOK_AFTER and \
                  decl.hdr.tac.startswith("<ssreflect_plugin::ssrtclby@0>"):
                 return acc
 
-            # Recursive case
+            elif decl.hdr.mode == TOK_BEFORE and \
+                 decl.hdr.tac.startswith("exact (ssrexactarg)"):
+                acc += [self.parse_fixed_stk_nested("Ssrexact")]
+            elif decl.hdr.mode == TOK_BEFORE and \
+                 decl.hdr.tac.startswith("<ssreflect_plugin::ssrexact@0>"):
+                return acc
+
             elif decl.hdr.mode == TOK_BEFORE and \
                  decl.hdr.tac.startswith("have (ssrhavefwdwbinders)"):
-                acc += [self.parse_quadrec("Ssrhave")]
+                acc += [self.parse_fixed_stk_nested("Ssrhave")]
             elif decl.hdr.mode == TOK_AFTER and \
                  decl.hdr.tac.startswith("<ssreflect_plugin::ssrhave@0>"):
                 return acc
 
-            # Recursive case 
+            # Variable-width, nested cases
+            elif decl.hdr.mode == TOK_BEFORE and \
+                 decl.hdr.tac.startswith("apply (ssrapplyarg)"):
+                acc += [self.parse_vary_stk_nested("Ssrapply")]
+            elif decl.hdr.mode == TOK_AFTER and \
+                 decl.hdr.tac.startswith("<ssreflect_plugin::ssrapply@0>"):
+                return acc
+
+            elif decl.hdr.mode == TOK_BEFORE and \
+                 decl.hdr.tac.startswith("rewrite (ssrrwargs) (ssrclauses)"):
+                acc += [self.parse_vary_stk_nested("Ssrrewrite")]
+            elif decl.hdr.mode == TOK_AFTER and \
+                 decl.hdr.tac.startswith("<ssreflect_plugin::ssrrewrite@0>"):
+                return acc
+
+            # TODO(deh): Wtf cases?
             elif decl.hdr.mode == TOK_BEFORE and \
                  decl.hdr.tac.startswith("<ssreflect_plugin::ssrtclseq@0>"):
                 acc += [self.parse_ssrtclseq()]
@@ -692,23 +672,7 @@ class TacTreeParser(object):
                  decl.hdr.tac.startswith("<ssreflect_plugin::ssrtclseq@0>"):
                 return acc
 
-            # Recursive case
-            elif decl.hdr.mode == TOK_BEFORE and \
-                 decl.hdr.tac.startswith("rewrite (ssrrwargs) (ssrclauses)"):
-                acc += [self.parse_quadrecn("Ssrrewrite")]
-            elif decl.hdr.mode == TOK_AFTER and \
-                 decl.hdr.tac.startswith("<ssreflect_plugin::ssrrewrite@0>"):
-                return acc
-
-            # Recursive case
-            elif decl.hdr.mode == TOK_BEFORE and \
-                 decl.hdr.tac.startswith("apply (ssrapplyarg)"):
-                acc += [self.parse_quadrecn("Ssrapply")]
-            elif decl.hdr.mode == TOK_AFTER and \
-                 decl.hdr.tac.startswith("<ssreflect_plugin::ssrapply@0>"):
-                return acc
-
-            # Wtf cases
+            # TODO(deh): Wtf cases??
             elif decl.hdr.mode == TOK_BEFORE and \
                  decl.hdr.tac.startswith("<ssreflect_plugin::ssrtcldo@0>"):
                 acc += [self.parse_ssrtcldo()]
@@ -931,4 +895,146 @@ class SsrbyTac(Tac):
     def __str__(self):
         es = [str(self.alias), str(self.core)]
         return "Srrby({}; {})".format(self.uid, ", ".join(es))
+"""
+
+"""
+class SsrapplyTac(Tac):
+    def __init__(self, uid, bf_alias, bf_core, af_cores, af_aliases):
+        assert isinstance(bf_alias, TacStDecl)
+        assert isinstance(bf_core, TacStDecl)
+        for after in af_cores:
+            assert isinstance(after, TacStDecl)
+        for after in af_aliases:
+            assert isinstance(after, TacStDecl)
+
+        super().__init__(uid)
+        self.bf_alias = bf_alias
+        self.bf_core = bf_core
+        self.af_cores = af_cores
+        self.af_aliases = af_aliases
+
+    def has_subtac(self):
+        return False
+
+    def in_edge(self):
+        return self.bf_alias.hdr.gid
+
+    def out_edges(self):
+        return [after.hdr.gid for after in self.af_aliases]
+
+    def __str__(self):
+        ps = ["({}, {})".format(self.bf_alias, after)
+              for after in self.af_aliases]
+        body1 = ", ".join([str(x) for x in self.af_cores])
+        body2 = ", ".join([str(x) for x in self.af_aliases])
+        return "Ssrapply({}; {}; {}; {})".format(self.uid, ", ".join(ps),
+                                                 body1, body2)
+"""
+
+"""
+class SsrrwTac(Tac):
+    def __init__(self, uid, bf_alias, bf_core, af_cores, af_aliases, body):
+        assert isinstance(bf_alias, TacStDecl)
+        assert isinstance(bf_core, TacStDecl)
+        for after in af_cores:
+            assert isinstance(after, TacStDecl)
+        for after in af_aliases:
+            assert isinstance(after, TacStDecl)
+        for tac in body:
+            assert isinstance(tac, Tac)
+
+        super().__init__(uid)
+        self.bf_alias = bf_alias
+        self.bf_core = bf_core
+        self.af_cores = af_cores
+        self.af_aliases = af_aliases
+        self.body = body
+
+    def has_subtac(self):
+        return True
+
+    def in_edge(self):
+        return self.bf_alias.hdr.gid
+
+    def out_edges(self):
+        return [after.hdr.gid for after in self.af_aliases]
+
+    def __str__(self):
+        ps = ["({}, {})".format(self.bf_alias, after)
+              for after in self.af_aliases]
+        body = ", ".join([str(x) for x in self.body])
+        return "Ssrrw({}; {}; {})".format(self.uid, ", ".join(ps), body)
+"""
+
+"""
+class ExactTac(Tac):
+    def __init__(self, uid, alias, core):
+        assert isinstance(alias, TacStDecl)
+        assert isinstance(core[0], TacStDecl)
+        assert isinstance(core[1], TacStDecl)
+
+        super().__init__(uid, True)
+        self.alias = alias
+        self.core = core
+
+    def has_subtac(self):
+        return False
+
+    def in_edge(self):
+        return self.alias.hdr.gid
+
+    def out_edges(self):
+        return [self.core[1].hdr.gid]
+
+    def __str__(self):
+        es = [str(self.alias), str(self.core[0]), str(self.core[1])]
+        return "Exact({}; {})".format(self.uid, ", ".join(es))
+"""
+
+"""
+def parse_ssrapply(self):
+    # before(srrapply)
+    #   before(ssrapply@0)
+    #     TacTree
+    #   after(ssrapply@0-1)
+    #   ...
+    #   after(ssrapply@0-n)
+    # after(ssrapply-1)
+    # ...
+    # after(ssrapply-n)
+    # Internal
+    it = self.it
+    self._mylog("@parse_ssrapply:before<{}>".format(it.peek()))
+
+    # Reconstruct Ssreflect apply tactic
+    bf_apply = next(it)
+    bf_apply0 = next(it)
+    body = self.parse_tactree()
+
+    acc0 = []
+    ngs = it.peek().hdr.ngs
+    for _ in range(0, ngs - bf_apply0.hdr.ngs + 1):
+        decl_p = next(it)
+        acc0 += [decl_p]
+
+    acc = []
+    for _ in range(0, ngs - bf_apply.hdr.ngs + 1):
+        decl_p = next(it)
+        acc += [decl_p]
+    return SsrapplyTac(self._getuid(), bf_apply, bf_apply0, acc0, acc, body)
+"""
+
+"""
+def parse_exact(self):
+    # before(exact)
+    #   before(exact@0)
+    #   after(exact@0)
+    # Internal
+    it = self.it
+    self._mylog("@parse_exact:before<{}>".format(it.peek()))
+
+    bf_exact = next(it)
+    bf_exact0 = next(it)
+    af_exact0 = next(it)
+    return ExactTac(self._getuid(), bf_exact, (bf_exact0, af_exact0))
 """
