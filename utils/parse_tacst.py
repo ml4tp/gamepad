@@ -94,7 +94,7 @@ class VaryTac(Tac):
         return False
 
     def in_edge(self):
-        return self.before.hdr.gid
+        return self.bf_core.hdr.gid
 
     def out_edges(self):
         return [after.hdr.gid for after in self.af_cores]
@@ -613,11 +613,14 @@ class TacTreeParser(object):
 
             # Terminal, fixed-width, stack cases
             elif decl.hdr.mode == TOK_BEFORE and \
-                 decl.hdr.tac.startswith("trivial"):
-                acc += [self.parse_fixed_stk("trivial", True)]
+                 decl.hdr.tac.startswith("auto"):
+                acc += [self.parse_fixed_stk("Auto", True)]
             elif decl.hdr.mode == TOK_BEFORE and \
                  decl.hdr.tac.startswith("exact"):
                 acc += [self.parse_fixed_stk("Exact", True)]
+            elif decl.hdr.mode == TOK_BEFORE and \
+                 decl.hdr.tac.startswith("trivial"):
+                acc += [self.parse_fixed_stk("trivial", True)]
 
             # Terminal, fixed-width, sequential cases
             elif decl.hdr.mode == TOK_BEFORE and \

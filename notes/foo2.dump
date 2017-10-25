@@ -1,38 +1,38 @@
 begin(pf) {!} Classic {!} foo2
-begin(tacst) {!} 0 {!} before {!} intro {!} LtacNotationCall {!} (./foo2.v,94,99)
+begin {!} 0 {!} before {!} intro {!} LtacNotationCall {!} (./foo2.v,94,99)
 1 {!} intro {!} 2
 ============================
 forall n : nat, n + 0 = n
 end(tacst)
-begin(tacst) {!} 1 {!} before {!} <coretactics::intro@0> {!} LtacMLCall {!} (,0,0)
+begin {!} 1 {!} before {!} <coretactics::intro@0> {!} LtacMLCall {!} (,0,0)
 1 {!} <coretactics::intro@0> {!} 2
 ============================
 forall n : nat, n + 0 = n
 end(tacst)
-begin(tacst) {!} 1 {!} after {!} <coretactics::intro@0> {!} LtacMLCall {!} (,0,0)
+begin {!} 1 {!} after {!} <coretactics::intro@0> {!} LtacMLCall {!} (,0,0)
 1 {!}  {!} 3
 n : nat
 ============================
 n + 0 = n
 end(tacst)
-begin(tacst) {!} 0 {!} after {!} intro {!} LtacNotationCall {!} (./foo2.v,94,99)
+begin {!} 0 {!} after {!} intro {!} LtacNotationCall {!} (./foo2.v,94,99)
 1 {!}  {!} 3
 n : nat
 ============================
 n + 0 = n
 end(tacst)
-begin(tacst) {!} 0 {!} before {!} induction n {!} LtacAtomCall {!} (./foo2.v,103,114)
+begin {!} 0 {!} before {!} induction n {!} LtacAtomCall {!} (./foo2.v,103,114)
 1 {!} induction n {!} 3
 n : nat
 ============================
 n + 0 = n
 end(tacst)
-begin(tacst) {!} 0 {!} after {!} induction n {!} LtacAtomCall {!} (./foo2.v,103,114)
+begin {!} 0 {!} after {!} induction n {!} LtacAtomCall {!} (./foo2.v,103,114)
 2 {!}  {!} 7
 ============================
 0 + 0 = 0
 end(tacst)
-begin(tacst) {!} 0 {!} after {!} induction n {!} LtacAtomCall {!} (./foo2.v,103,114)
+begin {!} 0 {!} after {!} induction n {!} LtacAtomCall {!} (./foo2.v,103,114)
 2 {!}  {!} 10
 n : nat
 IHn : n + 0 = n
@@ -40,103 +40,103 @@ IHn : n + 0 = n
 S n + 0 = S n
 end(tacst)
 begin(subpf)
-begin(tacst) {!} 0 {!} before {!} simpl {!} LtacAtomCall {!} (./foo2.v,122,127)
+begin {!} 0 {!} before {!} simpl {!} LtacAtomCall {!} (./foo2.v,122,127)
 1 {!} simpl {!} 7
 ============================
 0 + 0 = 0
 end(tacst)
-begin(tacst) {!} 0 {!} after {!} simpl {!} LtacAtomCall {!} (./foo2.v,122,127)
+begin {!} 0 {!} after {!} simpl {!} LtacAtomCall {!} (./foo2.v,122,127)
 1 {!}  {!} 12
 ============================
 0 = 0
 end(tacst)
-begin(tacst) {!} 0 {!} before {!} reflexivity {!} LtacNameCall {!} (./foo2.v,133,144)
+begin {!} 0 {!} before {!} reflexivity {!} LtacNameCall {!} (./foo2.v,133,144)
 1 {!}  {!} 12
 ============================
 0 = 0
 end(tacst)
-begin(tacst) {!} 0 {!} after {!} reflexivity {!} LtacNameCall {!} (./foo2.v,133,144)
+begin {!} 0 {!} after {!} reflexivity {!} LtacNameCall {!} (./foo2.v,133,144)
 1 {!}  {!} 12
 ============================
 0 = 0
 end(tacst)
-begin(tacst) {!} 0 {!} before {!} <coretactics::reflexivity@0> {!} LtacMLCall {!} (,0,0)
+begin {!} 0 {!} before {!} <coretactics::reflexivity@0> {!} LtacMLCall {!} (,0,0)
 1 {!} <coretactics::reflexivity@0> {!} 12
 ============================
 0 = 0
 end(tacst)
-begin(tacst) {!} 0 {!} after {!} <coretactics::reflexivity@0> {!} LtacMLCall {!} (,0,0)
+begin {!} 0 {!} after {!} <coretactics::reflexivity@0> {!} LtacMLCall {!} (,0,0)
 ngs=0
 end(tacst)
 end(subpf)
 begin(subpf)
-begin(tacst) {!} 0 {!} before {!} simpl {!} LtacAtomCall {!} (./foo2.v,156,161)
+begin {!} 0 {!} before {!} simpl {!} LtacAtomCall {!} (./foo2.v,156,161)
 1 {!} simpl {!} 10
 n : nat
 IHn : n + 0 = n
 ============================
 S n + 0 = S n
 end(tacst)
-begin(tacst) {!} 0 {!} after {!} simpl {!} LtacAtomCall {!} (./foo2.v,156,161)
+begin {!} 0 {!} after {!} simpl {!} LtacAtomCall {!} (./foo2.v,156,161)
 1 {!}  {!} 15
 n : nat
 IHn : n + 0 = n
 ============================
 S (n + 0) = S n
 end(tacst)
-begin(tacst) {!} 0 {!} before {!} have (ssrhavefwdwbinders) {!} LtacNotationCall {!} (./foo2.v,167,204)
+begin {!} 0 {!} before {!} have (ssrhavefwdwbinders) {!} LtacNotationCall {!} (./foo2.v,167,204)
 1 {!} have foo: 0 = 0 by simpl; reflexivity {!} 15
 n : nat
 IHn : n + 0 = n
 ============================
 S (n + 0) = S n
 end(tacst)
-begin(tacst) {!} 1 {!} before {!} <ssreflect_plugin::ssrhave@0> $fwd {!} LtacMLCall {!} (,0,0)
+begin {!} 1 {!} before {!} <ssreflect_plugin::ssrhave@0> $fwd {!} LtacMLCall {!} (,0,0)
 1 {!} <ssreflect_plugin::ssrhave@0> $fwd {!} 15
 n : nat
 IHn : n + 0 = n
 ============================
 S (n + 0) = S n
 end(tacst)
-begin(tacst) {!} 2 {!} before {!} simpl {!} LtacAtomCall {!} (./foo2.v,186,191)
+begin {!} 3 {!} before {!} simpl {!} LtacAtomCall {!} (./foo2.v,186,191)
 1 {!} simpl {!} 17
 n : nat
 IHn : n + 0 = n
 ============================
 0 = 0
 end(tacst)
-begin(tacst) {!} 2 {!} after {!} simpl {!} LtacAtomCall {!} (./foo2.v,186,191)
+begin {!} 3 {!} after {!} simpl {!} LtacAtomCall {!} (./foo2.v,186,191)
 1 {!}  {!} 19
 n : nat
 IHn : n + 0 = n
 ============================
 0 = 0
 end(tacst)
-begin(tacst) {!} 1 {!} before {!} reflexivity {!} LtacNameCall {!} (./foo2.v,193,204)
+begin {!} 2 {!} before {!} reflexivity {!} LtacNameCall {!} (./foo2.v,193,204)
 1 {!}  {!} 19
 n : nat
 IHn : n + 0 = n
 ============================
 0 = 0
 end(tacst)
-begin(tacst) {!} 1 {!} after {!} reflexivity {!} LtacNameCall {!} (./foo2.v,193,204)
+begin {!} 2 {!} after {!} reflexivity {!} LtacNameCall {!} (./foo2.v,193,204)
 1 {!}  {!} 19
 n : nat
 IHn : n + 0 = n
 ============================
 0 = 0
 end(tacst)
-begin(tacst) {!} 1 {!} before {!} <coretactics::reflexivity@0> {!} LtacMLCall {!} (,0,0)
+begin {!} 2 {!} before {!} <coretactics::reflexivity@0> {!} LtacMLCall {!} (,0,0)
 1 {!} <coretactics::reflexivity@0> {!} 19
 n : nat
 IHn : n + 0 = n
 ============================
 0 = 0
 end(tacst)
-begin(tacst) {!} 1 {!} after {!} <coretactics::reflexivity@0> {!} LtacMLCall {!} (,0,0)
+begin {!} 2 {!} after {!} <coretactics::reflexivity@0> {!} LtacMLCall {!} (,0,0)
 ngs=0
 end(tacst)
-begin(tacst) {!} 1 {!} after {!} <ssreflect_plugin::ssrhave@0> $fwd {!} LtacMLCall {!} (,0,0)
+begin {!} 1 {!} after {!} <ssreflect_plugin::ssrhave@0> $fwd {!} LtacMLCall {!} (,0,0)
 1 {!}  {!} 21
 n : nat
 IHn : n + 0 = n
@@ -144,7 +144,7 @@ foo : 0 = 0
 ============================
 S (n + 0) = S n
 end(tacst)
-begin(tacst) {!} 0 {!} after {!} have (ssrhavefwdwbinders) {!} LtacNotationCall {!} (./foo2.v,167,204)
+begin {!} 0 {!} after {!} have (ssrhavefwdwbinders) {!} LtacNotationCall {!} (./foo2.v,167,204)
 1 {!}  {!} 21
 n : nat
 IHn : n + 0 = n
@@ -152,7 +152,7 @@ foo : 0 = 0
 ============================
 S (n + 0) = S n
 end(tacst)
-begin(tacst) {!} 0 {!} before {!} rewrite IHn {!} LtacAtomCall {!} (./foo2.v,401,415)
+begin {!} 0 {!} before {!} rewrite IHn {!} LtacAtomCall {!} (./foo2.v,401,415)
 1 {!} rewrite IHn {!} 21
 n : nat
 IHn : n + 0 = n
@@ -160,7 +160,7 @@ foo : 0 = 0
 ============================
 S (n + 0) = S n
 end(tacst)
-begin(tacst) {!} 0 {!} after {!} rewrite IHn {!} LtacAtomCall {!} (./foo2.v,401,415)
+begin {!} 0 {!} after {!} rewrite IHn {!} LtacAtomCall {!} (./foo2.v,401,415)
 1 {!}  {!} 22
 n : nat
 IHn : n + 0 = n
@@ -168,7 +168,7 @@ foo : 0 = 0
 ============================
 S n = S n
 end(tacst)
-begin(tacst) {!} 0 {!} before {!} reflexivity {!} LtacNameCall {!} (./foo2.v,421,432)
+begin {!} 0 {!} before {!} reflexivity {!} LtacNameCall {!} (./foo2.v,421,432)
 1 {!}  {!} 22
 n : nat
 IHn : n + 0 = n
@@ -176,7 +176,7 @@ foo : 0 = 0
 ============================
 S n = S n
 end(tacst)
-begin(tacst) {!} 0 {!} after {!} reflexivity {!} LtacNameCall {!} (./foo2.v,421,432)
+begin {!} 0 {!} after {!} reflexivity {!} LtacNameCall {!} (./foo2.v,421,432)
 1 {!}  {!} 22
 n : nat
 IHn : n + 0 = n
@@ -184,7 +184,7 @@ foo : 0 = 0
 ============================
 S n = S n
 end(tacst)
-begin(tacst) {!} 0 {!} before {!} <coretactics::reflexivity@0> {!} LtacMLCall {!} (,0,0)
+begin {!} 0 {!} before {!} <coretactics::reflexivity@0> {!} LtacMLCall {!} (,0,0)
 1 {!} <coretactics::reflexivity@0> {!} 22
 n : nat
 IHn : n + 0 = n
@@ -192,7 +192,7 @@ foo : 0 = 0
 ============================
 S n = S n
 end(tacst)
-begin(tacst) {!} 0 {!} after {!} <coretactics::reflexivity@0> {!} LtacMLCall {!} (,0,0)
+begin {!} 0 {!} after {!} <coretactics::reflexivity@0> {!} LtacMLCall {!} (,0,0)
 ngs=0
 end(tacst)
 end(subpf)
