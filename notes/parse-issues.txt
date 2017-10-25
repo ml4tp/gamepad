@@ -124,6 +124,36 @@ B(756,rewrite (ssrrwargs) (ssrclauses),(./BGsection2.v,24600,24627))
 A(761,rewrite (ssrrwargs) (ssrclauses),(./BGsection2.v,24600,24627))
 A(775,rewrite (ssrrwargs) (ssrclauses),(./BGsection2.v,24600,24627))
 
+
+B(1265,rewrite (ssrrwargs) (ssrclauses),(./BGsection3.v,18372,18384))
+	B(1265,<ssreflect_plugin::ssrrewrite@0> $args $clauses,(,0,0))
+	A(1265,<ssreflect_plugin::ssrrewrite@0> $args $clauses,(,0,0))
+B(1266,rewrite (ssrrwargs) (ssrclauses),(./BGsection3.v,18372,18384))
+	B(1266,<ssreflect_plugin::ssrrewrite@0> $args $clauses,(,0,0))
+	A(1266,<ssreflect_plugin::ssrrewrite@0> $args $clauses,(,0,0))
+B(1267,rewrite (ssrrwargs) (ssrclauses),(./BGsection3.v,18372,18384))
+	B(1267,<ssreflect_plugin::ssrrewrite@0> $args $clauses,(,0,0))
+	A(1267,<ssreflect_plugin::ssrrewrite@0> $args $clauses,(,0,0))
+B(1268,rewrite (ssrrwargs) (ssrclauses),(./BGsection3.v,18372,18384))
+	B(1268,<ssreflect_plugin::ssrrewrite@0> $args $clauses,(,0,0))
+	A(1270,<ssreflect_plugin::ssrrewrite@0> $args $clauses,(,0,0))
+A(1265,rewrite (ssrrwargs) (ssrclauses),(./BGsection3.v,18372,18384))
+A(1266,rewrite (ssrrwargs) (ssrclauses),(./BGsection3.v,18372,18384))
+A(1267,rewrite (ssrrwargs) (ssrclauses),(./BGsection3.v,18372,18384))
+A(1270,rewrite (ssrrwargs) (ssrclauses),(./BGsection3.v,18372,18384))
+
+
+B(426,rewrite (ssrrwargs) (ssrclauses),(./BGsection3.v,86946,86971))
+	B(426,<ssreflect_plugin::ssrrewrite@0> $args $clauses,(,0,0))
+	A(433,<ssreflect_plugin::ssrrewrite@0> $args $clauses,(,0,0))
+B(427,rewrite (ssrrwargs) (ssrclauses),(./BGsection3.v,86946,86971))
+	B(427,<ssreflect_plugin::ssrrewrite@0> $args $clauses,(,0,0))
+	A(439,<ssreflect_plugin::ssrrewrite@0> $args $clauses,(,0,0))
+A(433,rewrite (ssrrwargs) (ssrclauses),(./BGsection3.v,86946,86971))
+A(439,rewrite (ssrrwargs) (ssrclauses),(./BGsection3.v,86946,86971))
+
+
+
 # TODO(deh): Kludge 2
 B(2178,apply,(./BGsection1.v,41160,41165))
 B(2178,<ssreflect_plugin::ssrapply@1>,(,0,0))
