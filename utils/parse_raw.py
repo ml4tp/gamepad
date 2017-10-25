@@ -42,6 +42,9 @@ TOK_END_PF = "end(pf)"
 # -------------------------------------------------
 # Data structures
 
+GID_SOLVED = -1
+GID_FAILED = -2
+
 class TacStHdr(object):
     """
     Contains the header for a tactic state declaration.
@@ -77,8 +80,10 @@ class TacStDecl(object):
     def __str__(self):
         if self.hdr.mode == TOK_BEFORE:
             return "B({},{},{})".format(self.hdr.gid, self.hdr.tac, self.hdr.loc)
-        else:
+        elif self.hdr.mode == TOK_AFTER:
             return "A({},{},{})".format(self.hdr.gid, self.hdr.tac, self.hdr.loc)
+        else:
+            return "E({},{},{})".format(self.hdr.gid, self.hdr.tac, self.hdr.loc)
 
     def __hash__(self):
         msg = "{}{}".format(self.hdr.loc, self.hdr.gid)
@@ -125,42 +130,6 @@ class TacStParser(object):
         if f_log or self.f_log:
             # self.log.append(msg)
             print(msg)
-
-    def parse_hdr(self, depth):
-        # Internal
-        f_head = self.f_head
-        self._mylog("@parse_hdr:before<{}>".format(f_head.peek_line()))
-
-        # Parse header
-        hdr = f_head.consume_line()
-        toks = hdr.split(TOK_SEP)
-        while len(toks) < 4:
-            line = f_head.consume_line()
-            hdr += line
-            toks = hdr.split(TOK_SEP)
-
-        # Unpack initial header
-        mode = toks[0].strip()
-        tac = toks[1].strip()
-        kind = toks[2].strip()
-        ngs = int(toks[3].strip())
-        loc = toks[4].strip()
-
-        if ngs == 0:
-            # Does not have rest of header
-            ftac = ""
-            gid = -1
-        else:
-            # Parse and unpack rest of header
-            while len(toks) != 7:
-                line = f_head.consume_line()
-                hdr += line
-                toks = hdr.split(TOK_SEP)
-            ftac = toks[5].strip()
-            gid = int(toks[6].strip())
-
-        tac_st_hdr = TacStHdr(mode, tac, kind, ftac, gid, ngs, loc, depth)
-        return tac_st_hdr
 
     def parse_local_decl(self):
         # Internal
@@ -242,12 +211,7 @@ class TacStParser(object):
             f_head.consume_line()  # end(tacst)
 
             # Unpack
-            tac_st_hdr = TacStHdr(mode, tac, kind, "", -1, 0, loc, depth)
-            ctx = []
-            goal = "ML4TP_SOLVED"
-        elif f_head.peek_line().startswith(TOK_BEG_TAC_ST):
-            # Unpack
-            tac_st_hdr = TacStHdr(mode, tac, kind, "", -2, 0, loc, depth)
+            tac_st_hdr = TacStHdr(mode, tac, kind, "", GID_SOLVED, 0, loc, depth)
             ctx = []
             goal = "ML4TP_SOLVED"
         elif TOK_SEP in f_head.peek_line():
@@ -262,7 +226,7 @@ class TacStParser(object):
             ftac = toks[1].strip()
             gid = int(toks[2].strip())
 
-            # Unpack
+            # Unpack (note that we handle error and success here)
             tac_st_hdr = TacStHdr(mode, tac, kind, ftac, gid, ngs, loc, depth)
             ctx = self.parse_local_ctx()
             self.parse_pf_div()
@@ -402,3 +366,41 @@ class TacStParser(object):
             line = f_head.raw_peek_line()
         self.exhausted = True
         return self.lems
+
+"""
+def parse_hdr(self, depth):
+    # Internal
+    f_head = self.f_head
+    self._mylog("@parse_hdr:before<{}>".format(f_head.peek_line()))
+
+    # Parse header
+    hdr = f_head.consume_line()
+    toks = hdr.split(TOK_SEP)
+    while len(toks) < 4:
+        line = f_head.consume_line()
+        hdr += line
+        toks = hdr.split(TOK_SEP)
+
+    # Unpack initial header
+    mode = toks[0].strip()
+    tac = toks[1].strip()
+    kind = toks[2].strip()
+    ngs = int(toks[3].strip())
+    loc = toks[4].strip()
+
+    if ngs == 0:
+        # Does not have rest of header
+        ftac = ""
+        gid = GID_SOLVED
+    else:
+        # Parse and unpack rest of header
+        while len(toks) != 7:
+            line = f_head.consume_line()
+            hdr += line
+            toks = hdr.split(TOK_SEP)
+        ftac = toks[5].strip()
+        gid = int(toks[6].strip())
+
+    tac_st_hdr = TacStHdr(mode, tac, kind, ftac, gid, ngs, loc, depth)
+    return tac_st_hdr
+"""

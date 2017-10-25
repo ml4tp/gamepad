@@ -59,17 +59,17 @@ def basic_have_stats(lemmas):
 def visualize_lemma(lemma):
     print("------------------------------------------------")
     print("DOING", lemma)
-    tr_parser = TacTreeParser(lemma, True)
+    tr_parser = TacTreeParser(lemma, f_log=True)
     tacs = tr_parser.parse_tactree()
     for tac in tacs:
         print(tac)
-    tr_builder = TacTreeBuilder(tacs, False)
-    tr_builder.build_tactree()
-    tr_builder.show()
+    # tr_builder = TacTreeBuilder(tacs, False)
+    # tr_builder.build_tactree()
+    # tr_builder.show()
 
 
 def visualize(file):
-    ts_parser = TacStParser(file, f_log=True)
+    ts_parser = TacStParser(file, f_log=False)
     while not ts_parser.exhausted:
         lemma = ts_parser.parse_lemma()
         visualize_lemma(lemma)
