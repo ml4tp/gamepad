@@ -651,7 +651,12 @@ class TacTreeParser(object):
                 acc += [self.parse_kludge(7)]
             elif decl.hdr.loc == "(./BGsection1.v,60420,60424)":
                 acc += [self.parse_kludge(20)]
-
+            elif decl.hdr.loc == "(./BGsection2.v,13550,13556)":
+                acc += [self.parse_kludge(3)]
+            elif decl.hdr.loc == "(./BGsection2.v,18790,18795)":
+                acc += [self.parse_kludge(4)]
+            elif decl.hdr.loc == "(./BGsection2.v,24600,24627)":
+                acc += [self.parse_kludge(8)]
 
             # Non-terminal, fixed-width, stack cases
             # Non-terminal, fixed-width, sequential cases
@@ -702,8 +707,11 @@ class TacTreeParser(object):
                  decl.hdr.tac.startswith("suffices"):
                 acc += [self.parse_vary_stk_nested("Ssrsuffices", nested=False)]
             elif decl.hdr.mode == TOK_BEFORE and\
-                 decl.hdr.tac.startswith("without loss"):
+                 decl.hdr.tac.startswith("wlog (ssrhpats_nobs) (ssrwlogfwd) (ssrhint)"):
                 acc += [self.parse_vary_stk_nested("Ssrwlog", nested=False)]
+            elif decl.hdr.mode == TOK_BEFORE and\
+                 decl.hdr.tac.startswith("without loss"):
+                acc += [self.parse_vary_stk_nested("Ssrwithoutloss", nested=False)]
 
             # Variable-width, nested cases (paired)
             elif decl.hdr.mode == TOK_BEFORE and \
@@ -711,6 +719,9 @@ class TacTreeParser(object):
                 acc += [self.parse_vary_stk_nested("Ssrapply")]
             elif decl.hdr.mode.startswith(TOK_AFTER) and \
                  decl.hdr.tac.startswith("<ssreflect_plugin::ssrapply@0>"):
+                return acc
+            elif decl.hdr.mode.startswith(TOK_AFTER) and \
+                 decl.hdr.tac.startswith("<ssreflect_plugin::ssrapply@1>"):
                 return acc
 
             elif decl.hdr.mode == TOK_BEFORE and \

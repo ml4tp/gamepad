@@ -115,6 +115,15 @@ A(114,rewrite (ssrrwargs) (ssrclauses),(./BGsection1.v,62551,62580))
 A(124,rewrite (ssrrwargs) (ssrclauses),(./BGsection1.v,62551,62580))
 
 
+B(753,rewrite (ssrrwargs) (ssrclauses),(./BGsection2.v,24600,24627))
+	B(753,<ssreflect_plugin::ssrrewrite@0> $args $clauses,(,0,0))
+	A(761,<ssreflect_plugin::ssrrewrite@0> $args $clauses,(,0,0))
+B(756,rewrite (ssrrwargs) (ssrclauses),(./BGsection2.v,24600,24627))
+	B(756,<ssreflect_plugin::ssrrewrite@0> $args $clauses,(,0,0))
+	A(775,<ssreflect_plugin::ssrrewrite@0> $args $clauses,(,0,0))
+A(761,rewrite (ssrrwargs) (ssrclauses),(./BGsection2.v,24600,24627))
+A(775,rewrite (ssrrwargs) (ssrclauses),(./BGsection2.v,24600,24627))
+
 # TODO(deh): Kludge 2
 B(2178,apply,(./BGsection1.v,41160,41165))
 B(2178,<ssreflect_plugin::ssrapply@1>,(,0,0))
@@ -129,3 +138,16 @@ B(44,apply (ssrapplyarg),(./BGsection1.v,60666,60679))
 	B(44,<ssreflect_plugin::ssrapply@0> $arg,(,0,0))
 	A(-1,<ssreflect_plugin::ssrapply@0> $arg,(,0,0))
 A(-1,apply (ssrapplyarg),(./BGsection1.v,60666,60679))
+
+
+B(1333,apply,(./BGsection2.v,18790,18795))
+B(1333,<ssreflect_plugin::ssrapply@1>,(,0,0))
+A(1346,<ssreflect_plugin::ssrapply@1>,(,0,0))
+A(1346,apply,(./BGsection2.v,18790,18795))
+
+
+# TODO(deh): Kludge 3
+
+B(512,case d,(./BGsection2.v,13550,13556))
+A(513,case d,(./BGsection2.v,13550,13556))
+A(514,case d,(./BGsection2.v,13550,13556))
