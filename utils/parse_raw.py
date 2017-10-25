@@ -230,19 +230,45 @@ class TacStParser(object):
             line = f_head.advance_line()
         return goal
 
-    def parse_decl(self, depth):
+    def parse_decl(self, depth, mode, tac, kind, loc):
         # Internal
         f_head = self.f_head
         self._mylog("@parse_decl:before<{}>".format(f_head.peek_line()))
 
         # Parse declaration
-        tac_st_hdr = self.parse_hdr(depth)
-        ctx = self.parse_local_ctx()
-        if f_head.peek_line().startswith(TOK_END_TAC_ST):
-            goal = "DEH_SOLVED"
-        else:
+        if f_head.peek_line().startswith("ngs=0"):
+            # Parse rest of header
+            f_head.consume_line()  # ngs=0
+            f_head.consume_line()  # end(tacst)
+
+            # Unpack
+            tac_st_hdr = TacStHdr(mode, tac, kind, "", -1, 0, loc, depth)
+            ctx = []
+            goal = "ML4TP_SOLVED"
+        elif f_head.peek_line().startswith(TOK_BEG_TAC_ST):
+            # Unpack
+            tac_st_hdr = TacStHdr(mode, tac, kind, "", -2, 0, loc, depth)
+            ctx = []
+            goal = "ML4TP_SOLVED"
+        elif TOK_SEP in f_head.peek_line():
+            # Parse rest of header
+            hdr = f_head.consume_line()
+            toks = hdr.split(TOK_SEP)
+            while len(toks) < 3:
+                line = f_head.consume_line()
+                hdr += line
+                toks = hdr.split(TOK_SEP)
+            ngs = int(toks[0].strip())
+            ftac = toks[1].strip()
+            gid = int(toks[2].strip())
+
+            # Unpack
+            tac_st_hdr = TacStHdr(mode, tac, kind, ftac, gid, ngs, loc, depth)
+            ctx = self.parse_local_ctx()
             self.parse_pf_div()
             goal = self.parse_goal()
+        else:
+            raise NameError("Parsing error @line{}: {}".format(f_head.line, f_head.peek_line()))
         return TacStDecl(tac_st_hdr, ctx, goal)
 
     def parse_begin_pf(self):
@@ -288,10 +314,22 @@ class TacStParser(object):
         f_head = self.f_head
         self._mylog("@parse_begtacst:before<{}>".format(f_head.peek_line()))
 
-        # Parse
-        line = f_head.consume_line()
-        toks = line.split(TOK_SEP)
-        return int(toks[1])
+        # Parse header
+        hdr = f_head.consume_line()
+        toks = hdr.split(TOK_SEP)
+        while len(toks) < 6:
+            line = f_head.consume_line()
+            hdr += line
+            toks = hdr.split(TOK_SEP)
+
+        # Unpack header
+        depth = int(toks[1].strip())
+        mode = toks[2].strip()
+        tac = toks[3].strip()
+        kind = toks[4].strip()
+        loc = toks[5].strip()
+
+        return (depth, mode, tac, kind, loc)
 
     def parse_endtacst(self):
         # Internal
@@ -336,8 +374,8 @@ class TacStParser(object):
                 self.parse_endsubpf()
                 # TODO(deh): keep track of this?
             elif line.startswith(TOK_BEG_TAC_ST):
-                depth = self.parse_begtacst()
-                decl = self.parse_decl(depth)
+                depth, mode, tac, kind, loc = self.parse_begtacst()
+                decl = self.parse_decl(depth, mode, tac, kind, loc)
                 self.decls += [decl]
             elif line.startswith(TOK_END_TAC_ST):
                 self.parse_endtacst()

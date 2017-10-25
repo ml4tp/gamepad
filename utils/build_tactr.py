@@ -92,7 +92,7 @@ class TacTreeBuilder(object):
 
         while it_tacs.has_next():
             curr_tac = it_tacs.peek()
-            if isinstance(curr_tac, SsrhaveTac):
+            if isinstance(curr_tac, FixedNestedTac):
                 self.build_ssrhave()
             elif curr_tac.has_subtac():
                 self.build_subtac()

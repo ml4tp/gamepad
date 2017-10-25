@@ -69,7 +69,7 @@ def visualize_lemma(lemma):
 
 
 def visualize(file):
-    ts_parser = TacStParser(file, f_log=False)
+    ts_parser = TacStParser(file, f_log=True)
     while not ts_parser.exhausted:
         lemma = ts_parser.parse_lemma()
         visualize_lemma(lemma)

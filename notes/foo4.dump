@@ -1,61 +1,78 @@
 begin(pf) {!} Classic {!} foo4
-DEH_HDR before split LtacNameCall (./foo4.v,62,67)
-begin(tacst) {!} 0
-before {!} split {!} LtacNameCall {!} (./foo4.v,62,67) {!} 1 {!}  {!} 1
+begin(tacst) {!} 0 {!} before {!} split {!} LtacNameCall {!} (./foo4.v,62,67)
+1 {!}  {!} 1
 ============================
 forall A B : Prop, A -> B -> A \/ B
 end(tacst)
-DEH_HDR after split LtacNameCall (./foo4.v,62,67)
-begin(tacst) {!} 0
-after {!} split {!} LtacNameCall {!} (./foo4.v,62,67) {!} 1 {!}  {!} 1
+begin(tacst) {!} 0 {!} after {!} split {!} LtacNameCall {!} (./foo4.v,62,67)
+1 {!}  {!} 1
 ============================
 forall A B : Prop, A -> B -> A \/ B
 end(tacst)
-DEH_HDR before <coretactics::split@0> LtacMLCall (,0,0)
-begin(tacst) {!} 0
-before {!} <coretactics::split@0> {!} LtacMLCall {!} (,0,0) {!} 1 {!} <coretactics::split@0> {!} 1
+begin(tacst) {!} 0 {!} before {!} <coretactics::split@0> {!} LtacMLCall {!} (,0,0)
+1 {!} <coretactics::split@0> {!} 1
 ============================
 forall A B : Prop, A -> B -> A \/ B
 end(tacst)
-DEH_HDR before intros ** LtacAtomCall (./foo4.v,69,75)
-begin(tacst) {!} 1
-before {!} intros ** {!} LtacAtomCall {!} (./foo4.v,69,75) {!} 1 {!} intros ** {!} 1
+begin(tacst) {!} 0 {!} after {!} <coretactics::split@0> {!} LtacMLCall {!} (,0,0)
+begin(tacst) {!} 0 {!} before {!} intros ** {!} LtacAtomCall {!} (./foo4.v,69,75)
+1 {!} intros ** {!} 1
 ============================
 forall A B : Prop, A -> B -> A \/ B
 end(tacst)
-DEH_HDR after intros ** LtacAtomCall (./foo4.v,69,75)
-begin(tacst) {!} 1
-after {!} intros ** {!} LtacAtomCall {!} (./foo4.v,69,75) {!} 1 {!}  {!} 5
+begin(tacst) {!} 0 {!} after {!} intros ** {!} LtacAtomCall {!} (./foo4.v,69,75)
+1 {!}  {!} 5
 A, B : Prop
 H : A
 H0 : B
 ============================
 A \/ B
 end(tacst)
-DEH_HDR before auto (int_or_var_opt) (auto_using) (hintbases) LtacNotationCall (./foo4.v,77,81)
-begin(tacst) {!} 1
-before {!} auto (int_or_var_opt) (auto_using) (hintbases) {!} LtacNotationCall {!} (./foo4.v,77,81) {!} 1 {!} auto {!} 5
+begin(tacst) {!} 0 {!} before {!} assumption {!} LtacNameCall {!} (./foo4.v,81,91)
+1 {!}  {!} 5
 A, B : Prop
 H : A
 H0 : B
 ============================
 A \/ B
 end(tacst)
-DEH_HDR before <g_auto::auto@0> $n $lems $db LtacMLCall (,0,0)
-begin(tacst) {!} 2
-before {!} <g_auto::auto@0> $n $lems $db {!} LtacMLCall {!} (,0,0) {!} 1 {!} <g_auto::auto@0> $n $lems $db {!} 5
+begin(tacst) {!} 0 {!} after {!} assumption {!} LtacNameCall {!} (./foo4.v,81,91)
+1 {!}  {!} 5
 A, B : Prop
 H : A
 H0 : B
 ============================
 A \/ B
 end(tacst)
-DEH_HDR after <g_auto::auto@0> $n $lems $db LtacMLCall (,0,0)
-begin(tacst) {!} 2
-after {!} <g_auto::auto@0> $n $lems $db {!} LtacMLCall {!} (,0,0) {!} 0
+begin(tacst) {!} 0 {!} before {!} <coretactics::assumption@0> {!} LtacMLCall {!} (,0,0)
+1 {!} <coretactics::assumption@0> {!} 5
+A, B : Prop
+H : A
+H0 : B
+============================
+A \/ B
 end(tacst)
-DEH_HDR after auto (int_or_var_opt) (auto_using) (hintbases) LtacNotationCall (./foo4.v,77,81)
-begin(tacst) {!} 1
-after {!} auto (int_or_var_opt) (auto_using) (hintbases) {!} LtacNotationCall {!} (./foo4.v,77,81) {!} 0
+begin(tacst) {!} 0 {!} after {!} <coretactics::assumption@0> {!} LtacMLCall {!} (,0,0)
+begin(tacst) {!} 0 {!} before {!} auto (int_or_var_opt) (auto_using) (hintbases) {!} LtacNotationCall {!} (./foo4.v,93,97)
+1 {!} auto {!} 5
+A, B : Prop
+H : A
+H0 : B
+============================
+A \/ B
+end(tacst)
+begin(tacst) {!} 1 {!} before {!} <g_auto::auto@0> $n $lems $db {!} LtacMLCall {!} (,0,0)
+1 {!} <g_auto::auto@0> $n $lems $db {!} 5
+A, B : Prop
+H : A
+H0 : B
+============================
+A \/ B
+end(tacst)
+begin(tacst) {!} 1 {!} after {!} <g_auto::auto@0> $n $lems $db {!} LtacMLCall {!} (,0,0)
+ngs=0
+end(tacst)
+begin(tacst) {!} 0 {!} after {!} auto (int_or_var_opt) (auto_using) (hintbases) {!} LtacNotationCall {!} (./foo4.v,93,97)
+ngs=0
 end(tacst)
 end(pf)

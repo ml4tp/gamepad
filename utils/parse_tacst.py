@@ -55,6 +55,9 @@ class FixedTac(Tac):
         self.alias = alias
         self.core = core
 
+    def my_name():
+        return self.name
+
     def has_subtac(self):
         return False
 
@@ -83,6 +86,9 @@ class VaryTac(Tac):
         self.alias = alias
         self.bf_core = bf_core
         self.af_cores = af_cores
+
+    def my_name():
+        return self.name
 
     def has_subtac(self):
         return False
@@ -113,6 +119,9 @@ class FixedNestedTac(Tac):
         self.alias = alias
         self.core = core
         self.body = body
+
+    def my_name():
+        return self.name
 
     def has_subtac(self):
         return True
@@ -151,6 +160,9 @@ class VaryNestedTac(Tac):
         self.af_aliases = af_aliases
         self.body = body
 
+    def my_name():
+        return self.name
+
     def has_subtac(self):
         return True
 
@@ -182,6 +194,9 @@ class NestTermTac(Tac):
         self.core = core
         self.extra = extra
 
+    def my_name():
+        return self.alias_name
+
     def has_subtac(self):
         return False
 
@@ -207,6 +222,9 @@ class SsrtclseqTac(Tac):
         self.core = core
         self.body = body
 
+    def my_name():
+        return "Ssrtclseq"
+
     def has_subtac(self):
         return True
 
@@ -229,6 +247,9 @@ class SsrtcldoTac(Tac):
 
         super().__init__(uid)
         self.core = core
+
+    def my_name():
+        return "Ssrtcldo"
 
     def has_subtac(self):
         return False
@@ -284,6 +305,9 @@ class GenericTac(Tac):
         super().__init__(uid, terminal)
         self.before = before
         self.afters = afters
+
+    def my_name():
+        return self.name
 
     def has_subtac(self):
         return False
