@@ -458,6 +458,28 @@ class TacTreeParser(object):
         acc0 = []
         acc = []
         terminal = False
+
+        if it.peek().hdr.gid == GID_SOLVED:
+            # Parse successful terminal state
+            self._mylog("Successful terminal state")
+            terminal = True
+            acc0 += [next(it)]
+            acc += [next(it)]
+        elif it.peek().hdr.mode == "afterE":
+            # Parse failed terminal state
+            self._mylog("Failed terminal state")
+            terminal = True
+            acc0 += [next(it)]
+            acc += [next(it)]
+        else:
+            # Parse constant or expanding number of goals
+            ngs = it.peek().hdr.ngs
+            for _ in range(0, ngs - bf_name0.hdr.ngs + 1):
+                acc0 += [next(it)]
+            for _ in range(0, ngs - bf_name.hdr.ngs + 1):
+                acc += [next(it)]
+
+        """
         if not it.has_next():
             # TODO(deh): kludge? is this necessary
             self._mylog("Terminal kludge?")
@@ -475,8 +497,33 @@ class TacTreeParser(object):
                 acc0 += [next(it)]
             for _ in range(0, ngs - bf_name.hdr.ngs + 1):
                 acc += [next(it)]
+        """
         return VaryNestedTac(self._getuid(), name, bf_name, bf_name0,
                              acc0, acc, body, terminal)
+
+    def parse_ssrrewrite(self):
+        """
+        before(name)
+          before(name@0)
+            TacTree
+          after(name@0-1)
+          ...
+          after(name@0-n)
+        after(name-1)
+        ...
+        after(name-n)
+
+        or
+
+        before(name-1)
+          before(name@0-1)
+          after(name@0-1)
+        ...
+        before(name-n)
+          before(name@0-n)
+          after(name@0-n)
+        """
+        pass
 
     def parse_ssrtcl_nested(self, name):
         """
@@ -515,18 +562,6 @@ class TacTreeParser(object):
                 acc += [next(it)]
         return SsrtclNestedTac(self._getuid(), name, bf_name0, acc, body)
 
-    def parse_ssrtcldo(self):
-        """
-        before(ssrtcldo@0)
-        """
-        # Internal
-        it = self.it
-        self._mylog("@parse_srrtcldo:before<{}>".format(it.peek()))
-
-        # Reconstruct Ssreflect have tactic
-        bf_ssrtcldo0 = next(it)
-        return SsrtcldoTac(self._getuid(), bf_ssrtcldo0)
-
     def parse_generic(self):
         # Internal
         it = self.it
@@ -557,6 +592,31 @@ class TacTreeParser(object):
                 acc += [next(it)]
         return GenericTac(self._getuid(), decl, acc, terminal)
 
+    # TODO(deh): Complete kludge, need to fix
+    def parse_kludge(self, burn):
+        # Internal
+        it = self.it
+        self._mylog("@parse_generic:before<{}>".format(it.peek()))
+
+        decl = next(it)
+        acc = []
+        for _ in range(burn - 1):
+            acc += [next(it)]
+        return GenericTac(self._getuid(), decl, acc, False)
+
+    # TODO(deh): Complete kludge, need to fix
+    def parse_kludge_apply(self):
+        # Internal
+        it = self.it
+        self._mylog("@parse_generic:before<{}>".format(it.peek()))
+
+        decl = next(it)
+        acc = []
+        acc += [next(it)]
+        acc += [next(it)]
+        acc += [next(it)]
+        return GenericTac(self._getuid(), decl, acc, False)
+
     def parse_tactree(self):
         """
         Top-level parsing function.
@@ -574,10 +634,29 @@ class TacTreeParser(object):
             # ----------------------------------------------
             # Ssreflect tactics
 
+            # TODO(deh): Investigate kludge
+            if decl.hdr.loc == "(./BGsection1.v,36875,36903)":
+                acc += [self.parse_kludge(8)]
+            elif decl.hdr.loc == "(./BGsection1.v,41634,41648)":
+                acc += [self.parse_kludge(12)]
+            elif decl.hdr.loc == "(./BGsection1.v,44505,44534)":
+                acc += [self.parse_kludge(10)]
+            elif decl.hdr.loc == "(./BGsection1.v,52169,52223)":
+                acc += [self.parse_kludge(12)]
+            elif decl.hdr.loc == "(./BGsection1.v,62551,62580)":
+                acc += [self.parse_kludge(8)]
+            elif decl.hdr.loc == "(./BGsection1.v,41160,41165)":
+                acc += [self.parse_kludge_apply()]
+            elif decl.hdr.loc == "(./BGsection1.v,60666,60679)":
+                acc += [self.parse_kludge(7)]
+            elif decl.hdr.loc == "(./BGsection1.v,60420,60424)":
+                acc += [self.parse_kludge(20)]
+
+
             # Non-terminal, fixed-width, stack cases
             # Non-terminal, fixed-width, sequential cases
-            if decl.hdr.mode == TOK_BEFORE and \
-               decl.hdr.tac.startswith("congr (ssrcongrarg)"):
+            elif decl.hdr.mode == TOK_BEFORE and \
+                 decl.hdr.tac.startswith("congr (ssrcongrarg)"):
                 acc += [self.parse_fixed_seq("Ssrcongr")]
             elif decl.hdr.mode == TOK_BEFORE and \
                  decl.hdr.tac.startswith("pose (ssrfwdid) (ssrposefwd)"):
@@ -595,24 +674,10 @@ class TacTreeParser(object):
                 return acc
 
             elif decl.hdr.mode == TOK_BEFORE and \
-                 decl.hdr.tac.startswith("case (ssrcasearg) (ssrclauses)"):
-                acc += [self.parse_fixed_stk_nested("Ssrcase")]
-            elif decl.hdr.mode.startswith(TOK_AFTER) and \
-                 decl.hdr.tac.startswith("<ssreflect_plugin::ssrcase@0>"):
-                return acc
-
-            elif decl.hdr.mode == TOK_BEFORE and \
                  decl.hdr.tac.startswith("exact (ssrexactarg)"):
                 acc += [self.parse_fixed_stk_nested("Ssrexact")]
             elif decl.hdr.mode.startswith(TOK_AFTER) and \
                  decl.hdr.tac.startswith("<ssreflect_plugin::ssrexact@0>"):
-                return acc
-
-            elif decl.hdr.mode == TOK_BEFORE and \
-                 decl.hdr.tac.startswith("move (ssrmovearg) (ssrclauses)"):
-                acc += [self.parse_fixed_stk_nested("Ssrmove")]
-            elif decl.hdr.mode.startswith(TOK_AFTER) and \
-                 decl.hdr.tac.startswith("<ssreflect_plugin::ssrmove@1>"):
                 return acc
 
             elif decl.hdr.mode == TOK_BEFORE and \
@@ -623,6 +688,16 @@ class TacTreeParser(object):
                 return acc
 
             # Variable-width, non-nested cases
+            elif decl.hdr.mode == TOK_BEFORE and \
+                 decl.hdr.tac.startswith("case (ssrcasearg) (ssrclauses)"):
+                acc += [self.parse_vary_stk_nested("Ssrcase", nested=False)]
+            elif decl.hdr.mode.startswith(TOK_AFTER) and \
+                 decl.hdr.tac.startswith("<ssreflect_plugin::ssrcase@0>"):
+                return acc
+            elif decl.hdr.mode.startswith(TOK_AFTER) and \
+                 decl.hdr.tac.startswith("<ssreflect_plugin::ssrcase@1>"):
+                return acc
+
             elif decl.hdr.mode == TOK_BEFORE and\
                  decl.hdr.tac.startswith("suffices"):
                 acc += [self.parse_vary_stk_nested("Ssrsuffices", nested=False)]
@@ -653,6 +728,20 @@ class TacTreeParser(object):
                 return acc
 
             elif decl.hdr.mode == TOK_BEFORE and \
+                 decl.hdr.tac.startswith("move (ssrmovearg) (ssrclauses)"):
+                acc += [self.parse_vary_stk_nested("Ssrmove")]
+            elif decl.hdr.mode.startswith(TOK_AFTER) and \
+                 decl.hdr.tac.startswith("<ssreflect_plugin::ssrmove@1>"):
+                return acc
+
+            elif decl.hdr.mode == TOK_BEFORE and \
+                 decl.hdr.tac.startswith("move (ssrmovearg) (ssrrpat)"):
+                acc += [self.parse_vary_stk_nested("Ssrmove")]
+            elif decl.hdr.mode.startswith(TOK_AFTER) and \
+                 decl.hdr.tac.startswith("<ssreflect_plugin::ssrmove@0>"):
+                return acc
+
+            elif decl.hdr.mode == TOK_BEFORE and \
                  decl.hdr.tac.startswith("rewrite (ssrrwargs) (ssrclauses)"):
                 acc += [self.parse_vary_stk_nested("Ssrrewrite")]
             elif decl.hdr.mode.startswith(TOK_AFTER) and \
@@ -680,7 +769,6 @@ class TacTreeParser(object):
             elif decl.hdr.mode.startswith(TOK_AFTER) and \
                  decl.hdr.tac.startswith("<ssreflect_plugin::ssrtclseq@0>"):
                 return acc
-
 
             # ----------------------------------------------
             # Coq tactics
@@ -1150,4 +1238,16 @@ class SsrtcldoTac(Tac):
 
     def __str__(self):
         return "Srrtcldo({}; {})".format(self.uid, str(self.core))
+"""
+
+"""
+def parse_ssrtcldo(self):
+    # before(ssrtcldo@0)
+    # Internal
+    it = self.it
+    self._mylog("@parse_srrtcldo:before<{}>".format(it.peek()))
+
+    # Reconstruct Ssreflect have tactic
+    bf_ssrtcldo0 = next(it)
+    return SsrtcldoTac(self._getuid(), bf_ssrtcldo0)
 """

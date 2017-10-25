@@ -1,0 +1,131 @@
+B(173,set (ssrfwdid) (ssrsetfwd) (ssrclauses),(./BGsection1.v,13555,13571))
+B(173,<ssreflect_plugin::ssrset@0> $id $fwd $clauses,(,0,0))
+A(177,<ssreflect_plugin::ssrset@0> $id $fwd $clauses,(,0,0))
+A(177,set (ssrfwdid) (ssrsetfwd) (ssrclauses),(./BGsection1.v,13555,13571))
+
+
+
+B(2378,move (ssrmovearg) (ssrrpat),(./BGsection1.v,38069,38079))
+B(2378,<ssreflect_plugin::ssrmove@0> $arg $pat,(,0,0))
+A(2558,<ssreflect_plugin::ssrmove@0> $arg $pat,(,0,0))
+A(2559,<ssreflect_plugin::ssrmove@0> $arg $pat,(,0,0))
+A(2560,<ssreflect_plugin::ssrmove@0> $arg $pat,(,0,0))
+A(2561,<ssreflect_plugin::ssrmove@0> $arg $pat,(,0,0))
+A(2558,move (ssrmovearg) (ssrrpat),(./BGsection1.v,38069,38079))
+A(2559,move (ssrmovearg) (ssrrpat),(./BGsection1.v,38069,38079))
+A(2560,move (ssrmovearg) (ssrrpat),(./BGsection1.v,38069,38079))
+A(2561,move (ssrmovearg) (ssrrpat),(./BGsection1.v,38069,38079))
+
+
+
+B(1050,case (ssrcasearg) (ssrclauses),(./BGsection1.v,44871,44931))
+B(1050,<ssreflect_plugin::ssrcase@0> $arg $clauses,(,0,0))
+A(1205,<ssreflect_plugin::ssrcase@0> $arg $clauses,(,0,0))
+A(1206,<ssreflect_plugin::ssrcase@0> $arg $clauses,(,0,0))
+A(1205,case (ssrcasearg) (ssrclauses),(./BGsection1.v,44871,44931))
+A(1206,case (ssrcasearg) (ssrclauses),(./BGsection1.v,44871,44931))
+
+
+
+B(1134,case,(./BGsection1.v,60420,60424))
+B(1134,<ssreflect_plugin::ssrcase@1>,(,0,0))
+E(1134,<ssreflect_plugin::ssrcase@1>,(,0,0))
+E(1134,case,(./BGsection1.v,60420,60424))
+
+B(1135,case,(./BGsection1.v,60420,60424))
+B(1135,<ssreflect_plugin::ssrcase@1>,(,0,0))
+A(1145,<ssreflect_plugin::ssrcase@1>,(,0,0))
+A(1146,<ssreflect_plugin::ssrcase@1>,(,0,0))
+A(1145,case,(./BGsection1.v,60420,60424))
+A(1146,case,(./BGsection1.v,60420,60424))
+
+B(1145,case,(./BGsection1.v,60420,60424))
+B(1145,<ssreflect_plugin::ssrcase@1>,(,0,0))
+E(1145,<ssreflect_plugin::ssrcase@1>,(,0,0))
+E(1145,case,(./BGsection1.v,60420,60424))
+
+B(1146,case,(./BGsection1.v,60420,60424))
+B(1146,<ssreflect_plugin::ssrcase@1>,(,0,0))
+A(1156,<ssreflect_plugin::ssrcase@1>,(,0,0))
+A(1157,<ssreflect_plugin::ssrcase@1>,(,0,0))
+A(1156,case,(./BGsection1.v,60420,60424))
+A(1157,case,(./BGsection1.v,60420,60424))
+
+
+
+
+# TODO(deh): Kludge 1
+B(984,rewrite (ssrrwargs) (ssrclauses),(./BGsection1.v,36875,36903))
+	B(984,<ssreflect_plugin::ssrrewrite@0> $args $clauses,(,0,0))
+	A(1041,<ssreflect_plugin::ssrrewrite@0> $args $clauses,(,0,0))
+B(985,rewrite (ssrrwargs) (ssrclauses),(./BGsection1.v,36875,36903))
+	B(985,<ssreflect_plugin::ssrrewrite@0> $args $clauses,(,0,0))
+	A(985,<ssreflect_plugin::ssrrewrite@0> $args $clauses,(,0,0))
+A(1041,rewrite (ssrrwargs) (ssrclauses),(./BGsection1.v,36875,36903))
+A(985,rewrite (ssrrwargs) (ssrclauses),(./BGsection1.v,36875,36903))
+
+
+B(2635,rewrite (ssrrwargs) (ssrclauses),(./BGsection1.v,41634,41648))
+	B(2635,<ssreflect_plugin::ssrrewrite@0> $args $clauses,(,0,0))
+	A(2639,<ssreflect_plugin::ssrrewrite@0> $args $clauses,(,0,0))
+B(2636,rewrite (ssrrwargs) (ssrclauses),(./BGsection1.v,41634,41648))
+	B(2636,<ssreflect_plugin::ssrrewrite@0> $args $clauses,(,0,0))
+	A(2641,<ssreflect_plugin::ssrrewrite@0> $args $clauses,(,0,0))
+B(2637,rewrite (ssrrwargs) (ssrclauses),(./BGsection1.v,41634,41648))
+	B(2637,<ssreflect_plugin::ssrrewrite@0> $args $clauses,(,0,0))
+	A(2643,<ssreflect_plugin::ssrrewrite@0> $args $clauses,(,0,0))
+A(2639,rewrite (ssrrwargs) (ssrclauses),(./BGsection1.v,41634,41648))
+A(2641,rewrite (ssrrwargs) (ssrclauses),(./BGsection1.v,41634,41648))
+A(2643,rewrite (ssrrwargs) (ssrclauses),(./BGsection1.v,41634,41648))
+
+
+B(783,rewrite (ssrrwargs) (ssrclauses),(./BGsection1.v,44505,44534))
+B(783,<ssreflect_plugin::ssrrewrite@0> $args $clauses,(,0,0))
+A(801,<ssreflect_plugin::ssrrewrite@0> $args $clauses,(,0,0))
+A(802,<ssreflect_plugin::ssrrewrite@0> $args $clauses,(,0,0))
+B(784,rewrite (ssrrwargs) (ssrclauses),(./BGsection1.v,44505,44534))
+B(784,<ssreflect_plugin::ssrrewrite@0> $args $clauses,(,0,0))
+A(818,<ssreflect_plugin::ssrrewrite@0> $args $clauses,(,0,0))
+A(801,rewrite (ssrrwargs) (ssrclauses),(./BGsection1.v,44505,44534))
+A(802,rewrite (ssrrwargs) (ssrclauses),(./BGsection1.v,44505,44534))
+A(818,rewrite (ssrrwargs) (ssrclauses),(./BGsection1.v,44505,44534))
+
+
+B(857,rewrite (ssrrwargs) (ssrclauses),(./BGsection1.v,52169,52223))
+B(857,<ssreflect_plugin::ssrrewrite@0> $args $clauses,(,0,0))
+A(893,<ssreflect_plugin::ssrrewrite@0> $args $clauses,(,0,0))
+A(938,<ssreflect_plugin::ssrrewrite@0> $args $clauses,(,0,0))
+B(858,rewrite (ssrrwargs) (ssrclauses),(./BGsection1.v,52169,52223))
+B(858,<ssreflect_plugin::ssrrewrite@0> $args $clauses,(,0,0))
+A(950,<ssreflect_plugin::ssrrewrite@0> $args $clauses,(,0,0))
+A(951,<ssreflect_plugin::ssrrewrite@0> $args $clauses,(,0,0))
+A(893,rewrite (ssrrwargs) (ssrclauses),(./BGsection1.v,52169,52223))
+A(938,rewrite (ssrrwargs) (ssrclauses),(./BGsection1.v,52169,52223))
+A(950,rewrite (ssrrwargs) (ssrclauses),(./BGsection1.v,52169,52223))
+A(951,rewrite (ssrrwargs) (ssrclauses),(./BGsection1.v,52169,52223))
+
+
+B(108,rewrite (ssrrwargs) (ssrclauses),(./BGsection1.v,62551,62580))
+	B(108,<ssreflect_plugin::ssrrewrite@0> $args $clauses,(,0,0))
+	A(114,<ssreflect_plugin::ssrrewrite@0> $args $clauses,(,0,0))
+B(110,rewrite (ssrrwargs) (ssrclauses),(./BGsection1.v,62551,62580))
+	B(110,<ssreflect_plugin::ssrrewrite@0> $args $clauses,(,0,0))
+	A(124,<ssreflect_plugin::ssrrewrite@0> $args $clauses,(,0,0))
+A(114,rewrite (ssrrwargs) (ssrclauses),(./BGsection1.v,62551,62580))
+A(124,rewrite (ssrrwargs) (ssrclauses),(./BGsection1.v,62551,62580))
+
+
+# TODO(deh): Kludge 2
+B(2178,apply,(./BGsection1.v,41160,41165))
+B(2178,<ssreflect_plugin::ssrapply@1>,(,0,0))
+A(2182,<ssreflect_plugin::ssrapply@1>,(,0,0))
+A(2182,apply,(./BGsection1.v,41160,41165))
+
+
+B(42,apply (ssrapplyarg),(./BGsection1.v,60666,60679))
+	B(42,<ssreflect_plugin::ssrapply@0> $arg,(,0,0))
+	A(-1,<ssreflect_plugin::ssrapply@0> $arg,(,0,0))
+B(44,apply (ssrapplyarg),(./BGsection1.v,60666,60679))
+	B(44,<ssreflect_plugin::ssrapply@0> $arg,(,0,0))
+	A(-1,<ssreflect_plugin::ssrapply@0> $arg,(,0,0))
+A(-1,apply (ssrapplyarg),(./BGsection1.v,60666,60679))
