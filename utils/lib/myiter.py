@@ -19,3 +19,6 @@ class MyIter(object):
 
     def peek(self):
         return self.data[self.idx]
+
+    def lookahead(self, n):
+        return self.data[self.idx + n]
