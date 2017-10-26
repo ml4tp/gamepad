@@ -152,6 +152,10 @@ A(439,rewrite (ssrrwargs) (ssrclauses),(./BGsection3.v,86946,86971))
 
 
 
+"""
+if decl.hdr.loc == "(./BGsection1.v,44505,44534)":
+acc += [self.parse_kludge(10)]
+"""
 B(783,rewrite (ssrrwargs) (ssrclauses),(./BGsection1.v,44505,44534))
 	B(783,<ssreflect_plugin::ssrrewrite@0> $args $clauses,(,0,0))
 	A(801,<ssreflect_plugin::ssrrewrite@0> $args $clauses,(,0,0))
@@ -164,6 +168,10 @@ A(802,rewrite (ssrrwargs) (ssrclauses),(./BGsection1.v,44505,44534))
 A(818,rewrite (ssrrwargs) (ssrclauses),(./BGsection1.v,44505,44534))
 
 
+"""
+elif decl.hdr.loc == "(./BGsection1.v,52169,52223)":
+acc += [self.parse_kludge(12)]
+"""
 B(857,rewrite (ssrrwargs) (ssrclauses),(./BGsection1.v,52169,52223))
 	B(857,<ssreflect_plugin::ssrrewrite@0> $args $clauses,(,0,0))
 	A(893,<ssreflect_plugin::ssrrewrite@0> $args $clauses,(,0,0))
@@ -199,6 +207,32 @@ B(1333,apply,(./BGsection2.v,18790,18795))
 B(1333,<ssreflect_plugin::ssrapply@1>,(,0,0))
 A(1346,<ssreflect_plugin::ssrapply@1>,(,0,0))
 A(1346,apply,(./BGsection2.v,18790,18795))
+
+
+B(981,apply,(./BGsection5.v,26291,26296))
+B(981,<ssreflect_plugin::ssrapply@1>,(,0,0))
+A(1019,<ssreflect_plugin::ssrapply@1>,(,0,0))
+A(1020,<ssreflect_plugin::ssrapply@1>,(,0,0))
+A(1021,<ssreflect_plugin::ssrapply@1>,(,0,0))
+A(1022,<ssreflect_plugin::ssrapply@1>,(,0,0))
+A(1023,<ssreflect_plugin::ssrapply@1>,(,0,0))
+A(1024,<ssreflect_plugin::ssrapply@1>,(,0,0))
+A(1025,<ssreflect_plugin::ssrapply@1>,(,0,0))
+A(1019,apply,(./BGsection5.v,26291,26296))
+A(1020,apply,(./BGsection5.v,26291,26296))
+A(1021,apply,(./BGsection5.v,26291,26296))
+A(1022,apply,(./BGsection5.v,26291,26296))
+A(1023,apply,(./BGsection5.v,26291,26296))
+A(1024,apply,(./BGsection5.v,26291,26296))
+A(1025,apply,(./BGsection5.v,26291,26296))
+
+
+B(1313,apply,(./BGsection6.v,13539,13544))
+B(1313,<ssreflect_plugin::ssrapply@1>,(,0,0))
+A(1319,<ssreflect_plugin::ssrapply@1>,(,0,0))
+A(1319,apply,(./BGsection6.v,13539,13544))
+
+
 
 
 # TODO(deh): Kludge 3
