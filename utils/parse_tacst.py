@@ -27,15 +27,15 @@ class Tac(object):
         self.terminal = terminal
 
     def has_subtac(self):
-        # type: Tac -> bool
+        ## type: Tac -> bool
         raise NotImplementedError
 
     def in_edge(self):
-        # type: Tac -> GoalId
+        ## type: Tac -> GoalId
         raise NotImplementedError
 
     def out_edges(self):
-        # type: Tac -> [GoalId]
+        ## type: Tac -> [GoalId]
         raise NotImplementedError
 
     def __hash__(self):
@@ -55,7 +55,7 @@ class FixedTac(Tac):
         self.alias = alias
         self.core = core
 
-    def my_name():
+    def my_name(self):
         return self.name
 
     def has_subtac(self):
@@ -87,7 +87,7 @@ class VaryTac(Tac):
         self.bf_core = bf_core
         self.af_cores = af_cores
 
-    def my_name():
+    def my_name(self):
         return self.name
 
     def has_subtac(self):
@@ -120,7 +120,7 @@ class FixedNestedTac(Tac):
         self.core = core
         self.body = body
 
-    def my_name():
+    def my_name(self):
         return self.name
 
     def has_subtac(self):
@@ -160,7 +160,7 @@ class VaryNestedTac(Tac):
         self.af_aliases = af_aliases
         self.body = body
 
-    def my_name():
+    def my_name(self):
         return self.name
 
     def has_subtac(self):
@@ -194,7 +194,7 @@ class NestTermTac(Tac):
         self.core = core
         self.extra = extra
 
-    def my_name():
+    def my_name(self):
         return self.alias_name
 
     def has_subtac(self):
@@ -225,7 +225,7 @@ class SsrtclNestedTac(Tac):
         self.af_cores = af_cores
         self.body = body
 
-    def my_name():
+    def my_name(self):
         return self.name
 
     def has_subtac(self):
@@ -260,7 +260,7 @@ class SsrrewriteKludgeTac(Tac):
         self.bf_cores = bf_cores
         self.af_cores = af_cores
 
-    def my_name():
+    def my_name(self):
         return "SsrrewriteKludge"
 
     def has_subtac(self):
@@ -286,7 +286,7 @@ class GenericTac(Tac):
         self.before = before
         self.afters = afters
 
-    def my_name():
+    def my_name(self):
         return self.name
 
     def has_subtac(self):

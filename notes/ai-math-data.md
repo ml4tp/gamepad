@@ -10,36 +10,52 @@ It should also be possible to get this data for Compcert (and any
 other Coq Library).
 
 Here are some statistics we might want to compute about such datasets.
-1. Dependency graph of lemmas (how many times each lemma is used)
-2. Length of user tactic script by number of tactics. (how to deal with backtracking?)
-3. Number of existentials in each lemma. 
-   - Size of existential terms in each lemma. 
-   - Complexity of existentials in each lemma---length of tactic script used to construct existential. 
-4. Branching factor in each proof.
-5. Proportion of computational to non-computational steps in each proof.
-   - simple versus non-simple?
+1. Dependency graph of lemmas (how many times each lemma is used)                                               grep / list of lemma's -> elaborated object.
+2. Length of user tactic script by number of tactics. (how to deal with backtracking?)                          length of utac?
+3. Number of existentials in each lemma.                                                                        number of have's and exists                                                                  
+   - Size of existential terms in each lemma.                                                                   char length of arg1 of have
+   - Complexity of existentials in each lemma---length of tactic script used to construct existential.          size of body subdag
+4. Branching factor in each proof.                                                                              number of out_edges per vertex
+5. Proportion of computational to non-computational steps in each proof.                                        
+   - simple versus non-simple?                                                                                  separate out simpl/refl etc from have, induction etc
    - probably want number
-6. Proportion of forward-chaining versus backward-chaining steps in each proof.
+6. Proportion of forward-chaining versus backward-chaining steps in each proof.                                 
    - existentials are forward, apply is backward, rewrite is like analogous
-7. Graph of depth in tactic tree versus size of local context during a proof
-8. Size of goal in each tactic state as function of depth
-   - other proxies for complexity?
-9. Histogram of tactics used per lemma
-10. Proportion of tactics that don't require arguments (per lemma?)
-11. Histogram of length of tactic state from root to terminal states
-12. Number of terminal tactic states in each proof
+7. Scatter plot of depth in tactic tree versus size of local context during a proofs                            at each node, distance from root and length of in_ctx                                       
+8. Size of goal in each tactic state as function of depth                                                       at each node, distance from root and char of length of in_goal
+   - other proxies for complexity?                                            
+9. Histogram of tactics used per lemma                                                                          
+10. Proportion of tactics that don't require arguments (per lemma?)                                             check args is 0 (auto could fuck it up)
+11. Histogram of length of tactic state from root to terminal states                                            
+12. Number of terminal tactic states in each proofs
 13. Number of actions in local context immediately applicable to goal
 14. Taking a backward-chaing view, possibility of introducing existential
-15. Portion of global context used in each tactic state
+15. Portion of global context used in each tactic state                                                         check if arg is in local context and spaghetti monster didnt fail
 16. Is the structure of the proof independent of the order of the lemmas (w.r.t. dependency graph)
 	- correlation?
-17. Tactic used as a function of depth of tree
+17. Tactic used as a function of depth of tree                                                                  
 	- expect induction to be at top, reflexivity to be at bottom
 18. Relationship between size of lemma term vs. each of its terminal states
 	- other proxies for complexity?
 19. Relationship between size of lemma and tactic script
 20. How does inlining affect these statistics?
 21. relationship between root states of tactic tree and lemma
+
+20 statistics. 
+Number of lemmas
+Number of tactic calls for each tactic
+Number of types created (so each theorem creates a type, but inside each context we create more)
+Plot histogram
+Length of proofs (in terms of 1. tactic calls or 2. symbols)
+Length of terms used as existensials
+Size of proof contexts in terms of defined hypthesis
+Dependency graphs
+How many definitions/lemmas were used in each proof
+How often was each definition/lemma used
+Inside forward proofs (I guess ssreflect only has forward?):
+How much branching (so number of subgoals at a given moment)
+Whats the tpical length of each branch?
+How many times do you branch per proof? (like introduce a cut)
 
 ## Example
 
