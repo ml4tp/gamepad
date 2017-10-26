@@ -682,8 +682,17 @@ class TacTreeParser(object):
                 acc += [self.parse_kludge(8)]
             elif decl.hdr.loc == "(./BGsection11.v,5300,5327)":
                 acc += [self.parse_kludge(7)]
-
-            
+            elif decl.hdr.loc == "(./BGsection12.v,4462,4480)":
+                acc += [self.parse_kludge(8)]
+            elif decl.hdr.loc == "(./BGsection12.v,24997,25021)":
+                acc += [self.parse_kludge(8)]
+            elif decl.hdr.loc == "(./BGsection12.v,32694,32699)":
+                acc += [self.parse_kludge(4)]
+            elif decl.hdr.loc == "(./BGsection12.v,33693,33698)":
+                acc += [self.parse_kludge(4)]
+            elif decl.hdr.loc == "(./BGsection14.v,11258,11263)":
+                acc += [self.parse_kludge(4)]
+                
 
             # Non-terminal, fixed-width, stack cases
             # Non-terminal, fixed-width, sequential cases
