@@ -243,6 +243,14 @@ A(472,apply (ssrapplyarg),(./BGsection8.v,2178,2189))
 A(505,apply (ssrapplyarg),(./BGsection8.v,2178,2189))
 
 
+B(270,apply (ssrapplyarg),(./BGsection11.v,5300,5327))
+B(270,<ssreflect_plugin::ssrapply@0> $arg,(,0,0))
+A(-1,<ssreflect_plugin::ssrapply@0> $arg,(,0,0))
+B(276,apply (ssrapplyarg),(./BGsection11.v,5300,5327))
+B(276,<ssreflect_plugin::ssrapply@0> $arg,(,0,0))
+A(-1,<ssreflect_plugin::ssrapply@0> $arg,(,0,0))
+A(-1,apply (ssrapplyarg),(./BGsection11.v,5300,5327))
+
 
 # TODO(deh): Kludge 3
 
