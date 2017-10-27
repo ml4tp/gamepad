@@ -59,7 +59,7 @@ def basic_have_stats(lemmas):
 def visualize_lemma(lemma):
     print("------------------------------------------------")
     print("DOING", lemma)
-    tr_parser = TacTreeParser(lemma, f_log=True)
+    tr_parser = TacTreeParser(lemma, f_log=False)
     tacs = tr_parser.parse_tactree()
     for tac in tacs:
         print(tac)
