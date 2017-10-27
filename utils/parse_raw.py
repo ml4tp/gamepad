@@ -49,7 +49,7 @@ class TacStHdr(object):
     """
     Contains the header for a tactic state declaration.
     """
-    def __init__(self, mode, tac, kind, ftac, gid, ngs, loc, depth):
+    def __init__(self, mode, tac, kind, ftac, gid, ngs, loc, uid):
         self.mode = mode
         self.tac = tac
         self.kind = kind
@@ -57,11 +57,11 @@ class TacStHdr(object):
         self.gid = gid
         self.ngs = ngs
         self.loc = loc
-        self.depth = depth
+        self.uid = uid
 
     def __str__(self):
-        return "({} tac: {}  ftac: {}  gid: {}  ngs: {}  depth: {})".format(
-               self.mode, self.tac, self.ftac, self.gid, self.ngs, self.depth)
+        return "({} tac: {}  ftac: {}  gid: {}  ngs: {}  uid: {})".format(
+               self.mode, self.tac, self.ftac, self.gid, self.ngs, self.uid)
 
 
 class TacStDecl(object):
@@ -79,11 +79,11 @@ class TacStDecl(object):
 
     def __str__(self):
         if self.hdr.mode == TOK_BEFORE:
-            return "B({},{},{})".format(self.hdr.gid, self.hdr.tac, self.hdr.loc)
+            return "B({},{},{},{})".format(self.hdr.gid, self.hdr.tac, self.hdr.loc, self.hdr.uid)
         elif self.hdr.mode == TOK_AFTER:
-            return "A({},{},{})".format(self.hdr.gid, self.hdr.tac, self.hdr.loc)
+            return "A({},{},{},{})".format(self.hdr.gid, self.hdr.tac, self.hdr.loc, self.hdr.uid)
         else:
-            return "E({},{},{})".format(self.hdr.gid, self.hdr.tac, self.hdr.loc)
+            return "E({},{},{},{})".format(self.hdr.gid, self.hdr.tac, self.hdr.loc, self.hdr.uid)
 
     def __hash__(self):
         msg = "{}{}".format(self.hdr.loc, self.hdr.gid)

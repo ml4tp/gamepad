@@ -662,18 +662,12 @@ class TacTreeParser(object):
             # Ssreflect tactics
 
             # TODO(deh): Investigate kludge
-            if decl.hdr.loc == "(./BGsection1.v,41160,41165)":
-                acc += [self.parse_kludge_apply()]
-            elif decl.hdr.loc == "(./BGsection1.v,60666,60679)":
-                acc += [self.parse_kludge(7)]
-            elif decl.hdr.loc == "(./BGsection1.v,60420,60424)":
+            #if decl.hdr.loc == "(./BGsection1.v,60666,60679)":
+            #    acc += [self.parse_kludge(7)]
+            if decl.hdr.loc == "(./BGsection1.v,60420,60424)":
                 acc += [self.parse_kludge(20)]
             elif decl.hdr.loc == "(./BGsection2.v,13550,13556)":
                 acc += [self.parse_kludge(3)]
-            elif decl.hdr.loc == "(./BGsection2.v,18790,18795)":
-                acc += [self.parse_kludge(4)]
-            elif decl.hdr.loc == "(./BGsection5.v,26291,26296)":
-                acc += [self.parse_kludge(16)]
             elif decl.hdr.loc == "(./BGsection6.v,13539,13544)":
                 acc += [self.parse_kludge(4)]
             elif decl.hdr.loc == "(./BGsection8.v,2178,2189)":
@@ -686,12 +680,6 @@ class TacTreeParser(object):
                 acc += [self.parse_kludge(8)]
             elif decl.hdr.loc == "(./BGsection12.v,24997,25021)":
                 acc += [self.parse_kludge(8)]
-            elif decl.hdr.loc == "(./BGsection12.v,32694,32699)":
-                acc += [self.parse_kludge(4)]
-            elif decl.hdr.loc == "(./BGsection12.v,33693,33698)":
-                acc += [self.parse_kludge(4)]
-            elif decl.hdr.loc == "(./BGsection14.v,11258,11263)":
-                acc += [self.parse_kludge(4)]
                 
 
             # Non-terminal, fixed-width, stack cases
@@ -756,9 +744,14 @@ class TacTreeParser(object):
             elif decl.hdr.mode.startswith(TOK_AFTER) and \
                  decl.hdr.tac.startswith("<ssreflect_plugin::ssrapply@0>"):
                 return acc
-            elif decl.hdr.mode.startswith(TOK_AFTER) and \
-                 decl.hdr.tac.startswith("<ssreflect_plugin::ssrapply@1>"):
-                return acc
+            #elif decl.hdr.mode.startswith(TOK_AFTER) and \
+            #     decl.hdr.tac.startswith("<ssreflect_plugin::ssrapply@1>"):
+            #    return acc
+
+            elif decl.hdr.mode == TOK_BEFORE and \
+                 decl.hdr.tac.startswith("apply") and \
+                 self.it.lookahead(1).hdr.tac.startswith("<ssreflect_plugin::ssrapply@1>"):
+                acc += [self.parse_vary_stk_nested("Ssrapply1", nested=False)]
 
             elif decl.hdr.mode == TOK_BEFORE and \
                  decl.hdr.tac.startswith("elim (ssrarg) (ssrclauses)"):

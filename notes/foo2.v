@@ -8,7 +8,8 @@ Proof.
     reflexivity.
   } {
     simpl.
-    have ihn : 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 +  n + 0 = n by assumption.
+    have foo: 0 = 0 by simpl; reflexivity.
+    (* have ihn : 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 +  n + 0 = n by assumption. *)
     rewrite -> IHn.
     reflexivity.
   }

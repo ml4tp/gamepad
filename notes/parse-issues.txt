@@ -188,12 +188,16 @@ A(951,rewrite (ssrrwargs) (ssrclauses),(./BGsection1.v,52169,52223))
 
 
 # TODO(deh): Kludge 2
+
+#if decl.hdr.loc == "(./BGsection1.v,41160,41165)":
+#    acc += [self.parse_kludge_apply()]
 B(2178,apply,(./BGsection1.v,41160,41165))
 B(2178,<ssreflect_plugin::ssrapply@1>,(,0,0))
 A(2182,<ssreflect_plugin::ssrapply@1>,(,0,0))
 A(2182,apply,(./BGsection1.v,41160,41165))
 
 
+(done?)
 B(1333,apply,(./BGsection2.v,18790,18795))
 B(1333,<ssreflect_plugin::ssrapply@1>,(,0,0))
 A(1346,<ssreflect_plugin::ssrapply@1>,(,0,0))
@@ -204,25 +208,33 @@ B(1313,<ssreflect_plugin::ssrapply@1>,(,0,0))
 A(1319,<ssreflect_plugin::ssrapply@1>,(,0,0))
 A(1319,apply,(./BGsection6.v,13539,13544))
 
+
+#elif decl.hdr.loc == "(./BGsection12.v,32694,32699)":
+#    acc += [self.parse_kludge(4)]
 B(828,apply,(./BGsection12.v,32694,32699))
 B(828,<ssreflect_plugin::ssrapply@1>,(,0,0))
 A(832,<ssreflect_plugin::ssrapply@1>,(,0,0))
 A(832,apply,(./BGsection12.v,32694,32699))
 
 
+#elif decl.hdr.loc == "(./BGsection12.v,33693,33698)":
+#    acc += [self.parse_kludge(4)]
+B(2135,apply,(./BGsection12.v,33693,33698))
+B(2135,<ssreflect_plugin::ssrapply@1>,(,0,0))
+A(2139,<ssreflect_plugin::ssrapply@1>,(,0,0))
+A(2139,apply,(./BGsection12.v,33693,33698))
 
 
-
-B(42,apply (ssrapplyarg),(./BGsection1.v,60666,60679))
-	B(42,<ssreflect_plugin::ssrapply@0> $arg,(,0,0))
-	A(-1,<ssreflect_plugin::ssrapply@0> $arg,(,0,0))
-B(44,apply (ssrapplyarg),(./BGsection1.v,60666,60679))
-	B(44,<ssreflect_plugin::ssrapply@0> $arg,(,0,0))
-	A(-1,<ssreflect_plugin::ssrapply@0> $arg,(,0,0))
-A(-1,apply (ssrapplyarg),(./BGsection1.v,60666,60679))
+#elif decl.hdr.loc == "(./BGsection14.v,11258,11263)":
+#    acc += [self.parse_kludge(4)]
+B(577,apply,(./BGsection14.v,11258,11263))
+B(577,<ssreflect_plugin::ssrapply@1>,(,0,0))
+A(583,<ssreflect_plugin::ssrapply@1>,(,0,0))
+A(583,apply,(./BGsection14.v,11258,11263))
 
 
-
+#elif decl.hdr.loc == "(./BGsection5.v,26291,26296)":
+            #    acc += [self.parse_kludge(16)]
 B(981,apply,(./BGsection5.v,26291,26296))
 B(981,<ssreflect_plugin::ssrapply@1>,(,0,0))
 A(1019,<ssreflect_plugin::ssrapply@1>,(,0,0))
@@ -239,6 +251,17 @@ A(1022,apply,(./BGsection5.v,26291,26296))
 A(1023,apply,(./BGsection5.v,26291,26296))
 A(1024,apply,(./BGsection5.v,26291,26296))
 A(1025,apply,(./BGsection5.v,26291,26296))
+
+
+
+B(42,apply (ssrapplyarg),(./BGsection1.v,60666,60679))
+	B(42,<ssreflect_plugin::ssrapply@0> $arg,(,0,0))
+	A(-1,<ssreflect_plugin::ssrapply@0> $arg,(,0,0))
+B(44,apply (ssrapplyarg),(./BGsection1.v,60666,60679))
+	B(44,<ssreflect_plugin::ssrapply@0> $arg,(,0,0))
+	A(-1,<ssreflect_plugin::ssrapply@0> $arg,(,0,0))
+A(-1,apply (ssrapplyarg),(./BGsection1.v,60666,60679))
+
 
 
 B(438,apply (ssrapplyarg),(./BGsection8.v,2178,2189))

@@ -1,6 +1,6 @@
 Lemma foo4 : forall A B: Prop, A -> B -> A \/ B.
 Proof.
-  try split; intros; auto.
+  try split; intro; intro; try assumption; auto.
 Qed.
 
 (*
