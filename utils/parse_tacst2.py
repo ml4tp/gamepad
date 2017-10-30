@@ -1,5 +1,7 @@
+from enum import Enum
+
 from lib.myiter import MyIter
-from parse_raw import *
+from lex_raw import *
 
 """
 [Note]
@@ -23,56 +25,116 @@ rank2_coprime_comm_cprod
 # -------------------------------------------------
 # Data structures
 
-class Tac(object):
-    def __init__(self, uid, terminal=False):
-        self.uid = uid
-        self.terminal = terminal
-
-    def has_subtac(self):
-        # type: Tac -> bool
-        raise NotImplementedError
-
-    def in_edge(self):
-        # type: Tac -> GoalId
-        raise NotImplementedError
-
-    def out_edges(self):
-        # type: Tac -> [GoalId]
-        raise NotImplementedError
-
-    def __hash__(self):
-        return self.uid
+class TacKind(Enum):
+    NAME = 1
+    ATOMIC = 2
+    NOTATION = 3
+    ML = 4
 
 
-class DumbTac(Tac):
-    def __init__(self, uid, name, bf_decls, af_decls, bods, terminal=False):
+def kind_hist():
+    return {TacKind.NAME: 0, TacKind.ATOMIC: 0, TacKind.NOTATION: 0,
+            TacKind.ML: 0, "EMPTY": 0}
+
+
+def merge_kind_hist(hist1, hist2):
+    for (k, v) in hist2.items():
+        hist1[k] += v
+    return hist1
+
+
+def inc_update(hist, key, value):
+    if key in hist:
+        hist[key] += value
+    else:
+        hist[key] = value
+
+
+def merge_hist(hist1, hist2):
+    for (k, v) in hist2.items():
+        inc_update(hist1, k, v)
+    return hist1
+
+
+def pp_tab(tab, str):
+    return tab * " " + str
+
+
+class RawTac(object):
+    def __init__(self, uid, name, kind, bf_decls, af_decls, bods):
+        assert isinstance(uid, int)
         assert isinstance(name, str)
+        assert isinstance(kind, TacKind)
         for bf_decl in bf_decls:
             assert isinstance(bf_decl, TacStDecl)
         for af_decl in af_decls:
             assert isinstance(af_decl, TacStDecl)
         for body in bods:
             for tac in body:
-                assert isinstance(tac, Tac)
+                assert isinstance(tac, RawTac)
 
-        super().__init__(uid, terminal)
+        self.uid = uid
         self.name = name
+        self.kind = kind
         self.bf_decls = bf_decls
         self.af_decls = af_decls
         self.bods = bods
 
-    def my_name():
-        return self.name
+    def postorder(self):
+        acc = []
+        for body in self.bods:
+            for tac in body:
+                acc += tac.postorder()
+                acc += [tac]
+        return acc
 
-    def has_subtac(self):
-        # TODO(deh): is this correct?
-        return len(self.bods) > 0
+    def base_stats(self):
+        return (self.kind, len(self.bf_decls),
+                len(self.bods), len(self.af_decls))
 
-    def in_edges(self):
-        return [bf_decl.hdr.gid for bf_decl in self.bf_decls]
+    def rec_stats(self):
+        stats = {}
+        tacs = self.postorder()
+        for tac in tacs:
+            key = tac.base_stats()
+            inc_update(stats, key, 1)
+        return stats
 
-    def out_edges(self):
-        return [af_decl.hdr.gid for af_decl in self.af_decls]
+    def pp(self, tab=0):
+        epi = pp_tab(tab, "{}({}) {{\n".format(self.name, self.uid))
+        bf = pp_tab(tab + 2, "before = [" + ", ".join([str(bf_decl) for bf_decl in self.bf_decls]) + "]\n")
+        if self.bods:
+            def foo(body):
+                if body:
+                    return "\n".join([tac.pp(tab + 4) for tac in body])
+                else:
+                    return pp_tab(tab + 4, "[]")
+            s1 = pp_tab(tab + 2, "bods = {\n")
+            s2 = ";\n".join([foo(body) for body in self.bods])
+            s3 = "\n" + pp_tab(tab + 2, "}\n")
+            bods = s1 + s2 + s3
+        else:
+            bods = pp_tab(tab + 2, "bods = EMP\n")
+        af = pp_tab(tab + 2, "after = [" + ", ".join([str(af_decl) for af_decl in self.af_decls]) + "]\n")
+        pro = pp_tab(tab, "}")
+        return epi + bf + bods + af + pro
+
+    """
+    def stats(self):
+        # Stats
+        ns = {(self.kind, len(self.bf_decls), len(self.bods), len(self.af_decls)): 1}
+
+        # Compute
+        for body in self.bods:
+            for tac in body:
+                ns2 = tac.stats()
+                ns = merge_hist(ns, ns2)
+
+        return ns
+    """
+
+    def __hash__(self):
+        return self.uid
 
     def __str__(self):
         bf_decl = ", ".join([str(bf_decl) for bf_decl in self.bf_decls])
@@ -129,7 +191,8 @@ class TacTreeParser(object):
               it.peek().hdr.uid == start_decl.hdr.uid:
             afters += [next(it)]
 
-        return DumbTac(self._getuid(), befores[0].hdr.tac, befores, afters, [])
+        return RawTac(self._getuid(), befores[0].hdr.tac, TacKind.ATOMIC,
+                       befores, afters, [])
 
     def parse_name_call(self):
         # Internal
@@ -150,7 +213,8 @@ class TacTreeParser(object):
               it.peek().hdr.uid == start_decl.hdr.uid:
             afters += [next(it)]
 
-        return DumbTac(self._getuid(), befores[0].hdr.tac, befores, afters, [])
+        return RawTac(self._getuid(), befores[0].hdr.tac, TacKind.NAME,
+                       befores, afters, [])
 
     def parse_notation_call(self):
         # Internal
@@ -173,7 +237,8 @@ class TacTreeParser(object):
               it.peek().hdr.uid == start_decl.hdr.uid:
             afters += [next(it)]
 
-        return DumbTac(self._getuid(), befores[0].hdr.tac, befores, afters, bods)
+        return RawTac(self._getuid(), befores[0].hdr.tac, TacKind.NOTATION,
+                       befores, afters, bods)
 
     def parse_ml_call(self):
         # Internal
@@ -197,7 +262,8 @@ class TacTreeParser(object):
               it.peek().hdr.uid == start_decl.hdr.uid:
             afters += [next(it)]
 
-        return DumbTac(self._getuid(), befores[0].hdr.tac, befores, afters, [body])
+        return RawTac(self._getuid(), befores[0].hdr.tac, TacKind.ML,
+                       befores, afters, [body])
 
     def parse_tactree(self):
         """
@@ -259,3 +325,26 @@ class TacTreeParser(object):
                 self._log_acc(acc)
                 raise NameError("Parsing alignment error {}".format(decl))
         return acc
+
+
+"""
+class Tac(object):
+    def __init__(self, uid, terminal=False):
+        self.uid = uid
+        self.terminal = terminal
+
+    def has_subtac(self):
+        # type: Tac -> bool
+        raise NotImplementedError
+
+    def in_edge(self):
+        # type: Tac -> GoalId
+        raise NotImplementedError
+
+    def out_edges(self):
+        # type: Tac -> [GoalId]
+        raise NotImplementedError
+
+    def __hash__(self):
+        return self.uid
+"""
