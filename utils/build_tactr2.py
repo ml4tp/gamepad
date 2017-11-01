@@ -254,10 +254,44 @@ class TacPathBuilder(object):
 # -------------------------------------------------
 # Building tactic tree.
 
+class TacInfo(object):
+    pass
+
+
+class Edge(object):
+    pass
+
+
+class AtomicEdge(Edge):
+    def __init__(self, before, after, tacinfo):
+        assert isinstance(before, TacStDecl)
+        assert isinstance(after, TacStDecl)
+        assert isinstance(tacinfo, TacInfo)
+
+        self.before = before
+        self.after = after
+        self.tacinfo = tacinfo
+
+
+class PathEdge(Edge):
+    def __init__(self, before, after, edges, tacinfo):
+        assert isinstance(before, TacStDecl)
+        assert isinstance(after, TacStDecl)
+        for edge in edges:
+            assert isinstance(edge, Edge)
+        assert isinstance(tacinfo, TacInfo)
+
+        self.before = before
+        self.after = after
+        self.edges = edges
+        self.tacinfo = tacinfo
+
+
+
 class TacTreeBuilder(object):
     def __init__(self, tacs, f_log=False):
         for tac in tacs:
-            assert isinstance(tac, Tac)
+            assert isinstance(tac, RawTac)
 
         self.tree = nx.DiGraph()
         self.tacs = tacs
@@ -281,25 +315,13 @@ class TacTreeBuilder(object):
                                 format(curr_tac.uid, next_tac.uid),
                                 f_log=False)
 
-    def build_base(self):
+    def build_atomic(self):
         # Internal
         it_tacs = self.it_tacs
-        self._mylog("@build_base:before<{}>".format(it_tacs.peek()))
+        self._mylog("@build_atomic:before<{}>".format(it_tacs.peek()))
 
-        # Build tactics without subtrees
+        # Build atomic tactics
         curr_tac = next(it_tacs)
-        """
-        nbf = len(curr_tac.bf_decls)
-        naf = len(curr_tac.af_decls)
-        if nbf == naf:
-            pass
-        elif naf % nbf == 0:
-            bf2af = naf / nbf
-
-            pass
-        else:
-            self._mylog("WTF?")
-        """
         self._connect(curr_tac)
 
     def build_subtac(self):
@@ -337,18 +359,6 @@ class TacTreeBuilder(object):
                 self.build_subtac()
             else:
                 self.build_base()
-            """
-            if curr_tac.kind == TacKind.NAME:
-                self.build_base()
-            elif curr_tac.kind == TacKind.ATOMIC:
-                self.build_base()
-            elif curr_tac.kind == TacKind.NOTATION:
-                self.build_ssrhave()
-            elif curr_tac.kind == TacKind.ML:
-                self.build_ssrhave()
-            else:
-                raise NameError("Impossible")
-            """
 
     def show(self):
         nx.drawing.nx_pylab.draw_kamada_kawai(self.tree, with_labels=True)

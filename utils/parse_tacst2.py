@@ -86,6 +86,7 @@ class RawTac(object):
             for tac in body:
                 acc += tac.postorder()
                 acc += [tac]
+        acc += [self]
         return acc
 
     def base_stats(self):
@@ -140,7 +141,7 @@ class RawTac(object):
         bf_decl = ", ".join([str(bf_decl) for bf_decl in self.bf_decls])
         af_decls = ", ".join([str(af_decl) for af_decl in self.af_decls])
         bods = "\n".join([", ".join([str(tac) for tac in body]) for body in self.bods])
-        return "{}({}; {})".format(self.name, self.uid, bf_decl, af_decls, bods)
+        return "{}({}; {}; {}; {})".format(self.name, self.uid, bf_decl, af_decls, bods)
 
 
 # -------------------------------------------------
