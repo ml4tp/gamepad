@@ -1,7 +1,6 @@
 from enum import Enum
 import matplotlib.pyplot as plt
 import networkx as nx
-import matplotlib.pyplot as plt
 
 from parse_tacst2 import *
 
@@ -20,7 +19,7 @@ class TacEdge(object):
         return "({}, {}, {}, {} -> {})".format(self.eid, self.tid, self.name, self.src, self.tgt)
 
 class TacTreeBuilder(object):
-    def __init__(self, tacs, eid=0, solvgid=0, errgid=0, f_log=True):
+    def __init__(self, tacs, eid=0, solvgid=0, errgid=0, f_log=False):
         for tac in tacs:
             assert isinstance(tac, RawTac)
 
@@ -80,6 +79,9 @@ class TacTreeBuilder(object):
         return decl.hdr.gid == GID_SOLVED or decl.hdr.mode == "afterE"
 
     def _mk_edge(self, tac, bf_decl, af_decl):
+        if bf_decl.hdr.gid == GID_SOLVED:
+            return []
+
         if af_decl.hdr.gid == GID_SOLVED:
             edge = TacEdge(self._fresh_eid(), tac.uid, tac.name,
                            tac.kind, bf_decl.hdr.ftac,
@@ -92,7 +94,7 @@ class TacTreeBuilder(object):
             edge = TacEdge(self._fresh_eid(), tac.uid, tac.name,
                            tac.kind, bf_decl.hdr.ftac,
                            bf_decl.hdr.gid, af_decl.hdr.gid)
-        return edge
+        return [edge]
 
     def _mk_edge2(self, tac, bf_decl, gid):
         edge = TacEdge(self._fresh_eid(), tac.uid, tac.name,
@@ -112,7 +114,7 @@ class TacTreeBuilder(object):
         edges = []
         if nbf == naf:
             for bf_decl, af_decl in zip(tac.bf_decls, tac.af_decls):
-                edges += [self._mk_edge(tac, bf_decl, af_decl)]
+                edges += self._mk_edge(tac, bf_decl, af_decl)
         elif naf % nbf == 0:
             # Compute branching ratio
             nbod = len(tac.bods)
@@ -123,7 +125,7 @@ class TacTreeBuilder(object):
                 end = i * af2bf + af2bf
                 bf_decl = tac.bf_decls[i]
                 for af_decl in tac.af_decls[start:end]:
-                    edges += [self._mk_edge(tac, bf_decl, af_decl)]
+                    edges += self._mk_edge(tac, bf_decl, af_decl)
         else:
             self.notok += [tac]
 
@@ -141,7 +143,7 @@ class TacTreeBuilder(object):
         edges = []
         if nbf == naf:
             for bf_decl, af_decl in zip(tac.bf_decls, tac.af_decls):
-                edges += [self._mk_edge(tac, bf_decl, af_decl)]
+                edges += self._mk_edge(tac, bf_decl, af_decl)
         else:
             self.notok += [tac]
 
@@ -177,7 +179,7 @@ class TacTreeBuilder(object):
             if len(tac.bf_decls) == len(tac.af_decls):
                 edges = []
                 for bf_decl, af_decl in zip(tac.bf_decls, tac.af_decls):
-                    edges += [self._mk_edge(tac, bf_decl, af_decl)]
+                    edges += self._mk_edge(tac, bf_decl, af_decl)
                 # Accumulate changes
                 self._add_edges(edges)
             else:
@@ -221,14 +223,14 @@ class TacTreeBuilder(object):
             if len(tac.af_decls) == len(tac.bf_decls):
                 edges = []
                 for bf_decl, af_decl in zip(tac.bf_decls, tac.af_decls):
-                    edges += [self._mk_edge(tac, bf_decl, af_decl)]
+                    edges += self._mk_edge(tac, bf_decl, af_decl)
                 # Accumulate changes
                 self._add_edges(edges)
             elif len(tac.bf_decls) == 1:
                 edges = []
                 bf_decl = tac.bf_decls[0]
                 for af_decl in tac.af_decls:
-                    edges += [self._mk_edge(tac, bf_decl, af_decl)]
+                    edges += self._mk_edge(tac, bf_decl, af_decl)
                 # Accumulate changes
                 self._add_edges(edges)
             else:
@@ -247,7 +249,7 @@ class TacTreeBuilder(object):
                 edges = []
                 af_decl = tac.af_decls[0]
                 for bf_decl in tac.bf_decls:
-                    edges += [self._mk_edge(tac, bf_decl, af_decl)]
+                    edges += self._mk_edge(tac, bf_decl, af_decl)
                 # Accumulate changes
                 self._add_edges(edges)
             else:
@@ -279,7 +281,7 @@ class TacTreeBuilder(object):
                 edges = []
                 bf_decl = tac.bf_decls[0]
                 for af_decl in tac.af_decls:
-                    edges += [self._mk_edge(tac, bf_decl, af_decl)]
+                    edges += self._mk_edge(tac, bf_decl, af_decl)
                 # Accumulate changes
                 self._add_edges(edges)
             else:
@@ -311,7 +313,7 @@ class TacTreeBuilder(object):
                 # 3. connect me up
                 bf_decl = tac.bf_decls[0]
                 for af_decl in tac.af_decls:
-                    edges += [self._mk_edge(tac, bf_decl, af_decl)]
+                    edges += self._mk_edge(tac, bf_decl, af_decl)
 
                 # Accumulate changes
                 if body:
@@ -332,7 +334,7 @@ class TacTreeBuilder(object):
                 for af_decl in tac.af_decls:
                     try:
                         if nx.has_path(body_graph, bf_decl.hdr.gid, af_decl.hdr.gid):
-                            edges += [self._mk_edge(tac, bf_decl, af_decl)]
+                            edges += self._mk_edge(tac, bf_decl, af_decl)
                             has_path[i] += 1
                             break
                     except nx.exception.NodeNotFound:
@@ -357,7 +359,7 @@ class TacTreeBuilder(object):
                 for af_decl in tac.af_decls:
                     try:
                         if nx.has_path(body_graph, bf_decl.hdr.gid, af_decl.hdr.gid):
-                            edges += [self._mk_edge(tac, bf_decl, af_decl)]
+                            edges += self._mk_edge(tac, bf_decl, af_decl)
                             has_path[i] += 1
                             break
                     except nx.exception.NodeNotFound:
@@ -391,7 +393,9 @@ class TacTreeBuilder(object):
     def check_success(self):
         print("notok: {}, total: {}".format(len(self.notok), self.numtacs))
         ug = nx.Graph(self.graph)
-        n = nx.algorithms.components.connected.number_connected_components(ug)
+        ccs = list(nx.algorithms.components.connected.connected_components(ug))
+        n = len(ccs)
+        # n = nx.algorithms.components.connected.number_connected_components(ug)
         print("# connected components: {}".format(n))
         return n == 1, n
 

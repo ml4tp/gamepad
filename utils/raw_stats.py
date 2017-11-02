@@ -33,11 +33,13 @@ Hypothesis:
 
 
 class RawStats(object):
-    def __init__(self, f_print=False):
-        self.file = open("rawtac.stats", "w")
+    def __init__(self, rawtac_file, f_print=False):
+        self.file = open(rawtac_file, "w")
         self.f_print = f_print
         self.mltacs = {}
         self.mlstats = {}
+        self.nametacs = {}
+        self.namestats = {}
         self.notok = []
         self.total = 0
 
@@ -49,6 +51,14 @@ class RawStats(object):
         self.file.write("\n")
         if self.f_print:
             print(msg)
+
+    def log_namestats(self):
+        self._mylog("NAMETACS")
+        for k, v in self.nametacs.items():
+            self._mylog("{}, {}".format(k, v))
+        self._mylog("NAMESTATS")
+        for k, v in self.namestats.items():
+            self._mylog("{}, {}, {}, {}, {}".format(k[0], k[1], k[2], k[3], v))
 
     def log_mlstats(self):
         self._mylog("MLTACS")
@@ -230,12 +240,30 @@ class RawStats(object):
             self.notok += [(lemma.name, tac.uid, tac.name, tac.kind, naf, nbody, nbf)]
         return isok
 
+    def stats_name(self, lemma, tac):
+        name = tac.name
+        if name in self.nametacs:
+            self.nametacs[name] += 1
+        else:
+            self.nametacs[name] = 1
+
+        nbf = len(tac.bf_decls)
+        nbods = len(tac.bods)
+        naf = len(tac.af_decls)
+        key = (name, nbf, nbods, naf)
+        if key in self.namestats:
+            self.namestats[key] += 1
+        else:
+            self.namestats[key] = 1
+
     def stats_tac(self, lemma, tac):
         self.total += 1
         if tac.kind == TacKind.ML:
             self.stats_ml(lemma, tac)
         elif tac.kind == TacKind.NOTATION:
             self.stats_notation(lemma, tac)
+        elif tac.kind == TacKind.NAME:
+            self.stats_name(lemma, tac)
 
     def stats_tacs(self, lemma, tacs):
         # Compute some stats on RawTacs

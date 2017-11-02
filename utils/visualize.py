@@ -10,14 +10,33 @@ from raw_stats import *
 
 
 class Visualize(object):
-    def __init__(self, f_show=False):
-        self.stats = {}
-        self.rawstats = RawStats(False)
+    def __init__(self, f_display=False, rawtac_file=None, tgtlem=None):
+        assert isinstance(f_display, bool)
+        assert (not rawtac_file or isinstance(rawtac_file, str))
+        assert (not tgtlem or isinstance(tgtlem, str))
+
+        # Internal book-keeping
         self.num_lemmas = 0
         self.failed = []
-        self.f_show = f_show
+
+        # Display result?
+        self.f_display = f_display
+
+        # Target lemma?
+        self.tgtlem = tgtlem
+        self.abort = False
+
+        # Compute stats?
+        if rawtac_file:
+            self.f_stats = True
+        else:
+            self.f_stats = False
+        self.rawstats = RawStats(rawtac_file, False)
 
     def visualize_lemma(self, file, lemma):
+        if self.tgtlem and self.tgtlem != lemma.name:
+            return
+
         # Internal
         print("------------------------------------------------")
         print("Visualizing lemma: {}".format(lemma.name))
@@ -27,15 +46,14 @@ class Visualize(object):
         tr_parser = TacTreeParser(lemma, f_log=False)
         tacs = tr_parser.parse_tactree()
 
-        """
-        print(">>>>>>>>>>>>>>>>>>>>")
-        for tac in tacs:
-            print(tac.pp())
-        print("<<<<<<<<<<<<<<<<<<<<")
-        """
+        if self.tgtlem:
+            print(">>>>>>>>>>>>>>>>>>>>")
+            for tac in tacs:
+                print(tac.pp())
+            print("<<<<<<<<<<<<<<<<<<<<")
 
         # Compute statistics
-        # self.rawstats.stats_tacs(lemma, tacs)
+        self.rawstats.stats_tacs(lemma, tacs)
 
         tr_builder = TacTreeBuilder(tacs, False)
         tr_builder.build_tacs()
@@ -43,9 +61,11 @@ class Visualize(object):
         if not succ:
             self.failed += [(file, lemma.name, ncc)]
 
-        print("HERE", self.f_show)
-        if self.f_show:
+        if self.f_display:
             tr_builder.show()
+
+        if self.tgtlem:
+            self.abort = True
     
     def visualize_file(self, file):
         print("==================================================")
@@ -55,26 +75,35 @@ class Visualize(object):
         while not ts_parser.exhausted:
             lemma = ts_parser.parse_lemma()
             self.visualize_lemma(file, lemma)
-        # self.pickle_save(file)
+            if self.abort:
+                break
 
 
-def record(vis):
+def record(file, vis):
     print("Total lemmas: {}".format(vis.num_lemmas))
     print("Failed lemmas: {}".format(len(vis.failed)))
     print("FAILED", vis.failed)
-    with open("recon.stats", "w") as f:
+    with open(file, "w") as f:
         f.write("Total lemmas: {}\n".format(vis.num_lemmas))
         f.write("Failed lemmas: {}\n".format(len(vis.failed)))
         f.write("FAILED\n")
         for file, lemma, ncc in vis.failed:
             f.write("{}, {}, {}\n".format(file, lemma, ncc))
 
+
 if __name__ == "__main__":
     # Set up command line
     argparser = argparse.ArgumentParser()
     argparser.add_argument("file",
                            help="Enter the file you want to visualize.")
-    argparser.add_argument("-s", "--show", action="store_true")
+    argparser.add_argument("-d", "--display", action="store_true",
+                           help="Display the tactic tree.")
+    argparser.add_argument("-l", "--lemma", type=str,
+                           help="Visualize a specific lemma by name.")
+    argparser.add_argument("-o", "--output", default="recon.log", type=str,
+                           help="Output file for reconstructing stats.")
+    argparser.add_argument("-s", "--stats", default="rawtac.log", type=str,
+                           help="Compute raw tactic statistics")
     args = argparser.parse_args()
 
     files = ["../data/odd-order/BGsection1.v.dump",
@@ -110,18 +139,21 @@ if __name__ == "__main__":
              "../data/odd-order/PFsection13.v.dump",
              "../data/odd-order/PFsection14.v.dump"]
     
+    # Create visualizer
+    if args.lemma:
+        vis = Visualize(f_display=args.display, rawtac_file=args.stats, tgtlem=args.lemma)
+    else:
+        vis = Visualize(f_display=args.display, rawtac_file=args.stats)
+
+    # Visualize
     if args.file == "all":
-        vis = Visualize(f_show=args.show)
         for file in files:
             vis.visualize_file(file)
-            #vis.log_stats()
-        vis.rawstats.log_notok()
-        vis.rawstats.log_mlstats()
-        record(vis)
     else:
-        vis = Visualize(f_show=args.show)
         vis.visualize_file(args.file)
-        #vis.log_stats()
-        vis.rawstats.log_notok()
-        vis.rawstats.log_mlstats()
-        record(vis)
+
+    # Record info    
+    vis.rawstats.log_notok()
+    vis.rawstats.log_mlstats()
+    vis.rawstats.log_namestats()
+    record(args.output, vis)
