@@ -393,7 +393,7 @@ class TacTreeBuilder(object):
         ug = nx.Graph(self.graph)
         n = nx.algorithms.components.connected.number_connected_components(ug)
         print("# connected components: {}".format(n))
-        return n == 1
+        return n == 1, n
 
     def show(self):
         # print("Graph edges:\n", "\n".join(map(str, self.graph.edges)))
