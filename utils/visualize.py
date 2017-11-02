@@ -58,6 +58,17 @@ class Visualize(object):
         # self.pickle_save(file)
 
 
+def record(vis):
+    print("Total lemmas: {}".format(vis.num_lemmas))
+    print("Failed lemmas: {}".format(len(vis.failed)))
+    print("FAILED", vis.failed)
+    with open("recon.stats", "w") as f:
+        f.write("Total lemmas: {}\n".format(vis.num_lemmas))
+        f.write("Failed lemmas: {}\n".format(len(vis.failed)))
+        f.write("FAILED\n")
+        for file, lemma, ncc in vis.failed:
+            f.write("{}, {}, {}\n".format(file, lemma, ncc))
+
 if __name__ == "__main__":
     # Set up command line
     argparser = argparse.ArgumentParser()
@@ -106,15 +117,11 @@ if __name__ == "__main__":
             #vis.log_stats()
         vis.rawstats.log_notok()
         vis.rawstats.log_mlstats()
-        print("Total lemmas: {}".format(vis.num_lemmas))
-        print("Failed lemmas: {}".format(len(vis.failed)))
-        print("FAILED", vis.failed)
+        record(vis)
     else:
         vis = Visualize(f_show=args.show)
         vis.visualize_file(args.file)
         #vis.log_stats()
         vis.rawstats.log_notok()
         vis.rawstats.log_mlstats()
-        print("Total lemmas: {}".format(vis.num_lemmas))
-        print("Failed lemmas: {}".format(len(vis.failed)))
-        print("FAILED", vis.failed)
+        record(vis)
