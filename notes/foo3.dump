@@ -1,0 +1,409 @@
+begin(pf) {!} Classic {!} foo2
+begin(tacst) {!} 0 {!} before {!} intro {!} LtacNotationCall {!} (./foo3.v,94,99)
+1 {!} intro {!} 2
+============================
+forall n : nat, n + 0 = n
+end(tacst)
+begin(tacst) {!} 1 {!} before {!} <coretactics::intro@0> {!} LtacMLCall {!} (,0,0)
+1 {!} <coretactics::intro@0> {!} 2
+============================
+forall n : nat, n + 0 = n
+end(tacst)
+begin(tacst) {!} 1 {!} after {!} <coretactics::intro@0> {!} LtacMLCall {!} (,0,0)
+1 {!}  {!} 3
+n : nat
+============================
+n + 0 = n
+end(tacst)
+begin(tacst) {!} 0 {!} after {!} intro {!} LtacNotationCall {!} (./foo3.v,94,99)
+1 {!}  {!} 3
+n : nat
+============================
+n + 0 = n
+end(tacst)
+begin(tacst) {!} 2 {!} before {!} induction n {!} LtacAtomCall {!} (./foo3.v,103,114)
+1 {!} induction n {!} 3
+n : nat
+============================
+n + 0 = n
+end(tacst)
+begin(tacst) {!} 2 {!} after {!} induction n {!} LtacAtomCall {!} (./foo3.v,103,114)
+2 {!}  {!} 7
+============================
+0 + 0 = 0
+end(tacst)
+begin(tacst) {!} 2 {!} after {!} induction n {!} LtacAtomCall {!} (./foo3.v,103,114)
+2 {!}  {!} 10
+n : nat
+IHn : n + 0 = n
+============================
+S n + 0 = S n
+end(tacst)
+begin(subpf)
+begin(tacst) {!} 3 {!} before {!} simpl {!} LtacAtomCall {!} (./foo3.v,122,127)
+1 {!} simpl {!} 7
+============================
+0 + 0 = 0
+end(tacst)
+begin(tacst) {!} 3 {!} after {!} simpl {!} LtacAtomCall {!} (./foo3.v,122,127)
+1 {!}  {!} 12
+============================
+0 = 0
+end(tacst)
+begin(tacst) {!} -1 {!} before {!} reflexivity {!} LtacNameCall {!} (./foo3.v,133,144)
+1 {!}  {!} 12
+============================
+0 = 0
+end(tacst)
+begin(tacst) {!} -1 {!} after {!} reflexivity {!} LtacNameCall {!} (./foo3.v,133,144)
+1 {!}  {!} 12
+============================
+0 = 0
+end(tacst)
+begin(tacst) {!} 4 {!} before {!} <coretactics::reflexivity@0> {!} LtacMLCall {!} (,0,0)
+1 {!} <coretactics::reflexivity@0> {!} 12
+============================
+0 = 0
+end(tacst)
+begin(tacst) {!} 4 {!} after {!} <coretactics::reflexivity@0> {!} LtacMLCall {!} (,0,0)
+ngs=0
+end(tacst)
+end(subpf)
+begin(subpf)
+begin(tacst) {!} 5 {!} before {!} simpl {!} LtacAtomCall {!} (./foo3.v,156,161)
+1 {!} simpl {!} 10
+n : nat
+IHn : n + 0 = n
+============================
+S n + 0 = S n
+end(tacst)
+begin(tacst) {!} 5 {!} after {!} simpl {!} LtacAtomCall {!} (./foo3.v,156,161)
+1 {!}  {!} 15
+n : nat
+IHn : n + 0 = n
+============================
+S (n + 0) = S n
+end(tacst)
+begin(tacst) {!} 6 {!} before {!} have (ssrhavefwdwbinders) {!} LtacNotationCall {!} (./foo3.v,167,204)
+1 {!} have foo: 0 = 0 by simpl; reflexivity {!} 15
+n : nat
+IHn : n + 0 = n
+============================
+S (n + 0) = S n
+end(tacst)
+begin(tacst) {!} 7 {!} before {!} <ssreflect_plugin::ssrhave@0> $fwd {!} LtacMLCall {!} (,0,0)
+1 {!} <ssreflect_plugin::ssrhave@0> $fwd {!} 15
+n : nat
+IHn : n + 0 = n
+============================
+S (n + 0) = S n
+end(tacst)
+begin(tacst) {!} 8 {!} before {!} simpl {!} LtacAtomCall {!} (./foo3.v,186,191)
+1 {!} simpl {!} 17
+n : nat
+IHn : n + 0 = n
+============================
+0 = 0
+end(tacst)
+begin(tacst) {!} 8 {!} after {!} simpl {!} LtacAtomCall {!} (./foo3.v,186,191)
+1 {!}  {!} 19
+n : nat
+IHn : n + 0 = n
+============================
+0 = 0
+end(tacst)
+begin(tacst) {!} -1 {!} before {!} reflexivity {!} LtacNameCall {!} (./foo3.v,193,204)
+1 {!}  {!} 19
+n : nat
+IHn : n + 0 = n
+============================
+0 = 0
+end(tacst)
+begin(tacst) {!} -1 {!} after {!} reflexivity {!} LtacNameCall {!} (./foo3.v,193,204)
+1 {!}  {!} 19
+n : nat
+IHn : n + 0 = n
+============================
+0 = 0
+end(tacst)
+begin(tacst) {!} 9 {!} before {!} <coretactics::reflexivity@0> {!} LtacMLCall {!} (,0,0)
+1 {!} <coretactics::reflexivity@0> {!} 19
+n : nat
+IHn : n + 0 = n
+============================
+0 = 0
+end(tacst)
+begin(tacst) {!} 9 {!} after {!} <coretactics::reflexivity@0> {!} LtacMLCall {!} (,0,0)
+ngs=0
+end(tacst)
+begin(tacst) {!} 7 {!} after {!} <ssreflect_plugin::ssrhave@0> $fwd {!} LtacMLCall {!} (,0,0)
+1 {!}  {!} 21
+n : nat
+IHn : n + 0 = n
+foo : 0 = 0
+============================
+S (n + 0) = S n
+end(tacst)
+begin(tacst) {!} 6 {!} after {!} have (ssrhavefwdwbinders) {!} LtacNotationCall {!} (./foo3.v,167,204)
+1 {!}  {!} 21
+n : nat
+IHn : n + 0 = n
+foo : 0 = 0
+============================
+S (n + 0) = S n
+end(tacst)
+begin(tacst) {!} 10 {!} before {!} have (ssrhavefwdwbinders) {!} LtacNotationCall {!} (./foo3.v,210,240)
+1 {!} have foo2: 0 = 0 by assumption {!} 21
+n : nat
+IHn : n + 0 = n
+foo : 0 = 0
+============================
+S (n + 0) = S n
+end(tacst)
+begin(tacst) {!} 11 {!} before {!} <ssreflect_plugin::ssrhave@0> $fwd {!} LtacMLCall {!} (,0,0)
+1 {!} <ssreflect_plugin::ssrhave@0> $fwd {!} 21
+n : nat
+IHn : n + 0 = n
+foo : 0 = 0
+============================
+S (n + 0) = S n
+end(tacst)
+begin(tacst) {!} -1 {!} before {!} assumption {!} LtacNameCall {!} (./foo3.v,230,240)
+1 {!}  {!} 23
+n : nat
+IHn : n + 0 = n
+foo : 0 = 0
+============================
+0 = 0
+end(tacst)
+begin(tacst) {!} -1 {!} after {!} assumption {!} LtacNameCall {!} (./foo3.v,230,240)
+1 {!}  {!} 23
+n : nat
+IHn : n + 0 = n
+foo : 0 = 0
+============================
+0 = 0
+end(tacst)
+begin(tacst) {!} 12 {!} before {!} <coretactics::assumption@0> {!} LtacMLCall {!} (,0,0)
+1 {!} <coretactics::assumption@0> {!} 23
+n : nat
+IHn : n + 0 = n
+foo : 0 = 0
+============================
+0 = 0
+end(tacst)
+begin(tacst) {!} 12 {!} after {!} <coretactics::assumption@0> {!} LtacMLCall {!} (,0,0)
+ngs=0
+end(tacst)
+begin(tacst) {!} 11 {!} after {!} <ssreflect_plugin::ssrhave@0> $fwd {!} LtacMLCall {!} (,0,0)
+1 {!}  {!} 25
+n : nat
+IHn : n + 0 = n
+foo, foo2 : 0 = 0
+============================
+S (n + 0) = S n
+end(tacst)
+begin(tacst) {!} 10 {!} after {!} have (ssrhavefwdwbinders) {!} LtacNotationCall {!} (./foo3.v,210,240)
+1 {!}  {!} 25
+n : nat
+IHn : n + 0 = n
+foo, foo2 : 0 = 0
+============================
+S (n + 0) = S n
+end(tacst)
+begin(tacst) {!} 13 {!} before {!} have (ssrhavefwdwbinders) {!} LtacNotationCall {!} (./foo3.v,246,273)
+1 {!} have foo3: 0 = 0 by trivial {!} 25
+n : nat
+IHn : n + 0 = n
+foo, foo2 : 0 = 0
+============================
+S (n + 0) = S n
+end(tacst)
+begin(tacst) {!} 14 {!} before {!} <ssreflect_plugin::ssrhave@0> $fwd {!} LtacMLCall {!} (,0,0)
+1 {!} <ssreflect_plugin::ssrhave@0> $fwd {!} 25
+n : nat
+IHn : n + 0 = n
+foo, foo2 : 0 = 0
+============================
+S (n + 0) = S n
+end(tacst)
+begin(tacst) {!} 15 {!} before {!} trivial (auto_using) (hintbases) {!} LtacNotationCall {!} (./foo3.v,266,273)
+1 {!} trivial {!} 27
+n : nat
+IHn : n + 0 = n
+foo, foo2 : 0 = 0
+============================
+0 = 0
+end(tacst)
+begin(tacst) {!} 16 {!} before {!} <g_auto::trivial@0> $lems $db {!} LtacMLCall {!} (,0,0)
+1 {!} <g_auto::trivial@0> $lems $db {!} 27
+n : nat
+IHn : n + 0 = n
+foo, foo2 : 0 = 0
+============================
+0 = 0
+end(tacst)
+begin(tacst) {!} 16 {!} after {!} <g_auto::trivial@0> $lems $db {!} LtacMLCall {!} (,0,0)
+ngs=0
+end(tacst)
+begin(tacst) {!} 15 {!} after {!} trivial (auto_using) (hintbases) {!} LtacNotationCall {!} (./foo3.v,266,273)
+ngs=0
+end(tacst)
+begin(tacst) {!} 14 {!} after {!} <ssreflect_plugin::ssrhave@0> $fwd {!} LtacMLCall {!} (,0,0)
+1 {!}  {!} 29
+n : nat
+IHn : n + 0 = n
+foo, foo2, foo3 : 0 = 0
+============================
+S (n + 0) = S n
+end(tacst)
+begin(tacst) {!} 13 {!} after {!} have (ssrhavefwdwbinders) {!} LtacNotationCall {!} (./foo3.v,246,273)
+1 {!}  {!} 29
+n : nat
+IHn : n + 0 = n
+foo, foo2, foo3 : 0 = 0
+============================
+S (n + 0) = S n
+end(tacst)
+begin(tacst) {!} 17 {!} before {!} have (ssrhavefwdwbinders) {!} LtacNotationCall {!} (./foo3.v,279,309)
+1 {!} have foo4: 0 = 0 by exact foo3 {!} 29
+n : nat
+IHn : n + 0 = n
+foo, foo2, foo3 : 0 = 0
+============================
+S (n + 0) = S n
+end(tacst)
+begin(tacst) {!} 18 {!} before {!} <ssreflect_plugin::ssrhave@0> $fwd {!} LtacMLCall {!} (,0,0)
+1 {!} <ssreflect_plugin::ssrhave@0> $fwd {!} 29
+n : nat
+IHn : n + 0 = n
+foo, foo2, foo3 : 0 = 0
+============================
+S (n + 0) = S n
+end(tacst)
+begin(tacst) {!} 19 {!} before {!} exact (casted_constr) {!} LtacNotationCall {!} (./foo3.v,299,309)
+1 {!} exact foo3 {!} 31
+n : nat
+IHn : n + 0 = n
+foo, foo2, foo3 : 0 = 0
+============================
+0 = 0
+end(tacst)
+begin(tacst) {!} 20 {!} before {!} <coretactics::exact@0> $c {!} LtacMLCall {!} (,0,0)
+1 {!} <coretactics::exact@0> $c {!} 31
+n : nat
+IHn : n + 0 = n
+foo, foo2, foo3 : 0 = 0
+============================
+0 = 0
+end(tacst)
+begin(tacst) {!} 20 {!} after {!} <coretactics::exact@0> $c {!} LtacMLCall {!} (,0,0)
+ngs=0
+end(tacst)
+begin(tacst) {!} 19 {!} after {!} exact (casted_constr) {!} LtacNotationCall {!} (./foo3.v,299,309)
+ngs=0
+end(tacst)
+begin(tacst) {!} 18 {!} after {!} <ssreflect_plugin::ssrhave@0> $fwd {!} LtacMLCall {!} (,0,0)
+1 {!}  {!} 33
+n : nat
+IHn : n + 0 = n
+foo, foo2, foo3, foo4 : 0 = 0
+============================
+S (n + 0) = S n
+end(tacst)
+begin(tacst) {!} 17 {!} after {!} have (ssrhavefwdwbinders) {!} LtacNotationCall {!} (./foo3.v,279,309)
+1 {!}  {!} 33
+n : nat
+IHn : n + 0 = n
+foo, foo2, foo3, foo4 : 0 = 0
+============================
+S (n + 0) = S n
+end(tacst)
+begin(tacst) {!} 21 {!} before {!} have (ssrhavefwdwbinders) {!} LtacNotationCall {!} (./foo3.v,315,345)
+1 {!} have foo5: 0 = 0 by apply foo4 {!} 33
+n : nat
+IHn : n + 0 = n
+foo, foo2, foo3, foo4 : 0 = 0
+============================
+S (n + 0) = S n
+end(tacst)
+begin(tacst) {!} 22 {!} before {!} <ssreflect_plugin::ssrhave@0> $fwd {!} LtacMLCall {!} (,0,0)
+1 {!} <ssreflect_plugin::ssrhave@0> $fwd {!} 33
+n : nat
+IHn : n + 0 = n
+foo, foo2, foo3, foo4 : 0 = 0
+============================
+S (n + 0) = S n
+end(tacst)
+begin(tacst) {!} 23 {!} before {!} apply foo4 {!} LtacAtomCall {!} (./foo3.v,335,345)
+1 {!} apply foo4 {!} 35
+n : nat
+IHn : n + 0 = n
+foo, foo2, foo3, foo4 : 0 = 0
+============================
+0 = 0
+end(tacst)
+begin(tacst) {!} 23 {!} after {!} apply foo4 {!} LtacAtomCall {!} (./foo3.v,335,345)
+ngs=0
+end(tacst)
+begin(tacst) {!} 22 {!} after {!} <ssreflect_plugin::ssrhave@0> $fwd {!} LtacMLCall {!} (,0,0)
+1 {!}  {!} 37
+n : nat
+IHn : n + 0 = n
+foo, foo2, foo3, foo4, foo5 : 0 = 0
+============================
+S (n + 0) = S n
+end(tacst)
+begin(tacst) {!} 21 {!} after {!} have (ssrhavefwdwbinders) {!} LtacNotationCall {!} (./foo3.v,315,345)
+1 {!}  {!} 37
+n : nat
+IHn : n + 0 = n
+foo, foo2, foo3, foo4, foo5 : 0 = 0
+============================
+S (n + 0) = S n
+end(tacst)
+begin(tacst) {!} 24 {!} before {!} rewrite IHn {!} LtacAtomCall {!} (./foo3.v,542,556)
+1 {!} rewrite IHn {!} 37
+n : nat
+IHn : n + 0 = n
+foo, foo2, foo3, foo4, foo5 : 0 = 0
+============================
+S (n + 0) = S n
+end(tacst)
+begin(tacst) {!} 24 {!} after {!} rewrite IHn {!} LtacAtomCall {!} (./foo3.v,542,556)
+1 {!}  {!} 38
+n : nat
+IHn : n + 0 = n
+foo, foo2, foo3, foo4, foo5 : 0 = 0
+============================
+S n = S n
+end(tacst)
+begin(tacst) {!} -1 {!} before {!} reflexivity {!} LtacNameCall {!} (./foo3.v,562,573)
+1 {!}  {!} 38
+n : nat
+IHn : n + 0 = n
+foo, foo2, foo3, foo4, foo5 : 0 = 0
+============================
+S n = S n
+end(tacst)
+begin(tacst) {!} -1 {!} after {!} reflexivity {!} LtacNameCall {!} (./foo3.v,562,573)
+1 {!}  {!} 38
+n : nat
+IHn : n + 0 = n
+foo, foo2, foo3, foo4, foo5 : 0 = 0
+============================
+S n = S n
+end(tacst)
+begin(tacst) {!} 25 {!} before {!} <coretactics::reflexivity@0> {!} LtacMLCall {!} (,0,0)
+1 {!} <coretactics::reflexivity@0> {!} 38
+n : nat
+IHn : n + 0 = n
+foo, foo2, foo3, foo4, foo5 : 0 = 0
+============================
+S n = S n
+end(tacst)
+begin(tacst) {!} 25 {!} after {!} <coretactics::reflexivity@0> {!} LtacMLCall {!} (,0,0)
+ngs=0
+end(tacst)
+end(subpf)
+end(pf)

@@ -32,18 +32,12 @@ Hypothesis:
 """
 
 
-def merge_hist(hist1, hist2):
-    for k, v in hist2.items():
-        if k in hist1:
-            hist1[k] += v
-        else:
-            hist1[k] = v
-
-
 class RawStats(object):
     def __init__(self, f_print=False):
         self.file = open("rawtac.stats", "w")
         self.f_print = f_print
+        self.mltacs = {}
+        self.mlstats = {}
         self.notok = []
         self.total = 0
 
@@ -55,6 +49,14 @@ class RawStats(object):
         self.file.write("\n")
         if self.f_print:
             print(msg)
+
+    def log_mlstats(self):
+        self._mylog("MLTACS")
+        for k, v in self.mltacs.items():
+            self._mylog("{}, {}".format(k, v))
+        self._mylog("MLSTATS")
+        for k, v in self.mlstats.items():
+            self._mylog("{}, {}, {}, {}, {}".format(k[0], k[1], k[2], k[3], v))
 
     def log_notok(self):
         self._mylog("NOTOK: {}  TOTAL: {}".format(len(self.notok), self.total))
@@ -93,6 +95,24 @@ class RawStats(object):
             else:
                 ending["open"] += 1
         return ending
+
+    def stats_ml_tac(self, tac):
+        if tac.name.startswith("<"):
+            end = tac.name.find(">") + 1
+            name = tac.name[:end]
+            if name in self.mltacs:
+                self.mltacs[name] += 1
+            else:
+                self.mltacs[name] = 1
+
+            nbf = len(tac.bf_decls)
+            nbody = len(tac.bods[0])
+            naf = len(tac.af_decls)
+            key = (name, nbf, nbody, naf)
+            if key in self.mlstats:
+                self.mlstats[key] += 1
+            else:
+                self.mlstats[key] = 1
 
     def stats_notation(self, lemma, tac):
         # Basic stats
@@ -155,6 +175,10 @@ class RawStats(object):
                           "ending": ending})
         self._mylog(msg)
 
+        # Recursively check body
+        for body in tac.bods:
+            self.stats_tacs(lemma, body)
+
         if not isok:
             self.notok += [(lemma.name, tac.uid, tac.name, tac.kind, naf, nbods, nbf)]
         return isok
@@ -166,6 +190,8 @@ class RawStats(object):
         body = tac.bods[0]
         nbody = len(body)
         naf = len(tac.af_decls)
+
+        self.stats_ml_tac(tac)
 
         # First-order connection stats
         bf_conn, bf_iso = self.fo_bfaf_match(tac.bf_decls, body, lambda tac: tac.bf_decls)
@@ -197,6 +223,9 @@ class RawStats(object):
                           "ending": ending})
         self._mylog(msg)
 
+        # Recursively check body
+        self.stats_tacs(lemma, body)
+
         if not isok:
             self.notok += [(lemma.name, tac.uid, tac.name, tac.kind, naf, nbody, nbf)]
         return isok
@@ -212,15 +241,3 @@ class RawStats(object):
         # Compute some stats on RawTacs
         for tac in tacs:
             self.stats_tac(lemma, tac)
-
-    """
-    def stats_file(self, file):
-        ts_parser = TacStParser(file, f_log=False)
-        while not ts_parser.exhausted:
-            lemma = ts_parser.parse_lemma()
-            self.stats_lemma(lemma)
-    """
-
-
-if __name__ == "__main__":
-    print("HERE")

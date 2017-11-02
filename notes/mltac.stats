@@ -1,0 +1,806 @@
+--------------------------------
+MLCNT
+<g_auto::trivial@0>, 62228
+<ssreflect_plugin::ssrrewrite@0>, 16099
+<ssreflect_plugin::ssrapply@0>, 16092
+<ssreflect_plugin::ssrhave@0>, 11415
+<coretactics::split@0>, 10927
+<extratactics::discriminate@0>, 10608
+<extratactics::contradiction@0>, 10297
+<ssreflect_plugin::ssrtcldo@0>, 9870
+<coretactics::assumption@0>, 8784
+<ssreflect_plugin::ssrtclby@0>, 6814
+<ssreflect_plugin::ssrtclintros@0>, 1882
+<ssreflect_plugin::ssrcase@0>, 1652
+<ssreflect_plugin::ssrmove@1>, 1524
+<ssreflect_plugin::ssrtclseq@0>, 1268
+<ssreflect_plugin::ssrpose@2>, 906
+<ssreflect_plugin::ssrexact@0>, 779
+<coretactics::exists@1>, 714
+<ssreflect_plugin::ssrsuffices@0>, 371
+<ssreflect_plugin::ssrset@0>, 356
+<ssreflect_plugin::ssrcongr@0>, 234
+<ssreflect_plugin::ssrmove@0>, 86
+<ssreflect_plugin::ssrelim@0>, 84
+<ssreflect_plugin::ssrwithoutloss@0>, 60
+<coretactics::transitivity@0>, 54
+<ssreflect_plugin::ssrapply@1>, 47
+<coretactics::left@0>, 46
+<ssreflect_plugin::ssrwlog@0>, 44
+<coretactics::right@0>, 38
+<coretactics::exact@0>, 34
+<ssreflect_plugin::ssrsuff@0>, 25
+<ssreflect_plugin::ssrcase@1>, 25
+<coretactics::symmetry@0>, 24
+<coretactics::clear@0>, 9
+<g_auto::auto@0>, 6
+<coretactics::constructor@1>, 6
+<ssreflect_plugin::ssrmove@2>, 4
+<ssreflect_plugin::ssrexact@1>, 2
+<coretactics::constructor@0>, 2
+<ssreflect_plugin::ssrwlogss@0>, 1
+<ssreflect_plugin::ssrwlogs@0>, 1
+<ssreflect_plugin::ssrwithoutlossss@0>, 1
+<ssreflect_plugin::ssrclear@0>, 1
+<g_auto::eauto@0>, 1
+<coretactics::clearbody@0>, 1
+
+
+--------------------------------
+MLSTATS
+<ssreflect_plugin::ssrwlogss@0>, 1, 0, 2, 1
+<ssreflect_plugin::ssrwlogs@0>, 1, 0, 2, 1
+<ssreflect_plugin::ssrwlog@0>, 1, 0, 2, 37
+<ssreflect_plugin::ssrwlog@0>, 1, 6, 1, 1
+<ssreflect_plugin::ssrwlog@0>, 1, 2, 1, 1
+<ssreflect_plugin::ssrwlog@0>, 1, 1, 1, 5
+<ssreflect_plugin::ssrwithoutlossss@0>, 1, 0, 2, 1
+<ssreflect_plugin::ssrwithoutloss@0>, 1, 0, 2, 60
+<ssreflect_plugin::ssrtclseq@0>, 1, 5, 4, 1
+<ssreflect_plugin::ssrtclseq@0>, 1, 4, 4, 2
+<ssreflect_plugin::ssrtclseq@0>, 1, 3, 4, 1
+<ssreflect_plugin::ssrtclseq@0>, 1, 2, 4, 3
+<ssreflect_plugin::ssrtclseq@0>, 1, 1, 4, 3
+<ssreflect_plugin::ssrtclseq@0>, 1, 5, 3, 1
+<ssreflect_plugin::ssrtclseq@0>, 1, 4, 3, 1
+<ssreflect_plugin::ssrtclseq@0>, 1, 3, 3, 3
+<ssreflect_plugin::ssrtclseq@0>, 1, 2, 3, 6
+<ssreflect_plugin::ssrtclseq@0>, 1, 1, 3, 15
+<ssreflect_plugin::ssrtclseq@0>, 1, 5, 2, 2
+<ssreflect_plugin::ssrtclseq@0>, 1, 4, 2, 6
+<ssreflect_plugin::ssrtclseq@0>, 1, 3, 2, 29
+<ssreflect_plugin::ssrtclseq@0>, 1, 2, 2, 136
+<ssreflect_plugin::ssrtclseq@0>, 1, 1, 2, 323
+<ssreflect_plugin::ssrtclseq@0>, 1, 6, 1, 1
+<ssreflect_plugin::ssrtclseq@0>, 1, 5, 1, 1
+<ssreflect_plugin::ssrtclseq@0>, 1, 4, 1, 29
+<ssreflect_plugin::ssrtclseq@0>, 1, 3, 1, 116
+<ssreflect_plugin::ssrtclseq@0>, 1, 2, 1, 589
+<ssreflect_plugin::ssrtclintros@0>, 4, 4, 1, 1
+<ssreflect_plugin::ssrtclintros@0>, 3, 3, 1, 4
+<ssreflect_plugin::ssrtclintros@0>, 2, 32, 2, 2
+<ssreflect_plugin::ssrtclintros@0>, 2, 28, 2, 2
+<ssreflect_plugin::ssrtclintros@0>, 2, 2, 2, 7
+<ssreflect_plugin::ssrtclintros@0>, 2, 23, 1, 1
+<ssreflect_plugin::ssrtclintros@0>, 2, 14, 1, 1
+<ssreflect_plugin::ssrtclintros@0>, 2, 2, 1, 4
+<ssreflect_plugin::ssrtclintros@0>, 1, 1, 10, 2
+<ssreflect_plugin::ssrtclintros@0>, 1, 2, 5, 1
+<ssreflect_plugin::ssrtclintros@0>, 1, 1, 5, 1
+<ssreflect_plugin::ssrtclintros@0>, 1, 39, 4, 1
+<ssreflect_plugin::ssrtclintros@0>, 1, 38, 4, 1
+<ssreflect_plugin::ssrtclintros@0>, 1, 2, 4, 3
+<ssreflect_plugin::ssrtclintros@0>, 1, 1, 4, 2
+<ssreflect_plugin::ssrtclintros@0>, 1, 34, 3, 3
+<ssreflect_plugin::ssrtclintros@0>, 1, 31, 3, 1
+<ssreflect_plugin::ssrtclintros@0>, 1, 30, 3, 8
+<ssreflect_plugin::ssrtclintros@0>, 1, 26, 3, 1
+<ssreflect_plugin::ssrtclintros@0>, 1, 2, 3, 13
+<ssreflect_plugin::ssrtclintros@0>, 1, 1, 3, 10
+<ssreflect_plugin::ssrtclintros@0>, 1, 43, 2, 1
+<ssreflect_plugin::ssrtclintros@0>, 1, 39, 2, 1
+<ssreflect_plugin::ssrtclintros@0>, 1, 35, 2, 2
+<ssreflect_plugin::ssrtclintros@0>, 1, 34, 2, 2
+<ssreflect_plugin::ssrtclintros@0>, 1, 33, 2, 2
+<ssreflect_plugin::ssrtclintros@0>, 1, 32, 2, 2
+<ssreflect_plugin::ssrtclintros@0>, 1, 31, 2, 2
+<ssreflect_plugin::ssrtclintros@0>, 1, 30, 2, 13
+<ssreflect_plugin::ssrtclintros@0>, 1, 28, 2, 2
+<ssreflect_plugin::ssrtclintros@0>, 1, 27, 2, 2
+<ssreflect_plugin::ssrtclintros@0>, 1, 26, 2, 9
+<ssreflect_plugin::ssrtclintros@0>, 1, 25, 2, 4
+<ssreflect_plugin::ssrtclintros@0>, 1, 23, 2, 6
+<ssreflect_plugin::ssrtclintros@0>, 1, 22, 2, 63
+<ssreflect_plugin::ssrtclintros@0>, 1, 21, 2, 3
+<ssreflect_plugin::ssrtclintros@0>, 1, 18, 2, 4
+<ssreflect_plugin::ssrtclintros@0>, 1, 17, 2, 1
+<ssreflect_plugin::ssrtclintros@0>, 1, 15, 2, 1
+<ssreflect_plugin::ssrtclintros@0>, 1, 13, 2, 1
+<ssreflect_plugin::ssrtclintros@0>, 1, 7, 2, 1
+<ssreflect_plugin::ssrtclintros@0>, 1, 6, 2, 2
+<ssreflect_plugin::ssrtclintros@0>, 1, 5, 2, 2
+<ssreflect_plugin::ssrtclintros@0>, 1, 2, 2, 78
+<ssreflect_plugin::ssrtclintros@0>, 1, 1, 2, 169
+<ssreflect_plugin::ssrtclintros@0>, 1, 123, 1, 1
+<ssreflect_plugin::ssrtclintros@0>, 1, 73, 1, 1
+<ssreflect_plugin::ssrtclintros@0>, 1, 37, 1, 1
+<ssreflect_plugin::ssrtclintros@0>, 1, 30, 1, 1
+<ssreflect_plugin::ssrtclintros@0>, 1, 29, 1, 1
+<ssreflect_plugin::ssrtclintros@0>, 1, 28, 1, 2
+<ssreflect_plugin::ssrtclintros@0>, 1, 27, 1, 2
+<ssreflect_plugin::ssrtclintros@0>, 1, 26, 1, 6
+<ssreflect_plugin::ssrtclintros@0>, 1, 25, 1, 2
+<ssreflect_plugin::ssrtclintros@0>, 1, 24, 1, 1
+<ssreflect_plugin::ssrtclintros@0>, 1, 23, 1, 3
+<ssreflect_plugin::ssrtclintros@0>, 1, 22, 1, 16
+<ssreflect_plugin::ssrtclintros@0>, 1, 20, 1, 2
+<ssreflect_plugin::ssrtclintros@0>, 1, 19, 1, 1
+<ssreflect_plugin::ssrtclintros@0>, 1, 18, 1, 63
+<ssreflect_plugin::ssrtclintros@0>, 1, 17, 1, 6
+<ssreflect_plugin::ssrtclintros@0>, 1, 16, 1, 2
+<ssreflect_plugin::ssrtclintros@0>, 1, 15, 1, 6
+<ssreflect_plugin::ssrtclintros@0>, 1, 14, 1, 126
+<ssreflect_plugin::ssrtclintros@0>, 1, 13, 1, 110
+<ssreflect_plugin::ssrtclintros@0>, 1, 10, 1, 1
+<ssreflect_plugin::ssrtclintros@0>, 1, 9, 1, 3
+<ssreflect_plugin::ssrtclintros@0>, 1, 6, 1, 3
+<ssreflect_plugin::ssrtclintros@0>, 1, 5, 1, 22
+<ssreflect_plugin::ssrtclintros@0>, 1, 2, 1, 14
+<ssreflect_plugin::ssrtclintros@0>, 1, 1, 1, 1044
+<ssreflect_plugin::ssrtcldo@0>, 3, 3, 2, 1
+<ssreflect_plugin::ssrtcldo@0>, 2, 6, 6, 1
+<ssreflect_plugin::ssrtcldo@0>, 2, 4, 4, 1
+<ssreflect_plugin::ssrtcldo@0>, 2, 2, 2, 1
+<ssreflect_plugin::ssrtcldo@0>, 1, 12, 17, 1
+<ssreflect_plugin::ssrtcldo@0>, 1, 128, 14, 1
+<ssreflect_plugin::ssrtcldo@0>, 1, 93, 10, 1
+<ssreflect_plugin::ssrtcldo@0>, 1, 87, 9, 2
+<ssreflect_plugin::ssrtcldo@0>, 1, 78, 9, 1
+<ssreflect_plugin::ssrtcldo@0>, 1, 81, 8, 1
+<ssreflect_plugin::ssrtcldo@0>, 1, 77, 8, 2
+<ssreflect_plugin::ssrtcldo@0>, 1, 59, 7, 1
+<ssreflect_plugin::ssrtcldo@0>, 1, 58, 6, 2
+<ssreflect_plugin::ssrtcldo@0>, 1, 55, 5, 1
+<ssreflect_plugin::ssrtcldo@0>, 1, 52, 5, 1
+<ssreflect_plugin::ssrtcldo@0>, 1, 48, 5, 1
+<ssreflect_plugin::ssrtcldo@0>, 1, 47, 5, 2
+<ssreflect_plugin::ssrtcldo@0>, 1, 45, 5, 1
+<ssreflect_plugin::ssrtcldo@0>, 1, 40, 5, 1
+<ssreflect_plugin::ssrtcldo@0>, 1, 8, 5, 1
+<ssreflect_plugin::ssrtcldo@0>, 1, 56, 4, 1
+<ssreflect_plugin::ssrtcldo@0>, 1, 40, 4, 2
+<ssreflect_plugin::ssrtcldo@0>, 1, 39, 4, 3
+<ssreflect_plugin::ssrtcldo@0>, 1, 35, 4, 2
+<ssreflect_plugin::ssrtcldo@0>, 1, 34, 4, 2
+<ssreflect_plugin::ssrtcldo@0>, 1, 33, 4, 2
+<ssreflect_plugin::ssrtcldo@0>, 1, 32, 4, 1
+<ssreflect_plugin::ssrtcldo@0>, 1, 6, 4, 1
+<ssreflect_plugin::ssrtcldo@0>, 1, 3, 4, 5
+<ssreflect_plugin::ssrtcldo@0>, 1, 34, 3, 1
+<ssreflect_plugin::ssrtcldo@0>, 1, 33, 3, 11
+<ssreflect_plugin::ssrtcldo@0>, 1, 32, 3, 3
+<ssreflect_plugin::ssrtcldo@0>, 1, 31, 3, 3
+<ssreflect_plugin::ssrtcldo@0>, 1, 30, 3, 4
+<ssreflect_plugin::ssrtcldo@0>, 1, 28, 3, 5
+<ssreflect_plugin::ssrtcldo@0>, 1, 27, 3, 23
+<ssreflect_plugin::ssrtcldo@0>, 1, 26, 3, 24
+<ssreflect_plugin::ssrtcldo@0>, 1, 25, 3, 10
+<ssreflect_plugin::ssrtcldo@0>, 1, 24, 3, 1
+<ssreflect_plugin::ssrtcldo@0>, 1, 6, 3, 1
+<ssreflect_plugin::ssrtcldo@0>, 1, 4, 3, 1
+<ssreflect_plugin::ssrtcldo@0>, 1, 3, 3, 4
+<ssreflect_plugin::ssrtcldo@0>, 1, 28, 2, 1
+<ssreflect_plugin::ssrtcldo@0>, 1, 26, 2, 1
+<ssreflect_plugin::ssrtcldo@0>, 1, 23, 2, 5
+<ssreflect_plugin::ssrtcldo@0>, 1, 22, 2, 2
+<ssreflect_plugin::ssrtcldo@0>, 1, 21, 2, 12
+<ssreflect_plugin::ssrtcldo@0>, 1, 20, 2, 92
+<ssreflect_plugin::ssrtcldo@0>, 1, 19, 2, 38
+<ssreflect_plugin::ssrtcldo@0>, 1, 18, 2, 2
+<ssreflect_plugin::ssrtcldo@0>, 1, 3, 2, 13
+<ssreflect_plugin::ssrtcldo@0>, 1, 2, 2, 4
+<ssreflect_plugin::ssrtcldo@0>, 1, 1, 2, 2
+<ssreflect_plugin::ssrtcldo@0>, 1, 34, 1, 1
+<ssreflect_plugin::ssrtcldo@0>, 1, 31, 1, 1
+<ssreflect_plugin::ssrtcldo@0>, 1, 28, 1, 1
+<ssreflect_plugin::ssrtcldo@0>, 1, 24, 1, 1
+<ssreflect_plugin::ssrtcldo@0>, 1, 23, 1, 1
+<ssreflect_plugin::ssrtcldo@0>, 1, 22, 1, 1
+<ssreflect_plugin::ssrtcldo@0>, 1, 21, 1, 1
+<ssreflect_plugin::ssrtcldo@0>, 1, 19, 1, 2
+<ssreflect_plugin::ssrtcldo@0>, 1, 18, 1, 2
+<ssreflect_plugin::ssrtcldo@0>, 1, 17, 1, 3
+<ssreflect_plugin::ssrtcldo@0>, 1, 16, 1, 9
+<ssreflect_plugin::ssrtcldo@0>, 1, 15, 1, 31
+<ssreflect_plugin::ssrtcldo@0>, 1, 14, 1, 43
+<ssreflect_plugin::ssrtcldo@0>, 1, 13, 1, 15
+<ssreflect_plugin::ssrtcldo@0>, 1, 11, 1, 13
+<ssreflect_plugin::ssrtcldo@0>, 1, 10, 1, 33
+<ssreflect_plugin::ssrtcldo@0>, 1, 9, 1, 160
+<ssreflect_plugin::ssrtcldo@0>, 1, 8, 1, 318
+<ssreflect_plugin::ssrtcldo@0>, 1, 7, 1, 8189
+<ssreflect_plugin::ssrtcldo@0>, 1, 6, 1, 231
+<ssreflect_plugin::ssrtcldo@0>, 1, 5, 1, 27
+<ssreflect_plugin::ssrtcldo@0>, 1, 4, 1, 212
+<ssreflect_plugin::ssrtcldo@0>, 1, 3, 1, 167
+<ssreflect_plugin::ssrtcldo@0>, 1, 2, 1, 52
+<ssreflect_plugin::ssrtcldo@0>, 1, 1, 1, 50
+<ssreflect_plugin::ssrtclby@0>, 2, 22, 1, 1
+<ssreflect_plugin::ssrtclby@0>, 2, 10, 1, 1
+<ssreflect_plugin::ssrtclby@0>, 1, 132, 1, 1
+<ssreflect_plugin::ssrtclby@0>, 1, 99, 1, 1
+<ssreflect_plugin::ssrtclby@0>, 1, 86, 1, 1
+<ssreflect_plugin::ssrtclby@0>, 1, 69, 1, 1
+<ssreflect_plugin::ssrtclby@0>, 1, 66, 1, 1
+<ssreflect_plugin::ssrtclby@0>, 1, 53, 1, 4
+<ssreflect_plugin::ssrtclby@0>, 1, 52, 1, 2
+<ssreflect_plugin::ssrtclby@0>, 1, 49, 1, 2
+<ssreflect_plugin::ssrtclby@0>, 1, 45, 1, 8
+<ssreflect_plugin::ssrtclby@0>, 1, 43, 1, 1
+<ssreflect_plugin::ssrtclby@0>, 1, 42, 1, 1
+<ssreflect_plugin::ssrtclby@0>, 1, 41, 1, 4
+<ssreflect_plugin::ssrtclby@0>, 1, 39, 1, 1
+<ssreflect_plugin::ssrtclby@0>, 1, 38, 1, 2
+<ssreflect_plugin::ssrtclby@0>, 1, 37, 1, 10
+<ssreflect_plugin::ssrtclby@0>, 1, 35, 1, 1
+<ssreflect_plugin::ssrtclby@0>, 1, 34, 1, 4
+<ssreflect_plugin::ssrtclby@0>, 1, 33, 1, 17
+<ssreflect_plugin::ssrtclby@0>, 1, 31, 1, 2
+<ssreflect_plugin::ssrtclby@0>, 1, 30, 1, 7
+<ssreflect_plugin::ssrtclby@0>, 1, 29, 1, 32
+<ssreflect_plugin::ssrtclby@0>, 1, 27, 1, 3
+<ssreflect_plugin::ssrtclby@0>, 1, 26, 1, 21
+<ssreflect_plugin::ssrtclby@0>, 1, 25, 1, 46
+<ssreflect_plugin::ssrtclby@0>, 1, 24, 1, 1
+<ssreflect_plugin::ssrtclby@0>, 1, 23, 1, 7
+<ssreflect_plugin::ssrtclby@0>, 1, 22, 1, 35
+<ssreflect_plugin::ssrtclby@0>, 1, 21, 1, 120
+<ssreflect_plugin::ssrtclby@0>, 1, 20, 1, 7
+<ssreflect_plugin::ssrtclby@0>, 1, 19, 1, 20
+<ssreflect_plugin::ssrtclby@0>, 1, 18, 1, 83
+<ssreflect_plugin::ssrtclby@0>, 1, 17, 1, 232
+<ssreflect_plugin::ssrtclby@0>, 1, 16, 1, 3
+<ssreflect_plugin::ssrtclby@0>, 1, 15, 1, 31
+<ssreflect_plugin::ssrtclby@0>, 1, 14, 1, 180
+<ssreflect_plugin::ssrtclby@0>, 1, 13, 1, 665
+<ssreflect_plugin::ssrtclby@0>, 1, 12, 1, 30
+<ssreflect_plugin::ssrtclby@0>, 1, 11, 1, 115
+<ssreflect_plugin::ssrtclby@0>, 1, 10, 1, 368
+<ssreflect_plugin::ssrtclby@0>, 1, 9, 1, 1195
+<ssreflect_plugin::ssrtclby@0>, 1, 8, 1, 42
+<ssreflect_plugin::ssrtclby@0>, 1, 7, 1, 248
+<ssreflect_plugin::ssrtclby@0>, 1, 6, 1, 846
+<ssreflect_plugin::ssrtclby@0>, 1, 5, 1, 2168
+<ssreflect_plugin::ssrtclby@0>, 1, 4, 1, 14
+<ssreflect_plugin::ssrtclby@0>, 1, 3, 1, 32
+<ssreflect_plugin::ssrtclby@0>, 1, 2, 1, 152
+<ssreflect_plugin::ssrtclby@0>, 1, 1, 1, 41
+<ssreflect_plugin::ssrtclby@0>, 1, 2, 0, 1
+<ssreflect_plugin::ssrtclby@0>, 1, 1, 0, 3
+<ssreflect_plugin::ssrsuffices@0>, 1, 0, 2, 253
+<ssreflect_plugin::ssrsuffices@0>, 1, 26, 1, 1
+<ssreflect_plugin::ssrsuffices@0>, 1, 25, 1, 1
+<ssreflect_plugin::ssrsuffices@0>, 1, 21, 1, 1
+<ssreflect_plugin::ssrsuffices@0>, 1, 17, 1, 3
+<ssreflect_plugin::ssrsuffices@0>, 1, 15, 1, 1
+<ssreflect_plugin::ssrsuffices@0>, 1, 14, 1, 3
+<ssreflect_plugin::ssrsuffices@0>, 1, 13, 1, 6
+<ssreflect_plugin::ssrsuffices@0>, 1, 11, 1, 2
+<ssreflect_plugin::ssrsuffices@0>, 1, 10, 1, 5
+<ssreflect_plugin::ssrsuffices@0>, 1, 9, 1, 12
+<ssreflect_plugin::ssrsuffices@0>, 1, 7, 1, 3
+<ssreflect_plugin::ssrsuffices@0>, 1, 6, 1, 14
+<ssreflect_plugin::ssrsuffices@0>, 1, 5, 1, 51
+<ssreflect_plugin::ssrsuffices@0>, 1, 4, 1, 3
+<ssreflect_plugin::ssrsuffices@0>, 1, 2, 1, 1
+<ssreflect_plugin::ssrsuffices@0>, 1, 1, 1, 11
+<ssreflect_plugin::ssrsuff@0>, 1, 0, 2, 12
+<ssreflect_plugin::ssrsuff@0>, 1, 22, 1, 1
+<ssreflect_plugin::ssrsuff@0>, 1, 10, 1, 2
+<ssreflect_plugin::ssrsuff@0>, 1, 9, 1, 3
+<ssreflect_plugin::ssrsuff@0>, 1, 7, 1, 1
+<ssreflect_plugin::ssrsuff@0>, 1, 6, 1, 2
+<ssreflect_plugin::ssrsuff@0>, 1, 5, 1, 4
+<ssreflect_plugin::ssrset@0>, 1, 0, 1, 356
+<ssreflect_plugin::ssrrewrite@0>, 1, 0, 21, 1
+<ssreflect_plugin::ssrrewrite@0>, 1, 0, 17, 1
+<ssreflect_plugin::ssrrewrite@0>, 1, 0, 14, 1
+<ssreflect_plugin::ssrrewrite@0>, 1, 0, 13, 5
+<ssreflect_plugin::ssrrewrite@0>, 1, 0, 12, 2
+<ssreflect_plugin::ssrrewrite@0>, 1, 0, 11, 8
+<ssreflect_plugin::ssrrewrite@0>, 1, 136, 10, 1
+<ssreflect_plugin::ssrrewrite@0>, 1, 0, 10, 2
+<ssreflect_plugin::ssrrewrite@0>, 1, 44, 9, 1
+<ssreflect_plugin::ssrrewrite@0>, 1, 28, 9, 1
+<ssreflect_plugin::ssrrewrite@0>, 1, 0, 9, 9
+<ssreflect_plugin::ssrrewrite@0>, 1, 56, 8, 1
+<ssreflect_plugin::ssrrewrite@0>, 1, 24, 8, 1
+<ssreflect_plugin::ssrrewrite@0>, 1, 20, 8, 2
+<ssreflect_plugin::ssrrewrite@0>, 1, 8, 8, 2
+<ssreflect_plugin::ssrrewrite@0>, 1, 0, 8, 15
+<ssreflect_plugin::ssrrewrite@0>, 1, 12, 7, 1
+<ssreflect_plugin::ssrrewrite@0>, 1, 0, 7, 39
+<ssreflect_plugin::ssrrewrite@0>, 1, 28, 6, 1
+<ssreflect_plugin::ssrrewrite@0>, 1, 24, 6, 2
+<ssreflect_plugin::ssrrewrite@0>, 1, 20, 6, 3
+<ssreflect_plugin::ssrrewrite@0>, 1, 16, 6, 1
+<ssreflect_plugin::ssrrewrite@0>, 1, 12, 6, 2
+<ssreflect_plugin::ssrrewrite@0>, 1, 8, 6, 2
+<ssreflect_plugin::ssrrewrite@0>, 1, 0, 6, 56
+<ssreflect_plugin::ssrrewrite@0>, 1, 28, 5, 1
+<ssreflect_plugin::ssrrewrite@0>, 1, 24, 5, 2
+<ssreflect_plugin::ssrrewrite@0>, 1, 20, 5, 2
+<ssreflect_plugin::ssrrewrite@0>, 1, 16, 5, 7
+<ssreflect_plugin::ssrrewrite@0>, 1, 12, 5, 6
+<ssreflect_plugin::ssrrewrite@0>, 1, 0, 5, 156
+<ssreflect_plugin::ssrrewrite@0>, 1, 60, 4, 1
+<ssreflect_plugin::ssrrewrite@0>, 1, 44, 4, 2
+<ssreflect_plugin::ssrrewrite@0>, 1, 36, 4, 2
+<ssreflect_plugin::ssrrewrite@0>, 1, 32, 4, 1
+<ssreflect_plugin::ssrrewrite@0>, 1, 28, 4, 1
+<ssreflect_plugin::ssrrewrite@0>, 1, 24, 4, 5
+<ssreflect_plugin::ssrrewrite@0>, 1, 20, 4, 3
+<ssreflect_plugin::ssrrewrite@0>, 1, 18, 4, 1
+<ssreflect_plugin::ssrrewrite@0>, 1, 16, 4, 12
+<ssreflect_plugin::ssrrewrite@0>, 1, 12, 4, 25
+<ssreflect_plugin::ssrrewrite@0>, 1, 8, 4, 3
+<ssreflect_plugin::ssrrewrite@0>, 1, 0, 4, 307
+<ssreflect_plugin::ssrrewrite@0>, 1, 76, 3, 1
+<ssreflect_plugin::ssrrewrite@0>, 1, 64, 3, 1
+<ssreflect_plugin::ssrrewrite@0>, 1, 56, 3, 1
+<ssreflect_plugin::ssrrewrite@0>, 1, 52, 3, 1
+<ssreflect_plugin::ssrrewrite@0>, 1, 48, 3, 1
+<ssreflect_plugin::ssrrewrite@0>, 1, 40, 3, 2
+<ssreflect_plugin::ssrrewrite@0>, 1, 36, 3, 1
+<ssreflect_plugin::ssrrewrite@0>, 1, 32, 3, 12
+<ssreflect_plugin::ssrrewrite@0>, 1, 28, 3, 9
+<ssreflect_plugin::ssrrewrite@0>, 1, 26, 3, 1
+<ssreflect_plugin::ssrrewrite@0>, 1, 24, 3, 16
+<ssreflect_plugin::ssrrewrite@0>, 1, 20, 3, 12
+<ssreflect_plugin::ssrrewrite@0>, 1, 16, 3, 52
+<ssreflect_plugin::ssrrewrite@0>, 1, 14, 3, 3
+<ssreflect_plugin::ssrrewrite@0>, 1, 13, 3, 1
+<ssreflect_plugin::ssrrewrite@0>, 1, 12, 3, 81
+<ssreflect_plugin::ssrrewrite@0>, 1, 8, 3, 13
+<ssreflect_plugin::ssrrewrite@0>, 1, 0, 3, 922
+<ssreflect_plugin::ssrrewrite@0>, 1, 72, 2, 1
+<ssreflect_plugin::ssrrewrite@0>, 1, 56, 2, 2
+<ssreflect_plugin::ssrrewrite@0>, 1, 53, 2, 1
+<ssreflect_plugin::ssrrewrite@0>, 1, 52, 2, 1
+<ssreflect_plugin::ssrrewrite@0>, 1, 48, 2, 3
+<ssreflect_plugin::ssrrewrite@0>, 1, 46, 2, 2
+<ssreflect_plugin::ssrrewrite@0>, 1, 44, 2, 12
+<ssreflect_plugin::ssrrewrite@0>, 1, 42, 2, 1
+<ssreflect_plugin::ssrrewrite@0>, 1, 40, 2, 8
+<ssreflect_plugin::ssrrewrite@0>, 1, 37, 2, 1
+<ssreflect_plugin::ssrrewrite@0>, 1, 36, 2, 23
+<ssreflect_plugin::ssrrewrite@0>, 1, 34, 2, 1
+<ssreflect_plugin::ssrrewrite@0>, 1, 33, 2, 3
+<ssreflect_plugin::ssrrewrite@0>, 1, 32, 2, 42
+<ssreflect_plugin::ssrrewrite@0>, 1, 29, 2, 3
+<ssreflect_plugin::ssrrewrite@0>, 1, 28, 2, 58
+<ssreflect_plugin::ssrrewrite@0>, 1, 25, 2, 3
+<ssreflect_plugin::ssrrewrite@0>, 1, 24, 2, 102
+<ssreflect_plugin::ssrrewrite@0>, 1, 22, 2, 1
+<ssreflect_plugin::ssrrewrite@0>, 1, 21, 2, 5
+<ssreflect_plugin::ssrrewrite@0>, 1, 20, 2, 149
+<ssreflect_plugin::ssrrewrite@0>, 1, 18, 2, 3
+<ssreflect_plugin::ssrrewrite@0>, 1, 17, 2, 1
+<ssreflect_plugin::ssrrewrite@0>, 1, 16, 2, 174
+<ssreflect_plugin::ssrrewrite@0>, 1, 14, 2, 3
+<ssreflect_plugin::ssrrewrite@0>, 1, 13, 2, 6
+<ssreflect_plugin::ssrrewrite@0>, 1, 12, 2, 268
+<ssreflect_plugin::ssrrewrite@0>, 1, 10, 2, 2
+<ssreflect_plugin::ssrrewrite@0>, 1, 8, 2, 35
+<ssreflect_plugin::ssrrewrite@0>, 1, 0, 2, 1704
+<ssreflect_plugin::ssrrewrite@0>, 1, 244, 1, 1
+<ssreflect_plugin::ssrrewrite@0>, 1, 232, 1, 1
+<ssreflect_plugin::ssrrewrite@0>, 1, 148, 1, 1
+<ssreflect_plugin::ssrrewrite@0>, 1, 128, 1, 1
+<ssreflect_plugin::ssrrewrite@0>, 1, 120, 1, 1
+<ssreflect_plugin::ssrrewrite@0>, 1, 96, 1, 2
+<ssreflect_plugin::ssrrewrite@0>, 1, 88, 1, 1
+<ssreflect_plugin::ssrrewrite@0>, 1, 80, 1, 1
+<ssreflect_plugin::ssrrewrite@0>, 1, 76, 1, 1
+<ssreflect_plugin::ssrrewrite@0>, 1, 72, 1, 2
+<ssreflect_plugin::ssrrewrite@0>, 1, 68, 1, 2
+<ssreflect_plugin::ssrrewrite@0>, 1, 64, 1, 5
+<ssreflect_plugin::ssrrewrite@0>, 1, 61, 1, 2
+<ssreflect_plugin::ssrrewrite@0>, 1, 60, 1, 5
+<ssreflect_plugin::ssrrewrite@0>, 1, 58, 1, 1
+<ssreflect_plugin::ssrrewrite@0>, 1, 56, 1, 16
+<ssreflect_plugin::ssrrewrite@0>, 1, 54, 1, 1
+<ssreflect_plugin::ssrrewrite@0>, 1, 52, 1, 15
+<ssreflect_plugin::ssrrewrite@0>, 1, 48, 1, 24
+<ssreflect_plugin::ssrrewrite@0>, 1, 45, 1, 3
+<ssreflect_plugin::ssrrewrite@0>, 1, 44, 1, 23
+<ssreflect_plugin::ssrrewrite@0>, 1, 42, 1, 2
+<ssreflect_plugin::ssrrewrite@0>, 1, 41, 1, 2
+<ssreflect_plugin::ssrrewrite@0>, 1, 40, 1, 52
+<ssreflect_plugin::ssrrewrite@0>, 1, 37, 1, 3
+<ssreflect_plugin::ssrrewrite@0>, 1, 36, 1, 89
+<ssreflect_plugin::ssrrewrite@0>, 1, 34, 1, 1
+<ssreflect_plugin::ssrrewrite@0>, 1, 33, 1, 4
+<ssreflect_plugin::ssrrewrite@0>, 1, 32, 1, 153
+<ssreflect_plugin::ssrrewrite@0>, 1, 29, 1, 2
+<ssreflect_plugin::ssrrewrite@0>, 1, 28, 1, 306
+<ssreflect_plugin::ssrrewrite@0>, 1, 26, 1, 2
+<ssreflect_plugin::ssrrewrite@0>, 1, 25, 1, 11
+<ssreflect_plugin::ssrrewrite@0>, 1, 24, 1, 477
+<ssreflect_plugin::ssrrewrite@0>, 1, 22, 1, 11
+<ssreflect_plugin::ssrrewrite@0>, 1, 21, 1, 12
+<ssreflect_plugin::ssrrewrite@0>, 1, 20, 1, 331
+<ssreflect_plugin::ssrrewrite@0>, 1, 18, 1, 22
+<ssreflect_plugin::ssrrewrite@0>, 1, 17, 1, 20
+<ssreflect_plugin::ssrrewrite@0>, 1, 16, 1, 875
+<ssreflect_plugin::ssrrewrite@0>, 1, 14, 1, 43
+<ssreflect_plugin::ssrrewrite@0>, 1, 13, 1, 27
+<ssreflect_plugin::ssrrewrite@0>, 1, 12, 1, 1902
+<ssreflect_plugin::ssrrewrite@0>, 1, 10, 1, 8
+<ssreflect_plugin::ssrrewrite@0>, 1, 9, 1, 3
+<ssreflect_plugin::ssrrewrite@0>, 1, 8, 1, 388
+<ssreflect_plugin::ssrrewrite@0>, 1, 5, 1, 20
+<ssreflect_plugin::ssrrewrite@0>, 1, 4, 1, 392
+<ssreflect_plugin::ssrrewrite@0>, 1, 0, 1, 6387
+<ssreflect_plugin::ssrpose@2>, 1, 0, 1, 906
+<ssreflect_plugin::ssrmove@2>, 1, 0, 3, 1
+<ssreflect_plugin::ssrmove@2>, 1, 0, 2, 1
+<ssreflect_plugin::ssrmove@2>, 1, 0, 1, 2
+<ssreflect_plugin::ssrmove@1>, 1, 0, 7, 1
+<ssreflect_plugin::ssrmove@1>, 1, 20, 4, 1
+<ssreflect_plugin::ssrmove@1>, 1, 0, 4, 2
+<ssreflect_plugin::ssrmove@1>, 1, 28, 3, 1
+<ssreflect_plugin::ssrmove@1>, 1, 0, 3, 2
+<ssreflect_plugin::ssrmove@1>, 1, 24, 2, 1
+<ssreflect_plugin::ssrmove@1>, 1, 20, 2, 2
+<ssreflect_plugin::ssrmove@1>, 1, 0, 2, 13
+<ssreflect_plugin::ssrmove@1>, 1, 20, 1, 3
+<ssreflect_plugin::ssrmove@1>, 1, 16, 1, 2
+<ssreflect_plugin::ssrmove@1>, 1, 12, 1, 5
+<ssreflect_plugin::ssrmove@1>, 1, 8, 1, 2
+<ssreflect_plugin::ssrmove@1>, 1, 5, 1, 1
+<ssreflect_plugin::ssrmove@1>, 1, 4, 1, 1
+<ssreflect_plugin::ssrmove@1>, 1, 0, 1, 1487
+<ssreflect_plugin::ssrmove@0>, 1, 0, 6, 1
+<ssreflect_plugin::ssrmove@0>, 1, 0, 5, 1
+<ssreflect_plugin::ssrmove@0>, 1, 0, 4, 4
+<ssreflect_plugin::ssrmove@0>, 1, 0, 3, 3
+<ssreflect_plugin::ssrmove@0>, 1, 0, 2, 12
+<ssreflect_plugin::ssrmove@0>, 1, 0, 1, 65
+<ssreflect_plugin::ssrhave@0>, 1, 0, 6, 1
+<ssreflect_plugin::ssrhave@0>, 1, 0, 5, 1
+<ssreflect_plugin::ssrhave@0>, 1, 0, 4, 4
+<ssreflect_plugin::ssrhave@0>, 1, 12, 3, 1
+<ssreflect_plugin::ssrhave@0>, 1, 0, 3, 24
+<ssreflect_plugin::ssrhave@0>, 1, 32, 2, 1
+<ssreflect_plugin::ssrhave@0>, 1, 24, 2, 1
+<ssreflect_plugin::ssrhave@0>, 1, 20, 2, 1
+<ssreflect_plugin::ssrhave@0>, 1, 13, 2, 1
+<ssreflect_plugin::ssrhave@0>, 1, 12, 2, 3
+<ssreflect_plugin::ssrhave@0>, 1, 6, 2, 1
+<ssreflect_plugin::ssrhave@0>, 1, 5, 2, 3
+<ssreflect_plugin::ssrhave@0>, 1, 4, 2, 9
+<ssreflect_plugin::ssrhave@0>, 1, 0, 2, 3753
+<ssreflect_plugin::ssrhave@0>, 1, 32, 1, 2
+<ssreflect_plugin::ssrhave@0>, 1, 29, 1, 2
+<ssreflect_plugin::ssrhave@0>, 1, 26, 1, 1
+<ssreflect_plugin::ssrhave@0>, 1, 25, 1, 4
+<ssreflect_plugin::ssrhave@0>, 1, 24, 1, 1
+<ssreflect_plugin::ssrhave@0>, 1, 22, 1, 3
+<ssreflect_plugin::ssrhave@0>, 1, 21, 1, 20
+<ssreflect_plugin::ssrhave@0>, 1, 20, 1, 8
+<ssreflect_plugin::ssrhave@0>, 1, 18, 1, 2
+<ssreflect_plugin::ssrhave@0>, 1, 17, 1, 69
+<ssreflect_plugin::ssrhave@0>, 1, 16, 1, 12
+<ssreflect_plugin::ssrhave@0>, 1, 15, 1, 2
+<ssreflect_plugin::ssrhave@0>, 1, 14, 1, 30
+<ssreflect_plugin::ssrhave@0>, 1, 13, 1, 232
+<ssreflect_plugin::ssrhave@0>, 1, 12, 1, 28
+<ssreflect_plugin::ssrhave@0>, 1, 11, 1, 12
+<ssreflect_plugin::ssrhave@0>, 1, 10, 1, 47
+<ssreflect_plugin::ssrhave@0>, 1, 9, 1, 586
+<ssreflect_plugin::ssrhave@0>, 1, 8, 1, 13
+<ssreflect_plugin::ssrhave@0>, 1, 7, 1, 32
+<ssreflect_plugin::ssrhave@0>, 1, 6, 1, 195
+<ssreflect_plugin::ssrhave@0>, 1, 5, 1, 856
+<ssreflect_plugin::ssrhave@0>, 1, 4, 1, 95
+<ssreflect_plugin::ssrhave@0>, 1, 3, 1, 4
+<ssreflect_plugin::ssrhave@0>, 1, 2, 1, 23
+<ssreflect_plugin::ssrhave@0>, 1, 1, 1, 89
+<ssreflect_plugin::ssrhave@0>, 1, 0, 1, 5243
+<ssreflect_plugin::ssrexact@1>, 1, 16, 1, 1
+<ssreflect_plugin::ssrexact@1>, 1, 12, 1, 1
+<ssreflect_plugin::ssrexact@0>, 1, 32, 1, 1
+<ssreflect_plugin::ssrexact@0>, 1, 28, 1, 1
+<ssreflect_plugin::ssrexact@0>, 1, 24, 1, 1
+<ssreflect_plugin::ssrexact@0>, 1, 20, 1, 5
+<ssreflect_plugin::ssrexact@0>, 1, 16, 1, 6
+<ssreflect_plugin::ssrexact@0>, 1, 14, 1, 1
+<ssreflect_plugin::ssrexact@0>, 1, 12, 1, 16
+<ssreflect_plugin::ssrexact@0>, 1, 8, 1, 49
+<ssreflect_plugin::ssrexact@0>, 1, 5, 1, 18
+<ssreflect_plugin::ssrexact@0>, 1, 4, 1, 235
+<ssreflect_plugin::ssrexact@0>, 1, 0, 1, 446
+<ssreflect_plugin::ssrelim@0>, 1, 0, 3, 2
+<ssreflect_plugin::ssrelim@0>, 1, 25, 2, 1
+<ssreflect_plugin::ssrelim@0>, 1, 16, 2, 1
+<ssreflect_plugin::ssrelim@0>, 1, 4, 2, 1
+<ssreflect_plugin::ssrelim@0>, 1, 0, 2, 33
+<ssreflect_plugin::ssrelim@0>, 1, 13, 1, 31
+<ssreflect_plugin::ssrelim@0>, 1, 12, 1, 15
+<ssreflect_plugin::ssrcongr@0>, 1, 0, 3, 1
+<ssreflect_plugin::ssrcongr@0>, 1, 0, 2, 21
+<ssreflect_plugin::ssrcongr@0>, 1, 0, 1, 212
+<ssreflect_plugin::ssrclear@0>, 1, 0, 1, 1
+<ssreflect_plugin::ssrcase@1>, 2, 0, 2, 2
+<ssreflect_plugin::ssrcase@1>, 1, 0, 2, 9
+<ssreflect_plugin::ssrcase@1>, 1, 0, 1, 14
+<ssreflect_plugin::ssrcase@0>, 1, 0, 8, 1
+<ssreflect_plugin::ssrcase@0>, 1, 0, 6, 1
+<ssreflect_plugin::ssrcase@0>, 1, 44, 5, 1
+<ssreflect_plugin::ssrcase@0>, 1, 0, 5, 3
+<ssreflect_plugin::ssrcase@0>, 1, 16, 4, 1
+<ssreflect_plugin::ssrcase@0>, 1, 0, 4, 11
+<ssreflect_plugin::ssrcase@0>, 1, 36, 3, 1
+<ssreflect_plugin::ssrcase@0>, 1, 35, 3, 1
+<ssreflect_plugin::ssrcase@0>, 1, 29, 3, 2
+<ssreflect_plugin::ssrcase@0>, 1, 28, 3, 3
+<ssreflect_plugin::ssrcase@0>, 1, 0, 3, 17
+<ssreflect_plugin::ssrcase@0>, 1, 36, 2, 1
+<ssreflect_plugin::ssrcase@0>, 1, 31, 2, 1
+<ssreflect_plugin::ssrcase@0>, 1, 28, 2, 1
+<ssreflect_plugin::ssrcase@0>, 1, 24, 2, 1
+<ssreflect_plugin::ssrcase@0>, 1, 21, 2, 2
+<ssreflect_plugin::ssrcase@0>, 1, 20, 2, 6
+<ssreflect_plugin::ssrcase@0>, 1, 18, 2, 3
+<ssreflect_plugin::ssrcase@0>, 1, 16, 2, 1
+<ssreflect_plugin::ssrcase@0>, 1, 12, 2, 3
+<ssreflect_plugin::ssrcase@0>, 1, 5, 2, 1
+<ssreflect_plugin::ssrcase@0>, 1, 4, 2, 4
+<ssreflect_plugin::ssrcase@0>, 1, 0, 2, 286
+<ssreflect_plugin::ssrcase@0>, 1, 57, 1, 1
+<ssreflect_plugin::ssrcase@0>, 1, 44, 1, 1
+<ssreflect_plugin::ssrcase@0>, 1, 40, 1, 2
+<ssreflect_plugin::ssrcase@0>, 1, 32, 1, 3
+<ssreflect_plugin::ssrcase@0>, 1, 31, 1, 1
+<ssreflect_plugin::ssrcase@0>, 1, 28, 1, 5
+<ssreflect_plugin::ssrcase@0>, 1, 25, 1, 1
+<ssreflect_plugin::ssrcase@0>, 1, 24, 1, 7
+<ssreflect_plugin::ssrcase@0>, 1, 23, 1, 1
+<ssreflect_plugin::ssrcase@0>, 1, 22, 1, 2
+<ssreflect_plugin::ssrcase@0>, 1, 21, 1, 1
+<ssreflect_plugin::ssrcase@0>, 1, 20, 1, 9
+<ssreflect_plugin::ssrcase@0>, 1, 19, 1, 1
+<ssreflect_plugin::ssrcase@0>, 1, 18, 1, 2
+<ssreflect_plugin::ssrcase@0>, 1, 17, 1, 6
+<ssreflect_plugin::ssrcase@0>, 1, 16, 1, 28
+<ssreflect_plugin::ssrcase@0>, 1, 15, 1, 2
+<ssreflect_plugin::ssrcase@0>, 1, 14, 1, 4
+<ssreflect_plugin::ssrcase@0>, 1, 13, 1, 32
+<ssreflect_plugin::ssrcase@0>, 1, 12, 1, 125
+<ssreflect_plugin::ssrcase@0>, 1, 10, 1, 2
+<ssreflect_plugin::ssrcase@0>, 1, 9, 1, 2
+<ssreflect_plugin::ssrcase@0>, 1, 8, 1, 15
+<ssreflect_plugin::ssrcase@0>, 1, 5, 1, 3
+<ssreflect_plugin::ssrcase@0>, 1, 4, 1, 29
+<ssreflect_plugin::ssrcase@0>, 1, 0, 1, 1015
+<ssreflect_plugin::ssrapply@1>, 2, 0, 2, 1
+<ssreflect_plugin::ssrapply@1>, 1, 0, 7, 1
+<ssreflect_plugin::ssrapply@1>, 1, 0, 5, 2
+<ssreflect_plugin::ssrapply@1>, 1, 0, 4, 1
+<ssreflect_plugin::ssrapply@1>, 1, 0, 3, 7
+<ssreflect_plugin::ssrapply@1>, 1, 0, 2, 12
+<ssreflect_plugin::ssrapply@1>, 1, 0, 1, 23
+<ssreflect_plugin::ssrapply@0>, 1, 0, 16, 2
+<ssreflect_plugin::ssrapply@0>, 1, 0, 15, 1
+<ssreflect_plugin::ssrapply@0>, 1, 0, 14, 1
+<ssreflect_plugin::ssrapply@0>, 1, 0, 9, 2
+<ssreflect_plugin::ssrapply@0>, 1, 0, 8, 1
+<ssreflect_plugin::ssrapply@0>, 1, 0, 7, 3
+<ssreflect_plugin::ssrapply@0>, 1, 0, 6, 4
+<ssreflect_plugin::ssrapply@0>, 1, 48, 5, 1
+<ssreflect_plugin::ssrapply@0>, 1, 0, 5, 5
+<ssreflect_plugin::ssrapply@0>, 1, 44, 4, 1
+<ssreflect_plugin::ssrapply@0>, 1, 0, 4, 33
+<ssreflect_plugin::ssrapply@0>, 1, 28, 3, 3
+<ssreflect_plugin::ssrapply@0>, 1, 0, 3, 91
+<ssreflect_plugin::ssrapply@0>, 1, 40, 2, 1
+<ssreflect_plugin::ssrapply@0>, 1, 36, 2, 1
+<ssreflect_plugin::ssrapply@0>, 1, 32, 2, 1
+<ssreflect_plugin::ssrapply@0>, 1, 28, 2, 5
+<ssreflect_plugin::ssrapply@0>, 1, 24, 2, 10
+<ssreflect_plugin::ssrapply@0>, 1, 20, 2, 20
+<ssreflect_plugin::ssrapply@0>, 1, 16, 2, 3
+<ssreflect_plugin::ssrapply@0>, 1, 0, 2, 482
+<ssreflect_plugin::ssrapply@0>, 1, 32, 1, 2
+<ssreflect_plugin::ssrapply@0>, 1, 28, 1, 1
+<ssreflect_plugin::ssrapply@0>, 1, 25, 1, 1
+<ssreflect_plugin::ssrapply@0>, 1, 24, 1, 2
+<ssreflect_plugin::ssrapply@0>, 1, 21, 1, 2
+<ssreflect_plugin::ssrapply@0>, 1, 20, 1, 16
+<ssreflect_plugin::ssrapply@0>, 1, 16, 1, 39
+<ssreflect_plugin::ssrapply@0>, 1, 14, 1, 1
+<ssreflect_plugin::ssrapply@0>, 1, 13, 1, 11
+<ssreflect_plugin::ssrapply@0>, 1, 12, 1, 66
+<ssreflect_plugin::ssrapply@0>, 1, 8, 1, 13
+<ssreflect_plugin::ssrapply@0>, 1, 5, 1, 1
+<ssreflect_plugin::ssrapply@0>, 1, 4, 1, 5
+<ssreflect_plugin::ssrapply@0>, 1, 0, 1, 15261
+<g_auto::trivial@0>, 1, 0, 1, 62228
+<g_auto::eauto@0>, 4, 0, 1, 1
+<g_auto::auto@0>, 13, 0, 1, 1
+<g_auto::auto@0>, 6, 0, 1, 1
+<g_auto::auto@0>, 5, 0, 1, 1
+<g_auto::auto@0>, 4, 0, 1, 1
+<g_auto::auto@0>, 1, 0, 1, 2
+<extratactics::discriminate@0>, 1, 0, 1, 10608
+<extratactics::contradiction@0>, 1, 0, 1, 10297
+<coretactics::transitivity@0>, 1, 0, 2, 54
+<coretactics::symmetry@0>, 1, 0, 1, 24
+<coretactics::split@0>, 2, 0, 4, 1
+<coretactics::split@0>, 2, 0, 1, 1
+<coretactics::split@0>, 1, 0, 5, 78
+<coretactics::split@0>, 1, 0, 4, 130
+<coretactics::split@0>, 1, 0, 3, 533
+<coretactics::split@0>, 1, 0, 2, 906
+<coretactics::split@0>, 1, 0, 1, 9278
+<coretactics::right@0>, 1, 0, 1, 38
+<coretactics::left@0>, 1, 0, 1, 46
+<coretactics::exists@1>, 4, 0, 4, 1
+<coretactics::exists@1>, 3, 0, 3, 1
+<coretactics::exists@1>, 2, 0, 4, 2
+<coretactics::exists@1>, 2, 0, 3, 1
+<coretactics::exists@1>, 2, 0, 2, 2
+<coretactics::exists@1>, 1, 0, 5, 1
+<coretactics::exists@1>, 1, 0, 3, 9
+<coretactics::exists@1>, 1, 0, 2, 415
+<coretactics::exists@1>, 1, 0, 1, 282
+<coretactics::exact@0>, 1, 0, 1, 34
+<coretactics::constructor@1>, 1, 0, 1, 6
+<coretactics::constructor@0>, 2, 0, 2, 2
+<coretactics::clearbody@0>, 1, 0, 1, 1
+<coretactics::clear@0>, 1, 0, 1, 9
+<coretactics::assumption@0>, 1, 0, 1, 8784
+
+
+--------------------------------
+UNIQUE (21/44)
+naf != nbf, (1 != 1), <coretactics::assumption@0>
+naf != nbf, (1 != 1), <coretactics::clear@0>
+naf != nbf, (1 != 1), <coretactics::clearbody@0>
+naf != nbf, (2 != 2), <coretactics::constructor@0>
+naf != nbf, (1 != 1), <coretactics::constructor@1>
+naf != nbf, (1 != 1), <coretactics::exact@0>
+naf != nbf, (1 != 1), <coretactics::left@0>
+naf != nbf, (1 != 1), <coretactics::right@0>
+naf != nbf, (1 != 1), <coretactics::symmetry@0>
+naf != nbf, (1 != 2), <coretactics::transitivity@0>
+naf != nbf, (1 != 1), <extratactics::contradiction@0>
+naf != nbf, (1 != 1), <extratactics::discriminate@0>
+naf != nbf, (4 != 1), <g_auto::eauto@0>
+naf != nbf, (1 != 1), <g_auto::trivial@0>
+naf != nbf, (1 != 1), <ssreflect_plugin::ssrclear@0>
+naf != nbf, (1 != 1), <ssreflect_plugin::ssrpose@2>
+naf != nbf, (1 != 1), <ssreflect_plugin::ssrset@0>
+naf != nbf, (1 != 2), <ssreflect_plugin::ssrwithoutloss@0>
+naf != nbf, (1 != 2), <ssreflect_plugin::ssrwithoutlossss@0>
+naf != nbf, (1 != 2), <ssreflect_plugin::ssrwlogs@0>
+naf != nbf, (1 != 2), <ssreflect_plugin::ssrwlogss@0>
+
+
+--------------------------------
+ALL before = 1 (34/44)
+<coretactics::assumption@0>, [(1, 0, 8784)]
+<coretactics::clear@0>, [(1, 0, 9)]
+<coretactics::clearbody@0>, [(1, 0, 1)]
+<coretactics::constructor@1>, [(1, 0, 6)]
+<coretactics::exact@0>, [(1, 0, 34)]
+<coretactics::left@0>, [(1, 0, 46)]
+<coretactics::right@0>, [(1, 0, 38)]
+<coretactics::symmetry@0>, [(1, 0, 24)]
+<coretactics::transitivity@0>, [(2, 0, 54)]
+<extratactics::contradiction@0>, [(1, 0, 10297)]
+<extratactics::discriminate@0>, [(1, 0, 10608)]
+<g_auto::trivial@0>, [(1, 0, 62228)]
+<ssreflect_plugin::ssrapply@0>, [(2, 0, 482), (1, 0, 15261), (2, 20, 20), (1, 12, 66), (1, 16, 39), (4, 0, 33), (3, 0, 91), (1, 8, 13), (2, 28, 5), (1, 20, 16), (8, 0, 1), (2, 16, 3), (2, 36, 1), (7, 0, 3), (2, 24, 10), (6, 0, 4), (5, 0, 5), (5, 48, 1), (1, 13, 11), (2, 32, 1), (2, 40, 1), (1, 24, 2), (1, 28, 1), (1, 4, 5), (1, 14, 1), (16, 0, 2), (14, 0, 1), (15, 0, 1), (4, 44, 1), (3, 28, 3), (1, 5, 1), (9, 0, 2), (1, 21, 2), (1, 25, 1), (1, 32, 2)]
+<ssreflect_plugin::ssrcase@0>, [(1, 0, 1015), (1, 12, 125), (1, 13, 32), (2, 0, 286), (1, 16, 28), (3, 0, 17), (1, 18, 2), (2, 20, 6), (1, 23, 1), (1, 4, 29), (1, 57, 1), (1, 20, 9), (1, 28, 5), (1, 8, 15), (1, 10, 2), (1, 25, 1), (3, 28, 3), (8, 0, 1), (1, 15, 2), (1, 17, 6), (1, 19, 1), (1, 9, 2), (3, 29, 2), (4, 0, 11), (1, 32, 3), (1, 24, 7), (2, 21, 2), (1, 5, 3), (1, 21, 1), (2, 4, 4), (1, 40, 2), (5, 0, 3), (2, 31, 1), (1, 44, 1), (1, 14, 4), (2, 24, 1), (2, 12, 3), (2, 5, 1), (6, 0, 1), (2, 18, 3), (3, 35, 1), (2, 28, 1), (2, 16, 1), (5, 44, 1), (1, 31, 1), (1, 22, 2), (4, 16, 1), (3, 36, 1), (2, 36, 1)]
+<ssreflect_plugin::ssrclear@0>, [(1, 0, 1)]
+<ssreflect_plugin::ssrcongr@0>, [(1, 0, 212), (2, 0, 21), (3, 0, 1)]
+<ssreflect_plugin::ssrelim@0>, [(1, 12, 15), (2, 0, 33), (3, 0, 2), (1, 13, 31), (2, 4, 1), (2, 25, 1), (2, 16, 1)]
+<ssreflect_plugin::ssrexact@0>, [(1, 0, 446), (1, 4, 235), (1, 5, 18), (1, 8, 49), (1, 12, 16), (1, 20, 5), (1, 16, 6), (1, 28, 1), (1, 14, 1), (1, 32, 1), (1, 24, 1)]
+<ssreflect_plugin::ssrexact@1>, [(1, 12, 1), (1, 16, 1)]
+<ssreflect_plugin::ssrhave@0>, [(1, 13, 232), (1, 0, 5243), (1, 4, 95), (1, 9, 586), (2, 0, 3753), (1, 5, 856), (1, 1, 89), (1, 10, 47), (1, 6, 195), (1, 14, 30), (1, 21, 20), (1, 17, 69), (1, 11, 12), (1, 7, 32), (6, 0, 1), (1, 2, 23), (3, 0, 24), (1, 8, 13), (2, 4, 9), (1, 12, 28), (1, 3, 4), (1, 22, 3), (1, 25, 4), (1, 18, 2), (5, 0, 1), (2, 6, 1), (2, 13, 1), (1, 16, 12), (2, 12, 3), (2, 5, 3), (1, 20, 8), (2, 20, 1), (1, 29, 2), (4, 0, 4), (1, 15, 2), (1, 24, 1), (1, 26, 1), (3, 12, 1), (2, 32, 1), (2, 24, 1), (1, 32, 2)]
+<ssreflect_plugin::ssrmove@0>, [(4, 0, 4), (1, 0, 65), (2, 0, 12), (3, 0, 3), (6, 0, 1), (5, 0, 1)]
+<ssreflect_plugin::ssrmove@1>, [(1, 0, 1487), (1, 20, 3), (2, 0, 13), (1, 12, 5), (1, 16, 2), (7, 0, 1), (3, 0, 2), (3, 28, 1), (4, 0, 2), (1, 5, 1), (1, 8, 2), (1, 4, 1), (2, 20, 2), (4, 20, 1), (2, 24, 1)]
+<ssreflect_plugin::ssrmove@2>, [(1, 0, 2), (3, 0, 1), (2, 0, 1)]
+<ssreflect_plugin::ssrpose@2>, [(1, 0, 906)]
+<ssreflect_plugin::ssrrewrite@0>, [(3, 0, 922), (2, 16, 174), (1, 12, 1902), (1, 16, 875), (2, 12, 268), (1, 0, 6387), (5, 0, 156), (1, 24, 477), (6, 0, 56), (2, 0, 1704), (1, 32, 153), (4, 12, 25), (1, 20, 331), (2, 24, 102), (2, 28, 58), (2, 20, 149), (2, 36, 23), (2, 32, 42), (1, 28, 306), (4, 0, 307), (7, 0, 39), (8, 0, 15), (1, 48, 24), (1, 44, 23), (1, 60, 5), (3, 12, 81), (1, 36, 89), (1, 4, 392), (2, 8, 35), (1, 40, 52), (1, 8, 388), (3, 28, 9), (3, 16, 52), (5, 24, 2), (4, 16, 12), (1, 25, 11), (2, 44, 12), (2, 33, 3), (3, 8, 13), (1, 5, 20), (1, 21, 12), (9, 44, 1), (1, 80, 1), (1, 56, 16), (13, 0, 5), (1, 17, 20), (3, 64, 1), (2, 72, 1), (1, 52, 15), (1, 13, 27), (5, 16, 7), (3, 20, 12), (3, 32, 12), (2, 13, 6), (1, 37, 3), (1, 33, 4), (21, 0, 1), (1, 120, 1), (6, 8, 2), (3, 48, 1), (6, 16, 1), (11, 0, 8), (2, 29, 3), (3, 56, 1), (2, 40, 8), (5, 12, 6), (1, 10, 8), (2, 25, 3), (3, 24, 16), (1, 14, 43), (1, 18, 22), (2, 14, 3), (2, 18, 3), (1, 42, 2), (4, 18, 1), (1, 22, 11), (1, 9, 3), (6, 12, 2), (4, 24, 5), (9, 0, 9), (1, 72, 2), (4, 28, 1), (6, 20, 3), (1, 232, 1), (14, 0, 1), (8, 56, 1), (1, 148, 1), (1, 244, 1), (1, 96, 2), (1, 88, 1), (12, 0, 2), (3, 40, 2), (4, 20, 3), (4, 8, 3), (8, 20, 2), (17, 0, 1), (2, 10, 2), (2, 21, 5), (10, 136, 1), (4, 36, 2), (1, 64, 5), (10, 0, 2), (1, 61, 2), (4, 44, 2), (3, 36, 1), (1, 34, 1), (2, 52, 1), (2, 53, 1), (2, 17, 1), (4, 60, 1), (2, 56, 2), (6, 24, 2), (1, 45, 3), (1, 41, 2), (8, 24, 1), (4, 32, 1), (2, 48, 3), (1, 128, 1), (2, 37, 1), (9, 28, 1), (1, 68, 2), (6, 28, 1), (5, 20, 2), (3, 52, 1), (3, 13, 1), (3, 14, 3), (2, 42, 1), (1, 54, 1), (3, 26, 1), (2, 46, 2), (1, 26, 2), (2, 34, 1), (3, 76, 1), (1, 76, 1), (5, 28, 1), (1, 29, 2), (7, 12, 1), (1, 58, 1), (2, 22, 1), (8, 8, 2)]
+<ssreflect_plugin::ssrset@0>, [(1, 0, 356)]
+<ssreflect_plugin::ssrsuff@0>, [(1, 6, 2), (1, 7, 1), (2, 0, 12), (1, 9, 3), (1, 5, 4), (1, 10, 2), (1, 22, 1)]
+<ssreflect_plugin::ssrsuffices@0>, [(2, 0, 253), (1, 5, 51), (1, 13, 6), (1, 21, 1), (1, 10, 5), (1, 9, 12), (1, 7, 3), (1, 1, 11), (1, 6, 14), (1, 11, 2), (1, 14, 3), (1, 2, 1), (1, 4, 3), (1, 17, 3), (1, 15, 1), (1, 25, 1), (1, 26, 1)]
+<ssreflect_plugin::ssrtclseq@0>, [(1, 2, 589), (1, 4, 29), (2, 1, 323), (1, 3, 116), (3, 1, 15), (2, 2, 136), (2, 3, 29), (1, 6, 1), (3, 3, 3), (3, 2, 6), (2, 5, 2), (4, 4, 2), (1, 5, 1), (2, 4, 6), (4, 2, 3), (4, 1, 3), (3, 4, 1), (4, 5, 1), (3, 5, 1), (4, 3, 1)]
+<ssreflect_plugin::ssrwithoutloss@0>, [(2, 0, 60)]
+<ssreflect_plugin::ssrwithoutlossss@0>, [(2, 0, 1)]
+<ssreflect_plugin::ssrwlog@0>, [(2, 0, 37), (1, 1, 5), (1, 2, 1), (1, 6, 1)]
+<ssreflect_plugin::ssrwlogs@0>, [(2, 0, 1)]
+<ssreflect_plugin::ssrwlogss@0>, [(2, 0, 1)]
+Complement {'<g_auto::auto@0>', '<ssreflect_plugin::ssrtcldo@0>', '<ssreflect_plugin::ssrtclby@0>', '<g_auto::eauto@0>', '<ssreflect_plugin::ssrtclintros@0>', '<coretactics::constructor@0>', '<coretactics::split@0>', '<coretactics::exists@1>', '<ssreflect_plugin::ssrapply@1>', '<ssreflect_plugin::ssrcase@1>'}
+
+
+--------------------------------
+ALL after = 1 (18/44)
+<coretactics::assumption@0>, [(1, 0, 8784)]
+<coretactics::clear@0>, [(1, 0, 9)]
+<coretactics::clearbody@0>, [(1, 0, 1)]
+<coretactics::constructor@1>, [(1, 0, 6)]
+<coretactics::exact@0>, [(1, 0, 34)]
+<coretactics::left@0>, [(1, 0, 46)]
+<coretactics::right@0>, [(1, 0, 38)]
+<coretactics::symmetry@0>, [(1, 0, 24)]
+<extratactics::contradiction@0>, [(1, 0, 10297)]
+<extratactics::discriminate@0>, [(1, 0, 10608)]
+<g_auto::auto@0>, [(5, 0, 1), (13, 0, 1), (1, 0, 2), (6, 0, 1), (4, 0, 1)]
+<g_auto::eauto@0>, [(4, 0, 1)]
+<g_auto::trivial@0>, [(1, 0, 62228)]
+<ssreflect_plugin::ssrclear@0>, [(1, 0, 1)]
+<ssreflect_plugin::ssrexact@0>, [(1, 0, 446), (1, 4, 235), (1, 5, 18), (1, 8, 49), (1, 12, 16), (1, 20, 5), (1, 16, 6), (1, 28, 1), (1, 14, 1), (1, 32, 1), (1, 24, 1)]
+<ssreflect_plugin::ssrexact@1>, [(1, 12, 1), (1, 16, 1)]
+<ssreflect_plugin::ssrpose@2>, [(1, 0, 906)]
+<ssreflect_plugin::ssrset@0>, [(1, 0, 356)]
+
+
+--------------------------------
+ALL body = 0 (29/44)
+<coretactics::assumption@0>, [(1, 1, 8784)]
+<coretactics::clear@0>, [(1, 1, 9)]
+<coretactics::clearbody@0>, [(1, 1, 1)]
+<coretactics::constructor@0>, [(2, 2, 2)]
+<coretactics::constructor@1>, [(1, 1, 6)]
+<coretactics::exact@0>, [(1, 1, 34)]
+<coretactics::exists@1>, [(1, 1, 282), (2, 1, 415), (3, 1, 9), (5, 1, 1), (2, 2, 2), (3, 2, 1), (4, 2, 2), (4, 4, 1), (3, 3, 1)]
+<coretactics::left@0>, [(1, 1, 46)]
+<coretactics::right@0>, [(1, 1, 38)]
+<coretactics::split@0>, [(2, 1, 906), (1, 1, 9278), (5, 1, 78), (3, 1, 533), (1, 2, 1), (4, 1, 130), (4, 2, 1)]
+<coretactics::symmetry@0>, [(1, 1, 24)]
+<coretactics::transitivity@0>, [(2, 1, 54)]
+<extratactics::contradiction@0>, [(1, 1, 10297)]
+<extratactics::discriminate@0>, [(1, 1, 10608)]
+<g_auto::auto@0>, [(1, 5, 1), (1, 13, 1), (1, 1, 2), (1, 6, 1), (1, 4, 1)]
+<g_auto::eauto@0>, [(1, 4, 1)]
+<g_auto::trivial@0>, [(1, 1, 62228)]
+<ssreflect_plugin::ssrapply@1>, [(1, 1, 23), (3, 1, 7), (2, 1, 12), (5, 1, 2), (7, 1, 1), (4, 1, 1), (2, 2, 1)]
+<ssreflect_plugin::ssrcase@1>, [(1, 1, 14), (2, 1, 9), (2, 2, 2)]
+<ssreflect_plugin::ssrclear@0>, [(1, 1, 1)]
+<ssreflect_plugin::ssrcongr@0>, [(1, 1, 212), (2, 1, 21), (3, 1, 1)]
+<ssreflect_plugin::ssrmove@0>, [(4, 1, 4), (1, 1, 65), (2, 1, 12), (3, 1, 3), (6, 1, 1), (5, 1, 1)]
+<ssreflect_plugin::ssrmove@2>, [(1, 1, 2), (3, 1, 1), (2, 1, 1)]
+<ssreflect_plugin::ssrpose@2>, [(1, 1, 906)]
+<ssreflect_plugin::ssrset@0>, [(1, 1, 356)]
+<ssreflect_plugin::ssrwithoutloss@0>, [(2, 1, 60)]
+<ssreflect_plugin::ssrwithoutlossss@0>, [(2, 1, 1)]
+<ssreflect_plugin::ssrwlogs@0>, [(2, 1, 1)]
+<ssreflect_plugin::ssrwlogss@0>, [(2, 1, 1)]
+
+
+--------------------------------
+Unique intersect allbf=1
+ {'<extratactics::discriminate@0>', '<extratactics::contradiction@0>', '<coretactics::right@0>', '<coretactics::assumption@0>', '<coretactics::constructor@1>', '<ssreflect_plugin::ssrset@0>', '<coretactics::symmetry@0>', '<coretactics::transitivity@0>', '<g_auto::trivial@0>', '<coretactics::clear@0>', '<ssreflect_plugin::ssrwithoutlossss@0>', '<coretactics::left@0>', '<ssreflect_plugin::ssrwlogss@0>', '<coretactics::clearbody@0>', '<coretactics::exact@0>', '<ssreflect_plugin::ssrclear@0>', '<ssreflect_plugin::ssrwlogs@0>', '<ssreflect_plugin::ssrwithoutloss@0>', '<ssreflect_plugin::ssrpose@2>'}
+
+
+--------------------------------
+Unique intersect allaf=1
+ {'<extratactics::discriminate@0>', '<extratactics::contradiction@0>', '<coretactics::right@0>', '<coretactics::assumption@0>', '<coretactics::constructor@1>', '<coretactics::symmetry@0>', '<g_auto::eauto@0>', '<ssreflect_plugin::ssrset@0>', '<coretactics::clear@0>', '<g_auto::trivial@0>', '<coretactics::left@0>', '<coretactics::clearbody@0>', '<coretactics::exact@0>', '<ssreflect_plugin::ssrclear@0>', '<ssreflect_plugin::ssrpose@2>'}
+
+
+--------------------------------
+Body=0 intersect allbf=1
+ {'<extratactics::discriminate@0>', '<coretactics::symmetry@0>', '<ssreflect_plugin::ssrset@0>', '<g_auto::trivial@0>', '<ssreflect_plugin::ssrcongr@0>', '<ssreflect_plugin::ssrclear@0>', '<ssreflect_plugin::ssrwlogs@0>', '<extratactics::contradiction@0>', '<coretactics::assumption@0>', '<ssreflect_plugin::ssrmove@0>', '<ssreflect_plugin::ssrmove@2>', '<coretactics::clearbody@0>', '<ssreflect_plugin::ssrpose@2>', '<coretactics::transitivity@0>', '<coretactics::clear@0>', '<coretactics::left@0>', '<ssreflect_plugin::ssrwlogss@0>', '<coretactics::exact@0>', '<ssreflect_plugin::ssrwithoutlossss@0>', '<coretactics::right@0>', '<coretactics::constructor@1>', '<ssreflect_plugin::ssrwithoutloss@0>'}
+Complement
+ {'<ssreflect_plugin::ssrexact@0>', '<ssreflect_plugin::ssrrewrite@0>', '<ssreflect_plugin::ssrcase@0>', '<ssreflect_plugin::ssrexact@1>', '<ssreflect_plugin::ssrapply@0>', '<ssreflect_plugin::ssrtclseq@0>', '<ssreflect_plugin::ssrsuff@0>', '<ssreflect_plugin::ssrsuffices@0>', '<ssreflect_plugin::ssrmove@1>', '<ssreflect_plugin::ssrwlog@0>', '<ssreflect_plugin::ssrhave@0>', '<ssreflect_plugin::ssrelim@0>'}
+
+
+--------------------------------
+Body=0 intersect allaf=1
+ {'<g_auto::auto@0>', '<extratactics::discriminate@0>', '<extratactics::contradiction@0>', '<coretactics::right@0>', '<coretactics::constructor@1>', '<coretactics::assumption@0>', '<coretactics::symmetry@0>', '<g_auto::eauto@0>', '<ssreflect_plugin::ssrset@0>', '<coretactics::clear@0>', '<g_auto::trivial@0>', '<coretactics::left@0>', '<coretactics::clearbody@0>', '<coretactics::exact@0>', '<ssreflect_plugin::ssrclear@0>', '<ssreflect_plugin::ssrpose@2>'}
+
+

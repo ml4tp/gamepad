@@ -24,16 +24,20 @@ class TacTreeBuilder(object):
         for tac in tacs:
             assert isinstance(tac, RawTac)
 
+        # Reconstruction state
         self.tacs = tacs
-        self.it_tacs = MyIter(tacs)
-        self.f_log = f_log
-        
+        self.it_tacs = MyIter(tacs)   
+        self.edges = []
+        self.graph = nx.MultiDiGraph()
+
+        # Internal counters
         self.eid = eid
         self.solvgid = solvgid
         self.errgid = errgid
+
+        # Internal statistics
+        self.f_log = f_log
         self.numtacs = 0
-        self.edges = []
-        self.graph = nx.MultiDiGraph()
         self.notok = []
 
     def _mylog(self, msg, f_log=False):
@@ -159,9 +163,6 @@ class TacTreeBuilder(object):
             # Accumulate changes
             self._add_edges(edges)
 
-    def _direct_connect(self):
-        pass
-
     def build_ml(self):
         # Internal
         it_tacs = self.it_tacs
@@ -171,10 +172,9 @@ class TacTreeBuilder(object):
         tac = next(it_tacs)
         body = tac.bods[0]
 
-        if tac.name.startswith("<coretactics::intro@0>") or \
-           tac.name.startswith("<g_auto::auto@0>"):
+        if tac.name.startswith("<coretactics::intro@0>"):
             # 1-1
-            if len(tac.bf_decls) == 1 and len(tac.af_decls) == 1:
+            if len(tac.bf_decls) == len(tac.af_decls):
                 edges = []
                 for bf_decl, af_decl in zip(tac.bf_decls, tac.af_decls):
                     edges += [self._mk_edge(tac, bf_decl, af_decl)]
@@ -182,37 +182,146 @@ class TacTreeBuilder(object):
                 self._add_edges(edges)
             else:
                 self.notok += [tac]
-        elif tac.name.startswith("<ssreflect_plugin::ssrcase@0>") or \
-             tac.name.startswith("<ssreflect_plugin::ssrapply@0>"):
-            # 1-n
-            if len(tac.bf_decls) == 1:
+        elif tac.name.startswith("<coretactics::constructor@0>") or \
+             tac.name.startswith("<coretactics::exists@1>") or \
+             tac.name.startswith("<coretactics::split@0>") or \
+             tac.name.startswith("<ssreflect_plugin::ssrapply@1>") or \
+             tac.name.startswith("<ssreflect_plugin::ssrcase@1>"):
+            """
+            TACTIC, # BEFORE, # BODY, # AFTER, FREQUENCY
+            <coretactics::constructor@0>, 2, 0, 2, 2
+            <coretactics::exists@1>, 4, 0, 4, 1
+            <coretactics::exists@1>, 3, 0, 3, 1
+            <coretactics::exists@1>, 2, 0, 4, 2
+            <coretactics::exists@1>, 2, 0, 3, 1
+            <coretactics::exists@1>, 2, 0, 2, 2
+            <coretactics::exists@1>, 1, 0, 5, 1
+            <coretactics::exists@1>, 1, 0, 3, 9
+            <coretactics::exists@1>, 1, 0, 2, 415
+            <coretactics::exists@1>, 1, 0, 1, 282
+            <coretactics::split@0>, 2, 0, 4, 1
+            <coretactics::split@0>, 2, 0, 1, 1
+            <coretactics::split@0>, 1, 0, 5, 78
+            <coretactics::split@0>, 1, 0, 4, 130
+            <coretactics::split@0>, 1, 0, 3, 533
+            <coretactics::split@0>, 1, 0, 2, 906
+            <coretactics::split@0>, 1, 0, 1, 9278
+            <ssreflect_plugin::ssrapply@1>, 2, 0, 2, 1
+            <ssreflect_plugin::ssrapply@1>, 1, 0, 7, 1
+            <ssreflect_plugin::ssrapply@1>, 1, 0, 5, 2
+            <ssreflect_plugin::ssrapply@1>, 1, 0, 4, 1
+            <ssreflect_plugin::ssrapply@1>, 1, 0, 3, 7
+            <ssreflect_plugin::ssrapply@1>, 1, 0, 2, 12
+            <ssreflect_plugin::ssrapply@1>, 1, 0, 1, 23
+            <ssreflect_plugin::ssrcase@1>, 2, 0, 2, 2
+            <ssreflect_plugin::ssrcase@1>, 1, 0, 2, 9
+            <ssreflect_plugin::ssrcase@1>, 1, 0, 1, 14
+            """
+            # TODO(DEH): kludge
+            if len(tac.af_decls) == len(tac.bf_decls):
+                edges = []
+                for bf_decl, af_decl in zip(tac.bf_decls, tac.af_decls):
+                    edges += [self._mk_edge(tac, bf_decl, af_decl)]
+                # Accumulate changes
+                self._add_edges(edges)
+            elif len(tac.bf_decls) == 1:
                 edges = []
                 bf_decl = tac.bf_decls[0]
                 for af_decl in tac.af_decls:
                     edges += [self._mk_edge(tac, bf_decl, af_decl)]
+                # Accumulate changes
                 self._add_edges(edges)
             else:
                 self.notok += [tac]
-        elif tac.name.startswith("<ssreflect_plugin::ssrhave@0>"):
-            # 1. connect up body
-            body_edges, body_graph = self._launch_rec(body)
-
-            # 2. connect up body to top-level
-            edges = []
-            if body_edges:
+        elif tac.name.startswith("<g_auto::auto@0>") or \
+             tac.name.startswith("<g_auto::eauto@0>"):
+            """
+            <g_auto::auto@0>, 13, 0, 1, 1
+            <g_auto::auto@0>, 6, 0, 1, 1
+            <g_auto::auto@0>, 5, 0, 1, 1
+            <g_auto::auto@0>, 4, 0, 1, 1
+            <g_auto::auto@0>, 1, 0, 1, 2
+            <g_auto::eauto@0>, 4, 0, 1, 1
+            """
+            if len(tac.af_decls) == 1 and len(body) == 0:
+                edges = []
+                af_decl = tac.af_decls[0]
                 for bf_decl in tac.bf_decls:
-                    edges += [self._mk_edge2(tac, bf_decl, body_edges[0].src)]
-
-            # 3. connect me up
-            if len(tac.bf_decls) == 1 and len(tac.af_decls) == 1:
-                edges += [self._mk_edge(tac, tac.bf_decls[0], tac.af_decls[0])]
+                    edges += [self._mk_edge(tac, bf_decl, af_decl)]
+                # Accumulate changes
+                self._add_edges(edges)
             else:
                 self.notok += [tac]
+            pass
+        elif tac.name.startswith("<coretactics::assumption@0>") or \
+             tac.name.startswith("<coretactics::clear@0>") or \
+             tac.name.startswith("<coretactics::clearbody@0>") or \
+             tac.name.startswith("<coretactics::constructor@1>") or \
+             tac.name.startswith("<coretactics::exact@0>") or \
+             tac.name.startswith("<coretactics::left@0>") or \
+             tac.name.startswith("<coretactics::right@0>") or \
+             tac.name.startswith("<coretactics::symmetry@0>") or \
+             tac.name.startswith("<coretactics::transitivity@0>") or \
+             tac.name.startswith("<extratactics::contradiction@0>") or \
+             tac.name.startswith("<extratactics::discriminate@0>") or \
+             tac.name.startswith("<g_auto::trivial@0>") or \
+             tac.name.startswith("<ssreflect_plugin::ssrclear@0>") or \
+             tac.name.startswith("<ssreflect_plugin::ssrcongr@0>") or \
+             tac.name.startswith("<ssreflect_plugin::ssrmove@0>") or \
+             tac.name.startswith("<ssreflect_plugin::ssrmove@2>") or \
+             tac.name.startswith("<ssreflect_plugin::ssrpose@2>") or \
+             tac.name.startswith("<ssreflect_plugin::ssrset@0>") or \
+             tac.name.startswith("<ssreflect_plugin::ssrwithoutloss@0>") or \
+             tac.name.startswith("<ssreflect_plugin::ssrwithoutlossss@0>") or \
+             tac.name.startswith("<ssreflect_plugin::ssrwlogss@0>") or \
+             tac.name.startswith("<ssreflect_plugin::ssrwlogs@0>"):
+            if len(tac.bf_decls) == 1 and len(body) == 0:
+                edges = []
+                bf_decl = tac.bf_decls[0]
+                for af_decl in tac.af_decls:
+                    edges += [self._mk_edge(tac, bf_decl, af_decl)]
+                # Accumulate changes
+                self._add_edges(edges)
+            else:
+                self.notok += [tac]
+        elif tac.name.startswith("<ssreflect_plugin::ssrapply@0>") or \
+             tac.name.startswith("<ssreflect_plugin::ssrcase@0>") or \
+             tac.name.startswith("<ssreflect_plugin::ssrelim@0>") or \
+             tac.name.startswith("<ssreflect_plugin::ssrexact@0>") or \
+             tac.name.startswith("<ssreflect_plugin::ssrexact@1>") or \
+             tac.name.startswith("<ssreflect_plugin::ssrhave@0>") or \
+             tac.name.startswith("<ssreflect_plugin::ssrmove@1>") or \
+             tac.name.startswith("<ssreflect_plugin::ssrrewrite@0>") or \
+             tac.name.startswith("<ssreflect_plugin::ssrsuff@0>") or \
+             tac.name.startswith("<ssreflect_plugin::ssrsuffices@0>") or \
+             tac.name.startswith("<ssreflect_plugin::ssrtclseq@0>") or \
+             tac.name.startswith("<ssreflect_plugin::ssrwlog@0>"):
+            if len(tac.bf_decls) == 1:
+                edges = []
+                if body:
+                    # 1. connect up body
+                    body_edges, body_graph = self._launch_rec(body)
 
-            # Accumulate changes
-            self._add_edges(body_edges)
-            self._add_edges(edges)
-        else:
+                    # 2. connect up body to top-level
+                    if body_edges:
+                        for bf_decl in tac.bf_decls:
+                            edges += [self._mk_edge2(tac, bf_decl,
+                                      body_edges[0].src)]
+
+                # 3. connect me up
+                bf_decl = tac.bf_decls[0]
+                for af_decl in tac.af_decls:
+                    edges += [self._mk_edge(tac, bf_decl, af_decl)]
+
+                # Accumulate changes
+                if body:
+                    self._add_edges(body_edges)
+                self._add_edges(edges)
+            else:
+                self.notok += [tac]
+        elif tac.name.startswith("<ssreflect_plugin::ssrtclby@0>") or \
+             tac.name.startswith("<ssreflect_plugin::ssrtcldo@0>") or \
+             tac.name.startswith("<ssreflect_plugin::ssrtclintros@0>"):
             # 1. connect up body
             body_edges, body_graph = self._launch_rec(body)
 
@@ -233,21 +342,34 @@ class TacTreeBuilder(object):
             self._add_edges(body_edges)
             self._add_edges(edges)
 
-            # TODO(deh): some ML tactics will not have a path
             # Check for weirdness
             if any(x == 0 for x in has_path):
                 self.notok += [tac]
+        else:
+            # TODO(deh): deprecate this case
+            # 1. connect up body
+            body_edges, body_graph = self._launch_rec(body)
 
-    """
-    def _connect_bfaf(self, tac):
-        it_tacs = MyIter(self.tacs)
-        while it_tacs.has_next():
-            tac_p = next(it)
-            for af_decl in tac.af_decls:
-                for bf_decl in tac_p.bf_decls:
-                    if af_decl.hdr.gid == bf_decl.hdr.gid:
-                        self
-    """
+            # 2. connect up top-level before/after
+            edges = []
+            has_path = [0 for _ in range(len(tac.bf_decls))]
+            for i, bf_decl in enumerate(tac.bf_decls):
+                for af_decl in tac.af_decls:
+                    try:
+                        if nx.has_path(body_graph, bf_decl.hdr.gid, af_decl.hdr.gid):
+                            edges += [self._mk_edge(tac, bf_decl, af_decl)]
+                            has_path[i] += 1
+                            break
+                    except nx.exception.NodeNotFound:
+                        has_path[i] += 1
+
+            # Accumulate changes
+            self._add_edges(body_edges)
+            self._add_edges(edges)
+
+            # Check for weirdness
+            if any(x == 0 for x in has_path):
+                self.notok += [tac]
 
     def build_tacs(self):
         # Internal
@@ -266,9 +388,16 @@ class TacTreeBuilder(object):
             else:
                 raise NameError("TacKind {} not supported".format(tac.kind))
 
+    def check_success(self):
+        print("notok: {}, total: {}".format(len(self.notok), self.numtacs))
+        ug = nx.Graph(self.graph)
+        n = nx.algorithms.components.connected.number_connected_components(ug)
+        print("# connected components: {}".format(n))
+        return n == 1
+
     def show(self):
-        print("Graph edges:\n", "\n".join(map(str, self.graph.edges)))
-        print("TacEdges:\n", "\n".join(map(str, self.edges)))
+        # print("Graph edges:\n", "\n".join(map(str, self.graph.edges)))
+        # print("TacEdges:\n", "\n".join(map(str, self.edges)))
         if self.graph.edges:
             nx.drawing.nx_pylab.draw_kamada_kawai(self.graph, with_labels=True)
             plt.show()

@@ -14,7 +14,7 @@ class Visualize(object):
         self.stats = {}
         self.rawstats = RawStats(False)
         self.num_lemmas = 0
-        self.rawtacs = []
+        self.failed = []
 
     def log_stats(self):
         for k, v in self.stats.items():
@@ -74,12 +74,7 @@ class Visualize(object):
             print("WEIRD7({}, {}, {}, {})@{} [[[{}]]]".format(
                 kind, nbf, nbod, naf, lemma.name, tac.pp()))
 
-    def pickle_save(self, file):
-        with open("{}.p".format(file),'w') as f:
-            pickle.dump(self.rawtacs, f)
-            self.rawtacs = []
-
-    def visualize_lemma(self, lemma):
+    def visualize_lemma(self, file, lemma):
         # Internal
         print("------------------------------------------------")
         print("Visualizing lemma: {}".format(lemma.name))
@@ -89,8 +84,6 @@ class Visualize(object):
         tr_parser = TacTreeParser(lemma, f_log=False)
         tacs = tr_parser.parse_tactree()
 
-        # Save
-        self.rawtacs += [tacs]
         """
         print(">>>>>>>>>>>>>>>>>>>>")
         for tac in tacs:
@@ -98,7 +91,8 @@ class Visualize(object):
         print("<<<<<<<<<<<<<<<<<<<<")
         """
 
-        self.rawstats.stats_tacs(lemma, tacs)
+        # Compute statistics
+        # self.rawstats.stats_tacs(lemma, tacs)
 
         """
         # Compute some stats on RawTacs
@@ -111,14 +105,11 @@ class Visualize(object):
                 self._log_weird_tac(lemma, tac_p)
         """
 
-        # tp_builder = TacPathBuilder(tacs, f_log=True)
-        # tacs_p = tp_builder.build_tacpath()
-        # for tac in tacs_p:
-        #     print(tac.pp())
-
         tr_builder = TacTreeBuilder(tacs, False)
         tr_builder.build_tacs()
-        tr_builder.show()
+        if not tr_builder.check_success():
+            self.failed += [(file, lemma.name)]
+        # tr_builder.show()
     
     def visualize_file(self, file):
         print("==================================================")
@@ -127,8 +118,8 @@ class Visualize(object):
         ts_parser = TacStParser(file, f_log=False)
         while not ts_parser.exhausted:
             lemma = ts_parser.parse_lemma()
-            self.visualize_lemma(lemma)
-        self.pickle_save(file)
+            self.visualize_lemma(file, lemma)
+        # self.pickle_save(file)
 
 
 if __name__ == "__main__":
@@ -177,98 +168,16 @@ if __name__ == "__main__":
             vis.visualize_file(file)
             #vis.log_stats()
         vis.rawstats.log_notok()
+        vis.rawstats.log_mlstats()
+        print("Total lemmas: {}".format(vis.num_lemmas))
+        print("Failed lemmas: {}".format(len(vis.failed)))
+        print("FAILED", vis.failed)
     else:
         vis = Visualize()
         vis.visualize_file(args.file)
-        vis.rawstats.log_notok()
         #vis.log_stats()
-
-
-# -------------------------------------------------
-# Compute statistics
-
-"""
-class TacStStats(object):
-    def __init__(self, root, tree):
-        self.root = root
-        self.tree = tree
-
-    def cnt_tac_sts(self):
-        return len(self.tree.nodes)
-
-    def cnt_have(self):
-        cnt = 0
-        for decl in self.tree.nodes:
-            if decl.hdr.tac == "<ssreflect_plugin::ssrhave@0> $fwd":
-                cnt += 1
-            else:
-                print("Skipping", decl)
-        return cnt
-
-    def cnt_term_tac_sts(self):
-        # TODO(deh): broken
-        term = []
-        for node in self.tree.nodes:
-            if len(self.tree.adj[node]) == 0:
-                term += [node]
-        return term
-
-    def foobar(self):
-        return nx.algorithms.simple_paths.all_simple_paths(self.tree, root=self.root)
-
-
-def basic_have_stats(lemmas):
-    total = 0
-    haves = 0
-    pfsizes = []
-    for lemma in lemmas:
-        size = 0
-        for decl in lemma.decls:
-            if decl.hdr.mode == TOK_BEFORE:
-                if decl.hdr.tac == "<ssreflect_plugin::ssrhave@0> $fwd":
-                    haves += 1
-                total += 1
-                size += 1
-        pfsizes += [size]
-    return (len(lemmas), haves, total, 1.0 * haves / (total + 1),
-            np.mean(pfsizes))
-"""
-
-"""
-def hist_after_notation(tacs):
-    it = MyIter(tacs)
-    hist = {TacKind.NAME: 0,
-            TacKind.ATOMIC: 0,
-            TacKind.NOTATION: 0,
-            TacKind.ML: 0,
-            "NO_BODY": 0}
-    sizes = {}
-    notation_body = 0
-    total = 0
-    while it.has_next():
-        tac = next(it)
-        size = len(tac.bods)
-        if len(tac.bods) in sizes:
-            sizes[size] += 1
-        else:
-            sizes[size] = 1
-
-        if tac.kind == TacKind.NOTATION:
-            if len(tac.bods) > 0:
-                notation_body += 1
-                if len(tac.bods[0]) > 0:
-                    cnt[tac.bods[0][0].kind] += 1
-                else:
-                    cnt["EMPTY"] += 1
-            else:
-                total += 1
-                hist["NO_BODY"] += 1
-
-    #print("CNT:", cnt)
-    if cnt[TacKind.NAME] > 0 or \
-       cnt[TacKind.ATOMIC] > 0 or \
-       cnt[TacKind.NOTATION] > 0:
-        return True
-    else:
-        return False
-"""
+        vis.rawstats.log_notok()
+        vis.rawstats.log_mlstats()
+        print("Total lemmas: {}".format(vis.num_lemmas))
+        print("Failed lemmas: {}".format(len(vis.failed)))
+        print("FAILED", vis.failed)
