@@ -4,7 +4,7 @@ import numpy as np
 import pickle
 
 from lex_raw import *
-from parse_tacst2 import *
+from parse_tacst import *
 from build_tactr import *
 from raw_stats import *
 

@@ -2,7 +2,7 @@ from enum import Enum
 import matplotlib.pyplot as plt
 import networkx as nx
 
-from parse_tacst2 import *
+from parse_tacst import *
 
 
 class TacEdge(object):

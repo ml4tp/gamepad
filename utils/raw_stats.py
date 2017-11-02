@@ -3,7 +3,7 @@ import json
 
 from lib.myiter import MyIter
 from lex_raw import *
-from parse_tacst2 import *
+from parse_tacst import *
 
 """
 Hypothesis:
