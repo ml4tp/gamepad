@@ -55,421 +55,421 @@ n : nat
 ============================
 S n = S n
 end(tacst)
-begin(tacst) {!} 4 {!} before {!} simpl {!} LtacAtomCall {!} (./foo1.v,116,121)
+begin(tacst) {!} 6 {!} before {!} simpl {!} LtacAtomCall {!} (./foo1.v,116,121)
 2 {!} simpl {!} 11
 ============================
 0 = 0
 end(tacst)
-begin(tacst) {!} 4 {!} before {!} simpl {!} LtacAtomCall {!} (./foo1.v,116,121)
+begin(tacst) {!} 6 {!} before {!} simpl {!} LtacAtomCall {!} (./foo1.v,116,121)
 2 {!} simpl {!} 13
 n : nat
 ============================
 S n = S n
 end(tacst)
-begin(tacst) {!} 4 {!} after {!} simpl {!} LtacAtomCall {!} (./foo1.v,116,121)
+begin(tacst) {!} 6 {!} after {!} simpl {!} LtacAtomCall {!} (./foo1.v,116,121)
 2 {!}  {!} 14
 ============================
 0 = 0
 end(tacst)
-begin(tacst) {!} 4 {!} after {!} simpl {!} LtacAtomCall {!} (./foo1.v,116,121)
+begin(tacst) {!} 6 {!} after {!} simpl {!} LtacAtomCall {!} (./foo1.v,116,121)
 2 {!}  {!} 15
 n : nat
 ============================
 S n = S n
 end(tacst)
-begin(tacst) {!} 5 {!} before {!} case (ssrcasearg) (ssrclauses) {!} LtacNotationCall {!} (./foo1.v,127,142)
+begin(tacst) {!} 7 {!} before {!} case (ssrcasearg) (ssrclauses) {!} LtacNotationCall {!} (./foo1.v,127,142)
 1 {!} case : n => [|n] {!} 14
 ============================
 0 = 0
 end(tacst)
-begin(tacst) {!} 6 {!} before {!} <ssreflect_plugin::ssrcase@0> $arg $clauses {!} LtacMLCall {!} (,0,0)
+begin(tacst) {!} 8 {!} before {!} <ssreflect_plugin::ssrcase@0> $arg $clauses {!} LtacMLCall {!} (,0,0)
 1 {!} <ssreflect_plugin::ssrcase@0> $arg $clauses {!} 14
 ============================
 0 = 0
 end(tacst)
-begin(tacst) {!} 6 {!} afterE {!} <ssreflect_plugin::ssrcase@0> $arg $clauses {!} LtacMLCall {!} (,0,0)
+begin(tacst) {!} 8 {!} afterE {!} <ssreflect_plugin::ssrcase@0> $arg $clauses {!} LtacMLCall {!} (,0,0)
 1 {!}  {!} 14
 ============================
 0 = 0
 end(tacst)
-begin(tacst) {!} 5 {!} afterE {!} case (ssrcasearg) (ssrclauses) {!} LtacNotationCall {!} (./foo1.v,127,142)
+begin(tacst) {!} 7 {!} afterE {!} case (ssrcasearg) (ssrclauses) {!} LtacNotationCall {!} (./foo1.v,127,142)
 1 {!}  {!} 14
 ============================
 0 = 0
 end(tacst)
-begin(tacst) {!} 7 {!} before {!} case (ssrcasearg) (ssrclauses) {!} LtacNotationCall {!} (./foo1.v,127,142)
+begin(tacst) {!} 11 {!} before {!} case (ssrcasearg) (ssrclauses) {!} LtacNotationCall {!} (./foo1.v,127,142)
 1 {!} case : n => [|n] {!} 15
 n : nat
 ============================
 S n = S n
 end(tacst)
-begin(tacst) {!} 8 {!} before {!} <ssreflect_plugin::ssrcase@0> $arg $clauses {!} LtacMLCall {!} (,0,0)
+begin(tacst) {!} 12 {!} before {!} <ssreflect_plugin::ssrcase@0> $arg $clauses {!} LtacMLCall {!} (,0,0)
 1 {!} <ssreflect_plugin::ssrcase@0> $arg $clauses {!} 15
 n : nat
 ============================
 S n = S n
 end(tacst)
-begin(tacst) {!} 8 {!} after {!} <ssreflect_plugin::ssrcase@0> $arg $clauses {!} LtacMLCall {!} (,0,0)
+begin(tacst) {!} 12 {!} after {!} <ssreflect_plugin::ssrcase@0> $arg $clauses {!} LtacMLCall {!} (,0,0)
 2 {!}  {!} 23
 ============================
 1 = 1
 end(tacst)
-begin(tacst) {!} 8 {!} after {!} <ssreflect_plugin::ssrcase@0> $arg $clauses {!} LtacMLCall {!} (,0,0)
+begin(tacst) {!} 12 {!} after {!} <ssreflect_plugin::ssrcase@0> $arg $clauses {!} LtacMLCall {!} (,0,0)
 2 {!}  {!} 25
 n : nat
 ============================
 S (S n) = S (S n)
 end(tacst)
-begin(tacst) {!} 7 {!} after {!} case (ssrcasearg) (ssrclauses) {!} LtacNotationCall {!} (./foo1.v,127,142)
+begin(tacst) {!} 11 {!} after {!} case (ssrcasearg) (ssrclauses) {!} LtacNotationCall {!} (./foo1.v,127,142)
 2 {!}  {!} 23
 ============================
 1 = 1
 end(tacst)
-begin(tacst) {!} 7 {!} after {!} case (ssrcasearg) (ssrclauses) {!} LtacNotationCall {!} (./foo1.v,127,142)
+begin(tacst) {!} 11 {!} after {!} case (ssrcasearg) (ssrclauses) {!} LtacNotationCall {!} (./foo1.v,127,142)
 2 {!}  {!} 25
 n : nat
 ============================
 S (S n) = S (S n)
 end(tacst)
-begin(tacst) {!} 9 {!} before {!} simpl {!} LtacAtomCall {!} (./foo1.v,144,149)
+begin(tacst) {!} 15 {!} before {!} simpl {!} LtacAtomCall {!} (./foo1.v,144,149)
 3 {!} simpl {!} 14
 ============================
 0 = 0
 end(tacst)
-begin(tacst) {!} 9 {!} before {!} simpl {!} LtacAtomCall {!} (./foo1.v,144,149)
+begin(tacst) {!} 15 {!} before {!} simpl {!} LtacAtomCall {!} (./foo1.v,144,149)
 3 {!} simpl {!} 23
 ============================
 1 = 1
 end(tacst)
-begin(tacst) {!} 9 {!} before {!} simpl {!} LtacAtomCall {!} (./foo1.v,144,149)
+begin(tacst) {!} 15 {!} before {!} simpl {!} LtacAtomCall {!} (./foo1.v,144,149)
 3 {!} simpl {!} 25
 n : nat
 ============================
 S (S n) = S (S n)
 end(tacst)
-begin(tacst) {!} 9 {!} after {!} simpl {!} LtacAtomCall {!} (./foo1.v,144,149)
+begin(tacst) {!} 15 {!} after {!} simpl {!} LtacAtomCall {!} (./foo1.v,144,149)
 3 {!}  {!} 26
 ============================
 0 = 0
 end(tacst)
-begin(tacst) {!} 9 {!} after {!} simpl {!} LtacAtomCall {!} (./foo1.v,144,149)
+begin(tacst) {!} 15 {!} after {!} simpl {!} LtacAtomCall {!} (./foo1.v,144,149)
 3 {!}  {!} 27
 ============================
 1 = 1
 end(tacst)
-begin(tacst) {!} 9 {!} after {!} simpl {!} LtacAtomCall {!} (./foo1.v,144,149)
+begin(tacst) {!} 15 {!} after {!} simpl {!} LtacAtomCall {!} (./foo1.v,144,149)
 3 {!}  {!} 28
 n : nat
 ============================
 S (S n) = S (S n)
 end(tacst)
-begin(tacst) {!} 10 {!} before {!} have (ssrhavefwdwbinders) {!} LtacNotationCall {!} (./foo1.v,153,182)
+begin(tacst) {!} 16 {!} before {!} have (ssrhavefwdwbinders) {!} LtacNotationCall {!} (./foo1.v,153,182)
 1 {!} have hf: 0 = 0 by reflexivity {!} 26
 ============================
 0 = 0
 end(tacst)
-begin(tacst) {!} 11 {!} before {!} <ssreflect_plugin::ssrhave@0> $fwd {!} LtacMLCall {!} (,0,0)
+begin(tacst) {!} 17 {!} before {!} <ssreflect_plugin::ssrhave@0> $fwd {!} LtacMLCall {!} (,0,0)
 1 {!} <ssreflect_plugin::ssrhave@0> $fwd {!} 26
 ============================
 0 = 0
 end(tacst)
-begin(tacst) {!} -1 {!} before {!} reflexivity {!} LtacNameCall {!} (./foo1.v,171,182)
+begin(tacst) {!} 19 {!} before {!} reflexivity {!} LtacNameCall {!} (./foo1.v,171,182)
 1 {!}  {!} 30
 ============================
 0 = 0
 end(tacst)
-begin(tacst) {!} -1 {!} after {!} reflexivity {!} LtacNameCall {!} (./foo1.v,171,182)
+begin(tacst) {!} 19 {!} after {!} reflexivity {!} LtacNameCall {!} (./foo1.v,171,182)
 1 {!}  {!} 30
 ============================
 0 = 0
 end(tacst)
-begin(tacst) {!} 12 {!} before {!} <coretactics::reflexivity@0> {!} LtacMLCall {!} (,0,0)
+begin(tacst) {!} 20 {!} before {!} <coretactics::reflexivity@0> {!} LtacMLCall {!} (,0,0)
 1 {!} <coretactics::reflexivity@0> {!} 30
 ============================
 0 = 0
 end(tacst)
-begin(tacst) {!} 12 {!} after {!} <coretactics::reflexivity@0> {!} LtacMLCall {!} (,0,0)
+begin(tacst) {!} 20 {!} after {!} <coretactics::reflexivity@0> {!} LtacMLCall {!} (,0,0)
 ngs=0
 end(tacst)
-begin(tacst) {!} 11 {!} after {!} <ssreflect_plugin::ssrhave@0> $fwd {!} LtacMLCall {!} (,0,0)
+begin(tacst) {!} 17 {!} after {!} <ssreflect_plugin::ssrhave@0> $fwd {!} LtacMLCall {!} (,0,0)
 1 {!}  {!} 33
 hf : 0 = 0
 ============================
 0 = 0
 end(tacst)
-begin(tacst) {!} 10 {!} before {!} have (ssrhavefwdwbinders) {!} LtacNotationCall {!} (./foo1.v,153,182)
+begin(tacst) {!} 16 {!} before {!} have (ssrhavefwdwbinders) {!} LtacNotationCall {!} (./foo1.v,153,182)
 1 {!} have hf: 0 = 0 by reflexivity {!} 27
 ============================
 1 = 1
 end(tacst)
-begin(tacst) {!} 13 {!} before {!} <ssreflect_plugin::ssrhave@0> $fwd {!} LtacMLCall {!} (,0,0)
+begin(tacst) {!} 21 {!} before {!} <ssreflect_plugin::ssrhave@0> $fwd {!} LtacMLCall {!} (,0,0)
 1 {!} <ssreflect_plugin::ssrhave@0> $fwd {!} 27
 ============================
 1 = 1
 end(tacst)
-begin(tacst) {!} -1 {!} before {!} reflexivity {!} LtacNameCall {!} (./foo1.v,171,182)
+begin(tacst) {!} 23 {!} before {!} reflexivity {!} LtacNameCall {!} (./foo1.v,171,182)
 1 {!}  {!} 35
 ============================
 0 = 0
 end(tacst)
-begin(tacst) {!} -1 {!} after {!} reflexivity {!} LtacNameCall {!} (./foo1.v,171,182)
+begin(tacst) {!} 23 {!} after {!} reflexivity {!} LtacNameCall {!} (./foo1.v,171,182)
 1 {!}  {!} 35
 ============================
 0 = 0
 end(tacst)
-begin(tacst) {!} 14 {!} before {!} <coretactics::reflexivity@0> {!} LtacMLCall {!} (,0,0)
+begin(tacst) {!} 24 {!} before {!} <coretactics::reflexivity@0> {!} LtacMLCall {!} (,0,0)
 1 {!} <coretactics::reflexivity@0> {!} 35
 ============================
 0 = 0
 end(tacst)
-begin(tacst) {!} 14 {!} after {!} <coretactics::reflexivity@0> {!} LtacMLCall {!} (,0,0)
+begin(tacst) {!} 24 {!} after {!} <coretactics::reflexivity@0> {!} LtacMLCall {!} (,0,0)
 ngs=0
 end(tacst)
-begin(tacst) {!} 13 {!} after {!} <ssreflect_plugin::ssrhave@0> $fwd {!} LtacMLCall {!} (,0,0)
+begin(tacst) {!} 21 {!} after {!} <ssreflect_plugin::ssrhave@0> $fwd {!} LtacMLCall {!} (,0,0)
 1 {!}  {!} 38
 hf : 0 = 0
 ============================
 1 = 1
 end(tacst)
-begin(tacst) {!} 10 {!} before {!} have (ssrhavefwdwbinders) {!} LtacNotationCall {!} (./foo1.v,153,182)
+begin(tacst) {!} 16 {!} before {!} have (ssrhavefwdwbinders) {!} LtacNotationCall {!} (./foo1.v,153,182)
 1 {!} have hf: 0 = 0 by reflexivity {!} 28
 n : nat
 ============================
 S (S n) = S (S n)
 end(tacst)
-begin(tacst) {!} 15 {!} before {!} <ssreflect_plugin::ssrhave@0> $fwd {!} LtacMLCall {!} (,0,0)
+begin(tacst) {!} 25 {!} before {!} <ssreflect_plugin::ssrhave@0> $fwd {!} LtacMLCall {!} (,0,0)
 1 {!} <ssreflect_plugin::ssrhave@0> $fwd {!} 28
 n : nat
 ============================
 S (S n) = S (S n)
 end(tacst)
-begin(tacst) {!} -1 {!} before {!} reflexivity {!} LtacNameCall {!} (./foo1.v,171,182)
+begin(tacst) {!} 27 {!} before {!} reflexivity {!} LtacNameCall {!} (./foo1.v,171,182)
 1 {!}  {!} 40
 n : nat
 ============================
 0 = 0
 end(tacst)
-begin(tacst) {!} -1 {!} after {!} reflexivity {!} LtacNameCall {!} (./foo1.v,171,182)
+begin(tacst) {!} 27 {!} after {!} reflexivity {!} LtacNameCall {!} (./foo1.v,171,182)
 1 {!}  {!} 40
 n : nat
 ============================
 0 = 0
 end(tacst)
-begin(tacst) {!} 16 {!} before {!} <coretactics::reflexivity@0> {!} LtacMLCall {!} (,0,0)
+begin(tacst) {!} 28 {!} before {!} <coretactics::reflexivity@0> {!} LtacMLCall {!} (,0,0)
 1 {!} <coretactics::reflexivity@0> {!} 40
 n : nat
 ============================
 0 = 0
 end(tacst)
-begin(tacst) {!} 16 {!} after {!} <coretactics::reflexivity@0> {!} LtacMLCall {!} (,0,0)
+begin(tacst) {!} 28 {!} after {!} <coretactics::reflexivity@0> {!} LtacMLCall {!} (,0,0)
 ngs=0
 end(tacst)
-begin(tacst) {!} 15 {!} after {!} <ssreflect_plugin::ssrhave@0> $fwd {!} LtacMLCall {!} (,0,0)
+begin(tacst) {!} 25 {!} after {!} <ssreflect_plugin::ssrhave@0> $fwd {!} LtacMLCall {!} (,0,0)
 1 {!}  {!} 43
 n : nat
 hf : 0 = 0
 ============================
 S (S n) = S (S n)
 end(tacst)
-begin(tacst) {!} 10 {!} after {!} have (ssrhavefwdwbinders) {!} LtacNotationCall {!} (./foo1.v,153,182)
+begin(tacst) {!} 16 {!} after {!} have (ssrhavefwdwbinders) {!} LtacNotationCall {!} (./foo1.v,153,182)
 3 {!}  {!} 33
 hf : 0 = 0
 ============================
 0 = 0
 end(tacst)
-begin(tacst) {!} 10 {!} after {!} have (ssrhavefwdwbinders) {!} LtacNotationCall {!} (./foo1.v,153,182)
+begin(tacst) {!} 16 {!} after {!} have (ssrhavefwdwbinders) {!} LtacNotationCall {!} (./foo1.v,153,182)
 3 {!}  {!} 38
 hf : 0 = 0
 ============================
 1 = 1
 end(tacst)
-begin(tacst) {!} 10 {!} after {!} have (ssrhavefwdwbinders) {!} LtacNotationCall {!} (./foo1.v,153,182)
+begin(tacst) {!} 16 {!} after {!} have (ssrhavefwdwbinders) {!} LtacNotationCall {!} (./foo1.v,153,182)
 3 {!}  {!} 43
 n : nat
 hf : 0 = 0
 ============================
 S (S n) = S (S n)
 end(tacst)
-begin(tacst) {!} 17 {!} before {!} have (ssrhavefwdwbinders) {!} LtacNotationCall {!} (./foo1.v,186,209)
+begin(tacst) {!} 29 {!} before {!} have (ssrhavefwdwbinders) {!} LtacNotationCall {!} (./foo1.v,186,209)
 1 {!} have hf2: 0 = 0 by auto {!} 33
 hf : 0 = 0
 ============================
 0 = 0
 end(tacst)
-begin(tacst) {!} 18 {!} before {!} <ssreflect_plugin::ssrhave@0> $fwd {!} LtacMLCall {!} (,0,0)
+begin(tacst) {!} 30 {!} before {!} <ssreflect_plugin::ssrhave@0> $fwd {!} LtacMLCall {!} (,0,0)
 1 {!} <ssreflect_plugin::ssrhave@0> $fwd {!} 33
 hf : 0 = 0
 ============================
 0 = 0
 end(tacst)
-begin(tacst) {!} 19 {!} before {!} auto (int_or_var_opt) (auto_using) (hintbases) {!} LtacNotationCall {!} (./foo1.v,205,209)
+begin(tacst) {!} 32 {!} before {!} auto (int_or_var_opt) (auto_using) (hintbases) {!} LtacNotationCall {!} (./foo1.v,205,209)
 1 {!} auto {!} 45
 hf : 0 = 0
 ============================
 0 = 0
 end(tacst)
-begin(tacst) {!} 20 {!} before {!} <g_auto::auto@0> $n $lems $db {!} LtacMLCall {!} (,0,0)
+begin(tacst) {!} 33 {!} before {!} <g_auto::auto@0> $n $lems $db {!} LtacMLCall {!} (,0,0)
 1 {!} <g_auto::auto@0> $n $lems $db {!} 45
 hf : 0 = 0
 ============================
 0 = 0
 end(tacst)
-begin(tacst) {!} 20 {!} after {!} <g_auto::auto@0> $n $lems $db {!} LtacMLCall {!} (,0,0)
+begin(tacst) {!} 33 {!} after {!} <g_auto::auto@0> $n $lems $db {!} LtacMLCall {!} (,0,0)
 ngs=0
 end(tacst)
-begin(tacst) {!} 19 {!} after {!} auto (int_or_var_opt) (auto_using) (hintbases) {!} LtacNotationCall {!} (./foo1.v,205,209)
+begin(tacst) {!} 32 {!} after {!} auto (int_or_var_opt) (auto_using) (hintbases) {!} LtacNotationCall {!} (./foo1.v,205,209)
 ngs=0
 end(tacst)
-begin(tacst) {!} 18 {!} after {!} <ssreflect_plugin::ssrhave@0> $fwd {!} LtacMLCall {!} (,0,0)
+begin(tacst) {!} 30 {!} after {!} <ssreflect_plugin::ssrhave@0> $fwd {!} LtacMLCall {!} (,0,0)
 1 {!}  {!} 47
 hf, hf2 : 0 = 0
 ============================
 0 = 0
 end(tacst)
-begin(tacst) {!} 17 {!} before {!} have (ssrhavefwdwbinders) {!} LtacNotationCall {!} (./foo1.v,186,209)
+begin(tacst) {!} 29 {!} before {!} have (ssrhavefwdwbinders) {!} LtacNotationCall {!} (./foo1.v,186,209)
 1 {!} have hf2: 0 = 0 by auto {!} 38
 hf : 0 = 0
 ============================
 1 = 1
 end(tacst)
-begin(tacst) {!} 21 {!} before {!} <ssreflect_plugin::ssrhave@0> $fwd {!} LtacMLCall {!} (,0,0)
+begin(tacst) {!} 37 {!} before {!} <ssreflect_plugin::ssrhave@0> $fwd {!} LtacMLCall {!} (,0,0)
 1 {!} <ssreflect_plugin::ssrhave@0> $fwd {!} 38
 hf : 0 = 0
 ============================
 1 = 1
 end(tacst)
-begin(tacst) {!} 22 {!} before {!} auto (int_or_var_opt) (auto_using) (hintbases) {!} LtacNotationCall {!} (./foo1.v,205,209)
+begin(tacst) {!} 39 {!} before {!} auto (int_or_var_opt) (auto_using) (hintbases) {!} LtacNotationCall {!} (./foo1.v,205,209)
 1 {!} auto {!} 49
 hf : 0 = 0
 ============================
 0 = 0
 end(tacst)
-begin(tacst) {!} 23 {!} before {!} <g_auto::auto@0> $n $lems $db {!} LtacMLCall {!} (,0,0)
+begin(tacst) {!} 40 {!} before {!} <g_auto::auto@0> $n $lems $db {!} LtacMLCall {!} (,0,0)
 1 {!} <g_auto::auto@0> $n $lems $db {!} 49
 hf : 0 = 0
 ============================
 0 = 0
 end(tacst)
-begin(tacst) {!} 23 {!} after {!} <g_auto::auto@0> $n $lems $db {!} LtacMLCall {!} (,0,0)
+begin(tacst) {!} 40 {!} after {!} <g_auto::auto@0> $n $lems $db {!} LtacMLCall {!} (,0,0)
 ngs=0
 end(tacst)
-begin(tacst) {!} 22 {!} after {!} auto (int_or_var_opt) (auto_using) (hintbases) {!} LtacNotationCall {!} (./foo1.v,205,209)
+begin(tacst) {!} 39 {!} after {!} auto (int_or_var_opt) (auto_using) (hintbases) {!} LtacNotationCall {!} (./foo1.v,205,209)
 ngs=0
 end(tacst)
-begin(tacst) {!} 21 {!} after {!} <ssreflect_plugin::ssrhave@0> $fwd {!} LtacMLCall {!} (,0,0)
+begin(tacst) {!} 37 {!} after {!} <ssreflect_plugin::ssrhave@0> $fwd {!} LtacMLCall {!} (,0,0)
 1 {!}  {!} 51
 hf, hf2 : 0 = 0
 ============================
 1 = 1
 end(tacst)
-begin(tacst) {!} 17 {!} before {!} have (ssrhavefwdwbinders) {!} LtacNotationCall {!} (./foo1.v,186,209)
+begin(tacst) {!} 29 {!} before {!} have (ssrhavefwdwbinders) {!} LtacNotationCall {!} (./foo1.v,186,209)
 1 {!} have hf2: 0 = 0 by auto {!} 43
 n : nat
 hf : 0 = 0
 ============================
 S (S n) = S (S n)
 end(tacst)
-begin(tacst) {!} 24 {!} before {!} <ssreflect_plugin::ssrhave@0> $fwd {!} LtacMLCall {!} (,0,0)
+begin(tacst) {!} 44 {!} before {!} <ssreflect_plugin::ssrhave@0> $fwd {!} LtacMLCall {!} (,0,0)
 1 {!} <ssreflect_plugin::ssrhave@0> $fwd {!} 43
 n : nat
 hf : 0 = 0
 ============================
 S (S n) = S (S n)
 end(tacst)
-begin(tacst) {!} 25 {!} before {!} auto (int_or_var_opt) (auto_using) (hintbases) {!} LtacNotationCall {!} (./foo1.v,205,209)
+begin(tacst) {!} 46 {!} before {!} auto (int_or_var_opt) (auto_using) (hintbases) {!} LtacNotationCall {!} (./foo1.v,205,209)
 1 {!} auto {!} 53
 n : nat
 hf : 0 = 0
 ============================
 0 = 0
 end(tacst)
-begin(tacst) {!} 26 {!} before {!} <g_auto::auto@0> $n $lems $db {!} LtacMLCall {!} (,0,0)
+begin(tacst) {!} 47 {!} before {!} <g_auto::auto@0> $n $lems $db {!} LtacMLCall {!} (,0,0)
 1 {!} <g_auto::auto@0> $n $lems $db {!} 53
 n : nat
 hf : 0 = 0
 ============================
 0 = 0
 end(tacst)
-begin(tacst) {!} 26 {!} after {!} <g_auto::auto@0> $n $lems $db {!} LtacMLCall {!} (,0,0)
+begin(tacst) {!} 47 {!} after {!} <g_auto::auto@0> $n $lems $db {!} LtacMLCall {!} (,0,0)
 ngs=0
 end(tacst)
-begin(tacst) {!} 25 {!} after {!} auto (int_or_var_opt) (auto_using) (hintbases) {!} LtacNotationCall {!} (./foo1.v,205,209)
+begin(tacst) {!} 46 {!} after {!} auto (int_or_var_opt) (auto_using) (hintbases) {!} LtacNotationCall {!} (./foo1.v,205,209)
 ngs=0
 end(tacst)
-begin(tacst) {!} 24 {!} after {!} <ssreflect_plugin::ssrhave@0> $fwd {!} LtacMLCall {!} (,0,0)
+begin(tacst) {!} 44 {!} after {!} <ssreflect_plugin::ssrhave@0> $fwd {!} LtacMLCall {!} (,0,0)
 1 {!}  {!} 55
 n : nat
 hf, hf2 : 0 = 0
 ============================
 S (S n) = S (S n)
 end(tacst)
-begin(tacst) {!} 17 {!} after {!} have (ssrhavefwdwbinders) {!} LtacNotationCall {!} (./foo1.v,186,209)
+begin(tacst) {!} 29 {!} after {!} have (ssrhavefwdwbinders) {!} LtacNotationCall {!} (./foo1.v,186,209)
 3 {!}  {!} 47
 hf, hf2 : 0 = 0
 ============================
 0 = 0
 end(tacst)
-begin(tacst) {!} 17 {!} after {!} have (ssrhavefwdwbinders) {!} LtacNotationCall {!} (./foo1.v,186,209)
+begin(tacst) {!} 29 {!} after {!} have (ssrhavefwdwbinders) {!} LtacNotationCall {!} (./foo1.v,186,209)
 3 {!}  {!} 51
 hf, hf2 : 0 = 0
 ============================
 1 = 1
 end(tacst)
-begin(tacst) {!} 17 {!} after {!} have (ssrhavefwdwbinders) {!} LtacNotationCall {!} (./foo1.v,186,209)
+begin(tacst) {!} 29 {!} after {!} have (ssrhavefwdwbinders) {!} LtacNotationCall {!} (./foo1.v,186,209)
 3 {!}  {!} 55
 n : nat
 hf, hf2 : 0 = 0
 ============================
 S (S n) = S (S n)
 end(tacst)
-begin(tacst) {!} 27 {!} before {!} apply (ssrapplyarg) {!} LtacNotationCall {!} (./foo1.v,212,225)
+begin(tacst) {!} 51 {!} before {!} apply (ssrapplyarg) {!} LtacNotationCall {!} (./foo1.v,212,225)
 1 {!} apply : eq_refl {!} 47
 hf, hf2 : 0 = 0
 ============================
 0 = 0
 end(tacst)
-begin(tacst) {!} 28 {!} before {!} <ssreflect_plugin::ssrapply@0> $arg {!} LtacMLCall {!} (,0,0)
+begin(tacst) {!} 52 {!} before {!} <ssreflect_plugin::ssrapply@0> $arg {!} LtacMLCall {!} (,0,0)
 1 {!} <ssreflect_plugin::ssrapply@0> $arg {!} 47
 hf, hf2 : 0 = 0
 ============================
 0 = 0
 end(tacst)
-begin(tacst) {!} 28 {!} after {!} <ssreflect_plugin::ssrapply@0> $arg {!} LtacMLCall {!} (,0,0)
+begin(tacst) {!} 52 {!} after {!} <ssreflect_plugin::ssrapply@0> $arg {!} LtacMLCall {!} (,0,0)
 ngs=0
 end(tacst)
-begin(tacst) {!} 27 {!} before {!} apply (ssrapplyarg) {!} LtacNotationCall {!} (./foo1.v,212,225)
+begin(tacst) {!} 51 {!} before {!} apply (ssrapplyarg) {!} LtacNotationCall {!} (./foo1.v,212,225)
 1 {!} apply : eq_refl {!} 51
 hf, hf2 : 0 = 0
 ============================
 1 = 1
 end(tacst)
-begin(tacst) {!} 29 {!} before {!} <ssreflect_plugin::ssrapply@0> $arg {!} LtacMLCall {!} (,0,0)
+begin(tacst) {!} 54 {!} before {!} <ssreflect_plugin::ssrapply@0> $arg {!} LtacMLCall {!} (,0,0)
 1 {!} <ssreflect_plugin::ssrapply@0> $arg {!} 51
 hf, hf2 : 0 = 0
 ============================
 1 = 1
 end(tacst)
-begin(tacst) {!} 29 {!} after {!} <ssreflect_plugin::ssrapply@0> $arg {!} LtacMLCall {!} (,0,0)
+begin(tacst) {!} 54 {!} after {!} <ssreflect_plugin::ssrapply@0> $arg {!} LtacMLCall {!} (,0,0)
 ngs=0
 end(tacst)
-begin(tacst) {!} 27 {!} before {!} apply (ssrapplyarg) {!} LtacNotationCall {!} (./foo1.v,212,225)
+begin(tacst) {!} 51 {!} before {!} apply (ssrapplyarg) {!} LtacNotationCall {!} (./foo1.v,212,225)
 1 {!} apply : eq_refl {!} 55
 n : nat
 hf, hf2 : 0 = 0
 ============================
 S (S n) = S (S n)
 end(tacst)
-begin(tacst) {!} 30 {!} before {!} <ssreflect_plugin::ssrapply@0> $arg {!} LtacMLCall {!} (,0,0)
+begin(tacst) {!} 56 {!} before {!} <ssreflect_plugin::ssrapply@0> $arg {!} LtacMLCall {!} (,0,0)
 1 {!} <ssreflect_plugin::ssrapply@0> $arg {!} 55
 n : nat
 hf, hf2 : 0 = 0
 ============================
 S (S n) = S (S n)
 end(tacst)
-begin(tacst) {!} 30 {!} after {!} <ssreflect_plugin::ssrapply@0> $arg {!} LtacMLCall {!} (,0,0)
+begin(tacst) {!} 56 {!} after {!} <ssreflect_plugin::ssrapply@0> $arg {!} LtacMLCall {!} (,0,0)
 ngs=0
 end(tacst)
-begin(tacst) {!} 27 {!} after {!} apply (ssrapplyarg) {!} LtacNotationCall {!} (./foo1.v,212,225)
+begin(tacst) {!} 51 {!} after {!} apply (ssrapplyarg) {!} LtacNotationCall {!} (./foo1.v,212,225)
 ngs=0
 end(tacst)
 end(pf)

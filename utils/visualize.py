@@ -53,7 +53,8 @@ class Visualize(object):
             print("<<<<<<<<<<<<<<<<<<<<")
 
         # Compute statistics
-        self.rawstats.stats_tacs(lemma, tacs)
+        if self.f_stats:
+            self.rawstats.stats_tacs(lemma, tacs)
 
         tr_builder = TacTreeBuilder(tacs, False)
         tr_builder.build_tacs()
