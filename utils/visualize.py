@@ -138,7 +138,9 @@ if __name__ == "__main__":
              "./data/odd-order/PFsection11.v.dump",
              "./data/odd-order/PFsection12.v.dump",
              "./data/odd-order/PFsection13.v.dump",
-             "./data/odd-order/PFsection14.v.dump"]
+             "./data/odd-order/PFsection14.v.dump",
+             "./data/odd-order/stripped_odd_order_theorem.v.dump",
+             "./data/odd-order/wielandt_fixpoint.v.dump"]
     
     # Create visualizer
     if args.lemma:

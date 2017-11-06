@@ -307,8 +307,17 @@ class TacTreeBuilder(object):
                     # 2. connect up body to top-level
                     if body_edges:
                         for bf_decl in tac.bf_decls:
-                            edges += [self._mk_edge2(tac, bf_decl,
-                                      body_edges[0].src)]
+                            # every gid that does not have a parent is connected to the top
+                            for edge in body_edges:
+                                self_edges = 0
+                                for edge_p in body_graph.in_edges(edge.src):
+                                    if edge_p[0] == edge_p[1]:
+                                        self_edges += 1
+                                if body_graph.in_degree(edge.src) == self_edges:
+                                    edges += [self._mk_edge2(tac, bf_decl,
+                                              edge.src)]
+                            #edges += [self._mk_edge2(tac, bf_decl,
+                            #          body_edges[0].src)]
 
                 # 3. connect me up
                 bf_decl = tac.bf_decls[0]
@@ -324,6 +333,7 @@ class TacTreeBuilder(object):
         elif tac.name.startswith("<ssreflect_plugin::ssrtclby@0>") or \
              tac.name.startswith("<ssreflect_plugin::ssrtcldo@0>") or \
              tac.name.startswith("<ssreflect_plugin::ssrtclintros@0>"):
+            # NOTE(deh): ssrtclby@0 always ends in terminal?
             # 1. connect up body
             body_edges, body_graph = self._launch_rec(body)
 
@@ -340,6 +350,11 @@ class TacTreeBuilder(object):
                     except nx.exception.NodeNotFound:
                         has_path[i] += 1
 
+            # 3. connect me up
+            for bf_decl in tac.bf_decls:
+                for af_decl in tac.af_decls:
+                    edges += self._mk_edge(tac, bf_decl, af_decl)
+
             # Accumulate changes
             self._add_edges(body_edges)
             self._add_edges(edges)
@@ -348,6 +363,8 @@ class TacTreeBuilder(object):
             if any(x == 0 for x in has_path):
                 self.notok += [tac]
         else:
+            pass
+            """
             # TODO(deh): deprecate this case
             # 1. connect up body
             body_edges, body_graph = self._launch_rec(body)
@@ -372,6 +389,7 @@ class TacTreeBuilder(object):
             # Check for weirdness
             if any(x == 0 for x in has_path):
                 self.notok += [tac]
+            """
 
     def build_tacs(self):
         # Internal
