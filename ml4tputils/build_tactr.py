@@ -1,6 +1,9 @@
 from enum import Enum
 import matplotlib.pyplot as plt
 import networkx as nx
+import plotly
+import plotly.plotly as py
+from plotly.graph_objs import *
 
 from parse_tacst import *
 
@@ -18,16 +21,80 @@ class TacEdge(object):
     def __str__(self):
         return "({}, {}, {}, {} -> {})".format(self.eid, self.tid, self.name, self.src, self.tgt)
 
+
+class TacTree(object):
+    def __init__(self, name, edges, graph, gid2info):
+        self.name = name
+        self.edges = edges
+        self.graph = graph
+        self.gid2info = gid2info
+
+        self._build_tacsts()
+        self._build_tacs()
+
+    def _build_tacsts(self):
+        self.tacsts = []
+        for node in self.graph.nodes():
+            if node in self.gid2info:
+                ctx, goal = self.gid2info[node]
+                self.tacsts += [(node, ctx, goal)]
+
+    def _build_tacs(self):
+        self.tactics = {}
+        for edge in self.edges:
+            if edge.tid in self.tactics:
+                self.tactics[edge.tid] += [edge]
+            else:
+                self.tactics[edge.tid] = [edge]
+
+    def gids(self):
+        return [ gid for gid, _, _ in self.tacsts ]
+
+    def contexts(self):
+        return [ ctx for _, ctx, _ in self.tacsts ]
+
+    def goals(self):
+        return [ gid for _, _, goal in self.tacsts ]
+
+    def in_edge(self, gid):
+        gids = list(self.graph.predecessors(gid))
+        acc = []
+        for edge in self.edges:
+            if edge.src in gids and edge.tgt == gid:
+                acc += [edge]
+        return acc
+
+    def out_edges(self, gid):
+        gids = list(self.graph.successors(gid))
+        acc = []
+        for edge in self.edges:
+            if edge.tgt in gids and edge.src == gid:
+                acc += [edge]
+        return acc
+
+    def dump(self):
+        print(">>>>>>>>>>>>>>>>>>>>")
+        print("Tactic states:", self.tacsts)
+        print("Tactics:", self.tactics)
+        for gid in self.gids():
+            print("In edge for {}:".format(gid), self.in_edge(gid))
+            print("Out edges for {}:".format(gid), self.out_edges(gid))
+        print("<<<<<<<<<<<<<<<<<<<<")
+
+
 class TacTreeBuilder(object):
-    def __init__(self, tacs, eid=0, solvgid=0, errgid=0, f_log=False):
+    def __init__(self, name, tacs, gid2info, eid=0, solvgid=0, errgid=0, f_log=False):
         for tac in tacs:
             assert isinstance(tac, RawTac)
+
+        self.name = name
 
         # Reconstruction state
         self.tacs = tacs
         self.it_tacs = MyIter(tacs)   
         self.edges = []
         self.graph = nx.MultiDiGraph()
+        self.gid2info = gid2info
 
         # Internal counters
         self.eid = eid
@@ -47,7 +114,7 @@ class TacTreeBuilder(object):
     def _add_edges(self, edges):
         self.edges += edges
         for edge in edges:
-            self.graph.add_edge(edge.src, edge.tgt, key=edge.eid)
+            self.graph.add_edge(edge.src, edge.tgt, key=edge.eid) 
 
     def _fresh_eid(self):
         eid = self.eid
@@ -65,7 +132,7 @@ class TacTreeBuilder(object):
         return "t" + str(solvgid)
 
     def _launch_rec(self, tacs):
-        tr_builder = TacTreeBuilder(tacs, eid=self.eid,
+        tr_builder = TacTreeBuilder(self.name, tacs, self.gid2info, eid=self.eid,
                                     solvgid=self.solvgid, errgid=self.errgid)
         tr_builder.build_tacs()
         self.eid = tr_builder.eid
@@ -364,32 +431,6 @@ class TacTreeBuilder(object):
                 self.notok += [tac]
         else:
             pass
-            """
-            # TODO(deh): deprecate this case
-            # 1. connect up body
-            body_edges, body_graph = self._launch_rec(body)
-
-            # 2. connect up top-level before/after
-            edges = []
-            has_path = [0 for _ in range(len(tac.bf_decls))]
-            for i, bf_decl in enumerate(tac.bf_decls):
-                for af_decl in tac.af_decls:
-                    try:
-                        if nx.has_path(body_graph, bf_decl.hdr.gid, af_decl.hdr.gid):
-                            edges += self._mk_edge(tac, bf_decl, af_decl)
-                            has_path[i] += 1
-                            break
-                    except nx.exception.NodeNotFound:
-                        has_path[i] += 1
-
-            # Accumulate changes
-            self._add_edges(body_edges)
-            self._add_edges(edges)
-
-            # Check for weirdness
-            if any(x == 0 for x in has_path):
-                self.notok += [tac]
-            """
 
     def build_tacs(self):
         # Internal
@@ -417,9 +458,82 @@ class TacTreeBuilder(object):
         print("# connected components: {}".format(n))
         return n == 1, n
 
+    def get_tactree(self, f_verbose):
+        tactr = TacTree(self.name, self.edges, self.graph, self.gid2info)
+
+        if f_verbose:
+            tactr.dump()
+
+        return tactr
+
     def show(self):
         # print("Graph edges:\n", "\n".join(map(str, self.graph.edges)))
         # print("TacEdges:\n", "\n".join(map(str, self.edges)))
         if self.graph.edges:
             nx.drawing.nx_pylab.draw_kamada_kawai(self.graph, with_labels=True)
             plt.show()
+
+    def show_jupyter(self):
+        G = self.graph
+        pos = nx.drawing.layout.kamada_kawai_layout(G)
+
+        # Edges
+        edge_trace = Scatter(x=[], y=[], line=Line(width=0.5,color='#888'),
+                             hoverinfo=None, mode='lines')
+        for edge in G.edges():
+            x0, y0 = pos[edge[0]]
+            x1, y1 = pos[edge[1]]
+            edge_trace['x'] += [x0, x1, None]
+            edge_trace['y'] += [y0, y1, None]
+
+        # Edge info
+        marker = Marker(showscale=True, colorscale='YIGnBu', reversescale=True,
+                        color=[], size=5, line=dict(width=2))
+        einfo_trace = Scatter(x=[], y=[], text=[], mode='markers', 
+                             hoverinfo='text', marker=marker)
+        for edge in self.edges:
+            x0, y0 = pos[edge.src]
+            x1, y1 = pos[edge.tgt]
+            einfo_trace['x'].append((x0 + x1) / 2)
+            einfo_trace['y'].append((y0 + y1) / 2)
+            einfo = "ftac: {}".format(edge.ftac)
+            einfo_trace['text'].append(einfo)
+
+        # Nodes
+        colorbar = dict(thickness=15, title='Node Info',
+                        xanchor='left', titleside='right')
+        marker = Marker(showscale=True, colorscale='YIGnBu', reversescale=True,
+                        color=[], size=10, colorbar=colorbar, line=dict(width=2))
+        node_trace = Scatter(x=[], y=[], text=[], mode='markers', 
+                             hoverinfo='text', marker=marker)
+        for node in G.nodes():
+            x, y = pos[node]
+            node_trace['x'].append(x)
+            node_trace['y'].append(y)
+
+        info = self.gid2info
+        for node in pos.keys():
+            if node in info:
+                ctx, goal = info[node]
+                s_ctx = "<br>".join([x + ": " + t for x, t in ctx])
+                node_info = "gid: {}<br>{}<br>=====================<br>{}".format(node, s_ctx, goal)
+            else:
+                node_info = "gid: {}".format(node)
+            node_trace['text'].append(node_info)
+
+        # Display
+        layout = Layout(title="<br>Reconstruction of {}".format(self.name),
+                        titlefont=dict(size=16),
+                        showlegend=False,
+                        hovermode='closest',
+                        margin=dict(b=20,l=5,r=5,t=40),
+                        annotations=[ dict(showarrow=False,
+                                           xref="paper", yref="paper",
+                                           x=0.005, y=-0.002 ) ],
+                        xaxis=XAxis(showgrid=False, zeroline=False, showticklabels=False),
+                        yaxis=YAxis(showgrid=False, zeroline=False, showticklabels=False))
+        fig = Figure(data=Data([edge_trace, node_trace, einfo_trace]), layout=layout)
+
+        plotly.offline.init_notebook_mode(connected=True)
+        plotly.offline.iplot(fig, filename='networkx')
+        # py.iplot(fig, filename='networkx')

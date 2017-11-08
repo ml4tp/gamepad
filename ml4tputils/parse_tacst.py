@@ -159,6 +159,16 @@ class TacTreeParser(object):
         self.depth = 0
         self.uidstk = []
 
+        self.gid2info = {}
+        self._build_gid2info()
+
+    def _build_gid2info(self):
+        it = MyIter(self.lemma.decls)
+
+        while it.has_next():
+            tac = next(it)
+            self.gid2info[tac.hdr.gid] = (tac.ctx, tac.goal)
+
     def _mylog(self, msg, f_log=False):
         if f_log or self.f_log:
             # self.log.append(msg)
@@ -326,26 +336,3 @@ class TacTreeParser(object):
                 self._log_acc(acc)
                 raise NameError("Parsing alignment error {}".format(decl))
         return acc
-
-
-"""
-class Tac(object):
-    def __init__(self, uid, terminal=False):
-        self.uid = uid
-        self.terminal = terminal
-
-    def has_subtac(self):
-        # type: Tac -> bool
-        raise NotImplementedError
-
-    def in_edge(self):
-        # type: Tac -> GoalId
-        raise NotImplementedError
-
-    def out_edges(self):
-        # type: Tac -> [GoalId]
-        raise NotImplementedError
-
-    def __hash__(self):
-        return self.uid
-"""

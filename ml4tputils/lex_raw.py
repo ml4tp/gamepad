@@ -133,7 +133,7 @@ class TacStParser(object):
             raise NameError("Parsing local declaration but found {}".
                             format(ldecl))
         name = ldecl[:idx].strip()
-        typ = ldecl[idx:].strip()
+        typ = ldecl[idx + 1:].strip()
 
         # Parse rest of type it is on newline
         line = f_head.peek_line()
