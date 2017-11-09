@@ -29,8 +29,14 @@ class TacTree(object):
         self.graph = graph
         self.gid2info = gid2info
 
+        self._root()
+        assert self.root
         self._build_tacsts()
         self._build_tacs()
+        self._termsts()
+        self._errsts()
+        self._termpaths()
+        self._errpaths()
 
     def _build_tacsts(self):
         self.tacsts = []
@@ -46,6 +52,35 @@ class TacTree(object):
                 self.tactics[edge.tid] += [edge]
             else:
                 self.tactics[edge.tid] = [edge]
+
+    def _root(self):
+        self.root = None
+        for node in self.graph.nodes():
+            if self.graph.in_degree(node) == 0:
+                self.root = node
+                break
+
+    def _termsts(self):
+        self.termsts = []
+        for edge in self.edges:
+            if isinstance(edge.tgt, str) and edge.tgt.startswith("t"):
+                self.termsts += [edge.tgt]
+
+    def _errsts(self):
+        self.errsts = []
+        for edge in self.edges:
+            if isinstance(edge.tgt, str) and edge.tgt.startswith("e"):
+                self.errsts += [edge.tgt]        
+
+    def _termpaths(self):
+        self.termpaths = []
+        for tgid in self.termsts:
+            self.termpaths += [nx.algorithms.shortest_path(self.graph, self.root, tgid)]
+
+    def _errpaths(self):
+        self.errpaths = []
+        for egid in self.errsts:
+            self.errpaths += [nx.algorithms.shortest_path(self.graph, self.root, egid)]
 
     def gids(self):
         return [ gid for gid, _, _ in self.tacsts ]
@@ -74,11 +109,16 @@ class TacTree(object):
 
     def dump(self):
         print(">>>>>>>>>>>>>>>>>>>>")
+        print("Root:", self.root)
         print("Tactic states:", self.tacsts)
         print("Tactics:", self.tactics)
         for gid in self.gids():
             print("In edge for {}:".format(gid), self.in_edge(gid))
             print("Out edges for {}:".format(gid), self.out_edges(gid))
+        print("Terminal states:", self.termsts)
+        print("Error states:", self.errsts)
+        print("Terminal path lengths:", self.termpaths)
+        print("Error path lengths:", self.errpaths)
         print("<<<<<<<<<<<<<<<<<<<<")
 
 

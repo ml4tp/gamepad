@@ -54,8 +54,9 @@ TACTICS = ["<coretactics::intro@0>",
 class TacTreeStats(object):
     def __init__(self, tactr_file):
         self.f_tactr = open(tactr_file, 'w')
-        # self.tachist = [(tactic, 0) for tactic in TACTICS]
         self.tachists = []
+        self.tacstats = {}
+        self.edges = 0
 
     def __exit__(self):
         self.f_tactr.close()
@@ -74,14 +75,27 @@ class TacTreeStats(object):
         self.tachists += [hist_p]
 
         # Log
-        msg = json.dumps({"name": tactr.name, "hist": hist_p})
-        self.f_tactr.write(msg)
-        self.f_tactr.write("\n")
+        # msg = json.dumps({"name": tactr.name, "hist": hist_p})
+        # self.f_tactr.write(msg)
+        # self.f_tactr.write("\n")
+        num_tacs = len(tactr.graph.edges())
+        num_gs = len(tactr.graph.nodes())
+        num_term = len(tactr.termsts)
+        num_err = len(tactr.errsts)
+        term_path_lens = [len(path) for path in tactr.termpaths]
+        err_path_lens = [len(path) for path in tactr.errpaths]
+        info = {'num_tacs': num_tacs,
+                'num_goals': num_gs,
+                'num_terminal': num_term,
+                'num_error': num_err,
+                'term_path_lens': term_path_lens,
+                'err_path_lens': err_path_lens}
+        self.tacstats[tactr.name] = info
 
         hist_pp = sorted(hist_p, key=lambda k: (k[1], k[0]), reverse=True)
         return hist_p
 
-    def avg_tactic_hist(self):
+    def _avg_tactic_hist(self):
         tachist = [(tactic, 0) for tactic in TACTICS]
         for hist_p in self.tachists:
             for i, (tactic, cnt) in enumerate(hist_p):
@@ -94,7 +108,12 @@ class TacTreeStats(object):
         return avg_tachist
 
     def log_tactic_hist(self):
-        avg_tachist = self.avg_tactic_hist()
+        avg_tachist = self._avg_tactic_hist()
         msg = json.dumps({"avg_tactic_hist": avg_tachist})
         self.f_tactr.write(msg)
         self.f_tactr.write("\n")
+
+        for k, info in self.tacstats.items():
+            msg = json.dumps({"lemma": k, "info": info})
+            self.f_tactr.write(msg)
+            self.f_tactr.write("\n")            
