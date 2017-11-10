@@ -61,7 +61,7 @@ def pp_tab(tab, str):
 
 
 class RawTac(object):
-    def __init__(self, uid, name, kind, bf_decls, af_decls, bods):
+    def __init__(self, uid, name, kind, ftac, bf_decls, af_decls, bods):
         assert isinstance(uid, int)
         assert isinstance(name, str)
         assert isinstance(kind, TacKind)
@@ -76,6 +76,7 @@ class RawTac(object):
         self.uid = uid
         self.name = name
         self.kind = kind
+        self.ftac = ftac
         self.bf_decls = bf_decls
         self.af_decls = af_decls
         self.bods = bods
@@ -119,20 +120,6 @@ class RawTac(object):
         af = pp_tab(tab + 2, "after = [" + ", ".join([str(af_decl) for af_decl in self.af_decls]) + "]\n")
         pro = pp_tab(tab, "}")
         return epi + bf + bods + af + pro
-
-    """
-    def stats(self):
-        # Stats
-        ns = {(self.kind, len(self.bf_decls), len(self.bods), len(self.af_decls)): 1}
-
-        # Compute
-        for body in self.bods:
-            for tac in body:
-                ns2 = tac.stats()
-                ns = merge_hist(ns, ns2)
-
-        return ns
-    """
 
     def __hash__(self):
         return self.uid
@@ -203,7 +190,7 @@ class TacTreeParser(object):
             afters += [next(it)]
 
         return RawTac(self._getuid(), befores[0].hdr.tac, TacKind.ATOMIC,
-                       befores, afters, [])
+                      befores[0].hdr.ftac, befores, afters, [])
 
     def parse_name_call(self):
         # Internal
@@ -225,7 +212,7 @@ class TacTreeParser(object):
             afters += [next(it)]
 
         return RawTac(self._getuid(), befores[0].hdr.tac, TacKind.NAME,
-                       befores, afters, [])
+                      befores[0].hdr.ftac, befores, afters, [])
 
     def parse_notation_call(self):
         # Internal
@@ -249,7 +236,7 @@ class TacTreeParser(object):
             afters += [next(it)]
 
         return RawTac(self._getuid(), befores[0].hdr.tac, TacKind.NOTATION,
-                       befores, afters, bods)
+                      befores[0].hdr.ftac, befores, afters, bods)
 
     def parse_ml_call(self):
         # Internal
@@ -274,7 +261,7 @@ class TacTreeParser(object):
             afters += [next(it)]
 
         return RawTac(self._getuid(), befores[0].hdr.tac, TacKind.ML,
-                       befores, afters, [body])
+                      befores[0].hdr.ftac, befores, afters, [body])
 
     def parse_tactree(self):
         """

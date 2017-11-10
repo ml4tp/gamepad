@@ -7,89 +7,120 @@ from plotly.graph_objs import *
 
 from parse_tacst import *
 
+"""
+[Note]
+
+Goal: [TacStDecl] -> [Tac]
+
+Works (L means long time):
+BGappendix AB, C
+BGsection 1, 2, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14[L], 15, 16
+PFsection 1, 2, 3, 4, 6[L], 7, 8, 9[L], 10[L], 11[L], 12, 13[L], 14[L]
+
+Pop from empty list:
+BGsection 3, 4
+PFsection 5
+
+BGsection 4:
+rank2_coprime_comm_cprod
+"""
+
+
+# -------------------------------------------------
+# Data structures
 
 class TacEdge(object):
-    def __init__(self, eid, tid, name, kind, ftac, src, tgt):
-        self.eid = eid
-        self.tid = tid
-        self.name = name
-        self.kind = kind
-        self.ftac = ftac
-        self.src = src
-        self.tgt = tgt
+    def __init__(self, eid, tid, name, tkind, ftac, src, tgt, isbod=False):
+        """
+        An edge identifier uniquely identifies the edge. A single tactic
+        invocation can emit multiple tactic edges, which corresponds to
+        creating multiple sub-goals.
+        """
+        # Internal
+        self.eid = eid         # Edge identifier
+        self.tid = tid         # Tactic identifier
+
+        # Information
+        self.name = name       # Name of tactic
+        self.tkind = tkind     # Tactic kind
+        self.ftac = ftac       # Full tactic
+        self.src = src         # Source goal id
+        self.tgt = tgt         # Target goal id
+        self.isbod = isbod     # Is the connection to a body?
+
+    def conn2err(self):
+        return isinstance(self.tgt, str) and self.tgt.startswith("e")
+
+    def conn2term(self):
+        return isinstance(self.tgt, str) and self.tgt.startswith("t")
+
+    def unpack(self):
+        return (self.eid, self.tid, self.name, str(self.tkind), self.ftac,
+                self.src, self.tgt, self.isbod)
 
     def __str__(self):
-        return "({}, {}, {}, {} -> {})".format(self.eid, self.tid, self.name, self.src, self.tgt)
+        return "({}, {}, {}, {} -> {}, {})".format(self.eid, self.tid, self.name,
+                                                   self.src, self.tgt, self.isbod)
 
 
 class TacTree(object):
     def __init__(self, name, edges, graph, gid2info):
+        # Input
         self.name = name
         self.edges = edges
         self.graph = graph
         self.gid2info = gid2info
+        self.notok = []
 
+        # Root, error/terminal states, and create flattened view
         self._root()
         assert self.root
-        self._build_tacsts()
-        self._build_tacs()
         self._termsts()
         self._errsts()
-        self._termpaths()
-        self._errpaths()
+        self._flatten_view()
 
-    def _build_tacsts(self):
-        self.tacsts = []
-        for node in self.graph.nodes():
-            if node in self.gid2info:
-                ctx, goal = self.gid2info[node]
-                self.tacsts += [(node, ctx, goal)]
-
-    def _build_tacs(self):
-        self.tactics = {}
-        for edge in self.edges:
-            if edge.tid in self.tactics:
-                self.tactics[edge.tid] += [edge]
-            else:
-                self.tactics[edge.tid] = [edge]
+        self._build_tacsts()
+        self._build_tacs()
 
     def _root(self):
         self.root = None
         for node in self.graph.nodes():
-            if self.graph.in_degree(node) == 0:
+            self_edges = 0
+            for edge in self.graph.in_edges(node):
+                if edge[0] == edge[1]:
+                    self_edges += 1
+            if self.graph.in_degree(node) == self_edges:
                 self.root = node
                 break
-
-    def _termsts(self):
-        self.termsts = []
-        for edge in self.edges:
-            if isinstance(edge.tgt, str) and edge.tgt.startswith("t"):
-                self.termsts += [edge.tgt]
 
     def _errsts(self):
         self.errsts = []
         for edge in self.edges:
-            if isinstance(edge.tgt, str) and edge.tgt.startswith("e"):
-                self.errsts += [edge.tgt]        
+            if edge.conn2err():
+                self.errsts += [edge.tgt]
 
-    def _termpaths(self):
-        self.termpaths = []
-        for tgid in self.termsts:
-            self.termpaths += [nx.algorithms.shortest_path(self.graph, self.root, tgid)]
+    def _termsts(self):
+        self.termsts = []
+        for edge in self.edges:
+            if edge.conn2term():
+                self.termsts += [edge.tgt]
 
-    def _errpaths(self):
-        self.errpaths = []
-        for egid in self.errsts:
-            self.errpaths += [nx.algorithms.shortest_path(self.graph, self.root, egid)]
-
-    def gids(self):
-        return [ gid for gid, _, _ in self.tacsts ]
-
-    def contexts(self):
-        return [ ctx for _, ctx, _ in self.tacsts ]
-
-    def goals(self):
-        return [ gid for _, _, goal in self.tacsts ]
+    def _flatten_view(self):
+        self.flatview = []
+        seen = set()
+        for edge in self.edges:
+            try:
+                depth = len(nx.algorithms.shortest_path(self.graph, self.root, edge.tgt))
+                if edge.tid not in seen:
+                    if edge.tgt in self.gid2info:
+                        ctx, goal = self.gid2info[edge.tgt]
+                        self.flatview += [(depth, ctx, goal, edge.unpack())]
+                    elif edge.conn2err() or edge.conn2term():
+                        ctx, goal = self.gid2info[edge.src]
+                        self.flatview += [(depth, ctx, goal, edge.unpack())]
+            except nx.exception.NetworkXNoPath:
+                pass
+            seen.add(edge.tid)
 
     def in_edge(self, gid):
         gids = list(self.graph.predecessors(gid))
@@ -107,23 +138,80 @@ class TacTree(object):
                 acc += [edge]
         return acc
 
+    def view_err_paths(self):
+        acc = []
+        for egid in self.errsts:
+            try:
+                acc += [nx.algorithms.shortest_path(self.graph, self.root, egid)]
+            except nx.exception.NetworkXNoPath:
+                self.notok += [egid]
+        return acc
+
+    def view_term_paths(self):
+        acc = []
+        for tgid in self.termsts:
+            try:
+                acc += [nx.algorithms.shortest_path(self.graph, self.root, tgid)]
+            except nx.exception.NetworkXNoPath:
+                self.notok += [tgid]
+        return acc
+
+    def view_have_info(self):
+        acc = []
+        for edge in self.edges:
+            if edge.name.startswith("<ssreflect_plugin::ssrhave@0>") and \
+               edge.isbod:
+                path = []
+                for tgid in self.termsts:
+                    try:
+                        path = nx.algorithms.shortest_path(self.graph, edge.src, tgid)
+                        break
+                    except nx.exception.NetworkXNoPath:
+                        pass
+                acc += [(edge.ftac, len(edge.ftac), path)]
+        return acc
+
+    def _build_tacsts(self):
+        self.tacsts = []
+        for node in self.graph.nodes():
+            if node in self.gid2info:
+                ctx, goal = self.gid2info[node]
+                self.tacsts += [(node, ctx, goal)]
+
+    def _build_tacs(self):
+        self.tactics = {}
+        for edge in self.edges:
+            if edge.tid in self.tactics:
+                self.tactics[edge.tid] += [edge]
+            else:
+                self.tactics[edge.tid] = [edge]
+
+    def gids(self):
+        return [ gid for gid, _, _ in self.tacsts ]
+
     def dump(self):
         print(">>>>>>>>>>>>>>>>>>>>")
         print("Root:", self.root)
         print("Tactic states:", self.tacsts)
         print("Tactics:", self.tactics)
         for gid in self.gids():
-            print("In edge for {}:".format(gid), self.in_edge(gid))
-            print("Out edges for {}:".format(gid), self.out_edges(gid))
+            s1 = ", ".join([str(x) for x in self.in_edge(gid)])
+            print("In edge for {}:".format(gid), s1)
+            s2 = ", ".join([str(x) for x in self.out_edges(gid)])
+            print("Out edges for {}:".format(gid), s2)
         print("Terminal states:", self.termsts)
         print("Error states:", self.errsts)
-        print("Terminal path lengths:", self.termpaths)
-        print("Error path lengths:", self.errpaths)
+        print("Terminal path lengths:", self.view_term_paths())
+        print("Error path lengths:", self.view_err_paths())
         print("<<<<<<<<<<<<<<<<<<<<")
 
 
+# -------------------------------------------------
+# Tactic Tree Building
+
 class TacTreeBuilder(object):
-    def __init__(self, name, tacs, gid2info, eid=0, solvgid=0, errgid=0, f_log=False):
+    def __init__(self, name, tacs, gid2info, ftac_inscope=None,
+                 eid=0, solvgid=0, errgid=0, f_log=False):
         for tac in tacs:
             assert isinstance(tac, RawTac)
 
@@ -135,6 +223,7 @@ class TacTreeBuilder(object):
         self.edges = []
         self.graph = nx.MultiDiGraph()
         self.gid2info = gid2info
+        self.ftac_inscope = ftac_inscope
 
         # Internal counters
         self.eid = eid
@@ -148,13 +237,7 @@ class TacTreeBuilder(object):
 
     def _mylog(self, msg, f_log=False):
         if f_log or self.f_log:
-            # self.log.append(msg)
             print(msg)
-
-    def _add_edges(self, edges):
-        self.edges += edges
-        for edge in edges:
-            self.graph.add_edge(edge.src, edge.tgt, key=edge.eid) 
 
     def _fresh_eid(self):
         eid = self.eid
@@ -171,9 +254,46 @@ class TacTreeBuilder(object):
         self.solvgid += 1
         return "t" + str(solvgid)
 
-    def _launch_rec(self, tacs):
-        tr_builder = TacTreeBuilder(self.name, tacs, self.gid2info, eid=self.eid,
-                                    solvgid=self.solvgid, errgid=self.errgid)
+    def _add_edges(self, edges):
+        self.edges += edges
+        for edge in edges:
+            self.graph.add_edge(edge.src, edge.tgt, key=edge.eid) 
+
+    def _mk_edge(self, tac, bf_decl, af_decl):
+        if bf_decl.hdr.gid == GID_SOLVED:
+            return []
+
+        if self.ftac_inscope:
+            ftac = self.ftac_inscope
+        else:
+            ftac = bf_decl.hdr.ftac
+
+        if af_decl.hdr.gid == GID_SOLVED:
+            edge = TacEdge(self._fresh_eid(), tac.uid, tac.name, tac.kind,
+                           ftac, bf_decl.hdr.gid, self._fresh_solvgid())
+        elif af_decl.hdr.mode == "afterE":
+            edge = TacEdge(self._fresh_eid(), tac.uid, tac.name, tac.kind,
+                           ftac, bf_decl.hdr.gid, self._fresh_errgid())
+        else:
+            edge = TacEdge(self._fresh_eid(), tac.uid, tac.name, tac.kind,
+                           ftac, bf_decl.hdr.gid, af_decl.hdr.gid)
+        return [edge]
+
+    def _mk_body_edge(self, tac, bf_decl, gid):
+        if self.ftac_inscope:
+            ftac = self.ftac_inscope
+        else:
+            ftac = bf_decl.hdr.ftac
+
+        edge = TacEdge(self._fresh_eid(), tac.uid, tac.name, tac.kind,
+                       ftac, bf_decl.hdr.gid, gid, True)
+        return edge
+
+    def _launch_rec(self, tacs, ftac_inscope):
+        tr_builder = TacTreeBuilder(self.name, tacs, self.gid2info,
+                                    ftac_inscope=ftac_inscope,
+                                    eid=self.eid, solvgid=self.solvgid,
+                                    errgid=self.errgid)
         tr_builder.build_tacs()
         self.eid = tr_builder.eid
         self.solvgid = tr_builder.solvgid
@@ -181,33 +301,6 @@ class TacTreeBuilder(object):
         self.notok += tr_builder.notok
         self.numtacs += tr_builder.numtacs
         return tr_builder.edges, tr_builder.graph
-
-    def _is_terminal(self, decl):
-        return decl.hdr.gid == GID_SOLVED or decl.hdr.mode == "afterE"
-
-    def _mk_edge(self, tac, bf_decl, af_decl):
-        if bf_decl.hdr.gid == GID_SOLVED:
-            return []
-
-        if af_decl.hdr.gid == GID_SOLVED:
-            edge = TacEdge(self._fresh_eid(), tac.uid, tac.name,
-                           tac.kind, bf_decl.hdr.ftac,
-                           bf_decl.hdr.gid, self._fresh_solvgid())
-        elif af_decl.hdr.mode == "afterE":
-            edge = TacEdge(self._fresh_eid(), tac.uid, tac.name,
-                           tac.kind, bf_decl.hdr.ftac,
-                           bf_decl.hdr.gid, self._fresh_errgid())
-        else:
-            edge = TacEdge(self._fresh_eid(), tac.uid, tac.name,
-                           tac.kind, bf_decl.hdr.ftac,
-                           bf_decl.hdr.gid, af_decl.hdr.gid)
-        return [edge]
-
-    def _mk_edge2(self, tac, bf_decl, gid):
-        edge = TacEdge(self._fresh_eid(), tac.uid, tac.name,
-                       tac.kind, bf_decl.hdr.ftac,
-                       bf_decl.hdr.gid, gid)
-        return edge
 
     def build_atomic(self):
         # Internal
@@ -218,25 +311,33 @@ class TacTreeBuilder(object):
         tac = next(it_tacs)
         nbf = len(tac.bf_decls)
         naf = len(tac.af_decls)
-        edges = []
+
         if nbf == naf:
+            # 1. 1-1 connection
+            edges = []
             for bf_decl, af_decl in zip(tac.bf_decls, tac.af_decls):
                 edges += self._mk_edge(tac, bf_decl, af_decl)
+
+            # Accumulate changes
+            self._add_edges(edges)
         elif naf % nbf == 0:
             # Compute branching ratio
             nbod = len(tac.bods)
             af2bf = int(naf / nbf)
 
+            # 1. 1-many connection
+            edges = []
             for i in range(0, nbf):
                 start = i * af2bf
                 end = i * af2bf + af2bf
                 bf_decl = tac.bf_decls[i]
                 for af_decl in tac.af_decls[start:end]:
                     edges += self._mk_edge(tac, bf_decl, af_decl)
+
+            # Accumulate changes
+            self._add_edges(edges)
         else:
             self.notok += [tac]
-
-        self._add_edges(edges)
 
     def build_name(self):
         # Internal
@@ -245,16 +346,21 @@ class TacTreeBuilder(object):
         self.numtacs += 1
 
         tac = next(it_tacs)
-        nbf = len(tac.bf_decls)
-        naf = len(tac.af_decls)
-        edges = []
-        if nbf == naf:
+
+        if len(tac.bf_decls) == len(tac.af_decls):
+            # 1-1 before/after
+            # 1. connect up name tactic
+            edges = []
             for bf_decl, af_decl in zip(tac.bf_decls, tac.af_decls):
-                edges += self._mk_edge(tac, bf_decl, af_decl)
+                # Connect up those name tactics with different before
+                # and after goal ids
+                if bf_decl.hdr.gid != af_decl.hdr.gid:
+                    edges += self._mk_edge(tac, bf_decl, af_decl)
+
+            # Accumulate changes
+            self._add_edges(edges)
         else:
             self.notok += [tac]
-
-        self._add_edges(edges)
 
     def build_notation(self):
         # Internal
@@ -263,14 +369,19 @@ class TacTreeBuilder(object):
         self.numtacs += 1
 
         tac = next(it_tacs)
-        for bf_decl, body in zip(tac.bf_decls, tac.bods):
-            # 1. connect up body
-            edges, _ = self._launch_rec(body)
 
-            # TODO(deh): Skip notation?
-            # TODO(deh): check for weirdness here
-            # Accumulate changes
-            self._add_edges(edges)
+        if len(tac.bf_decls) == len(tac.bods):
+            # 1-1 before/body
+            for bf_decl, body in zip(tac.bf_decls, tac.bods):
+                # 1. connect up body
+                edges, _ = self._launch_rec(body, tac.ftac)
+
+                # TODO(deh): Skip notation?
+                # TODO(deh): check for weirdness here
+                # Accumulate changes
+                self._add_edges(edges)
+        else:
+            self.notok += [tac]
 
     def build_ml(self):
         # Internal
@@ -287,6 +398,7 @@ class TacTreeBuilder(object):
                 edges = []
                 for bf_decl, af_decl in zip(tac.bf_decls, tac.af_decls):
                     edges += self._mk_edge(tac, bf_decl, af_decl)
+                
                 # Accumulate changes
                 self._add_edges(edges)
             else:
@@ -326,7 +438,7 @@ class TacTreeBuilder(object):
             <ssreflect_plugin::ssrcase@1>, 1, 0, 2, 9
             <ssreflect_plugin::ssrcase@1>, 1, 0, 1, 14
             """
-            # TODO(DEH): kludge
+            # NOTE(DEH): kludge??
             if len(tac.af_decls) == len(tac.bf_decls):
                 edges = []
                 for bf_decl, af_decl in zip(tac.bf_decls, tac.af_decls):
@@ -369,7 +481,9 @@ class TacTreeBuilder(object):
              tac.name.startswith("<coretactics::exact@0>") or \
              tac.name.startswith("<coretactics::left@0>") or \
              tac.name.startswith("<coretactics::right@0>") or \
+             tac.name.startswith("<coretactics::right_with@0>") or \
              tac.name.startswith("<coretactics::symmetry@0>") or \
+             tac.name.startswith("<coretactics::reflexivity@0>") or \
              tac.name.startswith("<coretactics::transitivity@0>") or \
              tac.name.startswith("<extratactics::contradiction@0>") or \
              tac.name.startswith("<extratactics::discriminate@0>") or \
@@ -378,6 +492,7 @@ class TacTreeBuilder(object):
              tac.name.startswith("<ssreflect_plugin::ssrcongr@0>") or \
              tac.name.startswith("<ssreflect_plugin::ssrmove@0>") or \
              tac.name.startswith("<ssreflect_plugin::ssrmove@2>") or \
+             tac.name.startswith("<ssreflect_plugin::ssrpose@0>") or \
              tac.name.startswith("<ssreflect_plugin::ssrpose@2>") or \
              tac.name.startswith("<ssreflect_plugin::ssrset@0>") or \
              tac.name.startswith("<ssreflect_plugin::ssrwithoutloss@0>") or \
@@ -409,31 +524,33 @@ class TacTreeBuilder(object):
                 edges = []
                 if body:
                     # 1. connect up body
-                    body_edges, body_graph = self._launch_rec(body)
+                    body_edges, body_graph = self._launch_rec(body, tac.ftac)
+                    # Accumulate changes
+                    self._add_edges(body_edges)
 
                     # 2. connect up body to top-level
                     if body_edges:
                         for bf_decl in tac.bf_decls:
-                            # every gid that does not have a parent is connected to the top
+                            # every gid that does not have a parent is
+                            # connected to the top
+                            seen = set()
                             for edge in body_edges:
                                 self_edges = 0
                                 for edge_p in body_graph.in_edges(edge.src):
                                     if edge_p[0] == edge_p[1]:
                                         self_edges += 1
-                                if body_graph.in_degree(edge.src) == self_edges:
-                                    edges += [self._mk_edge2(tac, bf_decl,
-                                              edge.src)]
-                            #edges += [self._mk_edge2(tac, bf_decl,
-                            #          body_edges[0].src)]
+                                if body_graph.in_degree(edge.src) == self_edges and \
+                                   not edge.src in seen:
+                                    edges += [self._mk_body_edge(tac, bf_decl, edge.src)]
+                                    seen.add(edge.src)
 
                 # 3. connect me up
-                bf_decl = tac.bf_decls[0]
-                for af_decl in tac.af_decls:
-                    edges += self._mk_edge(tac, bf_decl, af_decl)
+                if not tac.name.startswith("<ssreflect_plugin::ssrtclseq@0>"):
+                    bf_decl = tac.bf_decls[0]
+                    for af_decl in tac.af_decls:
+                        edges += self._mk_edge(tac, bf_decl, af_decl)
 
                 # Accumulate changes
-                if body:
-                    self._add_edges(body_edges)
                 self._add_edges(edges)
             else:
                 self.notok += [tac]
@@ -442,7 +559,9 @@ class TacTreeBuilder(object):
              tac.name.startswith("<ssreflect_plugin::ssrtclintros@0>"):
             # NOTE(deh): ssrtclby@0 always ends in terminal?
             # 1. connect up body
-            body_edges, body_graph = self._launch_rec(body)
+            body_edges, body_graph = self._launch_rec(body, tac.ftac)
+            # Accumulate changes
+            self._add_edges(body_edges)
 
             # 2. connect up top-level before/after
             edges = []
@@ -455,7 +574,9 @@ class TacTreeBuilder(object):
                             has_path[i] += 1
                             break
                     except nx.exception.NodeNotFound:
-                        has_path[i] += 1
+                        # NOTE(deh): why was has_path[i] += 1?
+                        # has_path[i] += 1
+                        pass
 
             # 3. connect me up
             for bf_decl in tac.bf_decls:
@@ -463,14 +584,13 @@ class TacTreeBuilder(object):
                     edges += self._mk_edge(tac, bf_decl, af_decl)
 
             # Accumulate changes
-            self._add_edges(body_edges)
             self._add_edges(edges)
 
             # Check for weirdness
             if any(x == 0 for x in has_path):
                 self.notok += [tac]
         else:
-            pass
+            raise NameError("ML Tactic {} not supported.".format(tac.name))
 
     def build_tacs(self):
         # Internal
@@ -489,16 +609,16 @@ class TacTreeBuilder(object):
             else:
                 raise NameError("TacKind {} not supported".format(tac.kind))
 
-    def check_success(self):
-        print("notok: {}, total: {}".format(len(self.notok), self.numtacs))
+    def check_success(self, f_verbose=False):
         ug = nx.Graph(self.graph)
         ccs = list(nx.algorithms.components.connected.connected_components(ug))
         n = len(ccs)
-        # n = nx.algorithms.components.connected.number_connected_components(ug)
-        print("# connected components: {}".format(n))
+        if f_verbose:
+            print("notok: {}, total: {}".format(len(self.notok), self.numtacs))
+            print("# connected components: {}".format(n))
         return n == 1, n
 
-    def get_tactree(self, f_verbose):
+    def get_tactree(self, f_verbose=False):
         tactr = TacTree(self.name, self.edges, self.graph, self.gid2info)
 
         if f_verbose:
@@ -507,8 +627,6 @@ class TacTreeBuilder(object):
         return tactr
 
     def show(self):
-        # print("Graph edges:\n", "\n".join(map(str, self.graph.edges)))
-        # print("TacEdges:\n", "\n".join(map(str, self.edges)))
         if self.graph.edges:
             nx.drawing.nx_pylab.draw_kamada_kawai(self.graph, with_labels=True)
             plt.show()
@@ -551,6 +669,7 @@ class TacTreeBuilder(object):
             node_trace['x'].append(x)
             node_trace['y'].append(y)
 
+        # Node info
         info = self.gid2info
         for node in pos.keys():
             if node in info:
@@ -567,13 +686,10 @@ class TacTreeBuilder(object):
                         showlegend=False,
                         hovermode='closest',
                         margin=dict(b=20,l=5,r=5,t=40),
-                        annotations=[ dict(showarrow=False,
-                                           xref="paper", yref="paper",
-                                           x=0.005, y=-0.002 ) ],
+                        annotations=[dict(showarrow=False, xref="paper",
+                                          yref="paper", x=0.005, y=-0.002 )],
                         xaxis=XAxis(showgrid=False, zeroline=False, showticklabels=False),
                         yaxis=YAxis(showgrid=False, zeroline=False, showticklabels=False))
         fig = Figure(data=Data([edge_trace, node_trace, einfo_trace]), layout=layout)
-
         plotly.offline.init_notebook_mode(connected=True)
         plotly.offline.iplot(fig, filename='networkx')
-        # py.iplot(fig, filename='networkx')

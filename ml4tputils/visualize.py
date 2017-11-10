@@ -39,6 +39,8 @@ class Visualize(object):
         self.rawstats = RawStats(rawtac_file, False)
         self.tactrstats = TacTreeStats(tactr_file)
 
+        self.tactrs = []
+
     def visualize_lemma(self, file, lemma):
         if self.tgtlem and self.tgtlem != lemma.name:
             return
@@ -67,7 +69,7 @@ class Visualize(object):
         tr_builder.build_tacs()
         succ, ncc = tr_builder.check_success()
         if not succ:
-            self.failed += [(file, lemma.name, ncc)]
+            self.failed += [(file, lemma.name, ncc, len(tr_builder.notok))]
 
         tactr = tr_builder.get_tactree(self.f_verbose)
         tachist = self.tactrstats.tactic_hist(tactr)
@@ -91,14 +93,12 @@ class Visualize(object):
             print("==================================================")
             print("Visualizing file: {}".format(file))
 
-        tactrs = []
         ts_parser = TacStParser(file, f_log=False)
         while not ts_parser.exhausted:
             lemma = ts_parser.parse_lemma()
-            tactrs += [self.visualize_lemma(file, lemma)]
+            self.tactrs += [self.visualize_lemma(file, lemma)]
             if self.abort:
-                return tactrs
-        return tactrs
+                break
 
 
 def record(file, vis):
@@ -109,8 +109,8 @@ def record(file, vis):
         f.write("Total lemmas: {}\n".format(vis.num_lemmas))
         f.write("Failed lemmas: {}\n".format(len(vis.failed)))
         f.write("FAILED\n")
-        for file, lemma, ncc in vis.failed:
-            f.write("{}, {}, {}\n".format(file, lemma, ncc))
+        for file, lemma, ncc, nnotok in vis.failed:
+            f.write("{}, {}, {}, {}\n".format(file, lemma, ncc, nnotok))
 
 
 if __name__ == "__main__":
