@@ -1,55 +1,7 @@
 import json
 
 from build_tactr import *
-
-
-TACTICS = ["<coretactics::intro@0>",
-           "<coretactics::assumption@0>",
-           "<coretactics::clear@0>",
-           "<coretactics::clearbody@0>",
-           "<coretactics::constructor@0>",
-           "<coretactics::constructor@1>",
-           "<coretactics::exact@0>",
-           "<coretactics::exists@1>",
-           "<coretactics::left@0>",
-           "<coretactics::right@0>",
-           "<coretactics::split@0>",
-           "<coretactics::symmetry@0>",
-           "<coretactics::transitivity@0>",
-           "<extratactics::contradiction@0>",
-           "<extratactics::discriminate@0>",
-           "<g_auto::auto@0>",
-           "<g_auto::eauto@0>",
-           "<g_auto::trivial@0>",
-           "<ssreflect_plugin::ssrapply@0>",
-           "<ssreflect_plugin::ssrapply@1>",
-           "<ssreflect_plugin::ssrcase@0>",
-           "<ssreflect_plugin::ssrcase@1>",
-           "<ssreflect_plugin::ssrclear@0>",
-           "<ssreflect_plugin::ssrcongr@0>",
-           "<ssreflect_plugin::ssrelim@0>",
-           "<ssreflect_plugin::ssrexact@0>",
-           "<ssreflect_plugin::ssrexact@1>",
-           "<ssreflect_plugin::ssrhave@0>",
-           "<ssreflect_plugin::ssrmove@0>",
-           "<ssreflect_plugin::ssrmove@1>",
-           "<ssreflect_plugin::ssrmove@2>",
-           "<ssreflect_plugin::ssrpose@2>",
-           "<ssreflect_plugin::ssrrewrite@0>",
-           "<ssreflect_plugin::ssrset@0>",
-           "<ssreflect_plugin::ssrsuff@0>",
-           "<ssreflect_plugin::ssrsuffices@0>",
-           "<ssreflect_plugin::ssrtclby@0>",
-           "<ssreflect_plugin::ssrtcldo@0>",
-           "<ssreflect_plugin::ssrtclintros@0>",
-           "<ssreflect_plugin::ssrtclseq@0>",
-           "<ssreflect_plugin::ssrwithoutloss@0>",
-           "<ssreflect_plugin::ssrwithoutlossss@0>",
-           "<ssreflect_plugin::ssrwlog@0>",
-           "<ssreflect_plugin::ssrwlogss@0>",
-           "<ssreflect_plugin::ssrwlogs@0>"
-           ]
-
+from tactr import *
 
 class TacTreeStats(object):
     def __init__(self, tactr_file):
@@ -62,6 +14,7 @@ class TacTreeStats(object):
         self.f_tactr.close()
 
     def tactic_hist(self, tactr):
+        """
         # Compute hist
         hist = [0 for _ in TACTICS]
         for k, tacs in tactr.tactics.items():
@@ -71,10 +24,10 @@ class TacTreeStats(object):
                     hist[idx] += 1
         hist_p = [(x, y) for x, y in zip(TACTICS, hist)]
 
-        num_tacs = len(tactr.graph.edges())
-        num_gs = len(tactr.graph.nodes())
-        num_term = len(tactr.termsts)
-        num_err = len(tactr.errsts)
+        num_tacs = len(tactr.tactics)
+        num_gs = len(tactr.goals)
+        num_term = len(tactr.term_goals)
+        num_err = len(tactr.err_goals)
         term_path_lens = [len(path) for path in tactr.view_term_paths()]
         err_path_lens = [len(path) for path in tactr.view_err_paths()]
         if len(tactr.notok) > 0:
@@ -93,6 +46,10 @@ class TacTreeStats(object):
 
         hist_pp = sorted(hist_p, key=lambda k: (k[1], k[0]), reverse=True)
         return hist_p
+        """
+        info = tactr.stats()
+        self.tacstats[tactr.name] = info
+        return tactr.view_tactic_hist()
 
     def _avg_tactic_hist(self, tachists):
         tachist = [(tactic, 0) for tactic in TACTICS]
@@ -113,11 +70,11 @@ class TacTreeStats(object):
             self.f_tactr.write(msg)
             self.f_tactr.write("\n")
 
-        self.f_tactr.write("AVERAGE TACTIC HIST")
-        tachists = [info['hist'] for _, info in self.tacstats.items()]
-        avg_tachist = self._avg_tactic_hist(tachists)
-        msg = json.dumps({"avg_tactic_hist": avg_tachist})
-        self.f_tactr.write(msg)
-        self.f_tactr.write("\n")
+        # self.f_tactr.write("AVERAGE TACTIC HIST")
+        # tachists = [info['hist'] for _, info in self.tacstats.items()]
+        # avg_tachist = self._avg_tactic_hist(tachists)
+        # msg = json.dumps({"avg_tactic_hist": avg_tachist})
+        # self.f_tactr.write(msg)
+        # self.f_tactr.write("\n")
 
         self.f_tactr.write("TOTAL {}: WERID: {}\n".format(len(self.tacstats), self.weird))

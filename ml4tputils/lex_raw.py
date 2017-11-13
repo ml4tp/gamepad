@@ -1,4 +1,5 @@
 from lib.myfile import MyFile
+from coq_ast import *
 
 """
 [Note]
@@ -37,6 +38,9 @@ TOK_BEG_SUB_PF = "begin(subpf)"
 TOK_END_SUB_PF = "end(subpf)"
 TOK_BEG_PF = "begin(pf)"
 TOK_END_PF = "end(pf)"
+TOK_TYPS = "Typs"
+TOK_BODS = "Bods"
+TOK_CONSTRS = "Constrs"
 
 
 # -------------------------------------------------
@@ -68,10 +72,12 @@ class TacStDecl(object):
     """
     TacStDecl = 'begin(tacst)' ... 'end(tacst)'
     """
-    def __init__(self, tac_st_hdr, ctx, goal):
+    def __init__(self, tac_st_hdr, ctx, goal, ast_ctx, ast_goal):
         self.hdr = tac_st_hdr
         self.ctx = ctx
         self.goal = goal
+        self.ast_ctx = ast_ctx
+        self.ast_goal = ast_goal
 
     def dump(self):
         return "{}\n{}\n{}".format(str(self.hdr), str(self.ctx),
@@ -94,9 +100,24 @@ class LemTacSt(object):
     """
     Contains the lemma and the sequence of tactic states associated with it.
     """
-    def __init__(self, name, decls):
+    def __init__(self, name, decls, typs_table, bods_table, constrs_table):
+        for decl in decls:
+            assert isinstance(decl, TacStDecl)
+
         self.name = name
         self.decls = decls
+        self.typs_table = typs_table         # Dict[id, int]
+        self.bods_table = bods_table         # Dict[id, int]
+        # self.constrs_table = constrs_table   # Dict[int, string]
+        self.recon = CoqExpRecon(constrs_table)
+
+    def typ2ast(self, key):
+        idx = self.typs_table[key]
+        return self.recon_ast(idx)
+
+    def bod2ast(self, key):
+        idx = self.bods_table[key]
+        return self.recon_ast(idx)
 
     def __str__(self):
         msg = "\n".join([str(decl) for decl in self.decls])
@@ -115,6 +136,10 @@ class TacStParser(object):
         self.lems = []
         self.decls = []
         self.exhausted = False
+
+        self.typs_table = {}
+        self.bods_table = {}
+        self.constrs_table = {}
 
     def _mylog(self, msg, f_log=False):
         if f_log or self.f_log:
@@ -184,10 +209,29 @@ class TacStParser(object):
         # Parse goal
         goal = f_head.consume_line()
         line = f_head.peek_line()
-        while not line.startswith(TOK_END_TAC_ST):
+        # while not line.startswith(TOK_END_TAC_ST):
+        while not line.startswith(TOK_SEP):
             goal += line
             line = f_head.advance_line()
         return goal
+
+    def parse_local_ast_ctx(self):
+        # Internal
+        f_head = self.f_head
+        self._mylog("@parse_local_ast_ctx:before<{}>".format(f_head.peek_line()))
+
+        # Parse local ctx
+        line = f_head.consume_line()
+        xs = [x.strip() for x in line.split(",")]
+        return xs
+
+    def parse_ast_goal(self):
+        # Internal
+        f_head = self.f_head
+        self._mylog("@parse_ast_goal:before<{}>".format(f_head.peek_line()))
+
+        goal = f_head.consume_line()
+        return int(goal)
 
     def parse_decl(self, depth, mode, tac, kind, loc):
         # Internal
@@ -204,6 +248,8 @@ class TacStParser(object):
             tac_st_hdr = TacStHdr(mode, tac, kind, "", GID_SOLVED, 0, loc, depth)
             ctx = []
             goal = "ML4TP_SOLVED"
+            ast_ctx = []
+            ast_goal = -1
         elif TOK_SEP in f_head.peek_line():
             # Parse rest of header
             hdr = f_head.consume_line()
@@ -221,9 +267,13 @@ class TacStParser(object):
             ctx = self.parse_local_ctx()
             self.parse_pf_div()
             goal = self.parse_goal()
+            f_head.consume_line()   # NOTE(deh): Parse separator {!}
+            ast_ctx = self.parse_local_ast_ctx()
+            self.parse_pf_div()
+            ast_goal = self.parse_ast_goal()
         else:
             raise NameError("Parsing error @line{}: {}".format(f_head.line, f_head.peek_line()))
-        return TacStDecl(tac_st_hdr, ctx, goal)
+        return TacStDecl(tac_st_hdr, ctx, goal, ast_ctx, ast_goal)
 
     def parse_begin_pf(self):
         # Internal
@@ -293,6 +343,48 @@ class TacStParser(object):
         # Parse
         return f_head.consume_line()
 
+    def parse_typs_table(self):
+        # Internal
+        f_head = self.f_head
+        self._mylog("@parse_typs_table:before<{}>".format(f_head.peek_line()))
+
+        # Parse identifier to expression identifier
+        _ = f_head.consume_line()
+        while not f_head.peek_line().startswith(TOK_BODS):
+            hdr = f_head.consume_line()
+            end = hdr.find(":")
+            x = hdr[:end].strip()
+            edx = hdr[end+1:].strip()
+            self.typs_table[x] = edx
+
+    def parse_bods_table(self):
+        # Internal
+        f_head = self.f_head
+        self._mylog("@parse_bods_table:before<{}>".format(f_head.peek_line()))
+
+        # Parse identifier to expression identifier
+        _ = f_head.consume_line()
+        while not f_head.peek_line().startswith(TOK_CONSTRS):
+            hdr = f_head.consume_line()
+            end = hdr.find(":")
+            x = hdr[:end].strip()
+            bdx = hdr[end+1:].strip()
+            self.bods_table[x] = bdx
+
+    def parse_constrs_table(self):
+        # Internal
+        f_head = self.f_head
+        self._mylog("@parse_constrs_table:before<{}>".format(f_head.peek_line()))
+
+        # Parse expression identifier to low-level constr expression
+        _ = f_head.consume_line()
+        while not f_head.peek_line().startswith(TOK_END_PF):
+            hdr = f_head.consume_line()
+            end = hdr.find(":")
+            edx = hdr[:end].strip()
+            low_constr = hdr[end+1:].strip()
+            self.constrs_table[edx] = low_constr
+
     def parse_lemma(self):
         """
         Parse tactic states for an entire lemma.
@@ -316,10 +408,17 @@ class TacStParser(object):
             elif line.startswith(TOK_END_PF):
                 self.parse_qed()
                 # Accumulate lemma
-                lemma = LemTacSt(lem_name, self.decls)
+                lemma = LemTacSt(lem_name, self.decls, self.typs_table,
+                                 self.bods_table, self.constrs_table)
                 self.lems.append(lemma)
                 if f_head.raw_peek_line() == "":
                     self.exhausted = True
+
+                # Reset tables for new lemma
+                self.typs_table = {}
+                self.bods_table = {}
+                self.constrs_table = {}
+                
                 return lemma
             elif line.startswith(TOK_BEG_SUB_PF):
                 self.parse_begsubpf()
@@ -333,6 +432,15 @@ class TacStParser(object):
                 self.decls += [decl]
             elif line.startswith(TOK_END_TAC_ST):
                 self.parse_endtacst()
+            elif line.startswith(TOK_TYPS):
+                self.parse_typs_table()
+            elif line.startswith(TOK_BODS):
+                self.parse_bods_table()
+            elif line.startswith(TOK_CONSTRS):
+                self.parse_constrs_table()
+            elif line.startswith("AfterHOHOHO"):
+                # TODO(deh): Kludge, fix coq
+                self.f_head.consume_line()
             else:
                 raise NameError("Parsing error at line {}: {}".format(
                                 f_head.line, f_head.peek_line()))
