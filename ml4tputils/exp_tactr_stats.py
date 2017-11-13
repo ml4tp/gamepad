@@ -1,6 +1,7 @@
 from enum import Enum
 import json
 import numpy as np
+import scipy.stats as sps
 
 from tactr import *
 
@@ -19,21 +20,44 @@ def avg_hist(stats, f_sort=True):
     else:
         return avg
 
-def avg_tacs(stats):
-    """Average number of tactics used per lemma"""
-    return np.mean([info['num_tacs'] for _, info in stats.items()])
+def descrip_stats(ls):
+    _min = min(ls)
+    _max = max(ls)
+    mean = np.mean(ls)
+    sdev = np.sqrt(sps.moment(ls, moment=2))
+    kurt = sps.kurtosis(ls)
 
-def avg_goals(stats):
-    """Average number of goals in each lemma"""
-    return np.mean([info['num_goals'] for _, info in stats.items()])
+    print("Min:       {}".format(_min))
+    print("Max:       {}".format(_max))
+    print("Mean:      {}".format(mean))
+    print("Sdev:      {}".format(sdev))
+    print("Kurtosis:  {}".format(kurt))
 
-def avg_term(stats):
-    """Average number of terminal states in each lemma"""
-    return np.mean([info['num_term'] for _, info in stats.items()])
+    return _min, _max, mean, sdev
 
-def avg_err(stats):
-    """Average number of error states in each lemma"""
-    return np.mean([info['num_err'] for _, info in stats.items()])
+def descrip_tacs(stats):
+    """Descriptive statistics on number of tactics used per lemma"""
+    print("Statistics on number of tactics used (across lemmas)")
+    ls = [info['num_tacs'] for _, info in stats.items()]
+    return descrip_stats(ls)
+
+def descrip_tacsts(stats):
+    """Descriptive statistics on number of tactic states present in each lemma"""
+    print("Statistics on number of tactic states present (across lemmas)")
+    ls = [info['num_goals'] for _, info in stats.items()]
+    return descrip_stats(ls)
+
+def descrip_term(stats):
+    """Descriptive statistics on number of terminal states in each lemma"""
+    print("Statistics on number of terminal states (across lemmas)")
+    ls = [info['num_term'] for _, info in stats.items()]
+    return descrip_stats(ls)
+
+def descrip_deadend(stats):
+    """Descriptive number of deadend states in each lemma"""
+    print("Statistics on number of deadend states (across lemmas)")
+    ls = [info['num_err'] for _, info in stats.items()]
+    return descrip_stats(ls)
 
 def gather_term_path_lens(stats):
     """Histogram of terminal path-length vs count"""
@@ -64,14 +88,19 @@ def gather_have_info(stats):
     acc_size_ftac = []
     acc_size_path = []
     for lemma, info in stats.items():
-        hinfo = info['have_info']
-        ftac = hinfo[0]
-        size_ftac = hinfo[1]
-        size_path = len(hinfo[2])
-        acc_size_ftac += [size_ftac]
-        acc_size_path += [size_path]
+        hinfos = info['have_info']
+        for hinfo in hinfos:
+            ftac = hinfo[0]
+            size_ftac = hinfo[1]
+            size_path = len(hinfo[2])
+            acc_size_ftac += [size_ftac]
+            acc_size_path += [size_path]
 
-    return np.mean(acc_size_ftac), np.mean(acc_size_path)
+    print("Statistics on size of haves (across lemmas)")
+    descrip_stats(acc_size_ftac)
+    print("Statistics on length of have paths (across lemmas)")
+    descrip_stats(acc_size_path)
+    return acc_size_ftac, acc_size_path
 
 class DepthMode(Enum):
     CONTEXT = 0
@@ -94,13 +123,19 @@ def avg_depth_size(stats, mode):
     for lemma, info in stats.items():
         for depth, size in projfn(info):
             hist[depth] += size
-    total = len(stats)
+    norm = [0 for _ in range(0, MAX_DEPTH)]
+    for lemma, info in stats.items():
+        max_depth = max([depth for depth, _ in projfn(info)]) + 1
+        for depth in range(0, max_depth):
+            norm[depth] += 1
+    print(norm)
+
     for depth in range(MAX_DEPTH):
-        hist[depth] /= total
+        hist[depth] /= norm[depth]
     del hist[0]
     return hist
 
-
+"""
 def compute_all(stats):
     # Hist[tactic, cnt]
     print(avg_hist(stats, f_sort=True))
@@ -124,6 +159,7 @@ def compute_all(stats):
     print(avg_depth_size(stats, DepthMode.CONTEXT))
     # Hist[depth, avg]
     print(avg_depth_size(stats, DepthMode.GOAL))
+"""
 
 def load_tactr_stats(filename):
     stats = {}
@@ -141,4 +177,4 @@ def load_tactr_stats(filename):
 
 if __name__ == "__main__":
     stats = load_tactr_stats("log/tactr-build-10.log")
-    compute_all(stats)
+    # compute_all(stats)

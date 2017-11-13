@@ -49,6 +49,9 @@ class Visualize(object):
         if self.f_verbose:
             print("------------------------------------------------")
             print("Visualizing lemma: {}".format(lemma.name))
+            #for decl in lemma.decls:
+            #    print(decl)
+            #print("-------")
         self.num_lemmas += 1
 
         # [TacStDecl] tokens to [RawTac]

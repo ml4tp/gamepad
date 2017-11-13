@@ -185,7 +185,8 @@ class TacTreeParser(object):
 
         # Parse after
         afters = []
-        while it.peek().hdr.mode.startswith(TOK_AFTER) and \
+        while it.has_next() and \
+              it.peek().hdr.mode.startswith(TOK_AFTER) and \
               it.peek().hdr.uid == start_decl.hdr.uid:
             afters += [next(it)]
 
