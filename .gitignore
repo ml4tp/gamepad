@@ -3,3 +3,5 @@ math-comp
 odd-order
 *.*~
 *.pyc
+.ipynb_checkpoints/
+.DS_store
