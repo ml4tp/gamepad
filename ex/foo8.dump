@@ -1,0 +1,66 @@
+begin(pf) {!} Classic {!} foo
+begin(tacst) {!} 0 {!} before {!} intro {!} LtacNotationCall {!} (./foo8.v,89,94)
+1 {!} intro {!} 2
+============================
+forall n : nat, n = n
+end(tacst)
+begin(tacst) {!} 1 {!} before {!} <coretactics::intro@0> {!} LtacMLCall {!} (,0,0)
+1 {!} <coretactics::intro@0> {!} 2
+============================
+forall n : nat, n = n
+end(tacst)
+begin(tacst) {!} 1 {!} after {!} <coretactics::intro@0> {!} LtacMLCall {!} (,0,0)
+1 {!}  {!} 3
+n : nat
+============================
+n = n
+end(tacst)
+begin(tacst) {!} 0 {!} after {!} intro {!} LtacNotationCall {!} (./foo8.v,89,94)
+1 {!}  {!} 3
+n : nat
+============================
+n = n
+end(tacst)
+begin(tacst) {!} 2 {!} before {!} done {!} LtacNameCall {!} (./foo8.v,98,102)
+1 {!}  {!} 3
+n : nat
+============================
+n = n
+end(tacst)
+begin(tacst) {!} 2 {!} after {!} done {!} LtacNameCall {!} (./foo8.v,98,102)
+1 {!}  {!} 3
+n : nat
+============================
+n = n
+end(tacst)
+AfterHOHOHO(done)begin(tacst) {!} 3 {!} before {!} trivial (auto_using) (hintbases) {!} LtacNotationCall {!} (./ssreflect/ssreflect.v,19202,19209)
+1 {!} trivial {!} 3
+n : nat
+============================
+n = n
+end(tacst)
+begin(tacst) {!} 4 {!} before {!} <g_auto::trivial@0> $lems $db {!} LtacMLCall {!} (,0,0)
+1 {!} <g_auto::trivial@0> $lems $db {!} 3
+n : nat
+============================
+n = n
+end(tacst)
+begin(tacst) {!} 4 {!} after {!} <g_auto::trivial@0> $lems $db {!} LtacMLCall {!} (,0,0)
+ngs=0
+end(tacst)
+begin(tacst) {!} 3 {!} after {!} trivial (auto_using) (hintbases) {!} LtacNotationCall {!} (./ssreflect/ssreflect.v,19202,19209)
+ngs=0
+end(tacst)
+begin(tacst) {!} 7 {!} before {!} hnf {!} LtacAtomCall {!} (,0,0)
+ngs=0
+end(tacst)
+begin(tacst) {!} 7 {!} after {!} hnf {!} LtacAtomCall {!} (,0,0)
+ngs=0
+end(tacst)
+begin(tacst) {!} 8 {!} before {!} intros ** {!} LtacAtomCall {!} (,0,0)
+ngs=0
+end(tacst)
+begin(tacst) {!} 8 {!} after {!} intros ** {!} LtacAtomCall {!} (,0,0)
+ngs=0
+end(tacst)
+end(pf)
