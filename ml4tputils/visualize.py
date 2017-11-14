@@ -99,9 +99,10 @@ class Visualize(object):
         ts_parser = TacStParser(file, f_log=False)
         while not ts_parser.exhausted:
             lemma = ts_parser.parse_lemma()
-            print(">>>>>>>>>>>>>>>>>>>>>")
-            print(lemma.pp())
-            print("<<<<<<<<<<<<<<<<<<<<<")
+            if self.f_verbose:
+                print(">>>>>>>>>>>>>>>>>>>>>")
+                print(lemma.pp())
+                print("<<<<<<<<<<<<<<<<<<<<<")
             self.tactrs += [self.visualize_lemma(file, lemma)]
             if self.abort:
                 break

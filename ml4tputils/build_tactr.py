@@ -532,7 +532,7 @@ class TacTreeBuilder(object):
         for node in pos.keys():
             if node in info:
                 ctx, goal = info[node]
-                s_ctx = "<br>".join([x + ": " + t for x, t in ctx])
+                s_ctx = "<br>".join([x + ": " + t for x, t in ctx.items()])
                 node_info = "gid: {}<br>{}<br>=====================<br>{}".format(node, s_ctx, goal)
             else:
                 node_info = "gid: {}".format(node)

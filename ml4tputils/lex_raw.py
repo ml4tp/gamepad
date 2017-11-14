@@ -85,16 +85,20 @@ class TacStDecl(object):
     """
     def __init__(self, hdr, ctx, goal, ast_ctx, ast_goal):
         assert isinstance(hdr, TacStHdr)
+        assert isinstance(ctx, dict)
+        assert isinstance(goal, str)
+        assert isinstance(ast_ctx, list)
+        assert isinstance(ast_goal, int)
 
         self.hdr = hdr            # tactic state header
-        self.ctx = ctx            # context as [(string, string)]
+        self.ctx = ctx            # context as Dict[id, str]
         self.goal = goal          # goal as string
-        self.ast_ctx = ast_ctx    # ctx as?
-        self.ast_goal = ast_goal  # goal as?
+        self.ast_ctx = ast_ctx    # ctx as [id]
+        self.ast_goal = ast_goal  # goal as int
 
     def pp(self, tab=0):
         s1 = self.hdr.pp(tab) + "\n"
-        s2 = "\n".join([pp_tab(tab + 2, "{}: {}".format(x, ty)) for (x, ty) in self.ctx]) + "\n"
+        s2 = "\n".join([pp_tab(tab + 2, "{}: {}".format(x, ty)) for (x, ty) in self.ctx.items()]) + "\n"
         s3 = pp_tab(tab + 2, "=====================\n")
         s4 = pp_tab(tab + 2, self.goal)
         return s1 + s2 + s3 + s4
@@ -127,12 +131,12 @@ class LemTacSt(object):
         # Decode low-level Coq expression using Dict[int, string] mapping
         self.decode = CoqExpDecode(constrs_table)  
 
-    def decode_typ(self, key):
-        idx = self.typs_table[key]
+    def decode_typ(self, ident):
+        idx = self.typs_table[ident]
         return self.decode_ast(idx)
 
-    def decode_bod(self, key):
-        idx = self.bods_table[key]
+    def decode_bod(self, ident):
+        idx = self.bods_table[ident]
         return self.decode_ast(idx)
 
     def pp(self, tab=0):
@@ -206,15 +210,19 @@ class TacStParser(object):
         if idx < 0:
             raise NameError("Parsing local declaration but found {}".
                             format(ldecl))
-        name = ldecl[:idx].strip()
+        _idents = ldecl[:idx].strip()
         typ = ldecl[idx + 1:].strip()
+
+        # The context is compacted so that multiple identifiers
+        # may have the same type
+        idents = [x.strip() for x in _idents.split(",")]
 
         # Parse rest of type it is on newline
         line = h_head.peek_line()
         while line != TOK_DIV and line.find(':') < 0:
             typ += " " + line.strip()
             line = h_head.advance_line()
-        return (name, typ)
+        return (idents, typ)
 
     def parse_local_ctx(self):
         # Internal
@@ -222,13 +230,14 @@ class TacStParser(object):
         self._mylog("@parse_local_ctx:before<{}>".format(h_head.peek_line()))
 
         # Parse local context
-        local_decls = []
+        local_ctx = {}
         line = h_head.peek_line()
         while line.find(':') >= 0:
-            name, typ = self.parse_local_decl()
-            local_decls += [(name, typ)]
+            idents, typ = self.parse_local_decl()
+            for ident in idents:
+                local_ctx[ident] = typ
             line = h_head.peek_line()
-        return local_decls
+        return local_ctx
 
     def parse_pf_div(self):
         # Internal
@@ -261,8 +270,8 @@ class TacStParser(object):
 
         # Parse local ctx
         line = h_head.consume_line()
-        xs = [x.strip() for x in line.split(",")]
-        return xs
+        idents = [ident.strip() for ident in line.split(",")]
+        return idents
 
     def parse_ast_goal(self):
         # Internal
@@ -285,7 +294,7 @@ class TacStParser(object):
 
             # Unpack
             hdr = TacStHdr(d_id, mode, tac, kind, "", GID_SOLVED, 0, loc)
-            ctx = []
+            ctx = {}
             goal = "ML4TP_SOLVED"
             ast_ctx = []
             ast_goal = -1

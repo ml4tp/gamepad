@@ -28,6 +28,9 @@ class RelExp(Exp):
         assert isinstance(idx, int)
         self.idx = idx
 
+    def __str__(self):
+        return "R({})".format(self.idx)
+
 
 class VarExp(Exp):
     """V %s"""
@@ -35,12 +38,18 @@ class VarExp(Exp):
         assert isinstance(x, str)
         self.x = x
 
+    def __str__(self):
+        return "V({})".format(self.x)
+
 
 class MetaExp(Exp):
     """M %d"""
     def __init__(self, mv):
         assert isinstance(mv, int)
         self.mv = mv
+
+    def __str__(self):
+        return "M({})".format(self.mv)
 
 
 class EvarExp(Exp):
@@ -52,12 +61,18 @@ class EvarExp(Exp):
         self.exk = exk
         self.cs = cs
 
+    def __str__(self):
+        return "E({}, {})".format(self.exk, self.cs)
+
 
 class SortExp(Exp):
     """S %s"""
     def __init__(self, sort):
         # TODO(deh): what is it's type?
         self.sort = sort
+
+    def __str__(self):
+        return "S({})".format(self.sort)
 
 
 class CastExp(Exp):
@@ -70,6 +85,9 @@ class CastExp(Exp):
         self.ck = ck
         self.ty = ty
 
+    def __str__(self):
+        return "CA({}, {}, {})".format(self.c, self.ck, self.ty)
+
 
 class ProdExp(Exp):
     """P %s %d %d"""
@@ -81,6 +99,9 @@ class ProdExp(Exp):
         self.ty1 = ty1
         self.ty2 = ty2
 
+    def __str__(self):
+        return "P({}, {}, {})".format(self.name, self.ty1, self.ty2)
+
 
 class LambdaExp(Exp):
     """L %s %d %d"""
@@ -91,6 +112,9 @@ class LambdaExp(Exp):
         self.name = name
         self.ty = ty
         self.c = c
+
+    def __str__(self):
+        return "L({}, {}, {})".format(self.name, self.ty, self.c)
 
 
 class LetInExp(Exp):
@@ -105,6 +129,9 @@ class LetInExp(Exp):
         self.ty = ty
         self.c2 = c2
 
+    def __str__(self):
+        return "LI({}, {}, {}, {})".format(self.name, self.c1, self.ty, self.c2)
+
 
 class AppExp(Exp):
     """A %d [%s]"""
@@ -115,6 +142,9 @@ class AppExp(Exp):
         self.c = c
         self.cs = cs
 
+    def __str__(self):
+        return "A({}, {})".format(self.c, self.cs)
+
 
 class ConstExp(Exp):
     """C %s [%s]"""
@@ -123,6 +153,9 @@ class ConstExp(Exp):
         assert isinstance(ui, UniverseInstance)
         self.const = const
         self.ui = ui
+
+    def __str__(self):
+        return "C({}, {})".format(self.const, self.ui)
 
 
 class IndExp(Exp):
@@ -134,6 +167,9 @@ class IndExp(Exp):
         self.mutind = mutind
         self.i = i
         self.ui = ui
+
+    def __str__(self):
+        return "I({}, {}, {})".format(self.mutind, self.i, self.ui)
 
 
 class ConstructExp(Exp):
@@ -148,6 +184,10 @@ class ConstructExp(Exp):
         self.j = j
         self.ui = ui
 
+    def __str__(self):
+        return "CO({}, {}, {}, {})".format(self.mutind, self.i, self.j, self.ui)
+
+
 class CaseExp(Exp):
     """CS [%s] %d %d [%s]"""
     def __init__(self, ci, c1, c2, cs):
@@ -160,6 +200,9 @@ class CaseExp(Exp):
         self.c1 = c1
         self.c2 = c2
         self.cs = cs
+
+    def __str__(self):
+        return "CS({}, {}, {}, {})".format(self.ci, self.c1, self.c2, self.cs)
 
 
 class FixExp(Exp):
@@ -180,6 +223,9 @@ class FixExp(Exp):
         self.tys = tys
         self.cs = cs
 
+    def __str__(self):
+        return "F({}, {}, {}, {}, {})".format(self.iarr, self.idx, self.names, self.tys, self.cs)
+
 
 class CoFixExp(Exp):
     """"CF %d [%s] [%s] [%s]"""
@@ -196,6 +242,9 @@ class CoFixExp(Exp):
         self.tys = tys
         self.cs = cs
 
+    def __str__(self):
+        return "CF({}, {}, {}, {})".format(self.idx, self.names, self.tys, self.cs)
+
 
 class ProjExp(Exp):
     """"PJ %s %d"""
@@ -205,6 +254,9 @@ class ProjExp(Exp):
         assert isinstance(c, Exp)
         self.proj = proj
         self.c = c
+
+    def __str__(self):
+        return "PJ({}, {})".format(self.proj, self.c)
 
 
 # -------------------------------------------------
