@@ -269,3 +269,30 @@ class RawStats(object):
         # Compute some stats on RawTacs
         for tac in tacs:
             self.stats_tac(lemma, tac)
+
+
+# -------------------------------------------------
+# TODO(deh): use?
+
+def kind_hist():
+    return {TacKind.NAME: 0, TacKind.ATOMIC: 0, TacKind.NOTATION: 0,
+            TacKind.ML: 0, "EMPTY": 0}
+
+
+def merge_kind_hist(hist1, hist2):
+    for (k, v) in hist2.items():
+        hist1[k] += v
+    return hist1
+
+
+def inc_update(hist, key, value):
+    if key in hist:
+        hist[key] += value
+    else:
+        hist[key] = value
+
+
+def merge_hist(hist1, hist2):
+    for (k, v) in hist2.items():
+        inc_update(hist1, k, v)
+    return hist1

@@ -7,6 +7,10 @@ import numpy as np
 A reconstructed tactic tree. Contains methods for computing statistics.
 """
 
+
+# -------------------------------------------------
+# Tactics
+
 TACTICS = ["<coretactics::intro@0>",
            "<coretactics::assumption@0>",
            "<coretactics::clear@0>",
@@ -67,6 +71,9 @@ ID_TACTIC_MAP = {}
 for i, tactic in enumerate(TACTICS):
     ID_TACTIC_MAP[i] = tactic
 
+
+# -------------------------------------------------
+# Tactic Tree
 
 class TacTree(object):
     def __init__(self, name, edges, graph, gid2info):
@@ -224,12 +231,9 @@ class TacTree(object):
         for depth in range(max_depth + 1):
             hist[depth] = [0 for _ in TACTIC_IDS]
 
-        print("MAXDEPth", max_depth)
         for depth, gid, ctx, goal, tac in self.flatview:
             for idx, tactic in enumerate(TACTICS):
                 if tac.name.startswith(tactic):
-                    print("HERE1", hist[depth])
-                    print("HERE2", hist[depth][idx])
                     hist[depth][idx] += 1
                     break
         return hist
@@ -249,8 +253,6 @@ class TacTree(object):
                 'have_info': self.view_have_info(),
                 'avg_depth_ctx_size': avg_depth_ctx_size,
                 'avg_depth_goal_size': avg_depth_goal_size,
-                # 'depth_tactic_hist': self.view_depth_tactic_hist(),
-                # 'depth_hist': tactr.flatview,
                 'notok': self.notok}
         return info
 

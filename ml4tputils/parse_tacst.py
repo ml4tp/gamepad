@@ -1,6 +1,8 @@
 from enum import Enum
 
+import coq_ast
 from lib.myiter import MyIter
+from lib.myutil import pp_tab
 from lex_raw import *
 
 """
@@ -32,32 +34,19 @@ class TacKind(Enum):
     ML = 4
 
 
-def kind_hist():
-    return {TacKind.NAME: 0, TacKind.ATOMIC: 0, TacKind.NOTATION: 0,
-            TacKind.ML: 0, "EMPTY": 0}
+class TacSt(object):
+    def __init__(self, ctx, goal, ctx_e, goal_e):
+        for e in ctx:
+            assert isinstance(e, str)
+        assert isinstance(goal, str)
+        for _, e in ctx_e.items():
+            assert isinstance(e, coq_ast.Exp)
+        assert isinstance(goal_e, coq_ast.Exp)
 
-
-def merge_kind_hist(hist1, hist2):
-    for (k, v) in hist2.items():
-        hist1[k] += v
-    return hist1
-
-
-def inc_update(hist, key, value):
-    if key in hist:
-        hist[key] += value
-    else:
-        hist[key] = value
-
-
-def merge_hist(hist1, hist2):
-    for (k, v) in hist2.items():
-        inc_update(hist1, k, v)
-    return hist1
-
-
-def pp_tab(tab, str):
-    return tab * " " + str
+        self.ctx = ctx
+        self.goal = goal
+        self.ctx_e = ctx_e
+        self.goal_e = goal_e
 
 
 class RawTac(object):
@@ -81,15 +70,6 @@ class RawTac(object):
         self.af_decls = af_decls
         self.bods = bods
 
-    def postorder(self):
-        acc = []
-        for body in self.bods:
-            for tac in body:
-                acc += tac.postorder()
-                acc += [tac]
-        acc += [self]
-        return acc
-
     def base_stats(self):
         return (self.kind, len(self.bf_decls),
                 len(self.bods), len(self.af_decls))
@@ -101,6 +81,15 @@ class RawTac(object):
             key = tac.base_stats()
             inc_update(stats, key, 1)
         return stats
+
+    def postorder(self):
+        acc = []
+        for body in self.bods:
+            for tac in body:
+                acc += tac.postorder()
+                acc += [tac]
+        acc += [self]
+        return acc
 
     def pp(self, tab=0):
         epi = pp_tab(tab, "{}({}) {{\n".format(self.name, self.uid))
@@ -148,6 +137,8 @@ class TacTreeParser(object):
 
         self.gid2info = {}
         self._build_gid2info()
+        # self.tacst_info = {}
+        # self._build_tacst_info()
 
     def _build_gid2info(self):
         it = MyIter(self.lemma.decls)
@@ -156,9 +147,15 @@ class TacTreeParser(object):
             tac = next(it)
             self.gid2info[tac.hdr.gid] = (tac.ctx, tac.goal)
 
+    def _build_tacst_info(self):
+        it = MyIter(self.lemma.decls)
+
+        while it.has_next():
+            tac = next(it)
+            self.tacst_info[tac.hdr.gid] = TacSt(tac.ctx, tac.goal, tac.ast_ctx, tac.ast_goal)
+
     def _mylog(self, msg, f_log=False):
         if f_log or self.f_log:
-            # self.log.append(msg)
             print(" " * (2 * self.depth) + str(msg))
 
     def _log_acc(self, acc):

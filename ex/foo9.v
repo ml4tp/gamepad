@@ -1,3 +1,4 @@
+(*
 Lemma plus_zero : forall n, n = n + 0.
 Proof.
   induction n. {
@@ -24,18 +25,19 @@ Proof.
     reflexivity.
   }
 Qed.
+*)
 
 Lemma plus_comm : forall n m: nat, n + m = m + n.
 Proof.
   induction n. {
     intro.
     simpl.
-    apply plus_zero.
+    admit.
   } {
     intro.
     simpl.
     rewrite IHn.
     simpl.
-    apply S_comm.
+    admit.
   }
 Qed.

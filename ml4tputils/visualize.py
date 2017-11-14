@@ -49,9 +49,9 @@ class Visualize(object):
         if self.f_verbose:
             print("------------------------------------------------")
             print("Visualizing lemma: {}".format(lemma.name))
-            #for decl in lemma.decls:
-            #    print(decl)
-            #print("-------")
+            for decl in lemma.decls:
+                print(decl)
+            print("-------")
         self.num_lemmas += 1
 
         # [TacStDecl] tokens to [RawTac]
@@ -99,6 +99,9 @@ class Visualize(object):
         ts_parser = TacStParser(file, f_log=False)
         while not ts_parser.exhausted:
             lemma = ts_parser.parse_lemma()
+            print(">>>>>>>>>>>>>>>>>>>>>")
+            print(lemma.pp())
+            print("<<<<<<<<<<<<<<<<<<<<<")
             self.tactrs += [self.visualize_lemma(file, lemma)]
             if self.abort:
                 break

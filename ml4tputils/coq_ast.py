@@ -208,15 +208,15 @@ class ProjExp(Exp):
 
 
 # -------------------------------------------------
-# Reconstructing low-level expressions
+# Decoding low-level expressions
 
-class CoqExpRecon(object):
+class CoqExpDecode(object):
     def __init__(self, constrs_table):
         self.constrs_table = constrs_table
         self.worklist = []
         self.table = {}
 
-    def recon_ast(self, key):
+    def decode_ast(self, key):
         if key in self.table:
             return self.table[key]
 
@@ -249,7 +249,7 @@ class CoqExpRecon(object):
             exk = int(toks[1].strip())
             cs_idxs = toks[2].strip()
             
-            cs = self.recon_asts(cs_idxs)
+            cs = self.decode_asts(cs_idxs)
             c = EvarExp(exk, cs)
             self.table[key] = c
             return c
@@ -266,8 +266,8 @@ class CoqExpRecon(object):
             ck = toks[2].strip()
             ty_idx = int(toks[3].strip())
 
-            c = self.recon_ast(c_idx)
-            ty = self.recon_ast(ty_idx)
+            c = self.decode_ast(c_idx)
+            ty = self.decode_ast(ty_idx)
             c_p = CastExp(c, ck, ty)
             self.table[key] = c_p
             return c_p
@@ -277,8 +277,8 @@ class CoqExpRecon(object):
             ty1_idx = int(toks[2].strip())
             ty2_idx = int(toks[3].strip())
             
-            ty1 = self.recon_ast(ty1_idx)
-            ty2 = self.recon_ast(ty2_idx)
+            ty1 = self.decode_ast(ty1_idx)
+            ty2 = self.decode_ast(ty2_idx)
             c = ProdExp(name, ty1, ty2)
             self.table[key] = c
             return c
@@ -288,8 +288,8 @@ class CoqExpRecon(object):
             ty_idx = int(toks[2].strip())
             c_idx = int(toks[3].strip())
 
-            ty = self.recon_ast(ty_idx)
-            c = self.recon_ast(c_idx)
+            ty = self.decode_ast(ty_idx)
+            c = self.decode_ast(c_idx)
             c_p = LambdaExp(name, ty, c)
             self.table[key] = c_p
             return c_p
@@ -300,9 +300,9 @@ class CoqExpRecon(object):
             ty_idx = int(toks[3].strip())
             c2_idx = int(toks[4].strip())
 
-            c1 = self.recon_ast(c1_idx)
-            ty = self.recon_ast(ty_idx)
-            c2 = self.recon_ast(c2_idx)
+            c1 = self.decode_ast(c1_idx)
+            ty = self.decode_ast(ty_idx)
+            c2 = self.decode_ast(c2_idx)
             c_p = LambdaExp(name, c1, ty, c2)
             self.table[key] = c_p
             return c_p
@@ -311,8 +311,8 @@ class CoqExpRecon(object):
             c_idx = int(toks[1].strip())
             cs_idxs = toks[2].strip()
 
-            c = self.recon_ast(c_idx)
-            cs = self.recon_asts(cs_idxs)
+            c = self.decode_ast(c_idx)
+            cs = self.decode_asts(cs_idxs)
             c_p = AppExp(c, cs)
             self.table[key] = c_p
             return c_p
@@ -321,7 +321,7 @@ class CoqExpRecon(object):
             const = toks[1].strip()
             ui = toks[2].strip()
             
-            ui_p = self.recon_universe_instance(ui)
+            ui_p = self.decode_universe_instance(ui)
             c_p = ConstExp(const, ui_p)
             self.table[key] = c_p
             return c_p
@@ -331,7 +331,7 @@ class CoqExpRecon(object):
             i = int(toks[2].strip())
             ui = toks[3].strip()
 
-            ui_p = self.recon_universe_instance(ui)
+            ui_p = self.decode_universe_instance(ui)
             c_p = IndExp(mutind, i, ui)
             self.table[key] = c_p
             return c_p
@@ -342,7 +342,7 @@ class CoqExpRecon(object):
             j = int(toks[3].strip())
             ui = toks[4].strip()
 
-            ui_p = self.recon_universe_instance(ui)
+            ui_p = self.decode_universe_instance(ui)
             c_p = ConstructExp(mutind, i, j, ui)
             self.table[key] = c_p
             return c_p
@@ -353,9 +353,9 @@ class CoqExpRecon(object):
             c2_idx = toks[3].strip()
             cs_idxs = toks[4].strip()
 
-            c1 = self.recon_ast(c1_idx)
-            c2 = self.recon_ast(c2_idx)
-            cs = self.recon_asts(cs_idxs)
+            c1 = self.decode_ast(c1_idx)
+            c2 = self.decode_ast(c2_idx)
+            cs = self.decode_asts(cs_idxs)
             c_p = CaseExp(case_info, c1, c2, c2)
             self.table[key] = c_p
             return c_p
@@ -367,10 +367,10 @@ class CoqExpRecon(object):
             ty_idxs = toks[4].strip()
             cs_idxs = toks[5].strip()
             
-            iarr = self.recon_iarr(_iarr)
-            names = self.recon_names(_names)
-            tys = self.recon_asts(ty_idxs)
-            cs = self.recon_asts(cs_idxs)
+            iarr = self.decode_iarr(_iarr)
+            names = self.decode_names(_names)
+            tys = self.decode_asts(ty_idxs)
+            cs = self.decode_asts(cs_idxs)
             c_p = FixExp(iarr, idx, names, tys, cs)
             self.table[key] = c_p
             return c_p
@@ -380,9 +380,9 @@ class CoqExpRecon(object):
             ty_idxs = toks[4].strip()
             cs_idxs = toks[5].strip()
 
-            names = self.recon_names(_names)
-            tys = self.recon_asts(ty_idxs)
-            cs = self.recon_asts(cs_idxs)
+            names = self.decode_names(_names)
+            tys = self.decode_asts(ty_idxs)
+            cs = self.decode_asts(cs_idxs)
             c_p = CoFixExp(idx, names, tys, cs)
             self.table[key] = c_p
             return c_p
@@ -390,26 +390,26 @@ class CoqExpRecon(object):
             proj = toks[1].strip()
             c_idx = toks[2].strip()
 
-            c = self.recon_ast(c_idx)
+            c = self.decode_ast(c_idx)
             c_p = Proj(proj, c)
             self.table[key] = c_p
             return c_p
         else:
             raise NameError("Kind {} not supported.".format(kind))
 
-    def recon_asts(self, c_idxs):
+    def decode_asts(self, c_idxs):
         c_idxs = c_idxs[1:-1]
         keys = [idx.strip() for idx in c_idxs.split()]
-        return [self.recon_ast(key) for key in keys]
+        return [self.decode_ast(key) for key in keys]
 
-    def recon_universe_instance(self, ui):
+    def decode_universe_instance(self, ui):
         ui = ui[1:-1]
         return [u.strip() for u in ui.split()]
 
-    def recon_names(self, names):
+    def decode_names(self, names):
         names = names[1:-1]
         return [name.strip() for name in names.split()]
 
-    def recon_iarr(self, iarr):
+    def decode_iarr(self, iarr):
         iarr = iarr[1:-1]
         return [int(i.strip()) for i in iarr.split()]
