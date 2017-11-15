@@ -68,19 +68,21 @@ class TacEdge(object):
 # Tactic Tree Building
 
 class TacTreeBuilder(object):
-    def __init__(self, name, tacs, gid2info, ftac_inscope=None,
+    def __init__(self, name, tacs, tacst_info, decoder, ftac_inscope=None,
                  eid=0, solvgid=0, errgid=0, f_log=False):
         for tac in tacs:
             assert isinstance(tac, RawTac)
+        assert isinstance(decoder, CoqExpDecode)
 
         self.name = name
+        self.decoder = decoder
 
         # Reconstruction state
         self.tacs = tacs
         self.it_tacs = MyIter(tacs)   
         self.edges = []
         self.graph = nx.MultiDiGraph()
-        self.gid2info = gid2info
+        self.tacst_info = tacst_info       # Dict[int, tacst]
         self.ftac_inscope = ftac_inscope
 
         # Internal counters
@@ -129,7 +131,7 @@ class TacTreeBuilder(object):
         if af_decl.hdr.gid == GID_SOLVED:
             edge = TacEdge(self._fresh_eid(), tac.uid, tac.name, tac.kind,
                            ftac, bf_decl.hdr.gid, self._fresh_solvgid())
-        elif af_decl.hdr.mode == "afterE":
+        elif af_decl.hdr.mode == TOK_AFTER_ERR:
             edge = TacEdge(self._fresh_eid(), tac.uid, tac.name, tac.kind,
                            ftac, bf_decl.hdr.gid, self._fresh_errgid())
         else:
@@ -148,7 +150,7 @@ class TacTreeBuilder(object):
         return edge
 
     def _launch_rec(self, tacs, ftac_inscope):
-        tr_builder = TacTreeBuilder(self.name, tacs, self.gid2info,
+        tr_builder = TacTreeBuilder(self.name, tacs, self.tacst_info, self.decoder,
                                     ftac_inscope=ftac_inscope,
                                     eid=self.eid, solvgid=self.solvgid,
                                     errgid=self.errgid)
@@ -432,8 +434,6 @@ class TacTreeBuilder(object):
                             has_path[i] += 1
                             break
                     except nx.exception.NodeNotFound:
-                        # NOTE(deh): why was has_path[i] += 1?
-                        # has_path[i] += 1
                         pass
 
             # 3. connect me up
@@ -477,7 +477,7 @@ class TacTreeBuilder(object):
         return n == 1, n
 
     def get_tactree(self, f_verbose=False):
-        tactr = TacTree(self.name, self.edges, self.graph, self.gid2info)
+        tactr = TacTree(self.name, self.edges, self.graph, self.tacst_info, self.decoder)
 
         if f_verbose:
             tactr.dump()
@@ -516,10 +516,8 @@ class TacTreeBuilder(object):
             einfo_trace['text'].append(einfo)
 
         # Nodes
-        colorbar = dict(thickness=15, title='Node Info',
-                        xanchor='left', titleside='right')
         marker = Marker(showscale=True, colorscale='YIGnBu', reversescale=True,
-                        color=[], size=10, colorbar=colorbar, line=dict(width=2))
+                        color=[], size=10, line=dict(width=2))
         node_trace = Scatter(x=[], y=[], text=[], mode='markers', 
                              hoverinfo='text', marker=marker)
         for node in G.nodes():
@@ -528,10 +526,9 @@ class TacTreeBuilder(object):
             node_trace['y'].append(y)
 
         # Node info
-        info = self.gid2info
         for node in pos.keys():
-            if node in info:
-                ctx, goal = info[node]
+            if node in self.tacst_info:
+                ctx, goal, ctx_e, goal_e = self.tacst_info[node]
                 s_ctx = "<br>".join([x + ": " + t for x, t in ctx.items()])
                 node_info = "gid: {}<br>{}<br>=====================<br>{}".format(node, s_ctx, goal)
             else:
@@ -544,8 +541,6 @@ class TacTreeBuilder(object):
                         showlegend=False,
                         hovermode='closest',
                         margin=dict(b=20,l=5,r=5,t=40),
-                        annotations=[dict(showarrow=False, xref="paper",
-                                          yref="paper", x=0.005, y=-0.002 )],
                         xaxis=XAxis(showgrid=False, zeroline=False, showticklabels=False),
                         yaxis=YAxis(showgrid=False, zeroline=False, showticklabels=False))
         fig = Figure(data=Data([edge_trace, node_trace, einfo_trace]), layout=layout)

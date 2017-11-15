@@ -1,6 +1,9 @@
 import networkx as nx
 import numpy as np
 
+from lib.myutil import dict_ls_app
+from coq_ast import *
+
 """
 [Note]
 
@@ -76,12 +79,14 @@ for i, tactic in enumerate(TACTICS):
 # Tactic Tree
 
 class TacTree(object):
-    def __init__(self, name, edges, graph, gid2info):
+    def __init__(self, name, edges, graph, tacst_info, decoder):
         # Input
-        self.name = name            # Lemma name
-        self.edges = edges          # [TacEdge]
-        self.graph = graph          # nx.MultDiGraph[Int, Int]
-        self.gid2info = gid2info    # Dict[gid, (ctx, goal)]
+        self.name = name               # Lemma name
+        self.edges = edges             # [TacEdge]
+        self.graph = graph             # nx.MultDiGraph[Int, Int]
+        self.tacst_info = tacst_info   # Dict[gid, (ctx, goal, ctx_e, goal_e)]
+        self.decoder = decoder         # Decode asts
+
         self.notok = []
 
         # Root, error/terminal states, and create flattened view
@@ -134,12 +139,12 @@ class TacTree(object):
             try:
                 depth = len(nx.algorithms.shortest_path(self.graph, self.root, edge.tgt))
                 if edge.tid not in seen:
-                    if edge.tgt in self.gid2info:
-                        ctx, goal = self.gid2info[edge.tgt]
-                        self.flatview += [(depth, edge.tgt, ctx, goal, edge)]
+                    if edge.tgt in self.tacst_info:
+                        ctx, goal, ctx_e, goal_e = self.tacst_info[edge.tgt]
+                        self.flatview += [(depth, edge.tgt, ctx, goal, ctx_e, goal_e, edge)]
                     elif edge.conn2err() or edge.conn2term():
-                        ctx, goal = self.gid2info[edge.src]
-                        self.flatview += [(depth, edge.tgt, ctx, goal, edge)]
+                        ctx, goal, ctx_e, goal_e = self.tacst_info[edge.src]
+                        self.flatview += [(depth, edge.tgt, ctx, goal, ctx_e, goal_e, edge)]
             except nx.exception.NetworkXNoPath:
                 pass
             seen.add(edge.tid)
@@ -207,31 +212,63 @@ class TacTree(object):
         else:
             return [(tactic, cnt) for tactic, cnt in zip(TACTICS, hist)]
 
-    def view_depth_ctx_size(self):
+    def view_depth_ctx_items(self):
         hist = {}
-        for depth, gid, ctx, goal, tac in self.flatview:
-            if depth in hist:
-                hist[depth] += [len(ctx)]
+        for depth, gid, ctx, goal, ctx_e, goal_e, tac in self.flatview:
+            if ctx:
+                v = len(ctx_e)
             else:
-                hist[depth] = [len(ctx)]
+                v = 0
+            dict_ls_app(hist, depth, v)
+        return hist
+
+    def view_depth_ctx_size(self):
+        """Returns Dict[depth, [total string typ size]]"""
+        hist = {}
+        for depth, gid, ctx, goal, ctx_e, goal_e, tac in self.flatview:
+            if ctx:
+                v = np.sum([len(ty) for _, ty in ctx.items()])
+            else:
+                v = 0
+            dict_ls_app(hist, depth, v)
         return hist
 
     def view_depth_goal_size(self):
+        """Returns Dict[depth, [string typ size]]"""
         hist = {}
-        for depth, gid, ctx, goal, tac in self.flatview:
-            if depth in hist:
-                hist[depth] += [len(goal)]
+        for depth, gid, ctx, goal, ctx_e, goal_e, tac in self.flatview:
+            dict_ls_app(hist, depth, len(goal))
+        return hist
+
+    def view_depth_astctx_size(self):
+        """Returns Dict[depth, [total ast typ size]]"""
+        hist = {}
+        cnt = 0
+        for depth, gid, ctx, goal, ctx_e, goal_e, tac in self.flatview:
+            if ctx_e:
+                # v = np.sum([self.decoder.size_table[ident] for ident in ctx_e])
+                cnt += 1
+                print("HERE {}/{}".format(cnt, len(self.flatview)))
+                v = np.sum([self.decoder.decode_ctx_typ_size(ident) for ident in ctx_e])
             else:
-                hist[depth] = [len(goal)]
+                v = 0
+            dict_ls_app(hist, depth, v)
+        return hist
+
+    def view_depth_astgoal_size(self):
+        """Returns Dict[depth, [total ast typ size]]"""
+        hist = {}
+        for depth, gid, ctx, goal, ctx_e, goal_e, tac in self.flatview:
+            dict_ls_app(hist, depth, self.decoder.decode_goal_size(goal_e))
         return hist
 
     def view_depth_tactic_hist(self):
-        max_depth = max([depth for depth, _, _, _, _ in self.flatview])
+        max_depth = max([depth for depth, _, _, _, _, _, _ in self.flatview])
         hist = {}
         for depth in range(max_depth + 1):
             hist[depth] = [0 for _ in TACTIC_IDS]
 
-        for depth, gid, ctx, goal, tac in self.flatview:
+        for depth, gid, ctx, goal, ctx_e, goal_e, tac in self.flatview:
             for idx, tactic in enumerate(TACTICS):
                 if tac.name.startswith(tactic):
                     hist[depth][idx] += 1
@@ -241,8 +278,11 @@ class TacTree(object):
     def stats(self):
         term_path_lens = [len(path) for path in self.view_term_paths()]
         err_path_lens = [len(path) for path in self.view_err_paths()]
+        avg_depth_ctx_items = [(k, np.mean(v)) for k, v in self.view_depth_ctx_items().items()]
         avg_depth_ctx_size = [(k, np.mean(v)) for k, v in self.view_depth_ctx_size().items()]
-        avg_depth_goal_size = [(k, np.mean(v)) for k, v in self.view_depth_goal_size().items()]
+        avg_depth_goal_size = [(k, np.mean(tysz)) for k, tysz in self.view_depth_goal_size().items()]
+        avg_depth_astctx_size = [(k, np.mean(v)) for k, v in self.view_depth_astctx_size().items()]
+        avg_depth_astgoal_size = [(k, np.mean(tysz)) for k, tysz in self.view_depth_astgoal_size().items()]
         info = {'hist': self.view_tactic_hist(f_compress=True),
                 'num_tacs': len(self.tactics),
                 'num_goals': len(self.goals),
@@ -251,8 +291,11 @@ class TacTree(object):
                 'term_path_lens': term_path_lens,
                 'err_path_lens': err_path_lens,
                 'have_info': self.view_have_info(),
+                'avg_depth_ctx_items': avg_depth_ctx_items,
                 'avg_depth_ctx_size': avg_depth_ctx_size,
                 'avg_depth_goal_size': avg_depth_goal_size,
+                'avg_depth_astctx_size': avg_depth_astctx_size,
+                'avg_depth_astgoal_size': avg_depth_astgoal_size,
                 'notok': self.notok}
         return info
 

@@ -46,9 +46,9 @@ class Visualize(object):
             return
 
         # Internal
+        print("------------------------------------------------")
+        print("Visualizing lemma: {}".format(lemma.name))
         if self.f_verbose:
-            print("------------------------------------------------")
-            print("Visualizing lemma: {}".format(lemma.name))
             for decl in lemma.decls:
                 print(decl)
             print("-------")
@@ -68,7 +68,7 @@ class Visualize(object):
         if self.f_stats:
             self.rawstats.stats_tacs(lemma, tacs)
 
-        tr_builder = TacTreeBuilder(lemma.name, tacs, tr_parser.gid2info, False)
+        tr_builder = TacTreeBuilder(lemma.name, tacs, lemma.get_tacst_info(), lemma.decoder, False)
         tr_builder.build_tacs()
         succ, ncc = tr_builder.check_success()
         if not succ:
@@ -92,20 +92,30 @@ class Visualize(object):
         return tactr
     
     def visualize_file(self, file):
-        if self.f_verbose:
-            print("==================================================")
-            print("Visualizing file: {}".format(file))
+        print("==================================================")
+        print("Visualizing file: {}".format(file))
 
         ts_parser = TacStParser(file, f_log=False)
-        while not ts_parser.exhausted:
-            lemma = ts_parser.parse_lemma()
-            if self.f_verbose:
-                print(">>>>>>>>>>>>>>>>>>>>>")
-                print(lemma.pp())
-                print("<<<<<<<<<<<<<<<<<<<<<")
-            self.tactrs += [self.visualize_lemma(file, lemma)]
-            if self.abort:
+        if self.tgtlem:
+            while not ts_parser.exhausted:
+                ts_parser.seek_lemma(self.tgtlem)
+                lemma = ts_parser.parse_lemma()
+                if self.f_verbose:
+                    print(">>>>>>>>>>>>>>>>>>>>>")
+                    print(lemma.pp())
+                    print("<<<<<<<<<<<<<<<<<<<<<")
+                self.tactrs += [self.visualize_lemma(file, lemma)]
                 break
+        else:
+            while not ts_parser.exhausted:
+                lemma = ts_parser.parse_lemma()
+                if self.f_verbose:
+                    print(">>>>>>>>>>>>>>>>>>>>>")
+                    print(lemma.pp())
+                    print("<<<<<<<<<<<<<<<<<<<<<")
+                self.tactrs += [self.visualize_lemma(file, lemma)]
+                if self.abort:
+                    break
 
 
 def record(file, vis):
@@ -161,7 +171,7 @@ if __name__ == "__main__":
              "BGappendixC.v.dump",
              "PFsection1.v.dump",
              "PFsection2.v.dump",
-             "PFsection3.v.dump",
+             #"PFsection3.v.dump",
              "PFsection4.v.dump",
              "PFsection5.v.dump",
              "PFsection6.v.dump",
@@ -175,6 +185,9 @@ if __name__ == "__main__":
              "PFsection14.v.dump",
              "stripped_odd_order_theorem.v.dump",
              "wielandt_fixpoint.v.dump"]
+
+    bgfiles = [file for file in files if file.startswith("BG")]
+    pffiles = [file for file in files if file.startswith("PF")]
     
     files = [ op.join(args.path, file) for file in files ]
 

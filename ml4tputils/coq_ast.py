@@ -1,3 +1,7 @@
+import networkx as nx
+import matplotlib.pyplot as plt
+import re
+
 """
 [Note]
 
@@ -19,7 +23,8 @@ class UniverseInstance(object):
 # Expressions
 
 class Exp(object):
-    pass
+    def size(self):
+        raise NotImplementedError
 
 
 class RelExp(Exp):
@@ -27,6 +32,9 @@ class RelExp(Exp):
     def __init__(self, idx):
         assert isinstance(idx, int)
         self.idx = idx
+
+    def size(self):
+        return 1
 
     def __str__(self):
         return "R({})".format(self.idx)
@@ -38,6 +46,9 @@ class VarExp(Exp):
         assert isinstance(x, str)
         self.x = x
 
+    def size(self):
+        return 1
+
     def __str__(self):
         return "V({})".format(self.x)
 
@@ -45,21 +56,33 @@ class VarExp(Exp):
 class MetaExp(Exp):
     """M %d"""
     def __init__(self, mv):
+        assert False
         assert isinstance(mv, int)
         self.mv = mv
+
+    def size(self):
+        # NOTE(deh): wtf?
+        return 1
 
     def __str__(self):
         return "M({})".format(self.mv)
 
 
 class EvarExp(Exp):
-    """E %d [%s]"""
+    """
+    TODO(deh): In theory, should not have
+    E %d [%s]
+    """
     def __init__(self, exk, cs):
         assert isinstance(exk, int)
         for c in cs:
             assert isinstance(c, Exp)
         self.exk = exk
         self.cs = cs
+
+    def size(self):
+        # NOTE(deh): wtf?
+        return 1 + sum([c.size() for c in self.cs])
 
     def __str__(self):
         return "E({}, {})".format(self.exk, self.cs)
@@ -70,6 +93,9 @@ class SortExp(Exp):
     def __init__(self, sort):
         # TODO(deh): what is it's type?
         self.sort = sort
+
+    def size(self):
+        return 1
 
     def __str__(self):
         return "S({})".format(self.sort)
@@ -85,6 +111,9 @@ class CastExp(Exp):
         self.ck = ck
         self.ty = ty
 
+    def size(self):
+        return 1 + self.c.size() + self.ty.size()
+
     def __str__(self):
         return "CA({}, {}, {})".format(self.c, self.ck, self.ty)
 
@@ -99,6 +128,9 @@ class ProdExp(Exp):
         self.ty1 = ty1
         self.ty2 = ty2
 
+    def size(self):
+        return 1 + self.ty1.size() + self.ty2.size()
+
     def __str__(self):
         return "P({}, {}, {})".format(self.name, self.ty1, self.ty2)
 
@@ -112,6 +144,9 @@ class LambdaExp(Exp):
         self.name = name
         self.ty = ty
         self.c = c
+
+    def size(self):
+        return 1 + self.ty.size() + self.c.size()
 
     def __str__(self):
         return "L({}, {}, {})".format(self.name, self.ty, self.c)
@@ -129,6 +164,9 @@ class LetInExp(Exp):
         self.ty = ty
         self.c2 = c2
 
+    def size(self):
+        return 1 + self.c1.size() + self.ty.size() + self.c2.size()
+
     def __str__(self):
         return "LI({}, {}, {}, {})".format(self.name, self.c1, self.ty, self.c2)
 
@@ -142,6 +180,9 @@ class AppExp(Exp):
         self.c = c
         self.cs = cs
 
+    def size(self):
+        return 1 + self.c.size() + sum([c.size() for c in self.cs])
+
     def __str__(self):
         return "A({}, {})".format(self.c, self.cs)
 
@@ -153,6 +194,9 @@ class ConstExp(Exp):
         assert isinstance(ui, UniverseInstance)
         self.const = const
         self.ui = ui
+
+    def size(self):
+        return 1
 
     def __str__(self):
         return "C({}, {})".format(self.const, self.ui)
@@ -167,6 +211,10 @@ class IndExp(Exp):
         self.mutind = mutind
         self.i = i
         self.ui = ui
+
+    def size(self):
+        # TODO(deh): wtf?
+        return 1
 
     def __str__(self):
         return "I({}, {}, {})".format(self.mutind, self.i, self.ui)
@@ -184,6 +232,10 @@ class ConstructExp(Exp):
         self.j = j
         self.ui = ui
 
+    def size(self):
+        # TODO(deh): wtf?
+        return 1
+
     def __str__(self):
         return "CO({}, {}, {}, {})".format(self.mutind, self.i, self.j, self.ui)
 
@@ -200,6 +252,9 @@ class CaseExp(Exp):
         self.c1 = c1
         self.c2 = c2
         self.cs = cs
+
+    def size(self):
+        return 1 + self.c1.size() + self.c2.size() + sum([c.size() for c in self.cs])
 
     def __str__(self):
         return "CS({}, {}, {}, {})".format(self.ci, self.c1, self.c2, self.cs)
@@ -223,12 +278,15 @@ class FixExp(Exp):
         self.tys = tys
         self.cs = cs
 
+    def size(self):
+        return 1 + sum([ty.size() for ty in self.tys]) + sum([c.size() for c in self.cs])
+
     def __str__(self):
         return "F({}, {}, {}, {}, {})".format(self.iarr, self.idx, self.names, self.tys, self.cs)
 
 
 class CoFixExp(Exp):
-    """"CF %d [%s] [%s] [%s]"""
+    """CF %d [%s] [%s] [%s]"""
     def __init__(self, idx, names, tys, cs):
         assert isinstance(idx, int)
         for name in names:
@@ -242,18 +300,24 @@ class CoFixExp(Exp):
         self.tys = tys
         self.cs = cs
 
+    def size(self):
+        return 1 + sum([ty.size() for ty in self.tys]) + sum([c.size() for c in self.cs])
+
     def __str__(self):
         return "CF({}, {}, {}, {})".format(self.idx, self.names, self.tys, self.cs)
 
 
 class ProjExp(Exp):
-    """"PJ %s %d"""
+    """PJ %s %d"""
     def __init__(self, proj, c):
         # TODO(deh): Name.Projection?
         assert isinstance(proj, str)
         assert isinstance(c, Exp)
         self.proj = proj
         self.c = c
+
+    def size(self):
+        return 1 + self.c.size()
 
     def __str__(self):
         return "PJ({}, {})".format(self.proj, self.c)
@@ -263,57 +327,143 @@ class ProjExp(Exp):
 # Decoding low-level expressions
 
 class CoqExpDecode(object):
-    def __init__(self, constrs_table):
-        self.constrs_table = constrs_table
-        self.worklist = []
-        self.table = {}
+    def __init__(self, typs_table, bods_table, constrs_table):
+        # Internal state
+        self.typs_table = typs_table          # Dict[id, int]
+        self.bods_table = bods_table          # Dict[id, int]
+        self.constrs_table = constrs_table    # Dict[int, string]
+
+        # Work state
+        self.table = {}                       # memoize decoding
+        self.size_table = {}
+
+        # Shared representation
+        self.f_decoded = False
+        self.edges = []
+        self.rawasts = {}
+        self.concr_ast = {}
+        self._decode_constrs()
+
+        # self._memoize_decode()
+
+    def _split_entry(self, entry):
+        # NOTE(deh): FML fucking bullshit python
+        toks = re.findall(r'\[[^}]*?\]|\S+', entry)
+        return toks
+
+    def _memoize_decode(self):
+        cnt = 0
+        total = len(self.constrs_table)
+        for idx, v in self.constrs_table.items():
+            cnt += 1
+            print("MEMOIZING {}/{}".format(cnt, total))
+            print("TABLE SIZE", len(self.table), self.table.keys())
+            print("SIZE TABLE SIZE", len(self.size_table), self.size_table.keys())
+            e = self.decode_ast2(idx, v)
+            self.table[idx] = e
+            self.size_table[idx] = e.size()
+
+    def decode_ctx_bod(self, ident):
+        assert isinstance(ident, str)
+        idx = self.bods_table[ident]
+        e = self.decode_ast(idx)
+        if idx not in self.size_table:
+            self.size_table[idx] = e.size()
+        return e
+
+    def decode_ctx_typ(self, ident):
+        assert isinstance(ident, str)
+        idx = self.typs_table[ident]
+        e = self.decode_ast(idx)
+        if idx not in self.size_table:
+            self.size_table[idx] = e.size()
+        return e
+
+    def decode_ctx_typ_size(self, ident):
+        assert isinstance(ident, str)
+        idx = self.typs_table[ident]
+        if idx in self.size_table:
+            return self.size_table[idx]
+        else:
+            idx = self.typs_table[ident]
+            e = self.decode_ast(idx)
+            size = e.size()
+            self.size_table[idx] = size
+            return size
+
+    def decode_goal(self, idx):
+        assert isinstance(idx, int)
+        e = self.decode_ast(idx)
+        if idx not in self.size_table:
+            self.size_table[idx] = e.size()
+        return e
+
+    def decode_goal_size(self, idx):
+        assert isinstance(idx, int)
+        if idx in self.size_table:
+            return self.size_table[idx]
+        else:
+            e = self.decode_ast(idx)
+            size = e.size()
+            self.size_table[idx] = size
+            return size
 
     def decode_ast(self, key):
+        assert isinstance(key, int)
+        return self.concr_ast[key]
+        """
         if key in self.table:
             return self.table[key]
 
         entry = self.constrs_table[key]
-        toks = entry.split()
+        c_p = self.decode_ast2(key, entry)
+        self.table[key] = c_p
+        return c_p
+        """
+
+    def decode_ast2(self, key, entry):
+        print("DECODING2 key={}   entry=\"{}\"".format(key, entry))
+        toks = self._split_entry(entry)
         kind = toks[0].strip()
         if kind == "R":
-            """R %d"""
+            # R %d
             idx = int(toks[1].strip())
 
-            c = RelExp(idx)
-            self.table[key] = c
-            return c
+            c_p = RelExp(idx)
+            self.table[key] = c_p
+            return c_p
         elif kind == "V":
-            """V %s"""
+            # V %s
             x = toks[1].strip()
 
-            c = VarExp(x)
-            self.table[key] = c
-            return c
+            c_p = VarExp(x)
+            self.table[key] = c_p
+            return c_p
         elif kind == "M":
-            """M %d"""
+            # M %d
             idx = int(toks[1].strip())
 
-            c = MetaExp(idx)
-            self.table[key] = c
-            return c
+            c_p = MetaExp(idx)
+            self.table[key] = c_p
+            return c_p
         elif kind == "E":
-            """E %d [%s]"""
+            # E %d [%s]
             exk = int(toks[1].strip())
             cs_idxs = toks[2].strip()
             
             cs = self.decode_asts(cs_idxs)
-            c = EvarExp(exk, cs)
-            self.table[key] = c
-            return c
+            c_p = EvarExp(exk, cs)
+            self.table[key] = c_p
+            return c_p
         elif kind == "S":
-            """S %s"""
+            # S %s
             sort = toks[1].strip()
 
-            c = SortExp(sort)
-            self.table[key] = c
-            return c
+            c_p = SortExp(sort)
+            self.table[key] = c_p
+            return c_p
         elif kind == "CA":
-            """CA %d %s %d"""
+            # CA %d %s %d
             c_idx = int(toks[1].strip())
             ck = toks[2].strip()
             ty_idx = int(toks[3].strip())
@@ -324,21 +474,23 @@ class CoqExpDecode(object):
             self.table[key] = c_p
             return c_p
         elif kind == "P":
-            """P %s %d %d"""
+            # P %s %d %d
             name = toks[1].strip()
             ty1_idx = int(toks[2].strip())
             ty2_idx = int(toks[3].strip())
             
             ty1 = self.decode_ast(ty1_idx)
             ty2 = self.decode_ast(ty2_idx)
-            c = ProdExp(name, ty1, ty2)
-            self.table[key] = c
-            return c
+            c_p = ProdExp(name, ty1, ty2)
+            self.table[key] = c_p
+            return c_p
         elif kind == "L":
-            """L %s %d %d"""
+            # L %s %d %d
             name = toks[1].strip()
             ty_idx = int(toks[2].strip())
-            c_idx = int(toks[3].strip())
+            # TODO(deh): Kludge, coq printing has bug
+            # c_idx = int(toks[3].strip())
+            c_idx = int((toks[3].strip())[:-1])
 
             ty = self.decode_ast(ty_idx)
             c = self.decode_ast(c_idx)
@@ -346,7 +498,7 @@ class CoqExpDecode(object):
             self.table[key] = c_p
             return c_p
         elif kind == "LI":
-            """LI %s %d %d %d"""
+            # LI %s %d %d %d
             name = toks[1].strip()
             c1_idx = int(toks[2].strip())
             ty_idx = int(toks[3].strip())
@@ -355,11 +507,11 @@ class CoqExpDecode(object):
             c1 = self.decode_ast(c1_idx)
             ty = self.decode_ast(ty_idx)
             c2 = self.decode_ast(c2_idx)
-            c_p = LambdaExp(name, c1, ty, c2)
+            c_p = LetInExp(name, c1, ty, c2)
             self.table[key] = c_p
             return c_p
         elif kind == "A":
-            """A %d [%s]"""
+            # A %d [%s]
             c_idx = int(toks[1].strip())
             cs_idxs = toks[2].strip()
 
@@ -369,53 +521,50 @@ class CoqExpDecode(object):
             self.table[key] = c_p
             return c_p
         elif kind == "C":
-            """C %s [%s]"""
+            # C %s [%s]
             const = toks[1].strip()
-            ui = toks[2].strip()
+            ui = self.decode_universe_instance(toks[2].strip())
             
-            ui_p = self.decode_universe_instance(ui)
-            c_p = ConstExp(const, ui_p)
+            c_p = ConstExp(const, ui)
             self.table[key] = c_p
             return c_p
         elif kind == "I":
-            """I %s %d [%s]"""
+            # I %s %d [%s]
             mutind = toks[1].strip()
             i = int(toks[2].strip())
-            ui = toks[3].strip()
+            ui = self.decode_universe_instance(toks[3].strip())
 
-            ui_p = self.decode_universe_instance(ui)
             c_p = IndExp(mutind, i, ui)
             self.table[key] = c_p
             return c_p
         elif kind == "CO":
-            """CO %s %d %d [%s]"""
+            # CO %s %d %d [%s]
             mutind = toks[1].strip()
             i = int(toks[2].strip())
             j = int(toks[3].strip())
-            ui = toks[4].strip()
+            ui = self.decode_universe_instance(toks[4].strip())
 
-            ui_p = self.decode_universe_instance(ui)
             c_p = ConstructExp(mutind, i, j, ui)
             self.table[key] = c_p
             return c_p
         elif kind == "CS":
-            """CS [%s] %d %d [%s]"""
+            # CS [%s] %d %d [%s]
             case_info = toks[1].strip()
-            c1_idx = toks[2].strip()
-            c2_idx = toks[3].strip()
+            c1_idx = int(toks[2].strip())
+            c2_idx = int(toks[3].strip())
             cs_idxs = toks[4].strip()
 
             c1 = self.decode_ast(c1_idx)
             c2 = self.decode_ast(c2_idx)
             cs = self.decode_asts(cs_idxs)
-            c_p = CaseExp(case_info, c1, c2, c2)
+            c_p = CaseExp(case_info, c1, c2, cs)
             self.table[key] = c_p
             return c_p
         elif kind == "F":
-            """"F [%s] %d [%s] [%s] [%s]"""
+            # F [%s] %d [%s] [%s] [%s]
             _iarr = toks[1].strip()
-            _idx = int(toks[2].strip())
-            names = toks[3].strip()
+            idx = int(toks[2].strip())
+            _names = toks[3].strip()
             ty_idxs = toks[4].strip()
             cs_idxs = toks[5].strip()
             
@@ -440,7 +589,7 @@ class CoqExpDecode(object):
             return c_p
         elif kind == "PJ":
             proj = toks[1].strip()
-            c_idx = toks[2].strip()
+            c_idx = int(toks[2].strip())
 
             c = self.decode_ast(c_idx)
             c_p = Proj(proj, c)
@@ -451,17 +600,320 @@ class CoqExpDecode(object):
 
     def decode_asts(self, c_idxs):
         c_idxs = c_idxs[1:-1]
-        keys = [idx.strip() for idx in c_idxs.split()]
+        keys = [int(idx.strip()) for idx in c_idxs.split()]
         return [self.decode_ast(key) for key in keys]
 
     def decode_universe_instance(self, ui):
         ui = ui[1:-1]
-        return [u.strip() for u in ui.split()]
+        # TODO(deh): check latest coq format
+        return UniverseInstance([u.strip() for u in ui.split(",")])
 
     def decode_names(self, names):
         names = names[1:-1]
-        return [name.strip() for name in names.split()]
+        # TODO(deh): check latest coq format
+        return [name.strip() for name in names.split(",")]
 
     def decode_iarr(self, iarr):
         iarr = iarr[1:-1]
-        return [int(i.strip()) for i in iarr.split()]
+        # TODO(deh): check latest coq format
+        return [int(i.strip()) for i in iarr.split(",")]
+
+
+    def _add_edges(self, idx, idxs):
+        self.edges += [(idx, idx_p) for idx_p in idxs]
+
+    def _decode_constrs(self):
+        G = nx.DiGraph()
+        for key, entry in self.constrs_table.items():
+            G.add_node(key)
+            e = self._decode_rawast(key, entry)
+        G.add_edges_from(self.edges)
+        # nx.drawing.nx_pylab.draw_kamada_kawai(G, with_labels=True)
+        # plt.show()
+
+        keys = list(nx.algorithms.dag.topological_sort(G))
+        cnt = 0
+        total = len(self.constrs_table)
+        print(len(keys), total)
+        assert len(keys) == total
+        for key in keys:
+            cnt += 1
+            print("MEMOIZING {}/{}, key={}".format(cnt, total, key))
+            c = self._decode_ast(key)
+            if key not in self.concr_ast:
+                self.concr_ast[key] = c
+
+        self.f_decoded = True
+
+    def _santize_keys(self, c_idxs):
+        c_idxs = c_idxs[1:-1]
+        return [int(idx.strip()) for idx in c_idxs.split()]
+
+    def _decode_rawast(self, key, entry):
+        toks = self._split_entry(entry)
+        kind = toks[0].strip()
+        if kind == "R":
+            # R %d
+            idx = int(toks[1].strip())
+
+            self.rawasts[key] = ("R", idx)
+        elif kind == "V":
+            # V %s
+            x = toks[1].strip()
+
+            self.rawasts[key] = ("V", x)
+        elif kind == "M":
+            # M %d
+            idx = int(toks[1].strip())
+
+            self.rawasts[key] = ("M", idx)
+        elif kind == "E":
+            # E %d [%s]
+            exk = int(toks[1].strip())
+            cs_idxs = self._santize_keys(toks[2].strip())
+            
+            self.rawasts[key] = ("E", exk, cs_idxs)
+            self._add_edges(key, cs_idxs)
+        elif kind == "S":
+            # S %s
+            sort = toks[1].strip()
+
+            self.rawasts[key] = ("S", sort)
+        elif kind == "CA":
+            # CA %d %s %d
+            c_idx = int(toks[1].strip())
+            ck = toks[2].strip()
+            ty_idx = int(toks[3].strip())
+
+            self.rawasts[key] = ("CA", c_idx, ck, ty_idx)
+            self._add_edges(key, [c_idx, ty_idx])
+        elif kind == "P":
+            # P %s %d %d
+            name = toks[1].strip()
+            ty1_idx = int(toks[2].strip())
+            ty2_idx = int(toks[3].strip())
+            
+            self.rawasts[key] = ("P", name, ty1_idx, ty2_idx)
+            self._add_edges(key, [ty1_idx, ty2_idx])
+        elif kind == "L":
+            # L %s %d %d
+            name = toks[1].strip()
+            ty_idx = int(toks[2].strip())
+            # TODO(deh): Kludge, coq printing has bug
+            # c_idx = int(toks[3].strip())
+            c_idx = int((toks[3].strip())[:-1])
+
+            self.rawasts[key] = ("L", name, ty_idx, c_idx)
+            self._add_edges(key, [ty_idx, c_idx])
+        elif kind == "LI":
+            # LI %s %d %d %d
+            name = toks[1].strip()
+            c1_idx = int(toks[2].strip())
+            ty_idx = int(toks[3].strip())
+            c2_idx = int(toks[4].strip())
+
+            self.rawasts[key] = ("LI", name, c1_idx, ty_idx, c2_idx)
+            self._add_edges(key, [c1_idx, ty_idx, c2_idx])
+        elif kind == "A":
+            # A %d [%s]
+            c_idx = int(toks[1].strip())
+            cs_idxs = self._santize_keys(toks[2].strip())
+
+            self.rawasts[key] = ("A", c_idx, cs_idxs)
+            self._add_edges(key, [c_idx] + cs_idxs)
+        elif kind == "C":
+            # C %s [%s]
+            const = toks[1].strip()
+            ui = self.decode_universe_instance(toks[2].strip())
+            
+            self.rawasts[key] = ("C", const, ui)
+        elif kind == "I":
+            # I %s %d [%s]
+            mutind = toks[1].strip()
+            i = int(toks[2].strip())
+            ui = self.decode_universe_instance(toks[3].strip())
+
+            self.rawasts[key] = ("I", mutind, i, ui)
+        elif kind == "CO":
+            # CO %s %d %d [%s]
+            mutind = toks[1].strip()
+            i = int(toks[2].strip())
+            j = int(toks[3].strip())
+            ui = self.decode_universe_instance(toks[4].strip())
+
+            self.rawasts[key] = ("CO", mutind, i, j, ui)
+        elif kind == "CS":
+            # CS [%s] %d %d [%s]
+            case_info = toks[1].strip()
+            c1_idx = int(toks[2].strip())
+            c2_idx = int(toks[3].strip())
+            cs_idxs = self._santize_keys(toks[4].strip())
+
+            self.rawasts[key] = ("CS", case_info, c1_idx, c2_idx, cs_idxs)
+            self._add_edges(key, [c1_idx, c2_idx] + cs_idxs)
+        elif kind == "F":
+            # F [%s] %d [%s] [%s] [%s]
+            iarr = self.decode_iarr(toks[1].strip())
+            idx = int(toks[2].strip())
+            names = self.decode_names(toks[3].strip())
+            ty_idxs = self._santize_keys(toks[4].strip())
+            cs_idxs = self._santize_keys(toks[5].strip())
+            
+            self.rawasts[key] = ("F", iarr, idx, names, ty_idxs, cs_idxs)
+            self._add_edges(key, ty_idxs + cs_idxs)
+        elif kind == "CF":
+            idx = int(toks[2].strip())
+            names = self.decode_names(toks[3].strip())
+            ty_idxs = self._santize_keys(toks[4].strip())
+            cs_idxs = self._santize_keys(toks[5].strip())
+
+            self.rawasts[key] = ("CF", idx, names, ty_idxs, cs_idxs)
+            self._add_edges(key, ty_idxs + cs_idxs)
+        elif kind == "PJ":
+            proj = toks[1].strip()
+            c_idx = int(toks[2].strip())
+
+            self.rawasts[key] = ("PJ", proj, c_idx)
+            self._add_edges(key, [c_idx])
+        else:
+            raise NameError("Kind {} not supported.".format(kind))
+
+    def _decode_ast(self, key):
+        if key in self.concr_ast:
+            return self.concr_ast[key]
+
+        toks = self.rawasts[key]
+        kind = toks[0]
+        rest = toks[1:]
+        if kind == "R":
+            # R %d
+            idx = rest[0]
+            c_p = RelExp(idx)
+            self.concr_ast[key] = c_p
+            return c_p
+        elif kind == "V":
+            # V %s
+            x = rest[0]
+            c_p = VarExp(x)
+            self.concr_ast[key] = c_p
+            return c_p
+        elif kind == "M":
+            # M %d
+            idx = int(toks[1].strip())
+            c_p = MetaExp(rest[0])
+            self.concr_ast[key] = c_p
+            return c_p
+        elif kind == "E":
+            # E %d [%s]
+            exk, cs_idxs = rest
+            cs = self._decode_asts(cs_idxs)
+            c_p = EvarExp(exk, cs)
+            self.concr_ast[key] = c_p
+            return c_p
+        elif kind == "S":
+            # S %s
+            sort = rest[0]
+            c_p = SortExp(sort)
+            self.concr_ast[key] = c_p
+            return c_p
+        elif kind == "CA":
+            # CA %d %s %d
+            c_idx, ck, ty_idx = rest
+            c = self._decode_ast(c_idx)
+            ty = self._decode_ast(ty_idx)
+            c_p = CastExp(c, ck, ty)
+            self.concr_ast[key] = c_p
+            return c_p
+        elif kind == "P":
+            # P %s %d %d
+            name, ty1_idx, ty2_idx = rest
+            ty1 = self._decode_ast(ty1_idx)
+            ty2 = self._decode_ast(ty2_idx)
+            c_p = ProdExp(name, ty1, ty2)
+            self.concr_ast[key] = c_p
+            return c_p
+        elif kind == "L":
+            # L %s %d %d
+            name, ty_idx, c_idx = rest
+
+            ty = self._decode_ast(ty_idx)
+            c = self._decode_ast(c_idx)
+            c_p = LambdaExp(name, ty, c)
+            self.concr_ast[key] = c_p
+            return c_p
+        elif kind == "LI":
+            # LI %s %d %d %d
+            name, c1_idx, ty_idx, c2_idx = rest
+            c1 = self._decode_ast(c1_idx)
+            ty = self._decode_ast(ty_idx)
+            c2 = self._decode_ast(c2_idx)
+            c_p = LetInExp(name, c1, ty, c2)
+            self.concr_ast[key] = c_p
+            return c_p
+        elif kind == "A":
+            # A %d [%s]
+            c_idx, cs_idxs = rest
+            c = self._decode_ast(c_idx)
+            cs = self._decode_asts(cs_idxs)
+            c_p = AppExp(c, cs)
+            self.concr_ast[key] = c_p
+            return c_p
+        elif kind == "C":
+            # C %s [%s]
+            const, ui = rest 
+            c_p = ConstExp(const, ui)
+            self.concr_ast[key] = c_p
+            return c_p
+        elif kind == "I":
+            # I %s %d [%s]
+            mutind, i, ui = rest
+            c_p = IndExp(mutind, i, ui)
+            self.concr_ast[key] = c_p
+            return c_p
+        elif kind == "CO":
+            # CO %s %d %d [%s]
+            mutind, i, j, ui = rest
+            c_p = ConstructExp(mutind, i, j, ui)
+            self.concr_ast[key] = c_p
+            return c_p
+        elif kind == "CS":
+            # CS [%s] %d %d [%s]
+            case_info, c1_idx, c2_idx, cs_idxs = rest
+            c1 = self._decode_ast(c1_idx)
+            c2 = self._decode_ast(c2_idx)
+            cs = self._decode_asts(cs_idxs)
+            c_p = CaseExp(case_info, c1, c2, cs)
+            self.concr_ast[key] = c_p
+            return c_p
+        elif kind == "F":
+            # F [%s] %d [%s] [%s] [%s]
+            iarr, idx, names, ty_idxs, cs_idxs = rest
+            tys = self._decode_asts(ty_idxs)
+            cs = self._decode_asts(cs_idxs)
+            c_p = FixExp(iarr, idx, names, tys, cs)
+            self.concr_ast[key] = c_p
+            return c_p
+        elif kind == "CF":
+            # CF %d [%s] [%s] [%s]
+            idx, names, ty_idxs, cs_idxs = rest
+            tys = self._decode_asts(ty_idxs)
+            cs = self._decode_asts(cs_idxs)
+            c_p = CoFixExp(idx, names, tys, cs)
+            self.concr_ast[key] = c_p
+            return c_p
+        elif kind == "PJ":
+            # PJ %s %d
+            proj, c_idx = rest
+            c = self._decode_ast(c_idx)
+            c_p = ProjExp(proj, c)
+            self.concr_ast[key] = c_p
+            return c_p
+        else:
+            raise NameError("Kind {} not supported.".format(kind))
+
+    def _decode_asts(self, keys):
+        return [self._decode_ast(key) for key in keys]
+
+    def pp(self, tab=0):
+        s = "\n".join(["{}: {}".format(ident, self.decode_ctx_typ(ident)) for ident, ty in self.typs_table.items()])
+        return s

@@ -34,21 +34,6 @@ class TacKind(Enum):
     ML = 4
 
 
-class TacSt(object):
-    def __init__(self, ctx, goal, ctx_e, goal_e):
-        for e in ctx:
-            assert isinstance(e, str)
-        assert isinstance(goal, str)
-        for _, e in ctx_e.items():
-            assert isinstance(e, coq_ast.Exp)
-        assert isinstance(goal_e, coq_ast.Exp)
-
-        self.ctx = ctx
-        self.goal = goal
-        self.ctx_e = ctx_e
-        self.goal_e = goal_e
-
-
 class RawTac(object):
     def __init__(self, uid, name, kind, ftac, bf_decls, af_decls, bods):
         assert isinstance(uid, int)
@@ -62,13 +47,13 @@ class RawTac(object):
             for tac in body:
                 assert isinstance(tac, RawTac)
 
-        self.uid = uid
-        self.name = name
-        self.kind = kind
-        self.ftac = ftac
-        self.bf_decls = bf_decls
-        self.af_decls = af_decls
-        self.bods = bods
+        self.uid = uid             # Unique identifier
+        self.name = name           # Name of the tactic
+        self.kind = kind           # Kind of the tactic
+        self.ftac = ftac           # Full tactic
+        self.bf_decls = bf_decls   # Before declarations
+        self.af_decls = af_decls   # After declarations  
+        self.bods = bods           # Raw tactics in the body
 
     def base_stats(self):
         return (self.kind, len(self.bf_decls),
@@ -127,32 +112,14 @@ class TacTreeParser(object):
     def __init__(self, lemma, f_log=False):
         assert isinstance(lemma, LemTacSt)
 
+        # Internal state
+        self.f_log = f_log
         self.lemma = lemma
         self.it = MyIter(lemma.decls)
-        self.log = []
-        self.f_log = f_log
-        self.uidcnt = 0
-        self.depth = 0
-        self.uidstk = []
-
-        self.gid2info = {}
-        self._build_gid2info()
-        # self.tacst_info = {}
-        # self._build_tacst_info()
-
-    def _build_gid2info(self):
-        it = MyIter(self.lemma.decls)
-
-        while it.has_next():
-            tac = next(it)
-            self.gid2info[tac.hdr.gid] = (tac.ctx, tac.goal)
-
-    def _build_tacst_info(self):
-        it = MyIter(self.lemma.decls)
-
-        while it.has_next():
-            tac = next(it)
-            self.tacst_info[tac.hdr.gid] = TacSt(tac.ctx, tac.goal, tac.ast_ctx, tac.ast_goal)
+        
+        self.uidcnt = 0                 # RawTac uid counter
+        self.depth = 0                  # Nesting depth
+        self.uidstk = []                # RawTac uid stack (for after)
 
     def _mylog(self, msg, f_log=False):
         if f_log or self.f_log:
@@ -163,7 +130,7 @@ class TacTreeParser(object):
         for tac in acc:
             self._mylog(tac)
 
-    def _getuid(self):
+    def _fresh_uid(self):
         uid = self.uidcnt
         self.uidcnt += 1
         return uid
@@ -187,7 +154,7 @@ class TacTreeParser(object):
               it.peek().hdr.uid == start_decl.hdr.uid:
             afters += [next(it)]
 
-        return RawTac(self._getuid(), befores[0].hdr.tac, TacKind.ATOMIC,
+        return RawTac(self._fresh_uid(), befores[0].hdr.tac, TacKind.ATOMIC,
                       befores[0].hdr.ftac, befores, afters, [])
 
     def parse_name_call(self):
@@ -209,7 +176,7 @@ class TacTreeParser(object):
               it.peek().hdr.uid == start_decl.hdr.uid:
             afters += [next(it)]
 
-        return RawTac(self._getuid(), befores[0].hdr.tac, TacKind.NAME,
+        return RawTac(self._fresh_uid(), befores[0].hdr.tac, TacKind.NAME,
                       befores[0].hdr.ftac, befores, afters, [])
 
     def parse_notation_call(self):
@@ -233,7 +200,7 @@ class TacTreeParser(object):
               it.peek().hdr.uid == start_decl.hdr.uid:
             afters += [next(it)]
 
-        return RawTac(self._getuid(), befores[0].hdr.tac, TacKind.NOTATION,
+        return RawTac(self._fresh_uid(), befores[0].hdr.tac, TacKind.NOTATION,
                       befores[0].hdr.ftac, befores, afters, bods)
 
     def parse_ml_call(self):
@@ -258,7 +225,7 @@ class TacTreeParser(object):
               it.peek().hdr.uid == start_decl.hdr.uid:
             afters += [next(it)]
 
-        return RawTac(self._getuid(), befores[0].hdr.tac, TacKind.ML,
+        return RawTac(self._fresh_uid(), befores[0].hdr.tac, TacKind.ML,
                       befores[0].hdr.ftac, befores, afters, [body])
 
     def parse_tactree(self):

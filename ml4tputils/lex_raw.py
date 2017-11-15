@@ -124,25 +124,24 @@ class LemTacSt(object):
             assert isinstance(decl, TacStDecl)
 
         self.name = name                     # Name of the lemma
-        self.decls = decls                   # List of tacstdecl "tokens"
-        self.typs_table = typs_table         # Dict[id, int]
-        self.bods_table = bods_table         # Dict[id, int]
+        self.decls = decls                   # List of TacStDecl "tokens"
         
-        # Decode low-level Coq expression using Dict[int, string] mapping
-        self.decode = CoqExpDecode(constrs_table)  
+        # Decode low-level Coq expression
+        self.decoder = CoqExpDecode(typs_table, bods_table, constrs_table)
 
-    def decode_typ(self, ident):
-        idx = self.typs_table[ident]
-        return self.decode_ast(idx)
-
-    def decode_bod(self, ident):
-        idx = self.bods_table[ident]
-        return self.decode_ast(idx)
+    def get_tacst_info(self):
+        tacst_info = {}
+        for decl in self.decls:
+            gid = decl.hdr.gid
+            if gid not in tacst_info:
+                tacst_info[gid] = (decl.ctx, decl.goal, decl.ast_ctx, decl.ast_goal)
+        return tacst_info
 
     def pp(self, tab=0):
         s1 = pp_tab(tab, self.name) + "\n"
-        s2 = "\n".join([decl.pp(tab + 2) for decl in self.decls])
-        return s1 + s2
+        s2 = "\n".join([decl.pp(tab + 2) for decl in self.decls]) + "\n"
+        s3 = self.decoder.pp(tab)
+        return s1 + s2 + s3
 
     def __str__(self):
         msg = "\n".join([str(decl) for decl in self.decls])
@@ -270,8 +269,11 @@ class TacStParser(object):
 
         # Parse local ctx
         line = h_head.consume_line()
-        idents = [ident.strip() for ident in line.split(",")]
-        return idents
+        if line == "":
+            return []
+        else:
+            idents = [ident.strip() for ident in line.split(",")]
+            return idents
 
     def parse_ast_goal(self):
         # Internal
@@ -401,9 +403,9 @@ class TacStParser(object):
         while not h_head.peek_line().startswith(TOK_BODS):
             hdr = h_head.consume_line()
             end = hdr.find(":")
-            x = hdr[:end].strip()
-            edx = hdr[end+1:].strip()
-            self.typs_table[x] = edx
+            ident = hdr[:end].strip()
+            edx = int(hdr[end+1:].strip())
+            self.typs_table[ident] = edx
 
     def parse_bods_table(self):
         # Internal
@@ -415,9 +417,9 @@ class TacStParser(object):
         while not h_head.peek_line().startswith(TOK_CONSTRS):
             hdr = h_head.consume_line()
             end = hdr.find(":")
-            x = hdr[:end].strip()
-            bdx = hdr[end+1:].strip()
-            self.bods_table[x] = bdx
+            ident = hdr[:end].strip()
+            bdx = int(hdr[end+1:].strip())
+            self.bods_table[ident] = bdx
 
     def parse_constrs_table(self):
         # Internal
@@ -429,7 +431,7 @@ class TacStParser(object):
         while not h_head.peek_line().startswith(TOK_END_PF):
             hdr = h_head.consume_line()
             end = hdr.find(":")
-            edx = hdr[:end].strip()
+            edx = int(hdr[:end].strip())
             low_constr = hdr[end+1:].strip()
             self.constrs_table[edx] = low_constr
 
@@ -441,6 +443,25 @@ class TacStParser(object):
         self.parse_typs_table()
         self.parse_bods_table()
         self.parse_constrs_table()
+
+    def seek_lemma(self, lemma):
+        # Internal
+        h_head = self.h_head
+        self._mylog("seek_lemma<{}>".format(h_head.peek_line()))
+
+        line = h_head.raw_peek_line()
+        while line != "":
+            line = line.rstrip()
+            if line.startswith(TOK_BEG_PF):
+                toks = line.split(TOK_SEP)
+                lemma_p = toks[2].strip()
+                self._mylog("progress: {:4.2f}% @ {}".format(
+                            h_head.progress(), lemma_p), True)
+                if lemma_p == lemma:
+                    return
+            h_head.raw_consume_line()
+            line = h_head.raw_peek_line()
+        raise NameError("Lemma {} not found".format(lemma))
 
     def parse_lemma(self):
         """
