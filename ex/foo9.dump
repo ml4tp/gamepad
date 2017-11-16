@@ -1,165 +1,74 @@
-begin(pf) {!} Classic {!} plus_zero
-begin(tacst) {!} 0 {!} before {!} induction n {!} LtacAtomCall {!} (./foo9.v,48,59)
+bg(pf) {!} Classic {!} plus_zero
+bg(ts) {!} 0 {!} bf {!} induction n {!} Atom {!} (./foo9.v,48,59)
 1 {!} induction n {!} 4
-============================
-forall n : nat, n = n + 0
-{!}
-
-============================
-0
-end(tacst)
-begin(tacst) {!} 0 {!} after {!} induction n {!} LtacAtomCall {!} (./foo9.v,48,59)
+ {!} 0
+en(ts)
+bg(ts) {!} 0 {!} af {!} induction n {!} Atom {!} (./foo9.v,48,59)
 2 {!}  {!} 9
-============================
-0 = 0 + 0
-{!}
-
-============================
-8
-end(tacst)
-begin(tacst) {!} 0 {!} after {!} induction n {!} LtacAtomCall {!} (./foo9.v,48,59)
+ {!} 8
+en(ts)
+bg(ts) {!} 0 {!} af {!} induction n {!} Atom {!} (./foo9.v,48,59)
 2 {!}  {!} 12
-n : nat
-IHn : n = n + 0
-============================
-S n = S n + 0
-{!}
-IHn, n
-============================
-10
-end(tacst)
-begin(subpf)
-begin(tacst) {!} 1 {!} before {!} simpl {!} LtacAtomCall {!} (./foo9.v,67,72)
+IHn, n {!} 10
+en(ts)
+bg(spf)
+bg(ts) {!} 1 {!} bf {!} simpl {!} Atom {!} (./foo9.v,67,72)
 1 {!} simpl {!} 9
-============================
-0 = 0 + 0
-{!}
-
-============================
-8
-end(tacst)
-begin(tacst) {!} 1 {!} after {!} simpl {!} LtacAtomCall {!} (./foo9.v,67,72)
+ {!} 8
+en(ts)
+bg(ts) {!} 1 {!} af {!} simpl {!} Atom {!} (./foo9.v,67,72)
 1 {!}  {!} 14
-============================
-0 = 0
-{!}
-
-============================
-15
-end(tacst)
-begin(tacst) {!} 2 {!} before {!} reflexivity {!} LtacNameCall {!} (./foo9.v,78,89)
+ {!} 15
+en(ts)
+bg(ts) {!} 2 {!} bf {!} reflexivity {!} Name {!} (./foo9.v,78,89)
 1 {!}  {!} 14
-============================
-0 = 0
-{!}
-
-============================
-15
-end(tacst)
-begin(tacst) {!} 2 {!} after {!} reflexivity {!} LtacNameCall {!} (./foo9.v,78,89)
+ {!} 15
+en(ts)
+bg(ts) {!} 2 {!} af {!} reflexivity {!} Name {!} (./foo9.v,78,89)
 1 {!}  {!} 14
-============================
-0 = 0
-{!}
-
-============================
-15
-end(tacst)
-begin(tacst) {!} 3 {!} before {!} <coretactics::reflexivity@0> {!} LtacMLCall {!} (,0,0)
+ {!} 15
+en(ts)
+bg(ts) {!} 3 {!} bf {!} <coretactics::reflexivity@0> {!} ML {!} (,0,0)
 1 {!} <coretactics::reflexivity@0> {!} 14
-============================
-0 = 0
-{!}
-
-============================
-15
-end(tacst)
-begin(tacst) {!} 3 {!} after {!} <coretactics::reflexivity@0> {!} LtacMLCall {!} (,0,0)
+ {!} 15
+en(ts)
+bg(ts) {!} 3 {!} af {!} <coretactics::reflexivity@0> {!} ML {!} (,0,0)
 ngs=0
-end(tacst)
-end(subpf)
-begin(subpf)
-begin(tacst) {!} 4 {!} before {!} simpl {!} LtacAtomCall {!} (./foo9.v,101,106)
+en(ts)
+en(spf)
+bg(spf)
+bg(ts) {!} 4 {!} bf {!} simpl {!} Atom {!} (./foo9.v,101,106)
 1 {!} simpl {!} 12
-n : nat
-IHn : n = n + 0
-============================
-S n = S n + 0
-{!}
-IHn, n
-============================
-10
-end(tacst)
-begin(tacst) {!} 4 {!} after {!} simpl {!} LtacAtomCall {!} (./foo9.v,101,106)
+IHn, n {!} 10
+en(ts)
+bg(ts) {!} 4 {!} af {!} simpl {!} Atom {!} (./foo9.v,101,106)
 1 {!}  {!} 17
-n : nat
-IHn : n = n + 0
-============================
-S n = S (n + 0)
-{!}
-IHn, n
-============================
-16
-end(tacst)
-begin(tacst) {!} 5 {!} before {!} rewrite <- IHn {!} LtacAtomCall {!} (./foo9.v,112,126)
+IHn, n {!} 16
+en(ts)
+bg(ts) {!} 5 {!} bf {!} rewrite <- IHn {!} Atom {!} (./foo9.v,112,126)
 1 {!} rewrite <- IHn {!} 17
-n : nat
-IHn : n = n + 0
-============================
-S n = S (n + 0)
-{!}
-IHn, n
-============================
-16
-end(tacst)
-begin(tacst) {!} 5 {!} after {!} rewrite <- IHn {!} LtacAtomCall {!} (./foo9.v,112,126)
+IHn, n {!} 16
+en(ts)
+bg(ts) {!} 5 {!} af {!} rewrite <- IHn {!} Atom {!} (./foo9.v,112,126)
 1 {!}  {!} 18
-n : nat
-IHn : n = n + 0
-============================
-S n = S n
-{!}
-IHn, n
-============================
-19
-end(tacst)
-begin(tacst) {!} 6 {!} before {!} reflexivity {!} LtacNameCall {!} (./foo9.v,132,143)
+IHn, n {!} 19
+en(ts)
+bg(ts) {!} 6 {!} bf {!} reflexivity {!} Name {!} (./foo9.v,132,143)
 1 {!}  {!} 18
-n : nat
-IHn : n = n + 0
-============================
-S n = S n
-{!}
-IHn, n
-============================
-19
-end(tacst)
-begin(tacst) {!} 6 {!} after {!} reflexivity {!} LtacNameCall {!} (./foo9.v,132,143)
+IHn, n {!} 19
+en(ts)
+bg(ts) {!} 6 {!} af {!} reflexivity {!} Name {!} (./foo9.v,132,143)
 1 {!}  {!} 18
-n : nat
-IHn : n = n + 0
-============================
-S n = S n
-{!}
-IHn, n
-============================
-19
-end(tacst)
-begin(tacst) {!} 7 {!} before {!} <coretactics::reflexivity@0> {!} LtacMLCall {!} (,0,0)
+IHn, n {!} 19
+en(ts)
+bg(ts) {!} 7 {!} bf {!} <coretactics::reflexivity@0> {!} ML {!} (,0,0)
 1 {!} <coretactics::reflexivity@0> {!} 18
-n : nat
-IHn : n = n + 0
-============================
-S n = S n
-{!}
-IHn, n
-============================
-19
-end(tacst)
-begin(tacst) {!} 7 {!} after {!} <coretactics::reflexivity@0> {!} LtacMLCall {!} (,0,0)
+IHn, n {!} 19
+en(ts)
+bg(ts) {!} 7 {!} af {!} <coretactics::reflexivity@0> {!} ML {!} (,0,0)
 ngs=0
-end(tacst)
-end(subpf)
+en(ts)
+en(spf)
 Typs
 IHn: 20
 n: 1
@@ -186,285 +95,129 @@ Constrs
 18: A 6 [13 7]
 19: A 3 [1 11 11]
 20: A 3 [1 13 18]
-end(pf)
-begin(pf) {!} Classic {!} S_comm
-begin(tacst) {!} 0 {!} before {!} induction n {!} LtacAtomCall {!} (./foo9.v,210,221)
+PrTyps
+IHn: n = n + 0
+n: nat
+PrBods
+PrGls
+0: forall n : nat, n = n + 0
+8: 0 = 0 + 0
+10: S n = S n + 0
+15: 0 = 0
+16: S n = S (n + 0)
+19: S n = S n
+en(pf)
+bg(pf) {!} Classic {!} S_comm
+bg(ts) {!} 0 {!} bf {!} induction n {!} Atom {!} (./foo9.v,210,221)
 1 {!} induction n {!} 8
-============================
-forall n m : nat, S n + m = n + S m
-{!}
-
-============================
-0
-end(tacst)
-begin(tacst) {!} 0 {!} after {!} induction n {!} LtacAtomCall {!} (./foo9.v,210,221)
+ {!} 0
+en(ts)
+bg(ts) {!} 0 {!} af {!} induction n {!} Atom {!} (./foo9.v,210,221)
 2 {!}  {!} 13
-============================
-forall m : nat, 1 + m = 0 + S m
-{!}
-
-============================
-13
-end(tacst)
-begin(tacst) {!} 0 {!} after {!} induction n {!} LtacAtomCall {!} (./foo9.v,210,221)
+ {!} 13
+en(ts)
+bg(ts) {!} 0 {!} af {!} induction n {!} Atom {!} (./foo9.v,210,221)
 2 {!}  {!} 16
-n : nat
-IHn : forall m : nat, S n + m = n + S m
-============================
-forall m : nat, S (S n) + m = S n + S m
-{!}
-IHn, n
-============================
-19
-end(tacst)
-begin(subpf)
-begin(tacst) {!} 1 {!} before {!} simpl {!} LtacAtomCall {!} (./foo9.v,229,234)
+IHn, n {!} 19
+en(ts)
+bg(spf)
+bg(ts) {!} 1 {!} bf {!} simpl {!} Atom {!} (./foo9.v,229,234)
 1 {!} simpl {!} 13
-============================
-forall m : nat, 1 + m = 0 + S m
-{!}
-
-============================
-13
-end(tacst)
-begin(tacst) {!} 1 {!} after {!} simpl {!} LtacAtomCall {!} (./foo9.v,229,234)
+ {!} 13
+en(ts)
+bg(ts) {!} 1 {!} af {!} simpl {!} Atom {!} (./foo9.v,229,234)
 1 {!}  {!} 20
-============================
-forall m : nat, S m = S m
-{!}
-
-============================
-26
-end(tacst)
-begin(tacst) {!} 2 {!} before {!} intro {!} LtacNotationCall {!} (./foo9.v,240,245)
+ {!} 26
+en(ts)
+bg(ts) {!} 2 {!} bf {!} intro {!} Not {!} (./foo9.v,240,245)
 1 {!} intro {!} 20
-============================
-forall m : nat, S m = S m
-{!}
-
-============================
-26
-end(tacst)
-begin(tacst) {!} 3 {!} before {!} <coretactics::intro@0> {!} LtacMLCall {!} (,0,0)
+ {!} 26
+en(ts)
+bg(ts) {!} 3 {!} bf {!} <coretactics::intro@0> {!} ML {!} (,0,0)
 1 {!} <coretactics::intro@0> {!} 20
-============================
-forall m : nat, S m = S m
-{!}
-
-============================
-26
-end(tacst)
-begin(tacst) {!} 3 {!} after {!} <coretactics::intro@0> {!} LtacMLCall {!} (,0,0)
+ {!} 26
+en(ts)
+bg(ts) {!} 3 {!} af {!} <coretactics::intro@0> {!} ML {!} (,0,0)
 1 {!}  {!} 21
-m : nat
-============================
-S m = S m
-{!}
-m
-============================
-28
-end(tacst)
-begin(tacst) {!} 2 {!} after {!} intro {!} LtacNotationCall {!} (./foo9.v,240,245)
+m {!} 28
+en(ts)
+bg(ts) {!} 2 {!} af {!} intro {!} Not {!} (./foo9.v,240,245)
 1 {!}  {!} 21
-m : nat
-============================
-S m = S m
-{!}
-m
-============================
-28
-end(tacst)
-begin(tacst) {!} 4 {!} before {!} reflexivity {!} LtacNameCall {!} (./foo9.v,251,262)
+m {!} 28
+en(ts)
+bg(ts) {!} 4 {!} bf {!} reflexivity {!} Name {!} (./foo9.v,251,262)
 1 {!}  {!} 21
-m : nat
-============================
-S m = S m
-{!}
-m
-============================
-28
-end(tacst)
-begin(tacst) {!} 4 {!} after {!} reflexivity {!} LtacNameCall {!} (./foo9.v,251,262)
+m {!} 28
+en(ts)
+bg(ts) {!} 4 {!} af {!} reflexivity {!} Name {!} (./foo9.v,251,262)
 1 {!}  {!} 21
-m : nat
-============================
-S m = S m
-{!}
-m
-============================
-28
-end(tacst)
-begin(tacst) {!} 5 {!} before {!} <coretactics::reflexivity@0> {!} LtacMLCall {!} (,0,0)
+m {!} 28
+en(ts)
+bg(ts) {!} 5 {!} bf {!} <coretactics::reflexivity@0> {!} ML {!} (,0,0)
 1 {!} <coretactics::reflexivity@0> {!} 21
-m : nat
-============================
-S m = S m
-{!}
-m
-============================
-28
-end(tacst)
-begin(tacst) {!} 5 {!} after {!} <coretactics::reflexivity@0> {!} LtacMLCall {!} (,0,0)
+m {!} 28
+en(ts)
+bg(ts) {!} 5 {!} af {!} <coretactics::reflexivity@0> {!} ML {!} (,0,0)
 ngs=0
-end(tacst)
-end(subpf)
-begin(subpf)
-begin(tacst) {!} 6 {!} before {!} simpl {!} LtacAtomCall {!} (./foo9.v,274,279)
+en(ts)
+en(spf)
+bg(spf)
+bg(ts) {!} 6 {!} bf {!} simpl {!} Atom {!} (./foo9.v,274,279)
 1 {!} simpl {!} 16
-n : nat
-IHn : forall m : nat, S n + m = n + S m
-============================
-forall m : nat, S (S n) + m = S n + S m
-{!}
-IHn, n
-============================
-19
-end(tacst)
-begin(tacst) {!} 6 {!} after {!} simpl {!} LtacAtomCall {!} (./foo9.v,274,279)
+IHn, n {!} 19
+en(ts)
+bg(ts) {!} 6 {!} af {!} simpl {!} Atom {!} (./foo9.v,274,279)
 1 {!}  {!} 26
-n : nat
-IHn : forall m : nat, S n + m = n + S m
-============================
-forall m : nat, S (S (n + m)) = S (n + S m)
-{!}
-IHn, n
-============================
-31
-end(tacst)
-begin(tacst) {!} 7 {!} before {!} intro {!} LtacNotationCall {!} (./foo9.v,285,290)
+IHn, n {!} 31
+en(ts)
+bg(ts) {!} 7 {!} bf {!} intro {!} Not {!} (./foo9.v,285,290)
 1 {!} intro {!} 26
-n : nat
-IHn : forall m : nat, S n + m = n + S m
-============================
-forall m : nat, S (S (n + m)) = S (n + S m)
-{!}
-IHn, n
-============================
-31
-end(tacst)
-begin(tacst) {!} 8 {!} before {!} <coretactics::intro@0> {!} LtacMLCall {!} (,0,0)
+IHn, n {!} 31
+en(ts)
+bg(ts) {!} 8 {!} bf {!} <coretactics::intro@0> {!} ML {!} (,0,0)
 1 {!} <coretactics::intro@0> {!} 26
-n : nat
-IHn : forall m : nat, S n + m = n + S m
-============================
-forall m : nat, S (S (n + m)) = S (n + S m)
-{!}
-IHn, n
-============================
-31
-end(tacst)
-begin(tacst) {!} 8 {!} after {!} <coretactics::intro@0> {!} LtacMLCall {!} (,0,0)
+IHn, n {!} 31
+en(ts)
+bg(ts) {!} 8 {!} af {!} <coretactics::intro@0> {!} ML {!} (,0,0)
 1 {!}  {!} 27
-n : nat
-IHn : forall m : nat, S n + m = n + S m
-m : nat
-============================
-S (S (n + m)) = S (n + S m)
-{!}
-m, IHn, n
-============================
-38
-end(tacst)
-begin(tacst) {!} 7 {!} after {!} intro {!} LtacNotationCall {!} (./foo9.v,285,290)
+m, IHn, n {!} 38
+en(ts)
+bg(ts) {!} 7 {!} af {!} intro {!} Not {!} (./foo9.v,285,290)
 1 {!}  {!} 27
-n : nat
-IHn : forall m : nat, S n + m = n + S m
-m : nat
-============================
-S (S (n + m)) = S (n + S m)
-{!}
-m, IHn, n
-============================
-38
-end(tacst)
-begin(tacst) {!} 9 {!} before {!} rewrite <- IHn {!} LtacAtomCall {!} (./foo9.v,296,310)
+m, IHn, n {!} 38
+en(ts)
+bg(ts) {!} 9 {!} bf {!} rewrite <- IHn {!} Atom {!} (./foo9.v,296,310)
 1 {!} rewrite <- IHn {!} 27
-n : nat
-IHn : forall m : nat, S n + m = n + S m
-m : nat
-============================
-S (S (n + m)) = S (n + S m)
-{!}
-m, IHn, n
-============================
-38
-end(tacst)
-begin(tacst) {!} 9 {!} after {!} rewrite <- IHn {!} LtacAtomCall {!} (./foo9.v,296,310)
+m, IHn, n {!} 38
+en(ts)
+bg(ts) {!} 9 {!} af {!} rewrite <- IHn {!} Atom {!} (./foo9.v,296,310)
 1 {!}  {!} 28
-n : nat
-IHn : forall m : nat, S n + m = n + S m
-m : nat
-============================
-S (S (n + m)) = S (S n + m)
-{!}
-m, IHn, n
-============================
-44
-end(tacst)
-begin(tacst) {!} 10 {!} before {!} simpl {!} LtacAtomCall {!} (./foo9.v,316,321)
+m, IHn, n {!} 44
+en(ts)
+bg(ts) {!} 10 {!} bf {!} simpl {!} Atom {!} (./foo9.v,316,321)
 1 {!} simpl {!} 28
-n : nat
-IHn : forall m : nat, S n + m = n + S m
-m : nat
-============================
-S (S (n + m)) = S (S n + m)
-{!}
-m, IHn, n
-============================
-44
-end(tacst)
-begin(tacst) {!} 10 {!} after {!} simpl {!} LtacAtomCall {!} (./foo9.v,316,321)
+m, IHn, n {!} 44
+en(ts)
+bg(ts) {!} 10 {!} af {!} simpl {!} Atom {!} (./foo9.v,316,321)
 1 {!}  {!} 30
-n : nat
-IHn : forall m : nat, S n + m = n + S m
-m : nat
-============================
-S (S (n + m)) = S (S (n + m))
-{!}
-m, IHn, n
-============================
-47
-end(tacst)
-begin(tacst) {!} 11 {!} before {!} reflexivity {!} LtacNameCall {!} (./foo9.v,327,338)
+m, IHn, n {!} 47
+en(ts)
+bg(ts) {!} 11 {!} bf {!} reflexivity {!} Name {!} (./foo9.v,327,338)
 1 {!}  {!} 30
-n : nat
-IHn : forall m : nat, S n + m = n + S m
-m : nat
-============================
-S (S (n + m)) = S (S (n + m))
-{!}
-m, IHn, n
-============================
-47
-end(tacst)
-begin(tacst) {!} 11 {!} after {!} reflexivity {!} LtacNameCall {!} (./foo9.v,327,338)
+m, IHn, n {!} 47
+en(ts)
+bg(ts) {!} 11 {!} af {!} reflexivity {!} Name {!} (./foo9.v,327,338)
 1 {!}  {!} 30
-n : nat
-IHn : forall m : nat, S n + m = n + S m
-m : nat
-============================
-S (S (n + m)) = S (S (n + m))
-{!}
-m, IHn, n
-============================
-47
-end(tacst)
-begin(tacst) {!} 12 {!} before {!} <coretactics::reflexivity@0> {!} LtacMLCall {!} (,0,0)
+m, IHn, n {!} 47
+en(ts)
+bg(ts) {!} 12 {!} bf {!} <coretactics::reflexivity@0> {!} ML {!} (,0,0)
 1 {!} <coretactics::reflexivity@0> {!} 30
-n : nat
-IHn : forall m : nat, S n + m = n + S m
-m : nat
-============================
-S (S (n + m)) = S (S (n + m))
-{!}
-m, IHn, n
-============================
-47
-end(tacst)
-begin(tacst) {!} 12 {!} after {!} <coretactics::reflexivity@0> {!} LtacMLCall {!} (,0,0)
+m, IHn, n {!} 47
+en(ts)
+bg(ts) {!} 12 {!} af {!} <coretactics::reflexivity@0> {!} ML {!} (,0,0)
 ngs=0
-end(tacst)
-end(subpf)
+en(ts)
+en(spf)
 Typs
 IHn: 48
 m: 1
@@ -522,245 +275,117 @@ Constrs
 48: P m 1 49
 49: A 4 [1 50 37]
 50: A 6 [23 10]
-end(pf)
-begin(pf) {!} Classic {!} plus_comm
-begin(tacst) {!} 0 {!} before {!} induction n {!} LtacAtomCall {!} (./foo9.v,409,420)
+PrTyps
+IHn: forall m : nat, S n + m = n + S m
+m: nat
+n: nat
+PrBods
+PrGls
+0: forall n m : nat, S n + m = n + S m
+13: forall m : nat, 1 + m = 0 + S m
+19: forall m : nat, S (S n) + m = S n + S m
+26: forall m : nat, S m = S m
+28: S m = S m
+31: forall m : nat, S (S (n + m)) = S (n + S m)
+38: S (S (n + m)) = S (n + S m)
+44: S (S (n + m)) = S (S n + m)
+47: S (S (n + m)) = S (S (n + m))
+en(pf)
+bg(pf) {!} Classic {!} plus_comm
+bg(ts) {!} 0 {!} bf {!} induction n {!} Atom {!} (./foo9.v,409,420)
 1 {!} induction n {!} 10
-============================
-forall n m : nat, n + m = m + n
-{!}
-
-============================
-0
-end(tacst)
-begin(tacst) {!} 0 {!} after {!} induction n {!} LtacAtomCall {!} (./foo9.v,409,420)
+ {!} 0
+en(ts)
+bg(ts) {!} 0 {!} af {!} induction n {!} Atom {!} (./foo9.v,409,420)
 2 {!}  {!} 15
-============================
-forall m : nat, 0 + m = m + 0
-{!}
-
-============================
-10
-end(tacst)
-begin(tacst) {!} 0 {!} after {!} induction n {!} LtacAtomCall {!} (./foo9.v,409,420)
+ {!} 10
+en(ts)
+bg(ts) {!} 0 {!} af {!} induction n {!} Atom {!} (./foo9.v,409,420)
 2 {!}  {!} 18
-n : nat
-IHn : forall m : nat, n + m = m + n
-============================
-forall m : nat, S n + m = m + S n
-{!}
-IHn, n
-============================
-15
-end(tacst)
-begin(subpf)
-begin(tacst) {!} 1 {!} before {!} intro {!} LtacNotationCall {!} (./foo9.v,428,433)
+IHn, n {!} 15
+en(ts)
+bg(spf)
+bg(ts) {!} 1 {!} bf {!} intro {!} Not {!} (./foo9.v,428,433)
 1 {!} intro {!} 15
-============================
-forall m : nat, 0 + m = m + 0
-{!}
-
-============================
-10
-end(tacst)
-begin(tacst) {!} 2 {!} before {!} <coretactics::intro@0> {!} LtacMLCall {!} (,0,0)
+ {!} 10
+en(ts)
+bg(ts) {!} 2 {!} bf {!} <coretactics::intro@0> {!} ML {!} (,0,0)
 1 {!} <coretactics::intro@0> {!} 15
-============================
-forall m : nat, 0 + m = m + 0
-{!}
-
-============================
-10
-end(tacst)
-begin(tacst) {!} 2 {!} after {!} <coretactics::intro@0> {!} LtacMLCall {!} (,0,0)
+ {!} 10
+en(ts)
+bg(ts) {!} 2 {!} af {!} <coretactics::intro@0> {!} ML {!} (,0,0)
 1 {!}  {!} 19
-m : nat
-============================
-0 + m = m + 0
-{!}
-m
-============================
-22
-end(tacst)
-begin(tacst) {!} 1 {!} after {!} intro {!} LtacNotationCall {!} (./foo9.v,428,433)
+m {!} 22
+en(ts)
+bg(ts) {!} 1 {!} af {!} intro {!} Not {!} (./foo9.v,428,433)
 1 {!}  {!} 19
-m : nat
-============================
-0 + m = m + 0
-{!}
-m
-============================
-22
-end(tacst)
-begin(tacst) {!} 3 {!} before {!} simpl {!} LtacAtomCall {!} (./foo9.v,439,444)
+m {!} 22
+en(ts)
+bg(ts) {!} 3 {!} bf {!} simpl {!} Atom {!} (./foo9.v,439,444)
 1 {!} simpl {!} 19
-m : nat
-============================
-0 + m = m + 0
-{!}
-m
-============================
-22
-end(tacst)
-begin(tacst) {!} 3 {!} after {!} simpl {!} LtacAtomCall {!} (./foo9.v,439,444)
+m {!} 22
+en(ts)
+bg(ts) {!} 3 {!} af {!} simpl {!} Atom {!} (./foo9.v,439,444)
 1 {!}  {!} 21
-m : nat
-============================
-m = m + 0
-{!}
-m
-============================
-26
-end(tacst)
-begin(tacst) {!} 4 {!} before {!} apply plus_zero {!} LtacAtomCall {!} (./foo9.v,450,465)
+m {!} 26
+en(ts)
+bg(ts) {!} 4 {!} bf {!} apply plus_zero {!} Atom {!} (./foo9.v,450,465)
 1 {!} apply plus_zero {!} 21
-m : nat
-============================
-m = m + 0
-{!}
-m
-============================
-26
-end(tacst)
-begin(tacst) {!} 4 {!} after {!} apply plus_zero {!} LtacAtomCall {!} (./foo9.v,450,465)
+m {!} 26
+en(ts)
+bg(ts) {!} 4 {!} af {!} apply plus_zero {!} Atom {!} (./foo9.v,450,465)
 ngs=0
-end(tacst)
-end(subpf)
-begin(subpf)
-begin(tacst) {!} 5 {!} before {!} intro {!} LtacNotationCall {!} (./foo9.v,477,482)
+en(ts)
+en(spf)
+bg(spf)
+bg(ts) {!} 5 {!} bf {!} intro {!} Not {!} (./foo9.v,477,482)
 1 {!} intro {!} 18
-n : nat
-IHn : forall m : nat, n + m = m + n
-============================
-forall m : nat, S n + m = m + S n
-{!}
-IHn, n
-============================
-15
-end(tacst)
-begin(tacst) {!} 6 {!} before {!} <coretactics::intro@0> {!} LtacMLCall {!} (,0,0)
+IHn, n {!} 15
+en(ts)
+bg(ts) {!} 6 {!} bf {!} <coretactics::intro@0> {!} ML {!} (,0,0)
 1 {!} <coretactics::intro@0> {!} 18
-n : nat
-IHn : forall m : nat, n + m = m + n
-============================
-forall m : nat, S n + m = m + S n
-{!}
-IHn, n
-============================
-15
-end(tacst)
-begin(tacst) {!} 6 {!} after {!} <coretactics::intro@0> {!} LtacMLCall {!} (,0,0)
+IHn, n {!} 15
+en(ts)
+bg(ts) {!} 6 {!} af {!} <coretactics::intro@0> {!} ML {!} (,0,0)
 1 {!}  {!} 22
-n : nat
-IHn : forall m : nat, n + m = m + n
-m : nat
-============================
-S n + m = m + S n
-{!}
-m, IHn, n
-============================
-27
-end(tacst)
-begin(tacst) {!} 5 {!} after {!} intro {!} LtacNotationCall {!} (./foo9.v,477,482)
+m, IHn, n {!} 27
+en(ts)
+bg(ts) {!} 5 {!} af {!} intro {!} Not {!} (./foo9.v,477,482)
 1 {!}  {!} 22
-n : nat
-IHn : forall m : nat, n + m = m + n
-m : nat
-============================
-S n + m = m + S n
-{!}
-m, IHn, n
-============================
-27
-end(tacst)
-begin(tacst) {!} 7 {!} before {!} simpl {!} LtacAtomCall {!} (./foo9.v,488,493)
+m, IHn, n {!} 27
+en(ts)
+bg(ts) {!} 7 {!} bf {!} simpl {!} Atom {!} (./foo9.v,488,493)
 1 {!} simpl {!} 22
-n : nat
-IHn : forall m : nat, n + m = m + n
-m : nat
-============================
-S n + m = m + S n
-{!}
-m, IHn, n
-============================
-27
-end(tacst)
-begin(tacst) {!} 7 {!} after {!} simpl {!} LtacAtomCall {!} (./foo9.v,488,493)
+m, IHn, n {!} 27
+en(ts)
+bg(ts) {!} 7 {!} af {!} simpl {!} Atom {!} (./foo9.v,488,493)
 1 {!}  {!} 24
-n : nat
-IHn : forall m : nat, n + m = m + n
-m : nat
-============================
-S (n + m) = m + S n
-{!}
-m, IHn, n
-============================
-30
-end(tacst)
-begin(tacst) {!} 8 {!} before {!} rewrite IHn {!} LtacAtomCall {!} (./foo9.v,499,510)
+m, IHn, n {!} 30
+en(ts)
+bg(ts) {!} 8 {!} bf {!} rewrite IHn {!} Atom {!} (./foo9.v,499,510)
 1 {!} rewrite IHn {!} 24
-n : nat
-IHn : forall m : nat, n + m = m + n
-m : nat
-============================
-S (n + m) = m + S n
-{!}
-m, IHn, n
-============================
-30
-end(tacst)
-begin(tacst) {!} 8 {!} after {!} rewrite IHn {!} LtacAtomCall {!} (./foo9.v,499,510)
+m, IHn, n {!} 30
+en(ts)
+bg(ts) {!} 8 {!} af {!} rewrite IHn {!} Atom {!} (./foo9.v,499,510)
 1 {!}  {!} 25
-n : nat
-IHn : forall m : nat, n + m = m + n
-m : nat
-============================
-S (m + n) = m + S n
-{!}
-m, IHn, n
-============================
-33
-end(tacst)
-begin(tacst) {!} 9 {!} before {!} simpl {!} LtacAtomCall {!} (./foo9.v,516,521)
+m, IHn, n {!} 33
+en(ts)
+bg(ts) {!} 9 {!} bf {!} simpl {!} Atom {!} (./foo9.v,516,521)
 1 {!} simpl {!} 25
-n : nat
-IHn : forall m : nat, n + m = m + n
-m : nat
-============================
-S (m + n) = m + S n
-{!}
-m, IHn, n
-============================
-33
-end(tacst)
-begin(tacst) {!} 9 {!} after {!} simpl {!} LtacAtomCall {!} (./foo9.v,516,521)
+m, IHn, n {!} 33
+en(ts)
+bg(ts) {!} 9 {!} af {!} simpl {!} Atom {!} (./foo9.v,516,521)
 1 {!}  {!} 26
-n : nat
-IHn : forall m : nat, n + m = m + n
-m : nat
-============================
-S (m + n) = m + S n
-{!}
-m, IHn, n
-============================
-33
-end(tacst)
-begin(tacst) {!} 10 {!} before {!} apply S_comm {!} LtacAtomCall {!} (./foo9.v,527,539)
+m, IHn, n {!} 33
+en(ts)
+bg(ts) {!} 10 {!} bf {!} apply S_comm {!} Atom {!} (./foo9.v,527,539)
 1 {!} apply S_comm {!} 26
-n : nat
-IHn : forall m : nat, n + m = m + n
-m : nat
-============================
-S (m + n) = m + S n
-{!}
-m, IHn, n
-============================
-33
-end(tacst)
-begin(tacst) {!} 10 {!} after {!} apply S_comm {!} LtacAtomCall {!} (./foo9.v,527,539)
+m, IHn, n {!} 33
+en(ts)
+bg(ts) {!} 10 {!} af {!} apply S_comm {!} Atom {!} (./foo9.v,527,539)
 ngs=0
-end(tacst)
-end(subpf)
+en(ts)
+en(spf)
 Typs
 IHn: 36
 m: 1
@@ -807,4 +432,18 @@ Constrs
 37: A 4 [1 38 39]
 38: A 6 [20 8]
 39: A 6 [8 20]
-end(pf)
+PrTyps
+IHn: forall m : nat, n + m = m + n
+m: nat
+n: nat
+PrBods
+PrGls
+0: forall n m : nat, n + m = m + n
+10: forall m : nat, 0 + m = m + 0
+15: forall m : nat, S n + m = m + S n
+22: 0 + m = m + 0
+26: m = m + 0
+27: S n + m = m + S n
+30: S (n + m) = m + S n
+33: S (m + n) = m + S n
+en(pf)

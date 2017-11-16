@@ -15,6 +15,7 @@ Convert raw *.dump file into a list of TacStDecl "tokens".
 # -------------------------------------------------
 # Tokens
 
+"""
 TOK_SEP = "{!}"
 TOK_DIV = "============================"
 TOK_BEFORE = "before"
@@ -29,6 +30,32 @@ TOK_END_PF = "end(pf)"
 TOK_TYPS = "Typs"
 TOK_BODS = "Bods"
 TOK_CONSTRS = "Constrs"
+TOK_PRTYPS = "PrTyps"
+TOK_PRBODS = "PrBods"
+TOK_PRGLS = "PrGls"
+"""
+
+TOK_SEP = "{!}"
+TOK_DIV = "============================"
+TOK_BEFORE = "bf"
+TOK_AFTER = "af"
+TOK_AFTER_ERR = "dead"
+TOK_BEG_TAC_ST = "bg(ts)"
+TOK_END_TAC_ST = "en(ts)"
+TOK_BEG_SUB_PF = "bg(spf)"
+TOK_END_SUB_PF = "en(spf)"
+TOK_BEG_PF = "bg(pf)"
+TOK_END_PF = "en(pf)"
+TOK_TYPS = "Typs"
+TOK_BODS = "Bods"
+TOK_CONSTRS = "Constrs"
+TOK_PRTYPS = "PrTyps"
+TOK_PRBODS = "PrBods"
+TOK_PRGLS = "PrGls"
+
+
+def is_after(mode):
+    return mode.startswith(TOK_AFTER) or mode.startswith(TOK_AFTER_ERR)
 
 
 # -------------------------------------------------
@@ -78,11 +105,8 @@ class TacStHdr(object):
         return "(uid: {}, mode: {}, tac: {}, kind: {},\
                 ftac: {}, gid: {}, ngs: {}, loc: {})".format(*info)
 
-
+"""
 class TacStDecl(object):
-    """
-    Contains information between 'begin(tacst)' and 'end(tacst)'
-    """
     def __init__(self, hdr, ctx, goal, ast_ctx, ast_goal):
         assert isinstance(hdr, TacStHdr)
         assert isinstance(ctx, dict)
@@ -101,6 +125,44 @@ class TacStDecl(object):
         s2 = "\n".join([pp_tab(tab + 2, "{}: {}".format(x, ty)) for (x, ty) in self.ctx.items()]) + "\n"
         s3 = pp_tab(tab + 2, "=====================\n")
         s4 = pp_tab(tab + 2, self.goal)
+        return s1 + s2 + s3 + s4
+
+    def __str__(self):
+        if self.hdr.mode == TOK_BEFORE:
+            s_mode = "B"
+        elif self.hdr.mode == TOK_AFTER:
+            s_mode = "A"
+        elif self.hdr.mode == TOK_AFTER_ERR:
+            s_mode = "E"
+        info = s_mode, self.hdr.uid, self.hdr.gid, self.hdr.tac, self.hdr.loc
+        return "{}(uid={}, gid={}, tac={}, loc={})".format(*info)
+"""
+
+
+class TacStDecl(object):
+    def __init__(self, hdr, ctx_idents, concl_idx):
+        assert isinstance(hdr, TacStHdr)
+        assert isinstance(ctx_idents, list)
+        assert isinstance(concl_idx, int)
+
+        # Data
+        self.hdr = hdr                # tactic state header
+        self.ctx_idents = ctx_idents  # ctx as [id]
+        self.concl_idx = concl_idx    # conc as int
+
+        # Pretty-printing
+        self.prtyps_table = {}
+        self.prbods_table = {}
+        self.prgls_table = {}
+
+    def pp(self, tab=0):
+        s1 = self.hdr.pp(tab) + "\n"
+        s2 = "\n".join([pp_tab(tab + 2, "{}: {}".format(x, self.prtyps[x])) for x in self.ctx_idents]) + "\n"
+        s3 = pp_tab(tab + 2, "=====================\n")
+        if self.concl_idx == -1:
+            s4 = pp_tab(tab + 2, "SOLVED")
+        else:
+            s4 = pp_tab(tab + 2, self.prgls_table[self.concl_idx])
         return s1 + s2 + s3 + s4
 
     def __str__(self):
@@ -134,7 +196,16 @@ class LemTacSt(object):
         for decl in self.decls:
             gid = decl.hdr.gid
             if gid not in tacst_info:
-                tacst_info[gid] = (decl.ctx, decl.goal, decl.ast_ctx, decl.ast_goal)
+                # tacst_info[gid] = (decl.ctx, decl.goal, decl.ast_ctx, decl.ast_goal)
+                # TODO(deh): can be optimized
+                ctx = {}
+                for ident in decl.ctx_idents:
+                    ctx[ident] = decl.prtyps_table[ident]
+                if decl.concl_idx == -1:
+                    goal = "SOLVED"
+                else:
+                    goal = decl.prgls_table[decl.concl_idx]
+                tacst_info[gid] = (ctx, goal, decl.ctx_idents, decl.concl_idx)
         return tacst_info
 
     def pp(self, tab=0):
@@ -163,9 +234,14 @@ class TacStParser(object):
         self.decls = []           # Accumlated decls in lemma
         
         # Lemma-sepcific decoding low-level Coq expressions
-        self.typs_table = {}      # Dict[int, int], typ idx to exp idx
-        self.bods_table = {}      # Dict[int, int], exp idx to exp idx
+        self.typs_table = {}      # Dict[str, int], typ ident to exp idx
+        self.bods_table = {}      # Dict[str, int], exp ident to exp idx
         self.constrs_table = {}   # Dict[int, string], exp idx to unparsed string
+        
+        # Pretty print information
+        self.prtyps_table = {}    # Dict[str, str], typ ident to pretty
+        self.prbods_table = {}    # Dict[str, str], exp ident to pretty
+        self.prgls_table = {}     # Dict[int, str], gidx to pretty
 
         # Accumulated lemmas
         self.lems = []
@@ -179,6 +255,9 @@ class TacStParser(object):
         self.typs_table = {}
         self.bods_table = {}
         self.constrs_table = {}
+        self.prtyps_table = {}
+        self.prbods_table = {}
+        self.prgls_table = {}
 
     def parse_sep(self):
         # Internal
@@ -283,6 +362,22 @@ class TacStParser(object):
         goal = h_head.consume_line()
         return int(goal)
 
+    def parse_decl_body(self):
+        # Internal
+        h_head = self.h_head
+        self._mylog("@parse_decl_body:before<{}>".format(h_head.peek_line()))
+
+        line = h_head.consume_line()
+        toks = line.split(TOK_SEP)
+        ctx_idents = toks[0].strip()
+        cid = int(toks[1].strip())
+
+        if ctx_idents == "":
+            idents = []
+        else:
+            idents = [ident.strip() for ident in ctx_idents.split(",")]
+        return idents, cid
+
     def parse_decl(self, d_id, mode, tac, kind, loc):
         # Internal
         h_head = self.h_head
@@ -296,10 +391,14 @@ class TacStParser(object):
 
             # Unpack
             hdr = TacStHdr(d_id, mode, tac, kind, "", GID_SOLVED, 0, loc)
+            ctx_idents = []
+            concl_idx = -1
+            """
             ctx = {}
             goal = "ML4TP_SOLVED"
             ast_ctx = []
             ast_goal = -1
+            """
         elif TOK_SEP in h_head.peek_line():
             # Parse rest of header
             hdr = h_head.consume_line()
@@ -314,6 +413,8 @@ class TacStParser(object):
 
             # Unpack (note that we handle error and success here)
             hdr = TacStHdr(d_id, mode, tac, kind, ftac, gid, ngs, loc)
+            ctx_idents, concl_idx = self.parse_decl_body()
+            """
             ctx = self.parse_local_ctx()
             self.parse_pf_div()
             goal = self.parse_goal()
@@ -321,9 +422,11 @@ class TacStParser(object):
             ast_ctx = self.parse_local_ast_ctx()
             self.parse_pf_div()
             ast_goal = self.parse_ast_goal()
+            """
         else:
             raise NameError("Parsing error @line{}: {}".format(h_head.line, h_head.peek_line()))
-        return TacStDecl(hdr, ctx, goal, ast_ctx, ast_goal)
+        return TacStDecl(hdr, ctx_idents, concl_idx)
+        # return TacStDecl(hdr, ctx, goal, ast_ctx, ast_goal)
 
     def parse_begin_pf(self):
         # Internal
@@ -393,6 +496,13 @@ class TacStParser(object):
         # Parse
         return h_head.consume_line()
 
+    def _parse_table_entry(self):
+        hdr = self.h_head.consume_line()
+        end = hdr.find(":")
+        key = hdr[:end].strip()
+        val = hdr[end+1:].strip()
+        return key, val
+
     def parse_typs_table(self):
         # Internal
         h_head = self.h_head
@@ -401,11 +511,8 @@ class TacStParser(object):
         # Parse identifier to expression identifier
         _ = h_head.consume_line()
         while not h_head.peek_line().startswith(TOK_BODS):
-            hdr = h_head.consume_line()
-            end = hdr.find(":")
-            ident = hdr[:end].strip()
-            edx = int(hdr[end+1:].strip())
-            self.typs_table[ident] = edx
+            k, v = self._parse_table_entry()
+            self.typs_table[k] = int(v)
 
     def parse_bods_table(self):
         # Internal
@@ -415,11 +522,8 @@ class TacStParser(object):
         # Parse identifier to expression identifier
         _ = h_head.consume_line()
         while not h_head.peek_line().startswith(TOK_CONSTRS):
-            hdr = h_head.consume_line()
-            end = hdr.find(":")
-            ident = hdr[:end].strip()
-            bdx = int(hdr[end+1:].strip())
-            self.bods_table[ident] = bdx
+            k, v = self._parse_table_entry()
+            self.bods_table[k] = int(v)
 
     def parse_constrs_table(self):
         # Internal
@@ -428,12 +532,42 @@ class TacStParser(object):
 
         # Parse expression identifier to low-level constr expression
         _ = h_head.consume_line()
+        while not h_head.peek_line().startswith(TOK_PRTYPS):
+            k, v = self._parse_table_entry()
+            self.constrs_table[int(k)] = v
+
+    def parse_prtyps_table(self):
+        # Internal
+        h_head = self.h_head
+        self._mylog("@parse_prtyps_table:before<{}>".format(h_head.peek_line()))
+
+        # Parse identifier to pretty-print expression
+        _ = h_head.consume_line()
+        while not h_head.peek_line().startswith(TOK_PRBODS):
+            k, v = self._parse_table_entry()
+            self.prtyps_table[k] = v
+
+    def parse_prbods_table(self):
+        # Internal
+        h_head = self.h_head
+        self._mylog("@parse_prbods_table:before<{}>".format(h_head.peek_line()))
+
+        # Parse identifier to pretty-print expression
+        _ = h_head.consume_line()
+        while not h_head.peek_line().startswith(TOK_PRGLS):
+            k, v = self._parse_table_entry()
+            self.prbods_table[k] = v
+
+    def parse_prgls_table(self):
+        # Internal
+        h_head = self.h_head
+        self._mylog("@parse_prgls_table:before<{}>".format(h_head.peek_line()))
+
+        # Parse identifier to pretty-print expression
+        _ = h_head.consume_line()
         while not h_head.peek_line().startswith(TOK_END_PF):
-            hdr = h_head.consume_line()
-            end = hdr.find(":")
-            edx = int(hdr[:end].strip())
-            low_constr = hdr[end+1:].strip()
-            self.constrs_table[edx] = low_constr
+            k, v = self._parse_table_entry()
+            self.prgls_table[int(k)] = v
 
     def parse_epilogue(self):
         # Internal
@@ -443,6 +577,9 @@ class TacStParser(object):
         self.parse_typs_table()
         self.parse_bods_table()
         self.parse_constrs_table()
+        self.parse_prtyps_table()
+        self.parse_prbods_table()
+        self.parse_prgls_table()
 
     def seek_lemma(self, lemma):
         # Internal
@@ -485,6 +622,10 @@ class TacStParser(object):
             elif line.startswith(TOK_END_PF):
                 self.parse_qed()
                 # Accumulate lemma
+                for decl in self.decls:
+                    decl.prtyps_table = self.prtyps_table
+                    decl.prbods_table = self.prbods_table
+                    decl.prgls_table = self.prgls_table
                 lemma = LemTacSt(lem_name, self.decls, self.typs_table,
                                  self.bods_table, self.constrs_table)
                 self.lems.append(lemma)
@@ -509,9 +650,6 @@ class TacStParser(object):
                 self.parse_endtacst()
             elif line.startswith(TOK_TYPS):
                 self.parse_epilogue()
-            elif line.startswith("AfterHOHOHO"):
-                # TODO(deh): Kludge, fix coq
-                self.h_head.consume_line()
             else:
                 raise NameError("Parsing error at line {}: {}".format(
                                 h_head.line, h_head.peek_line()))

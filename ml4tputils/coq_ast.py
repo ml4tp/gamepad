@@ -552,8 +552,8 @@ class DecodeCoqExp(object):
             name = toks[1].strip()
             ty_idx = int(toks[2].strip())
             # TODO(deh): Kludge, coq printing has bug
-            # c_idx = int(toks[3].strip())
-            c_idx = int((toks[3].strip())[:-1])
+            c_idx = int(toks[3].strip())
+            # c_idx = int((toks[3].strip())[:-1])
 
             self.rawasts[key] = ("L", name, ty_idx, c_idx)
             self._add_edges(key, [ty_idx, c_idx])

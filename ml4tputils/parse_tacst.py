@@ -150,7 +150,7 @@ class TacTreeParser(object):
         # Parse after
         afters = []
         while it.has_next() and \
-              it.peek().hdr.mode.startswith(TOK_AFTER) and \
+              is_after(it.peek().hdr.mode) and \
               it.peek().hdr.uid == start_decl.hdr.uid:
             afters += [next(it)]
 
@@ -172,7 +172,7 @@ class TacTreeParser(object):
         # Parse after
         afters = []
         while it.has_next() and \
-              it.peek().hdr.mode.startswith(TOK_AFTER) and \
+              is_after(it.peek().hdr.mode) and \
               it.peek().hdr.uid == start_decl.hdr.uid:
             afters += [next(it)]
 
@@ -196,7 +196,7 @@ class TacTreeParser(object):
         # Parse after
         afters = []
         while it.has_next() and \
-              it.peek().hdr.mode.startswith(TOK_AFTER) and \
+              is_after(it.peek().hdr.mode) and \
               it.peek().hdr.uid == start_decl.hdr.uid:
             afters += [next(it)]
 
@@ -221,7 +221,7 @@ class TacTreeParser(object):
         # Parse after
         afters = []
         while it.has_next() and \
-              it.peek().hdr.mode.startswith(TOK_AFTER) and \
+              is_after(it.peek().hdr.mode) and \
               it.peek().hdr.uid == start_decl.hdr.uid:
             afters += [next(it)]
 
@@ -243,24 +243,24 @@ class TacTreeParser(object):
 
             # Simple cases
             if decl.hdr.mode == TOK_BEFORE and \
-                 decl.hdr.kind == "LtacAtomCall":
+                 decl.hdr.kind == "Atom":
                 acc += [self.parse_atom_call()]
 
             elif decl.hdr.mode == TOK_BEFORE and \
-                 decl.hdr.kind == "LtacNameCall":
+                 decl.hdr.kind == "Name":
                 acc += [self.parse_name_call()]
 
             # Nested cases
             elif decl.hdr.mode == TOK_BEFORE and \
-                 decl.hdr.kind == "LtacNotationCall":
+                 decl.hdr.kind == "Not":
                 if len(self.uidstk) > 0 and \
                    decl.hdr.uid == self.uidstk[-1]:
                     return acc
                 else:
                     self.uidstk.append(decl.hdr.uid)
                     acc += [self.parse_notation_call()]
-            elif decl.hdr.mode.startswith(TOK_AFTER) and \
-                 decl.hdr.kind == "LtacNotationCall":
+            elif is_after(decl.hdr.mode) and \
+                 decl.hdr.kind == "Not":
                 # TODO(deh): kludge wtf?
                 # BGsection4: 1 apply missing
                 # BGsection3: 1 apply missing, 1 case missing
@@ -278,10 +278,10 @@ class TacTreeParser(object):
                     return acc
 
             elif decl.hdr.mode == TOK_BEFORE and \
-                 decl.hdr.kind == "LtacMLCall":
+                 decl.hdr.kind == "ML":
                 acc += [self.parse_ml_call()]
-            elif decl.hdr.mode.startswith(TOK_AFTER) and \
-                 decl.hdr.kind == "LtacMLCall":
+            elif is_after(decl.hdr.mode) and \
+                 decl.hdr.kind == "ML":
                 return acc
 
             else:
