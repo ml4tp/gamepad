@@ -127,7 +127,7 @@ class LemTacSt(object):
         self.decls = decls                   # List of TacStDecl "tokens"
         
         # Decode low-level Coq expression
-        self.decoder = CoqExpDecode(typs_table, bods_table, constrs_table)
+        self.decoder = DecodeCoqExp(typs_table, bods_table, constrs_table)
 
     def get_tacst_info(self):
         tacst_info = {}

@@ -171,7 +171,7 @@ if __name__ == "__main__":
              "BGappendixC.v.dump",
              "PFsection1.v.dump",
              "PFsection2.v.dump",
-             #"PFsection3.v.dump",
+             "PFsection3.v.dump",
              "PFsection4.v.dump",
              "PFsection5.v.dump",
              "PFsection6.v.dump",

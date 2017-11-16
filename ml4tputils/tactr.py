@@ -86,6 +86,7 @@ class TacTree(object):
         self.graph = graph             # nx.MultDiGraph[Int, Int]
         self.tacst_info = tacst_info   # Dict[gid, (ctx, goal, ctx_e, goal_e)]
         self.decoder = decoder         # Decode asts
+        self.dsize = SizeCoqExp(decoder.concr_ast)
 
         self.notok = []
 
@@ -248,8 +249,8 @@ class TacTree(object):
             if ctx_e:
                 # v = np.sum([self.decoder.size_table[ident] for ident in ctx_e])
                 cnt += 1
-                print("HERE {}/{}".format(cnt, len(self.flatview)))
-                v = np.sum([self.decoder.decode_ctx_typ_size(ident) for ident in ctx_e])
+                # print("HERE {}/{}".format(cnt, len(self.flatview)))
+                v = np.sum([self.dsize.decode_size(self.decoder.typs_table[ident]) for ident in ctx_e])
             else:
                 v = 0
             dict_ls_app(hist, depth, v)
@@ -259,7 +260,7 @@ class TacTree(object):
         """Returns Dict[depth, [total ast typ size]]"""
         hist = {}
         for depth, gid, ctx, goal, ctx_e, goal_e, tac in self.flatview:
-            dict_ls_app(hist, depth, self.decoder.decode_goal_size(goal_e))
+            dict_ls_app(hist, depth, self.dsize.decode_size(goal_e))
         return hist
 
     def view_depth_tactic_hist(self):

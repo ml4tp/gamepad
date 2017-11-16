@@ -72,7 +72,7 @@ class TacTreeBuilder(object):
                  eid=0, solvgid=0, errgid=0, f_log=False):
         for tac in tacs:
             assert isinstance(tac, RawTac)
-        assert isinstance(decoder, CoqExpDecode)
+        assert isinstance(decoder, DecodeCoqExp)
 
         self.name = name
         self.decoder = decoder
