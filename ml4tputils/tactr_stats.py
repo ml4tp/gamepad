@@ -67,6 +67,7 @@ class TacTreeStats(object):
         self.f_tactr.write("LEMMA INFO\n")
         for k, info in self.tacstats.items():
             msg = json.dumps({"lemma": k, "info": info})
+            print("INFO", info['avg_depth_ctx_items'])
             self.f_tactr.write(msg)
             self.f_tactr.write("\n")
 

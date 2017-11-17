@@ -285,13 +285,6 @@ def merge_kind_hist(hist1, hist2):
     return hist1
 
 
-def inc_update(hist, key, value):
-    if key in hist:
-        hist[key] += value
-    else:
-        hist[key] = value
-
-
 def merge_hist(hist1, hist2):
     for (k, v) in hist2.items():
         inc_update(hist1, k, v)

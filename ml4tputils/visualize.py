@@ -4,18 +4,15 @@ import numpy as np
 import os.path as op
 import pickle
 
-from lex_raw import *
-from parse_tacst import *
-from build_tactr import *
-from raw_stats import *
-from tactr_stats import *
+from lex_raw import TacStParser
+from parse_tacst import TacTreeParser
+from build_tactr import TacTreeBuilder
 
 
 class Visualize(object):
     def __init__(self, f_display=False, f_jupyter=False, f_verbose=True,
-                 rawtac_file=None, tactr_file="tactr.log", tgtlem=None):
+                 tactr_file="tactr.log", tgtlem=None):
         assert isinstance(f_display, bool)
-        assert (not rawtac_file or isinstance(rawtac_file, str))
         assert (not tgtlem or isinstance(tgtlem, str))
 
         # Internal book-keeping
@@ -23,23 +20,25 @@ class Visualize(object):
         self.failed = []
 
         # Flags
-        self.f_display = f_display
-        self.f_jupyter = f_jupyter
+        self.f_display = f_display     # Draw graph?
+        self.f_jupyter = f_jupyter     # Using jupyter?
         self.f_verbose = f_verbose
 
         # Target lemma?
-        self.tgtlem = tgtlem
-        self.abort = False
+        self.tgtlem = tgtlem           
 
-        # Compute stats?
-        if rawtac_file:
-            self.f_stats = True
-        else:
-            self.f_stats = False
-        self.rawstats = RawStats(rawtac_file, False)
-        self.tactrstats = TacTreeStats(tactr_file)
+        # Tactic tree statistics
+        self.tactr_file = tactr_file
+        self.h_tactr_file = open(tactr_file, 'w')
+        self.h_tactr_file.write("LEMMA INFO\n")
 
+        # Tactic Trees
         self.tactrs = []
+
+    def finalize(self):
+        self.h_tactr_file.write("TOTAL {}: WERID: {}\n".format(
+                                self.num_lemmas, len(self.failed)))
+        self.h_tactr_file.close()
 
     def visualize_lemma(self, file, lemma):
         if self.tgtlem and self.tgtlem != lemma.name:
@@ -51,34 +50,29 @@ class Visualize(object):
         if self.f_verbose:
             for decl in lemma.decls:
                 print(decl)
-            print("-------")
+            print("--------------------")
         self.num_lemmas += 1
 
         # [TacStDecl] tokens to [RawTac]
         tr_parser = TacTreeParser(lemma, f_log=False)
         tacs = tr_parser.parse_tactree()
-
         if self.f_verbose and self.tgtlem:
             print(">>>>>>>>>>>>>>>>>>>>")
             for tac in tacs:
                 print(tac.pp())
             print("<<<<<<<<<<<<<<<<<<<<")
 
-        # Compute statistics
-        if self.f_stats:
-            self.rawstats.stats_tacs(lemma, tacs)
-
-        tr_builder = TacTreeBuilder(lemma.name, tacs, lemma.get_tacst_info(), lemma.decoder, False)
+        # [RawTac] to tactic tree
+        tr_builder = TacTreeBuilder(lemma.name, tacs, lemma.get_tacst_info(),
+                                    lemma.decoder, False)
         tr_builder.build_tacs()
         succ, ncc = tr_builder.check_success()
         if not succ:
             self.failed += [(file, lemma.name, ncc, len(tr_builder.notok))]
 
+        # Compute tactic tree statistics
         tactr = tr_builder.get_tactree(self.f_verbose)
-        tachist = self.tactrstats.tactic_hist(tactr)
-        if self.f_verbose:
-            tachist = sorted(tachist, key=lambda k: (k[1], k[0]), reverse=True)
-            print("HIST", tachist)
+        info = tactr.log_stats(self.h_tactr_file)
 
         if self.f_display:
             if self.f_jupyter:
@@ -86,11 +80,17 @@ class Visualize(object):
             else:
                 tr_builder.show()
 
-        if self.tgtlem:
-            self.abort = True
-
         return tactr
     
+    def _visualize_lemma(self, ts_parser):
+        lemma = ts_parser.parse_lemma()
+        if self.f_verbose:
+            print(">>>>>>>>>>>>>>>>>>>>>")
+            print(lemma.pp())
+            print("<<<<<<<<<<<<<<<<<<<<<")
+        tactr = self.visualize_lemma(ts_parser.filename, lemma)
+        self.tactrs += [tactr]
+
     def visualize_file(self, file):
         print("==================================================")
         print("Visualizing file: {}".format(file))
@@ -99,35 +99,11 @@ class Visualize(object):
         if self.tgtlem:
             while not ts_parser.exhausted:
                 ts_parser.seek_lemma(self.tgtlem)
-                lemma = ts_parser.parse_lemma()
-                if self.f_verbose:
-                    print(">>>>>>>>>>>>>>>>>>>>>")
-                    print(lemma.pp())
-                    print("<<<<<<<<<<<<<<<<<<<<<")
-                self.tactrs += [self.visualize_lemma(file, lemma)]
+                self._visualize_lemma(ts_parser)
                 break
         else:
             while not ts_parser.exhausted:
-                lemma = ts_parser.parse_lemma()
-                if self.f_verbose:
-                    print(">>>>>>>>>>>>>>>>>>>>>")
-                    print(lemma.pp())
-                    print("<<<<<<<<<<<<<<<<<<<<<")
-                self.tactrs += [self.visualize_lemma(file, lemma)]
-                if self.abort:
-                    break
-
-
-def record(file, vis):
-    print("Total lemmas: {}".format(vis.num_lemmas))
-    print("Failed lemmas: {}".format(len(vis.failed)))
-    print("FAILED", vis.failed)
-    with open(file, "w") as f:
-        f.write("Total lemmas: {}\n".format(vis.num_lemmas))
-        f.write("Failed lemmas: {}\n".format(len(vis.failed)))
-        f.write("FAILED\n")
-        for file, lemma, ncc, nnotok in vis.failed:
-            f.write("{}, {}, {}, {}\n".format(file, lemma, ncc, nnotok))
+                self._visualize_lemma(ts_parser)
 
 
 if __name__ == "__main__":
@@ -139,12 +115,8 @@ if __name__ == "__main__":
                            help="Display the tactic tree.")
     argparser.add_argument("-l", "--lemma", type=str,
                            help="Visualize a specific lemma by name.")
-    argparser.add_argument("-o", "--output", default="recon.log", type=str,
-                           help="Output file for reconstructing stats.")
     argparser.add_argument("-p", "--path", default="data/odd-order",
                            type=str, help="Path to files")
-    argparser.add_argument("-s", "--stats", default="rawtac.log", type=str,
-                           help="Compute raw tactic statistics")
     argparser.add_argument("-to", "--tactrout", default="tactr.log", type=str,
                            help="Compute tactic tree statistics")
     argparser.add_argument("-v", "--verbose", action="store_true",
@@ -191,25 +163,40 @@ if __name__ == "__main__":
     
     files = [ op.join(args.path, file) for file in files ]
 
-    # Create visualizer
-    if args.lemma:
-        vis = Visualize(f_display=args.display, f_verbose=args.verbose,
-                        rawtac_file=args.stats, tactr_file=args.tactrout,
-                        tgtlem=args.lemma)
-    else:
-        vis = Visualize(f_display=args.display, f_verbose=args.verbose,
-                        rawtac_file=args.stats, tactr_file=args.tactrout)
-
     # Visualize
+    vis = Visualize(f_display=args.display, f_verbose=args.verbose,
+                    tactr_file=args.tactrout, tgtlem=args.lemma)
     if args.file == "all":
         for file in files:
             vis.visualize_file(file)
+    elif args.file == "bg":
+        for file in bgfiles:
+            vis.visualize_file(file)
+    elif args.file == "pf":
+        for file in pffiles:
+            vis.visualize_file(file)
     else:
         vis.visualize_file(args.file)
+    vis.finalize()
 
     # Record info    
-    vis.rawstats.log_notok()
-    vis.rawstats.log_mlstats()
-    vis.rawstats.log_namestats()
-    vis.tactrstats.log_tactic_hist()
-    record(args.output, vis)
+    # vis.rawstats.log_notok()
+    # vis.rawstats.log_mlstats()
+    # vis.rawstats.log_namestats()
+    # vis.tactrstats.log_tactic_hist()
+    # record(args.output, vis)
+    
+
+
+"""
+def record(file, vis):
+    print("Total lemmas: {}".format(vis.num_lemmas))
+    print("Failed lemmas: {}".format(len(vis.failed)))
+    print("FAILED", vis.failed)
+    with open(file, "w") as f:
+        f.write("Total lemmas: {}\n".format(vis.num_lemmas))
+        f.write("Failed lemmas: {}\n".format(len(vis.failed)))
+        f.write("FAILED\n")
+        for file, lemma, ncc, nnotok in vis.failed:
+            f.write("{}, {}, {}, {}\n".format(file, lemma, ncc, nnotok))
+"""

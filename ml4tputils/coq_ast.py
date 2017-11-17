@@ -18,6 +18,9 @@ class UniverseInstance(object):
             assert isinstance(univ, str)
         self.univs = univs
 
+    def __str__(self):
+        return ",".join([univ for univ in self.univs])
+
 
 # -------------------------------------------------
 # Expressions
@@ -103,7 +106,7 @@ class EvarExp(Exp):
         return sum([hash(c) for c in self.cs])
 
     def __str__(self):
-        return "E({}, {})".format(self.exk, self.cs)
+        return "E({}, {})".format(self.exk, ",".join([str(c) for c in self.cs]))
 
 
 class SortExp(Exp):
@@ -141,7 +144,7 @@ class CastExp(Exp):
         return hash(self.c) + sum([hash(c) for c in self.cs])
 
     def __str__(self):
-        return "CA({}, {}, {})".format(self.c, self.ck, self.ty)
+        return "CA({}, {}, {})".format(str(self.c), self.ck, str(self.ty))
 
 
 class ProdExp(Exp):
@@ -162,7 +165,7 @@ class ProdExp(Exp):
         return hash(self.ty1) + hash(self.ty2)
 
     def __str__(self):
-        return "P({}, {}, {})".format(self.name, self.ty1, self.ty2)
+        return "P({}, {}, {})".format(self.name, str(self.ty1), str(self.ty2))
 
 
 class LambdaExp(Exp):
@@ -183,7 +186,7 @@ class LambdaExp(Exp):
         return hash(self.ty) + hash(self.c)
 
     def __str__(self):
-        return "L({}, {}, {})".format(self.name, self.ty, self.c)
+        return "L({}, {}, {})".format(self.name, str(self.ty), str(self.c))
 
 
 class LetInExp(Exp):
@@ -206,7 +209,7 @@ class LetInExp(Exp):
         return hash(self.c1) + hash(self.ty) + hash(self.c2)
 
     def __str__(self):
-        return "LI({}, {}, {}, {})".format(self.name, self.c1, self.ty, self.c2)
+        return "LI({}, {}, {}, {})".format(self.name, str(self.c1), str(self.ty), str(self.c2))
 
 
 class AppExp(Exp):
@@ -226,7 +229,7 @@ class AppExp(Exp):
         return hash(self.c) + sum([hash(c) for c in self.cs])
 
     def __str__(self):
-        return "A({}, {})".format(self.c, self.cs)
+        return "A({}, {})".format(str(self.c), ",".join([str(c) for c in self.cs]))
 
 
 class ConstExp(Exp):
@@ -264,7 +267,7 @@ class IndExp(Exp):
         return 1
 
     def __hash__(self):
-        return hash(self.mutind) + i
+        return hash(self.mutind) + self.i
 
     def __str__(self):
         return "I({}, {}, {})".format(self.mutind, self.i, self.ui)
@@ -288,7 +291,7 @@ class ConstructExp(Exp):
         return 1
 
     def __hash__(self):
-        return hash(self.mutind) + i + j
+        return hash(self.mutind) + self.i + self.j
 
     def __str__(self):
         return "CO({}, {}, {}, {})".format(self.mutind, self.i, self.j, self.ui)
@@ -315,7 +318,7 @@ class CaseExp(Exp):
         return hash(self.c1) + hash(self.c2) + sum([hash(c) for c in self.cs])
 
     def __str__(self):
-        return "CS({}, {}, {}, {})".format(self.ci, self.c1, self.c2, self.cs)
+        return "CS({}, {}, {}, {})".format(self.ci, str(self.c1), str(self.c2), ",".join([str(c) for c in self.cs]))
 
 
 class FixExp(Exp):
@@ -344,7 +347,10 @@ class FixExp(Exp):
         return sum([hash(c) for c in self.cs]) + sum([hash(ty) for ty in self.tys])
 
     def __str__(self):
-        return "F({}, {}, {}, {}, {})".format(self.iarr, self.idx, self.names, self.tys, self.cs)
+        s1 = ",".join([name for name in self.names])
+        s2 = ",".join([str(ty) for ty in self.tys])
+        s3 = ",".join([str(c) for c in self.cs])
+        return "F({}, {}, {}, {}, {})".format(self.iarr, self.idx, s1, s2, s3)
 
 
 class CoFixExp(Exp):
@@ -370,7 +376,10 @@ class CoFixExp(Exp):
         return sum([hash(c) for c in self.cs]) + sum([hash(ty) for ty in self.tys])
 
     def __str__(self):
-        return "CF({}, {}, {}, {})".format(self.idx, self.names, self.tys, self.cs)
+        s1 = ",".join([name for name in self.names])
+        s2 = ",".join([str(ty) for ty in self.tys])
+        s3 = ",".join([str(c) for c in self.cs])
+        return "CF({}, {}, {}, {})".format(self.idx, s1, s2, s3)
 
 
 class ProjExp(Exp):
@@ -390,7 +399,7 @@ class ProjExp(Exp):
         return hash(self.proj) + hash(self.c)
 
     def __str__(self):
-        return "PJ({}, {})".format(self.proj, self.c)
+        return "PJ({}, {})".format(self.proj, str(self.c))
 
 
 # -------------------------------------------------
@@ -403,9 +412,6 @@ class DecodeCoqExp(object):
         self.bods_table = bods_table          # Dict[id, int]
         self.constrs_table = constrs_table    # Dict[int, string]
 
-        # Work state
-        self.size_table = {}
-
         # Shared representation
         self.concr_ast = {}
         self.f_decoded = False
@@ -413,52 +419,6 @@ class DecodeCoqExp(object):
 
     def decode_ast(self, key):
         return self.concr_ast[key]
-
-    """
-    def decode_ctx_bod(self, ident):
-        assert isinstance(ident, str)
-        idx = self.bods_table[ident]
-        e = self.decode_ast(idx)
-        if idx not in self.size_table:
-            self.size_table[idx] = e.size()
-        return e
-
-    def decode_ctx_typ(self, ident):
-        assert isinstance(ident, str)
-        idx = self.typs_table[ident]
-        e = self.decode_ast(idx)
-        if idx not in self.size_table:
-            self.size_table[idx] = e.size()
-        return e
-
-    def decode_ctx_typ_size(self, ident):
-        idx = self.typs_table[ident]
-        if idx in self.size_table:
-            return self.size_table[idx]
-        else:
-            idx = self.typs_table[ident]
-            e = self.decode_ast(idx)
-            # print("COMPUTING SIZE OF {}".format(ident))
-            size = e.size()
-            # print("DONE")
-            self.size_table[idx] = size
-            return size
-
-    def decode_goal(self, idx):
-        e = self.decode_ast(idx)
-        if idx not in self.size_table:
-            self.size_table[idx] = e.size()
-        return e
-
-    def decode_goal_size(self, idx):
-        if idx in self.size_table:
-            return self.size_table[idx]
-        else:
-            e = self.decode_ast(idx)
-            size = e.size()
-            self.size_table[idx] = size
-            return size
-    """
 
     # ------------------------------------------
     # Internal decoding
@@ -551,9 +511,7 @@ class DecodeCoqExp(object):
             # L %s %d %d
             name = toks[1].strip()
             ty_idx = int(toks[2].strip())
-            # TODO(deh): Kludge, coq printing has bug
             c_idx = int(toks[3].strip())
-            # c_idx = int((toks[3].strip())[:-1])
 
             self.rawasts[key] = ("L", name, ty_idx, c_idx)
             self._add_edges(key, [ty_idx, c_idx])
@@ -776,7 +734,9 @@ class SizeCoqExp(object):
     def size(self, c):
         key = c.tag
         if key in self.size_ast:
-            return self.size_ast[key]
+            size = self.size_ast[key]
+            self.size_ast[key] = 0
+            return size
 
         if isinstance(c, RelExp):
             return self._sizecon(key, 1)
@@ -872,186 +832,49 @@ def decode_ast_size(self, c):
             raise NameError("Kind {} not supported".format(c))
 """
 
+
 """
-def decode_asts(self, c_idxs):
-    c_idxs = c_idxs[1:-1]
-    keys = [int(idx.strip()) for idx in c_idxs.split()]
-    return [self.decode_ast(key) for key in keys]
+def decode_ctx_bod(self, ident):
+    assert isinstance(ident, str)
+    idx = self.bods_table[ident]
+    e = self.decode_ast(idx)
+    if idx not in self.size_table:
+        self.size_table[idx] = e.size()
+    return e
 
-def decode_ast2(self, key, entry):
-    print("DECODING2 key={}   entry=\"{}\"".format(key, entry))
-    toks = self._split_entry(entry)
-    kind = toks[0].strip()
-    if kind == "R":
-        # R %d
-        idx = int(toks[1].strip())
+def decode_ctx_typ(self, ident):
+    assert isinstance(ident, str)
+    idx = self.typs_table[ident]
+    e = self.decode_ast(idx)
+    if idx not in self.size_table:
+        self.size_table[idx] = e.size()
+    return e
 
-        c_p = RelExp(idx)
-        self.table[key] = c_p
-        return c_p
-    elif kind == "V":
-        # V %s
-        x = toks[1].strip()
-
-        c_p = VarExp(x)
-        self.table[key] = c_p
-        return c_p
-    elif kind == "M":
-        # M %d
-        idx = int(toks[1].strip())
-
-        c_p = MetaExp(idx)
-        self.table[key] = c_p
-        return c_p
-    elif kind == "E":
-        # E %d [%s]
-        exk = int(toks[1].strip())
-        cs_idxs = toks[2].strip()
-        
-        cs = self.decode_asts(cs_idxs)
-        c_p = EvarExp(exk, cs)
-        self.table[key] = c_p
-        return c_p
-    elif kind == "S":
-        # S %s
-        sort = toks[1].strip()
-
-        c_p = SortExp(sort)
-        self.table[key] = c_p
-        return c_p
-    elif kind == "CA":
-        # CA %d %s %d
-        c_idx = int(toks[1].strip())
-        ck = toks[2].strip()
-        ty_idx = int(toks[3].strip())
-
-        c = self.decode_ast(c_idx)
-        ty = self.decode_ast(ty_idx)
-        c_p = CastExp(c, ck, ty)
-        self.table[key] = c_p
-        return c_p
-    elif kind == "P":
-        # P %s %d %d
-        name = toks[1].strip()
-        ty1_idx = int(toks[2].strip())
-        ty2_idx = int(toks[3].strip())
-        
-        ty1 = self.decode_ast(ty1_idx)
-        ty2 = self.decode_ast(ty2_idx)
-        c_p = ProdExp(name, ty1, ty2)
-        self.table[key] = c_p
-        return c_p
-    elif kind == "L":
-        # L %s %d %d
-        name = toks[1].strip()
-        ty_idx = int(toks[2].strip())
-        # TODO(deh): Kludge, coq printing has bug
-        # c_idx = int(toks[3].strip())
-        c_idx = int((toks[3].strip())[:-1])
-
-        ty = self.decode_ast(ty_idx)
-        c = self.decode_ast(c_idx)
-        c_p = LambdaExp(name, ty, c)
-        self.table[key] = c_p
-        return c_p
-    elif kind == "LI":
-        # LI %s %d %d %d
-        name = toks[1].strip()
-        c1_idx = int(toks[2].strip())
-        ty_idx = int(toks[3].strip())
-        c2_idx = int(toks[4].strip())
-
-        c1 = self.decode_ast(c1_idx)
-        ty = self.decode_ast(ty_idx)
-        c2 = self.decode_ast(c2_idx)
-        c_p = LetInExp(name, c1, ty, c2)
-        self.table[key] = c_p
-        return c_p
-    elif kind == "A":
-        # A %d [%s]
-        c_idx = int(toks[1].strip())
-        cs_idxs = toks[2].strip()
-
-        c = self.decode_ast(c_idx)
-        cs = self.decode_asts(cs_idxs)
-        c_p = AppExp(c, cs)
-        self.table[key] = c_p
-        return c_p
-    elif kind == "C":
-        # C %s [%s]
-        const = toks[1].strip()
-        ui = self.decode_universe_instance(toks[2].strip())
-        
-        c_p = ConstExp(const, ui)
-        self.table[key] = c_p
-        return c_p
-    elif kind == "I":
-        # I %s %d [%s]
-        mutind = toks[1].strip()
-        i = int(toks[2].strip())
-        ui = self.decode_universe_instance(toks[3].strip())
-
-        c_p = IndExp(mutind, i, ui)
-        self.table[key] = c_p
-        return c_p
-    elif kind == "CO":
-        # CO %s %d %d [%s]
-        mutind = toks[1].strip()
-        i = int(toks[2].strip())
-        j = int(toks[3].strip())
-        ui = self.decode_universe_instance(toks[4].strip())
-
-        c_p = ConstructExp(mutind, i, j, ui)
-        self.table[key] = c_p
-        return c_p
-    elif kind == "CS":
-        # CS [%s] %d %d [%s]
-        case_info = toks[1].strip()
-        c1_idx = int(toks[2].strip())
-        c2_idx = int(toks[3].strip())
-        cs_idxs = toks[4].strip()
-
-        c1 = self.decode_ast(c1_idx)
-        c2 = self.decode_ast(c2_idx)
-        cs = self.decode_asts(cs_idxs)
-        c_p = CaseExp(case_info, c1, c2, cs)
-        self.table[key] = c_p
-        return c_p
-    elif kind == "F":
-        # F [%s] %d [%s] [%s] [%s]
-        _iarr = toks[1].strip()
-        idx = int(toks[2].strip())
-        _names = toks[3].strip()
-        ty_idxs = toks[4].strip()
-        cs_idxs = toks[5].strip()
-        
-        iarr = self.decode_iarr(_iarr)
-        names = self.decode_names(_names)
-        tys = self.decode_asts(ty_idxs)
-        cs = self.decode_asts(cs_idxs)
-        c_p = FixExp(iarr, idx, names, tys, cs)
-        self.table[key] = c_p
-        return c_p
-    elif kind == "CF":
-        idx = int(toks[2].strip())
-        _names = toks[3].strip()
-        ty_idxs = toks[4].strip()
-        cs_idxs = toks[5].strip()
-
-        names = self.decode_names(_names)
-        tys = self.decode_asts(ty_idxs)
-        cs = self.decode_asts(cs_idxs)
-        c_p = CoFixExp(idx, names, tys, cs)
-        self.table[key] = c_p
-        return c_p
-    elif kind == "PJ":
-        proj = toks[1].strip()
-        c_idx = int(toks[2].strip())
-
-        c = self.decode_ast(c_idx)
-        c_p = Proj(proj, c)
-        self.table[key] = c_p
-        return c_p
+def decode_ctx_typ_size(self, ident):
+    idx = self.typs_table[ident]
+    if idx in self.size_table:
+        return self.size_table[idx]
     else:
-        raise NameError("Kind {} not supported.".format(kind))
+        idx = self.typs_table[ident]
+        e = self.decode_ast(idx)
+        # print("COMPUTING SIZE OF {}".format(ident))
+        size = e.size()
+        # print("DONE")
+        self.size_table[idx] = size
+        return size
+
+def decode_goal(self, idx):
+    e = self.decode_ast(idx)
+    if idx not in self.size_table:
+        self.size_table[idx] = e.size()
+    return e
+
+def decode_goal_size(self, idx):
+    if idx in self.size_table:
+        return self.size_table[idx]
+    else:
+        e = self.decode_ast(idx)
+        size = e.size()
+        self.size_table[idx] = size
+        return size
 """

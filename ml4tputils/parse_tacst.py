@@ -1,14 +1,16 @@
 from enum import Enum
 
 import coq_ast
+from lib.gensym import GenSym
 from lib.myiter import MyIter
-from lib.myutil import pp_tab
+from lib.myutil import pp_tab, inc_update
 from lex_raw import *
 
 """
 [Note]
 
-Goal: [TacStDecl] -> [Tac]
+Goal: [TacStDecl] -> [RawTac]
+Group TacStDecls into a RawTac that contains the effects of a tactic call.
 
 Works (L means long time):
 BGappendix AB, C
@@ -117,7 +119,7 @@ class TacTreeParser(object):
         self.lemma = lemma
         self.it = MyIter(lemma.decls)
         
-        self.uidcnt = 0                 # RawTac uid counter
+        self.gensym = GenSym()          # RawTac uid gensym
         self.depth = 0                  # Nesting depth
         self.uidstk = []                # RawTac uid stack (for after)
 
@@ -131,9 +133,7 @@ class TacTreeParser(object):
             self._mylog(tac)
 
     def _fresh_uid(self):
-        uid = self.uidcnt
-        self.uidcnt += 1
-        return uid
+        return self.gensym.gensym()
 
     def parse_atom_call(self):
         # Internal
@@ -243,16 +243,16 @@ class TacTreeParser(object):
 
             # Simple cases
             if decl.hdr.mode == TOK_BEFORE and \
-                 decl.hdr.kind == "Atom":
+                 decl.hdr.kind == TOK_ATOM:
                 acc += [self.parse_atom_call()]
 
             elif decl.hdr.mode == TOK_BEFORE and \
-                 decl.hdr.kind == "Name":
+                 decl.hdr.kind == TOK_NAME:
                 acc += [self.parse_name_call()]
 
             # Nested cases
             elif decl.hdr.mode == TOK_BEFORE and \
-                 decl.hdr.kind == "Not":
+                 decl.hdr.kind == TOK_NOTE:
                 if len(self.uidstk) > 0 and \
                    decl.hdr.uid == self.uidstk[-1]:
                     return acc
@@ -260,7 +260,7 @@ class TacTreeParser(object):
                     self.uidstk.append(decl.hdr.uid)
                     acc += [self.parse_notation_call()]
             elif is_after(decl.hdr.mode) and \
-                 decl.hdr.kind == "Not":
+                 decl.hdr.kind == TOK_NOTE:
                 # TODO(deh): kludge wtf?
                 # BGsection4: 1 apply missing
                 # BGsection3: 1 apply missing, 1 case missing
@@ -278,10 +278,10 @@ class TacTreeParser(object):
                     return acc
 
             elif decl.hdr.mode == TOK_BEFORE and \
-                 decl.hdr.kind == "ML":
+                 decl.hdr.kind == TOK_ML:
                 acc += [self.parse_ml_call()]
             elif is_after(decl.hdr.mode) and \
-                 decl.hdr.kind == "ML":
+                 decl.hdr.kind == TOK_ML:
                 return acc
 
             else:

@@ -1,8 +1,9 @@
+import json
 import networkx as nx
 import numpy as np
 
-from lib.myutil import dict_ls_app
 from coq_ast import *
+from lib.myutil import dict_ls_app
 
 """
 [Note]
@@ -298,6 +299,13 @@ class TacTree(object):
                 'avg_depth_astctx_size': avg_depth_astctx_size,
                 'avg_depth_astgoal_size': avg_depth_astgoal_size,
                 'notok': self.notok}
+        return info
+
+    def log_stats(self, h_file):
+        info = self.stats()
+        msg = json.dumps({"lemma": self.name, "info": info})
+        h_file.write(msg)
+        h_file.write("\n")
         return info
 
     def dump(self):
