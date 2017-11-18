@@ -2,7 +2,8 @@ import json
 import networkx as nx
 import numpy as np
 
-from coq_ast import *
+from coq.ast import *
+from coq.util import ChkCoqExp, SizeCoqExp
 from lib.myutil import dict_ls_app
 
 """
@@ -87,6 +88,7 @@ class TacTree(object):
         self.graph = graph             # nx.MultDiGraph[Int, Int]
         self.tacst_info = tacst_info   # Dict[gid, (ctx, goal, ctx_e, goal_e)]
         self.decoder = decoder         # Decode asts
+        ChkCoqExp(decoder.concr_ast).chk_concr_ast()
         self.dsize = SizeCoqExp(decoder.concr_ast)
 
         self.notok = []
@@ -245,13 +247,14 @@ class TacTree(object):
     def view_depth_astctx_size(self):
         """Returns Dict[depth, [total ast typ size]]"""
         hist = {}
-        cnt = 0
         for depth, gid, ctx, goal, ctx_e, goal_e, tac in self.flatview:
             if ctx_e:
-                # v = np.sum([self.decoder.size_table[ident] for ident in ctx_e])
-                cnt += 1
-                # print("HERE {}/{}".format(cnt, len(self.flatview)))
-                v = np.sum([self.dsize.decode_size(self.decoder.typs_table[ident]) for ident in ctx_e])
+                ls = []
+                for ident in ctx_e:
+                    key = self.decoder.typs_table[ident]
+                    size = self.dsize.decode_size(key)
+                    ls += [size]
+                v = np.sum(ls)
             else:
                 v = 0
             dict_ls_app(hist, depth, v)

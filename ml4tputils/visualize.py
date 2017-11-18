@@ -45,8 +45,9 @@ class Visualize(object):
             return
 
         # Internal
-        print("------------------------------------------------")
-        print("Visualizing lemma: {}".format(lemma.name))
+        if not self.f_jupyter:
+            print("------------------------------------------------")
+            print("Visualizing lemma: {}".format(lemma.name))
         if self.f_verbose:
             for decl in lemma.decls:
                 print(decl)
@@ -92,8 +93,9 @@ class Visualize(object):
         self.tactrs += [tactr]
 
     def visualize_file(self, file):
-        print("==================================================")
-        print("Visualizing file: {}".format(file))
+        if not self.f_jupyter:
+            print("==================================================")
+            print("Visualizing file: {}".format(file))
 
         ts_parser = TacStParser(file, f_log=False)
         if self.tgtlem:
@@ -178,25 +180,3 @@ if __name__ == "__main__":
     else:
         vis.visualize_file(args.file)
     vis.finalize()
-
-    # Record info    
-    # vis.rawstats.log_notok()
-    # vis.rawstats.log_mlstats()
-    # vis.rawstats.log_namestats()
-    # vis.tactrstats.log_tactic_hist()
-    # record(args.output, vis)
-    
-
-
-"""
-def record(file, vis):
-    print("Total lemmas: {}".format(vis.num_lemmas))
-    print("Failed lemmas: {}".format(len(vis.failed)))
-    print("FAILED", vis.failed)
-    with open(file, "w") as f:
-        f.write("Total lemmas: {}\n".format(vis.num_lemmas))
-        f.write("Failed lemmas: {}\n".format(len(vis.failed)))
-        f.write("FAILED\n")
-        for file, lemma, ncc, nnotok in vis.failed:
-            f.write("{}, {}, {}, {}\n".format(file, lemma, ncc, nnotok))
-"""

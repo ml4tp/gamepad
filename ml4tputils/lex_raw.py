@@ -2,7 +2,7 @@ from enum import Enum
 
 from lib.myfile import MyFile
 from lib.myutil import pp_tab
-from coq_ast import *
+from coq.decode import *
 
 """
 [Note]
@@ -162,8 +162,8 @@ class LemTacSt(object):
     def pp(self, tab=0):
         s1 = pp_tab(tab, self.name) + "\n"
         s2 = "\n".join([decl.pp(tab + 2) for decl in self.decls]) + "\n"
-        s3 = self.decoder.pp(tab)
-        return s1 + s2 + s3
+        # s3 = self.decoder.pp(tab)
+        return s1 + s2
 
     def __str__(self):
         msg = "\n".join([str(decl) for decl in self.decls])

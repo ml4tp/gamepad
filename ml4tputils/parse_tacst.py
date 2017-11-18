@@ -1,6 +1,5 @@
 from enum import Enum
 
-import coq_ast
 from lib.gensym import GenSym
 from lib.myiter import MyIter
 from lib.myutil import pp_tab, inc_update

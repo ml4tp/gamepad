@@ -3,7 +3,7 @@ import json
 import numpy as np
 import scipy.stats as sps
 
-from tactr import *
+from tactr import TACTICS
 
 
 # -------------------------------------------------
@@ -25,8 +25,10 @@ def load_tactr_stats(filename):
 
 
 class DepthMode(Enum):
-    CONTEXT = 0
-    GOAL = 1
+    CHAR_CTX = 0
+    CHAR_GOAL = 1
+    AST_CTX = 2
+    AST_GOAL = 3
 
 
 # -------------------------------------------------
@@ -137,9 +139,13 @@ class TacTrStats(object):
 
     def avg_depth_size(self, mode):
         """Histogram of depth vs context/goal size"""
-        if mode == DepthMode.CONTEXT:
+        if mode == DepthMode.CHAR_CTX:
+            projfn = lambda info: info['avg_depth_ctx_size']
+        elif mode == DepthMode.CHAR_GOAL:
+            projfn = lambda info: info['avg_depth_goal_size']
+        elif mode == DepthMode.AST_CTX:
             projfn = lambda info: info['avg_depth_astctx_size']
-        elif mode == DepthMode.GOAL:
+        elif mode == DepthMode.AST_GOAL:
             projfn = lambda info: info['avg_depth_astgoal_size']
         else:
             raise NameError("Mode {} not supported".format(mode))
@@ -150,30 +156,14 @@ class TacTrStats(object):
             hist[depth] = 0
 
         norm = [0 for _ in range(0, MAX_DEPTH)]
-        print("Lemmas", len(self.stats.items()))
-        for lemma, info in self.stats.items():
-            print("HERE", lemma, info['avg_depth_astctx_size'])
         maxsize = 0
         for lemma, info in self.stats.items():
             for depth, dsize in projfn(info):
-                maxsize = max(dsize, maxsize)
-                if dsize > 1e99:
-                    print(info)
-                    print("Maxsize and size", lemma, maxsize, dsize)
                 hist[depth] += dsize
                 norm[depth] += 1
-        # print("FUCK", hist)
-        """
-        for lemma, info in self.stats.items():
-            max_depth = max([depth for depth, _ in projfn(info)]) + 1
-            for depth in range(0, max_depth):
-                norm[depth] += 1
-        """
-        # print("DEFINITELY FUCK", norm)
 
         for depth in range(1, MAX_DEPTH):
             hist[depth] /= norm[depth]
-        # print("WTF", hist)
         del hist[0]
         return hist
 
