@@ -98,13 +98,13 @@ class ChkCoqExp(object):
             pass
         elif isinstance(c, CaseExp):
             # print("CASE", c.tag)
-            self._occurs_ast(c.tag, c.c1)
-            self._occurs_ast(c.tag, c.c2)
-            self._occurs_asts(c.tag, c.cs)
+            self._occurs_ast(c.tag, c.ret)
+            self._occurs_ast(c.tag, c.match)
+            self._occurs_asts(c.tag, c.cases)
             if f_chk:
-                self._chk_ast(False, c.c1)
-                self._chk_ast(False, c.c2)
-                self._chk_asts(False, c.cs)
+                self._chk_ast(False, c.ret)
+                self._chk_ast(False, c.match)
+                self._chk_asts(False, c.cases)
         elif isinstance(c, FixExp):
             # print("FIX", c.tag)
             self._occurs_asts(c.tag, c.tys)
@@ -191,7 +191,7 @@ class SizeCoqExp(object):
             # TODO(deh): HMM?
             return self._sizecon(key, 1)
         elif isinstance(c, CaseExp):
-            sz = 1 + self.size(c.c1) + self.size(c.c2) + self.sizes(c.cs)
+            sz = 1 + self.size(c.ret) + self.size(c.match) + self.sizes(c.cases)
             return self._sizecon(key, sz)
         elif isinstance(c, FixExp):
             sz = 1 + self.sizes(c.tys) + self.sizes(c.cs)
