@@ -3,7 +3,7 @@ import networkx as nx
 import numpy as np
 
 from coq.ast import *
-from coq.util import ChkCoqExp, SizeCoqExp
+from coq.util import ChkCoqExp, SizeCoqExp, HistCoqExp, COQEXP_HIST
 from lib.myutil import dict_ls_app
 
 """
@@ -90,6 +90,7 @@ class TacTree(object):
         self.decoder = decoder         # Decode asts
         ChkCoqExp(decoder.concr_ast).chk_concr_ast()
         self.dsize = SizeCoqExp(decoder.concr_ast)
+        self.dhist = HistCoqExp(decoder.concr_ast)
 
         self.notok = []
 
@@ -280,6 +281,10 @@ class TacTree(object):
                     break
         return hist
 
+    def hist_coqexp(self):
+        hists = [self.dhist.decode_hist(edx) for ident, edx in self.decoder.typs_table.items()]
+        return COQEXP_HIST.merges(hists)
+
     def stats(self):
         term_path_lens = [len(path) for path in self.view_term_paths()]
         err_path_lens = [len(path) for path in self.view_err_paths()]
@@ -301,6 +306,7 @@ class TacTree(object):
                 'avg_depth_goal_size': avg_depth_goal_size,
                 'avg_depth_astctx_size': avg_depth_astctx_size,
                 'avg_depth_astgoal_size': avg_depth_astgoal_size,
+                'hist_coqexp': self.hist_coqexp(),
                 'notok': self.notok}
         return info
 

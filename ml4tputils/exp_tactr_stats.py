@@ -3,7 +3,9 @@ import json
 import numpy as np
 import scipy.stats as sps
 
-from tactr import TACTICS
+# from lib.myutil import merge_hist
+from coq.util import COQEXP_HIST
+from tactr import TACTICS, TACTIC_IDS, ID_TACTIC_MAP
 
 
 # -------------------------------------------------
@@ -166,6 +168,18 @@ class TacTrStats(object):
             hist[depth] /= norm[depth]
         del hist[0]
         return hist
+
+    """
+    def coqexp_hist(self):
+        hist = {}
+        for lemma, info in self.stats.items():
+            hist = merge_hist(hist, info['hist_coqexp'])
+        return hist
+    """
+    def coqexp_hist(self, f_sort=True):
+        hists = [info['hist_coqexp'] for lemma, info in self.stats.items()]
+        hist = COQEXP_HIST.merges(hists)
+        return COQEXP_HIST.view(hist, f_sort)
 
 
 if __name__ == "__main__":

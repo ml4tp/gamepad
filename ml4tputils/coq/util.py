@@ -1,4 +1,6 @@
 from coq.ast import *
+from lib.myhist import MyHist
+from lib.myutil import merge_hist, merge_hists
 
 """
 [Note]
@@ -207,6 +209,87 @@ class SizeCoqExp(object):
 
     def sizes(self, cs):
         return sum([self.size(c) for c in cs])
+
+
+# -------------------------------------------------
+# Computing histogram of coq-expressions efficiently
+
+COQEXP = ['RelExp', 'VarExp', 'MetaExp', 'EvarExp', 'SortExp', 'CastExp',
+          'ProdExp', 'LambdaExp', 'LetInExp', 'AppExp', 'ConstExp',
+          'IndExp', 'ConstructExp', 'CaseExp', 'FixExp', 'CoFixExp', 'ProjExp']
+
+
+COQEXP_HIST = MyHist(COQEXP)
+
+
+class HistCoqExp(object):
+    def __init__(self, concr_ast):
+        self.concr_ast = concr_ast
+        ChkCoqExp(concr_ast).chk_concr_ast()
+        self.hist_ast = {}
+
+    def _histcon(self, key, hist):
+        self.hist_ast[key] = hist
+        return hist
+
+    def decode_hist(self, key):
+        return self.hist(self.concr_ast[key])
+
+    def hist(self, c):
+        key = c.tag
+        if key in self.hist_ast:
+            hist = self.hist_ast[key]
+            return hist
+
+        if isinstance(c, RelExp):
+            return self._histcon(key, COQEXP_HIST.delta('RelExp'))
+        elif isinstance(c, VarExp):
+            return self._histcon(key, COQEXP_HIST.delta('VarExp'))
+        elif isinstance(c, MetaExp):
+            return self._histcon(key, COQEXP_HIST.delta('MetaExp'))
+        elif isinstance(c, EvarExp):
+            hist = self.hists(c.cs)
+            return self._histcon(key, COQEXP_HIST.merge(hist, COQEXP_HIST.delta('EvarExp')))
+        elif isinstance(c, SortExp):
+            return self._histcon(key, COQEXP_HIST.delta('SortExp'))
+        elif isinstance(c, CastExp):
+            hist = COQEXP_HIST.merge(self.hist(c.c), self.hist(c.ty))
+            return self._histcon(key, COQEXP_HIST.merge(hist, COQEXP_HIST.delta('CastExp')))
+        elif isinstance(c, ProdExp):
+            hist = COQEXP_HIST.merge(self.hist(c.ty1), self.hist(c.ty2))
+            return self._histcon(key, COQEXP_HIST.merge(hist, COQEXP_HIST.delta('ProdExp')))
+        elif isinstance(c, LambdaExp):
+            hist = COQEXP_HIST.merge(self.hist(c.ty), self.hist(c.c))
+            return self._histcon(key, COQEXP_HIST.merge(hist, COQEXP_HIST.delta('LambdaExp')))
+        elif isinstance(c, LetInExp):
+            hist = COQEXP_HIST.merges([self.hist(c.c1), self.hist(c.ty), self.hist(c.c2)])
+            return self._histcon(key, COQEXP_HIST.merge(hist, COQEXP_HIST.delta('LetInExp')))
+        elif isinstance(c, AppExp):
+            hist = COQEXP_HIST.merge(self.hist(c.c), self.hists(c.cs))
+            return self._histcon(key, COQEXP_HIST.merge(hist, COQEXP_HIST.delta('AppExp')))
+        elif isinstance(c, ConstExp):
+            return self._histcon(key, COQEXP_HIST.delta('ConstExp')) 
+        elif isinstance(c, IndExp):
+            return self._histcon(key, COQEXP_HIST.delta('IndExp'))
+        elif isinstance(c, ConstructExp):
+            return self._histcon(key, COQEXP_HIST.delta('ConstructExp'))
+        elif isinstance(c, CaseExp):
+            hist = COQEXP_HIST.merges([self.hist(c.ret), self.hist(c.match), self.hists(c.cases)])
+            return self._histcon(key, COQEXP_HIST.merge(hist, COQEXP_HIST.delta('CaseExp')))
+        elif isinstance(c, FixExp):
+            hist = COQEXP_HIST.merge(self.hists(c.tys), self.hists(c.cs))
+            return self._histcon(key, COQEXP_HIST.merge(hist, COQEXP_HIST.delta('FixExp')))
+        elif isinstance(c, CoFixExp):
+            hist = COQEXP_HIST.merge(self.hists(c.tys), self.hists(c.cs))
+            return self._histcon(key, COQEXP_HIST.merge(hist, COQEXP_HIST.delta('CoFixExp')))
+        elif isinstance(c, ProjExp):
+            hist = self.hist(c.c)
+            return self._histcon(key, COQEXP_HIST.merge(hist, COQEXP_HIST.delta('ProjExp')))
+        else:
+            raise NameError("Kind {} not supported".format(c))
+
+    def hists(self, cs):
+        return COQEXP_HIST.merges([self.hist(c) for c in cs])
 
 
 

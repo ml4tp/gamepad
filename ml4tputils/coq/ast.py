@@ -140,6 +140,7 @@ class VarExp(Exp):
 class MetaExp(Exp):
     """M %d"""
     def __init__(self, mv):
+        assert False
         assert isinstance(mv, int)
         super().__init__()
         self.mv = mv
