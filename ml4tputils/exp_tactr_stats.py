@@ -169,13 +169,6 @@ class TacTrStats(object):
         del hist[0]
         return hist
 
-    """
-    def coqexp_hist(self):
-        hist = {}
-        for lemma, info in self.stats.items():
-            hist = merge_hist(hist, info['hist_coqexp'])
-        return hist
-    """
     def coqexp_hist(self, f_sort=True):
         hists = [info['hist_coqexp'] for lemma, info in self.stats.items()]
         hist = COQEXP_HIST.merges(hists)

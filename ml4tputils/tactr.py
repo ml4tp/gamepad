@@ -283,7 +283,15 @@ class TacTree(object):
 
     def hist_coqexp(self):
         hists = [self.dhist.decode_hist(edx) for ident, edx in self.decoder.typs_table.items()]
-        return COQEXP_HIST.merges(hists)
+        # hist = COQEXP_HIST.merges(hists)
+        
+        acc = []
+        seen = set()
+        for depth, gid, ctx, goal, ctx_e, goal_e, tac in self.flatview:
+            if goal_e not in seen:
+                acc += [self.dhist.decode_hist(goal_e)]
+                seen.add(goal_e)
+        return COQEXP_HIST.merges(hists + acc)
 
     def stats(self):
         term_path_lens = [len(path) for path in self.view_term_paths()]
