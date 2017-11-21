@@ -127,6 +127,9 @@ if __name__ == "__main__":
 
     files = ["BGsection1.v.dump",
              "BGsection2.v.dump",
+             "BGappendixAB.v.dump",
+             "BGappendixC.v.dump",
+             "wielandt_fixpoint.v.dump",
              "BGsection3.v.dump",
              "BGsection4.v.dump",
              "BGsection5.v.dump",
@@ -141,8 +144,6 @@ if __name__ == "__main__":
              "BGsection14.v.dump",
              "BGsection15.v.dump",
              "BGsection16.v.dump",
-             "BGappendixAB.v.dump",
-             "BGappendixC.v.dump",
              "PFsection1.v.dump",
              "PFsection2.v.dump",
              "PFsection3.v.dump",
@@ -157,8 +158,7 @@ if __name__ == "__main__":
              "PFsection12.v.dump",
              "PFsection13.v.dump",
              "PFsection14.v.dump",
-             "stripped_odd_order_theorem.v.dump",
-             "wielandt_fixpoint.v.dump"]
+             "stripped_odd_order_theorem.v.dump"]
 
     bgfiles = [file for file in files if file.startswith("BG")]
     pffiles = [file for file in files if file.startswith("PF")]
