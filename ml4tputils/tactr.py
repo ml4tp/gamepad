@@ -88,7 +88,8 @@ class TacTree(object):
         self.graph = graph             # nx.MultDiGraph[Int, Int]
         self.tacst_info = tacst_info   # Dict[gid, (ctx, goal, ctx_e, goal_e)]
         self.decoder = decoder         # Decode asts
-        ChkCoqExp(decoder.concr_ast).chk_concr_ast()
+        self.chk = ChkCoqExp(decoder.concr_ast)
+        self.chk.chk_concr_ast()
         self.dsize = SizeCoqExp(decoder.concr_ast)
         self.dhist = HistCoqExp(decoder.concr_ast)
 
@@ -293,6 +294,13 @@ class TacTree(object):
                 seen.add(goal_e)
         return COQEXP_HIST.merges(hists + acc)
 
+    def view_astsharing(self):
+        cnt = [v for k, v in self.chk.usage.items()]
+        total = sum(cnt)
+        avg = np.mean(cnt)
+        num = len(self.chk.usage)
+        return avg, total, num
+
     def stats(self):
         term_path_lens = [len(path) for path in self.view_term_paths()]
         err_path_lens = [len(path) for path in self.view_err_paths()]
@@ -315,6 +323,7 @@ class TacTree(object):
                 'avg_depth_astctx_size': avg_depth_astctx_size,
                 'avg_depth_astgoal_size': avg_depth_astgoal_size,
                 'hist_coqexp': self.hist_coqexp(),
+                'sharing': self.view_astsharing(),
                 'notok': self.notok}
         return info
 

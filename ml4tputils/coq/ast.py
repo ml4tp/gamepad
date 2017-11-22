@@ -104,7 +104,11 @@ class Exp(object):
 
 
 class RelExp(Exp):
-    """R %d"""
+    """R %d
+    A DeBruijn index.
+    \x. x        =  \. 0
+    \x. \y. y x  =  \. \. 0 1
+    """
     def __init__(self, idx):
         assert isinstance(idx, int)
         super().__init__()
@@ -121,7 +125,10 @@ class RelExp(Exp):
 
 
 class VarExp(Exp):
-    """V %s"""
+    """V %s
+    A named representation for a bound variable.
+    \x. x
+    """
     def __init__(self, x):
         assert isinstance(x, str)
         super().__init__()
@@ -138,7 +145,9 @@ class VarExp(Exp):
 
 
 class MetaExp(Exp):
-    """M %d"""
+    """M %d
+    A variable in the meta-language. Should not be referenced.
+    """
     def __init__(self, mv):
         assert False
         assert isinstance(mv, int)
@@ -157,7 +166,12 @@ class MetaExp(Exp):
 
 
 class EvarExp(Exp):
-    """E %d [%s]"""
+    """E %d [%s]
+    An existential variable in the object-language. For example,
+    ?1 + 2 = 4 : nat
+    means that ?1 is an existential variable such that
+    it plus 2 is 4 at type nat.
+    """
     def __init__(self, exk, cs):
         assert isinstance(exk, int)
         for c_p in cs:
@@ -178,7 +192,9 @@ class EvarExp(Exp):
 
 
 class SortExp(Exp):
-    """S %s"""
+    """S %s
+    The kind of a term, i.e., Set/Prop, or Type-0, Type-1, ...
+    """
     def __init__(self, sort):
         # TODO(deh): what is it's type?
         super().__init__()
@@ -195,7 +211,9 @@ class SortExp(Exp):
 
 
 class CastExp(Exp):
-    """CA %d %s %d"""
+    """CA %d %s %d
+    Cast an expression <c> to the type <ty>.
+    """
     def __init__(self, c, ck, ty):
         assert isinstance(c, Exp)
         # TODO(deh): cast kind?
@@ -216,7 +234,9 @@ class CastExp(Exp):
 
 
 class ProdExp(Exp):
-    """P %s %d %d"""
+    """P %s %d %d
+    A product type of <ty1> and <ty2>.
+    """
     def __init__(self, name, ty1, ty2):
         assert isinstance(name, Name)
         assert isinstance(ty1, Exp)
@@ -237,7 +257,9 @@ class ProdExp(Exp):
 
 
 class LambdaExp(Exp):
-    """L %s %d %d"""
+    """L %s %d %d
+    \name : ty. c
+    """
     def __init__(self, name, ty, c):
         assert isinstance(name, Name)
         assert isinstance(ty, Exp)
@@ -258,7 +280,9 @@ class LambdaExp(Exp):
 
 
 class LetInExp(Exp):
-    """LI %s %d %d %d"""
+    """LI %s %d %d %d
+    let x = c1 in c2
+    """
     def __init__(self, name, c1, ty, c2):
         assert isinstance(name, Name)
         assert isinstance(c1, Exp)
@@ -281,7 +305,9 @@ class LetInExp(Exp):
 
 
 class AppExp(Exp):
-    """A %d [%s]"""
+    """A %d [%s]
+    c [c1 ... cn]
+    """
     def __init__(self, c, cs):
         assert isinstance(c, Exp)
         for c_p in cs:
@@ -301,7 +327,9 @@ class AppExp(Exp):
 
 
 class ConstExp(Exp):
-    """C %s [%s]"""
+    """C %s [%s]
+    A constant expression with global identifier <const>.
+    """
     def __init__(self, const, ui):
         assert isinstance(const, Name) # TODO(deh): Name.Constant?
         assert isinstance(ui, UniverseInstance)
@@ -320,7 +348,9 @@ class ConstExp(Exp):
 
 
 class IndExp(Exp):
-    """I %s %d [%s]"""
+    """I %s %d [%s]
+    An inductive type with name and position <ind>.
+    """
     def __init__(self, ind, ui):
         assert isinstance(ind, Inductive)
         assert isinstance(ui, UniverseInstance)
@@ -340,7 +370,9 @@ class IndExp(Exp):
 
 
 class ConstructExp(Exp):
-    """CO %s %d %d [%s]"""
+    """CO %s %d %d [%s]
+    A constructor <conid> of an inductive type <ind>.
+    """
     def __init__(self, ind, conid, ui):
         assert isinstance(conid, int)
         assert isinstance(ui, UniverseInstance)
@@ -362,7 +394,12 @@ class ConstructExp(Exp):
 
 
 class CaseExp(Exp):
-    """CS [%s] %d %d [%s]"""
+    """CS [%s] %d %d [%s]
+    case <match> return <ret> of
+      <c1>
+      ...
+      <cn>
+    """
     def __init__(self, ci, ret, match, cases):
         # TODO(deh): case info?
         assert isinstance(ci, CaseInfo)
@@ -390,7 +427,18 @@ class CaseExp(Exp):
 
 
 class FixExp(Exp):
-    """"F [%s] %d [%s] [%s] [%s]"""
+    """"F [%s] %d [%s] [%s] [%s]
+    For example,
+      Fix even n :=
+        match n with
+        | O => True
+        | S n => odd n
+      and odd n :=
+        match n with
+        | O => False
+        | S n => even n
+    Fix [even, odd] [nat -> bool, nat -> bool] [c1, c2]
+    """
     def __init__(self, iarr, idx, names, tys, cs):
         for i in iarr:
             assert isinstance(i, int)
@@ -434,7 +482,9 @@ class FixExp(Exp):
 
 
 class CoFixExp(Exp):
-    """CF %d [%s] [%s] [%s]"""
+    """CF %d [%s] [%s] [%s]
+    Same as Fix but must be productive.
+    """
     def __init__(self, idx, names, tys, cs):
         assert isinstance(idx, int)
         for name in names:
@@ -463,7 +513,9 @@ class CoFixExp(Exp):
 
 
 class ProjExp(Exp):
-    """PJ %s %d"""
+    """PJ %s %d
+    Projection from a record.
+    """
     def __init__(self, proj, c):
         assert isinstance(proj, Name) # TODO(deh): Name.Projection?
         assert isinstance(c, Exp)

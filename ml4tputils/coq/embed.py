@@ -86,6 +86,9 @@ class EmbedCoqExp(object):
         self.ind_embed = {}
         self.construct_embed = {}
 
+        self.fixbody_embed = {}   # For use in the body
+        self.fix_embed = {}       # For use everywhere else
+
         # Keep track of shared embeddings
         self.embeddings = {}
 
@@ -149,6 +152,8 @@ class EmbedCoqExp(object):
             return self._embedcon(key, self.embed_lambda(c.name, ev_ty, ev_c))
         elif isinstance(c, LetInExp):
             # TODO(deh): what to do with name?
+            # let name : ty = c1 in c2
+            # c2[name / embed(c1)]
             ev_c1 = self._embed_ast(env, Kind.TERM, c.c1)
             ev_ty = self._embed_ast(env, Kind.TYPE, c.ty)
             ev_c2 = self._embed_ast(env.extend_var(c.name, ev_c1), Kind.TERM, c.c2)
@@ -179,9 +184,17 @@ class EmbedCoqExp(object):
         elif isinstance(c, FixExp):
             c.iarr   # TODO(deh): hmm?
             c.idx    # TODO(deh): hmm?
+
+            # 1. Create initial embeddings
+            for name in c.names:
+                ev = self.embed_rec_name(name)
+                self.fix_embed[name] = ev
+                env = env.extend_var(name, ev)
+
+            # 2. Use initial embeddings
             ev_tys = []
             ev_cs = []
-            for name, ty, body in zip(c.names, c.tys, c.cs):
+            for ty, body in zip(c.tys, c.cs):
                 ev_tys += [self._embed_asts(env, Kind.TYPE, c.tys)]
                 ev_c = self._embed_ast(env, Kind.TERM, c.cs)
                 # TODO(deh): tie the knot appropriately

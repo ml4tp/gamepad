@@ -174,6 +174,21 @@ class TacTrStats(object):
         hist = COQEXP_HIST.merges(hists)
         return COQEXP_HIST.view(hist, f_sort)
 
+    def coqexp_sharing(self):
+        total = 0.0
+        avg = 0.0
+        num = 0.0
+        for lemma, info in self.stats.items():
+            avg += info['sharing'][0]
+            total += info['sharing'][1]
+            num += info['sharing'][2]
+        cnt = len(self.stats)
+
+        self._mylog("Average # of shared tokens: {}".format(num / cnt))
+        self._mylog("Average shared token usage: {}".format(avg / cnt))
+        self._mylog("Average total token usage: {}".format(total / cnt))
+        return num / cnt, avg / cnt, total / cnt
+
 
 if __name__ == "__main__":
     stats = load_tactr_stats("log/tactr-build-10.log")

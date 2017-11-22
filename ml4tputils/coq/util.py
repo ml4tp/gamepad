@@ -15,6 +15,7 @@ Utility functions on Coq expressions
 class ChkCoqExp(object):
     def __init__(self, concr_ast):
         self.concr_ast = concr_ast
+        self.usage = {}
 
     def chk_concr_ast(self):
         for k, c in self.concr_ast.items():
@@ -31,8 +32,15 @@ class ChkCoqExp(object):
         for c in cs:
             self._occurs_ast(tag, c)
 
+    def _usage(self, c):
+        if c.tag in self.usage:
+            self.usage[c.tag] += 1
+        else:
+            self.usage[c.tag] = 1
+
     def _chk_ast(self, f_chk, c):
         c_p = self.concr_ast[c.tag]
+        self._usage(c)
         if c_p.tag != c.tag:
             raise NameError("Tags {} and {} do not match {} {}".format(c.tag, c_p.tag, type(c.tag), type(c_p.tag)))
 
@@ -290,6 +298,80 @@ class HistCoqExp(object):
 
     def hists(self, cs):
         return COQEXP_HIST.merges([self.hist(c) for c in cs])
+
+
+# -------------------------------------------------
+# Compute unique tokens
+
+class UniqueCoqExp(object):
+    def __init__(self, concr_ast):
+        self.concr_ast = concr_ast
+        ChkCoqExp(concr_ast).chk_concr_ast()
+        self.seen = set()
+        self.unique = set()
+
+    def decode_unique(self, key):
+        return self.unique(self.concr_ast[key])
+
+    def unique(self, c):
+        key = c.tag
+        if key in self.seen:
+            return
+
+        if isinstance(c, RelExp):
+            return self._uniquecon(key, 1)
+        elif isinstance(c, VarExp):
+            return self._uniquecon(key, 1)
+        elif isinstance(c, MetaExp):
+            return self._uniquecon(key, 1)
+        elif isinstance(c, EvarExp):
+            sz = 1 + self.uniques(c.cs)
+            return self._uniquecon(key, sz)
+        elif isinstance(c, SortExp):
+            return self._uniquecon(key, 1)
+        elif isinstance(c, CastExp):
+            sz = 1 + self.unique(c.c) + self.unique(c.ty)
+            return self._uniquecon(key, sz)
+        elif isinstance(c, ProdExp):
+            sz = 1 + self.unique(c.ty1) + self.unique(c.ty2)
+            return self._uniquecon(key, sz)
+        elif isinstance(c, LambdaExp):
+            sz = 1 + self.unique(c.ty) + self.unique(c.c)
+            return self._uniquecon(key, sz)
+        elif isinstance(c, LetInExp):
+            sz = 1 + self.unique(c.c1) + self.unique(c.ty) + self.unique(c.c2)
+            return self._uniquecon(key, sz)
+        elif isinstance(c, AppExp):
+            sz = 1 + self.unique(c.c) + self.uniques(c.cs)
+            return self._uniquecon(key, sz)
+        elif isinstance(c, ConstExp):
+            # TODO(deh): HMM?
+            return self._uniquecon(key, 1) 
+        elif isinstance(c, IndExp):
+            # TODO(deh): HMM?
+            return self._uniquecon(key, 1)
+        elif isinstance(c, ConstructExp):
+            # TODO(deh): HMM?
+            return self._uniquecon(key, 1)
+        elif isinstance(c, CaseExp):
+            sz = 1 + self.unique(c.ret) + self.unique(c.match) + self.uniques(c.cases)
+            return self._uniquecon(key, sz)
+        elif isinstance(c, FixExp):
+            sz = 1 + self.uniques(c.tys) + self.uniques(c.cs)
+            return self._uniquecon(key, sz)
+        elif isinstance(c, CoFixExp):
+            sz = 1 + self.uniques(c.tys) + self.uniques(c.cs)
+            return self._uniquecon(key, sz)
+        elif isinstance(c, ProjExp):
+            sz = 1 + self.unique(c.c)
+            return self._uniquecon(key, sz)
+        else:
+            raise NameError("Kind {} not supported".format(c))
+
+    def uniques(self, cs):
+        return sum([self.unique(c) for c in cs])
+
+
 
 
 
