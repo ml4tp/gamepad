@@ -15,7 +15,14 @@ Utility functions on Coq expressions
 class ChkCoqExp(object):
     def __init__(self, concr_ast):
         self.concr_ast = concr_ast
-        self.usage = {}
+        
+        # Compute number of times an expression is used
+        self.sharing = {}
+
+        # Unique
+        self.unique_const = set()
+        self.unique_ind = set()
+        self.unique_conid = set()
 
     def chk_concr_ast(self):
         for k, c in self.concr_ast.items():
@@ -32,58 +39,49 @@ class ChkCoqExp(object):
         for c in cs:
             self._occurs_ast(tag, c)
 
-    def _usage(self, c):
-        if c.tag in self.usage:
-            self.usage[c.tag] += 1
+    def _sharing(self, c):
+        if c.tag in self.sharing:
+            self.sharing[c.tag] += 1
         else:
-            self.usage[c.tag] = 1
+            self.sharing[c.tag] = 1
 
     def _chk_ast(self, f_chk, c):
         c_p = self.concr_ast[c.tag]
-        self._usage(c)
+        self._sharing(c)
         if c_p.tag != c.tag:
             raise NameError("Tags {} and {} do not match {} {}".format(c.tag, c_p.tag, type(c.tag), type(c_p.tag)))
 
         if isinstance(c, RelExp):
-            # print("REL", c.tag)
             pass
         elif isinstance(c, VarExp):
-            # print("VAR", c.tag)
             pass
         elif isinstance(c, MetaExp):
-            # print("META", c.tag)
             pass
         elif isinstance(c, EvarExp):
-            # print("EVAR", c.tag)
             self._occurs_asts(c.tag, c.cs)
             if f_chk:
                 self._chk_asts(False, c.cs)
         elif isinstance(c, SortExp):
-            # print("SORT", c.tag)
             pass
         elif isinstance(c, CastExp):
-            # print("CAST", c.tag)
             self._occurs_ast(c.tag, c.c)
             self._occurs_ast(c.tag, c.ty)
             if f_chk:
                 self._chk_ast(False, c.c)
                 self._chk_ast(False, c.ty)
         elif isinstance(c, ProdExp):
-            # print("PROD", c.tag)
             self._occurs_ast(c.tag, c.ty1)
             self._occurs_ast(c.tag, c.ty2)
             if f_chk:
                 self._chk_ast(False, c.ty1)
                 self._chk_ast(False, c.ty2)
         elif isinstance(c, LambdaExp):
-            # print("LAM", c.tag)
             self._occurs_ast(c.tag, c.ty)
             self._occurs_ast(c.tag, c.c)
             if f_chk:
                 self._chk_ast(False, c.ty)
                 self._chk_ast(False, c.c)
         elif isinstance(c, LetInExp):
-            # print("LET", c.tag)
             self._occurs_ast(c.tag, c.c1)
             self._occurs_ast(c.tag, c.ty)
             self._occurs_ast(c.tag, c.c2)
@@ -98,16 +96,12 @@ class ChkCoqExp(object):
                 self._chk_ast(False, c.c)
                 self._chk_asts(False, c.cs)
         elif isinstance(c, ConstExp):
-            # print("CONST", c.tag)
-            pass
+            self.unique_const.add(c.const)
         elif isinstance(c, IndExp):
-            # print("IND", c.tag)
-            pass
+            self.unique_ind.add(c.ind.mutind)
         elif isinstance(c, ConstructExp):
-            # print("CON", c.tag)
-            pass
+            self.unique_conid.add((c.ind.mutind, c.conid))
         elif isinstance(c, CaseExp):
-            # print("CASE", c.tag)
             self._occurs_ast(c.tag, c.ret)
             self._occurs_ast(c.tag, c.match)
             self._occurs_asts(c.tag, c.cases)
@@ -116,21 +110,18 @@ class ChkCoqExp(object):
                 self._chk_ast(False, c.match)
                 self._chk_asts(False, c.cases)
         elif isinstance(c, FixExp):
-            # print("FIX", c.tag)
             self._occurs_asts(c.tag, c.tys)
             self._occurs_asts(c.tag, c.cs)
             if f_chk:
                 self._chk_asts(False, c.tys)
                 self._chk_asts(False, c.cs)
         elif isinstance(c, CoFixExp):
-            # print("COFIX", c.tag)
             self._occurs_asts(c.tag, c.tys)
             self._occurs_asts(c.tag, c.cs)
             if f_chk:
                 self._chk_asts(False, c.tys)
                 self._chk_asts(False, c.cs)
         elif isinstance(c, ProjExp):
-            # print("PROJ", c.tag)
             self._occurs_ast(c.tag, c.c)
             if f_chk:
                 self._chk_ast(False, c.c)
@@ -301,14 +292,98 @@ class HistCoqExp(object):
 
 
 # -------------------------------------------------
-# Compute unique tokens
+# Compute sharing in Coq expression
 
+"""
+1. unique const exp's (size of the embedding matrix)
+2. A(e, e) sharing (for each ast, computation as distribution, unshared, vs size)
+3. let x = 5 in let x = x + x in x (show that this thing blows the fuck up)
+"""
+
+class ShareCoqExp(object):
+    def __init__(self, concr_ast):
+        self.concr_ast = concr_ast
+        ChkCoqExp(concr_ast).chk_concr_ast()
+        self.seen = set()
+        
+        self.unique_const = set()
+        self.unique_sort = set()
+        self.unique_prod = set()
+        self.usage_ast = {}
+
+    def decode_share(self, key):
+        return self.share(self.concr_ast[key])
+
+    def share(self, env, c):
+        key = c.tag
+        if key in self.seen:
+            return
+
+        self.seen.add(c.tag)
+        if isinstance(c, RelExp):
+            env.lookup_rel(c.idx)
+        elif isinstance(c, VarExp):
+            env.lookup_id(c.x)
+        elif isinstance(c, MetaExp):
+            pass
+        elif isinstance(c, EvarExp):
+            pass
+        elif isinstance(c, SortExp):
+            self.unique_sort.add(c.sort)
+        elif isinstance(c, CastExp):
+            self.share(env, c.c)
+            self.share(env, c.ty)
+        elif isinstance(c, ProdExp):
+            self.unique_prod.add(c.name)
+            self.share(env, c.ty1)
+            self.share(env, c.ty2)
+        elif isinstance(c, LambdaExp):
+            c.name
+            self.share(env, c.ty)
+            self.share(env, c.c)
+        elif isinstance(c, LetInExp):
+            self.share(env, c.c1)
+            self.share(env, c.ty)
+            self.share(env.extend(c.name, ), c.c2)
+        elif isinstance(c, AppExp):
+            self.share(c.c)
+            self.shares(c.cs)
+        elif isinstance(c, ConstExp):
+            self.unique_const.add(c.const)
+
+            return self._sharecon(key, 1) 
+        elif isinstance(c, IndExp):
+            return self._sharecon(key, 1)
+        elif isinstance(c, ConstructExp):
+            return self._sharecon(key, 1)
+        elif isinstance(c, CaseExp):
+            sz = 1 + self.share(c.ret) + self.share(c.match) + self.shares(c.cases)
+            return self._sharecon(key, sz)
+        elif isinstance(c, FixExp):
+            sz = 1 + self.shares(c.tys) + self.shares(c.cs)
+            return self._sharecon(key, sz)
+        elif isinstance(c, CoFixExp):
+            sz = 1 + self.shares(c.tys) + self.shares(c.cs)
+            return self._sharecon(key, sz)
+        elif isinstance(c, ProjExp):
+            sz = 1 + self.share(c.c)
+            return self._sharecon(key, sz)
+        else:
+            raise NameError("Kind {} not supported".format(c))
+
+    def shares(self, cs):
+        return sum([self.share(c) for c in cs])
+
+
+"""
 class UniqueCoqExp(object):
     def __init__(self, concr_ast):
         self.concr_ast = concr_ast
         ChkCoqExp(concr_ast).chk_concr_ast()
         self.seen = set()
-        self.unique = set()
+        
+        self.unique_rel = set()
+        self.unique_var = set()
 
     def decode_unique(self, key):
         return self.unique(self.concr_ast[key])
@@ -318,34 +393,42 @@ class UniqueCoqExp(object):
         if key in self.seen:
             return
 
+        self.seen.add(c.tag)
         if isinstance(c, RelExp):
-            return self._uniquecon(key, 1)
+            if c.idx in self.unique_rel:
+                self.unique_rel.add(c.idx)
         elif isinstance(c, VarExp):
-            return self._uniquecon(key, 1)
+            if c.x in self.unique_var:
+                self.unique_var.add(c.x)
         elif isinstance(c, MetaExp):
-            return self._uniquecon(key, 1)
+            if c.mv in self.unique_mv:
+                self.unique_mv.add(c.mv)
         elif isinstance(c, EvarExp):
-            sz = 1 + self.uniques(c.cs)
-            return self._uniquecon(key, sz)
+            if c.exk in self.unique_ev:
+                self.unique_ev.add(c.exk)
         elif isinstance(c, SortExp):
-            return self._uniquecon(key, 1)
+            if c.sort in self.unique_sort:
+                self.unique_sort.add(c.sort)
         elif isinstance(c, CastExp):
-            sz = 1 + self.unique(c.c) + self.unique(c.ty)
-            return self._uniquecon(key, sz)
+            self.unique(c.c)
+            self.unique(c.ty)
         elif isinstance(c, ProdExp):
-            sz = 1 + self.unique(c.ty1) + self.unique(c.ty2)
-            return self._uniquecon(key, sz)
+            self.unique(c.ty1)
+            self.unique(c.ty2)
         elif isinstance(c, LambdaExp):
-            sz = 1 + self.unique(c.ty) + self.unique(c.c)
-            return self._uniquecon(key, sz)
+            c.name
+            self.unique(c.ty)
+            self.unique(c.c)
         elif isinstance(c, LetInExp):
-            sz = 1 + self.unique(c.c1) + self.unique(c.ty) + self.unique(c.c2)
-            return self._uniquecon(key, sz)
+            self.unique(c.c1)
+            self.unique(c.ty)
+            self.unique(c.c2)
         elif isinstance(c, AppExp):
-            sz = 1 + self.unique(c.c) + self.uniques(c.cs)
-            return self._uniquecon(key, sz)
+            self.unique(c.c)
+            self.uniques(c.cs)
         elif isinstance(c, ConstExp):
             # TODO(deh): HMM?
+            self.unique
             return self._uniquecon(key, 1) 
         elif isinstance(c, IndExp):
             # TODO(deh): HMM?
@@ -370,89 +453,4 @@ class UniqueCoqExp(object):
 
     def uniques(self, cs):
         return sum([self.unique(c) for c in cs])
-
-
-
-
-
-"""
-class TraverseCoqExp(object):
-    def __init__(self, concr_ast):
-        self.concr_ast = concr_ast
-
-    def traverse_ast(self, key):
-        c = self.concr_ast[key]
-        seen = set()
-        acc = []
-        self._traverse_ast(seen, acc, c)
-        return acc
-
-    def _traverse_extend(self, seen, acc, c):
-        if c not in seen:
-            acc.append(c)
-            seen.update(c.tag)
-
-    def _traverse_ast(self, seen, acc, c):
-        if c.tag in seen:
-            return
-
-        if isinstance(c, RelExp):
-            self._traverse_extend(seen, acc, c)
-        elif isinstance(c, VarExp):
-            self._traverse_extend(seen, acc, c)
-        elif isinstance(c, MetaExp):
-            self._traverse_extend(seen, acc, c)
-        elif isinstance(c, EvarExp):
-            self._traverse_extend(seen, acc, c)
-        elif isinstance(c, SortExp):
-            self._traverse_extend(seen, acc, c)
-        elif isinstance(c, CastExp):
-            self._traverse_extend(seen, acc, c)
-            self._traverse_ast(seen, acc, c.c)
-            self._traverse_ast(seen, acc, c.ty)
-        elif isinstance(c, ProdExp):
-            self._traverse_extend(seen, acc, c)
-            self._traverse_ast(seen, acc, c.ty1)
-            self._traverse_ast(seen, acc, c.ty2)
-        elif isinstance(c, LambdaExp):
-            self._traverse_extend(seen, acc, c)
-            self._traverse_ast(seen, acc, c.ty)
-            self._traverse_ast(seen, acc, c.c)
-        elif isinstance(c, LetInExp):
-            self._traverse_extend(seen, acc, c)
-            self._traverse_ast(seen, acc, c.c1)
-            self._traverse_ast(seen, acc, c.ty)
-            self._traverse_ast(seen, acc, c.c2)
-        elif isinstance(c, AppExp):
-            self._traverse_extend(seen, acc, c)
-            self._traverse_ast(seen, acc, c.c)
-            self._traverse_asts(seen, acc, c.cs)
-        elif isinstance(c, ConstExp):
-            self._traverse_extend(seen, acc, c)
-        elif isinstance(c, IndExp):
-            self._traverse_extend(seen, acc, c)
-        elif isinstance(c, ConstructExp):
-            self._traverse_extend(seen, acc, c)
-        elif isinstance(c, CaseExp):
-            self._traverse_extend(seen, acc, c)
-            self._traverse_ast(seen, acc, c.c1)
-            self._traverse_ast(seen, acc, c.c2)
-            self._traverse_asts(seen, acc, c.cs)
-        elif isinstance(c, FixExp):
-            self._traverse_extend(seen, acc, c)
-            self._traverse_asts(seen, acc, c.tys)
-            self._traverse_asts(seen, acc, c.cs)
-        elif isinstance(c, CoFixExp):
-            self._traverse_extend(seen, acc, c)
-            self._traverse_asts(seen, acc, c.tys)
-            self._traverse_asts(seen, acc, c.cs)
-        elif isinstance(c, ProjExp):
-            self._traverse_extend(seen, acc, c)
-            self._traverse_ast(seen, acc, c.c)
-        else:
-            raise NameError("Kind {} not supported".format(c))
-
-    def _traverse_asts(self, seen, acc, cs):
-        for c in cs:
-            self._traverse_ast(seen, acc, c)
 """

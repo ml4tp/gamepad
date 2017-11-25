@@ -295,11 +295,18 @@ class TacTree(object):
         return COQEXP_HIST.merges(hists + acc)
 
     def view_astsharing(self):
-        cnt = [v for k, v in self.chk.usage.items()]
+        maxuse = max([v for _, v in self.chk.sharing.items()]) + 1
+        hist = [0 for _ in range(maxuse)]
+        for k, v in self.chk.sharing.items():
+            hist[v] += 1
+        return hist
+        """
+        cnt = [v for k, v in self.chk.sharing.items()]
         total = sum(cnt)
         avg = np.mean(cnt)
-        num = len(self.chk.usage)
+        num = len(self.chk.sharing)
         return avg, total, num
+        """
 
     def stats(self):
         term_path_lens = [len(path) for path in self.view_term_paths()]

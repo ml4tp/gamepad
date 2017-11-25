@@ -13,17 +13,27 @@ from tactr import TACTICS, TACTIC_IDS, ID_TACTIC_MAP
 
 def load_tactr_stats(filename):
     stats = {}
+    unique = {'const': 0, 'ind': 0, 'conid': 0}
     with open(filename, 'r') as f:
         for line in f:
             if line.startswith("LEMMA INFO"):
                 pass
             elif line.startswith("TOTAL"):
                 pass
+            elif line.startswith("UNIQUECONST"):
+                toks = line.split()
+                unique['const'] = int(toks[1].strip())
+            elif line.startswith("UNIQUEIND"):
+                toks = line.split()
+                unique['ind'] = int(toks[1].strip())
+            elif line.startswith("UNIQUECONIND"):
+                toks = line.split()
+                unique['conid'] = int(toks[1].strip())
             else:
                 line = line.strip()
                 x = json.loads(line)
                 stats[x['lemma']] = x['info']
-    return stats
+    return stats, unique_const, unique_ind, unique_conid
 
 
 class DepthMode(Enum):
@@ -175,6 +185,22 @@ class TacTrStats(object):
         return COQEXP_HIST.view(hist, f_sort)
 
     def coqexp_sharing(self):
+        MAX_SHARE = max([len(info['sharing']) for _, info in self.stats.items()]) + 1
+        hist = [0.0 for _ in range(MAX_SHARE)]
+
+        # Sum
+        for lemma, info in self.stats.items():
+            for i, v in enumerate(info['sharing']):
+                hist[i] += v
+
+        # Normalize
+        l = len(self.stats)
+        for i in range(MAX_SHARE):
+            hist[i] /= l
+        return hist
+
+    """
+    def coqexp_sharing(self):
         total = 0.0
         avg = 0.0
         num = 0.0
@@ -188,6 +214,7 @@ class TacTrStats(object):
         self._mylog("Average shared token usage: {}".format(avg / cnt))
         self._mylog("Average total token usage: {}".format(total / cnt))
         return num / cnt, avg / cnt, total / cnt
+    """
 
 
 if __name__ == "__main__":

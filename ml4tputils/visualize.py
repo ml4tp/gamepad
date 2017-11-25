@@ -32,12 +32,20 @@ class Visualize(object):
         self.h_tactr_file = open(tactr_file, 'w')
         self.h_tactr_file.write("LEMMA INFO\n")
 
+        # Global statistics
+        self.unique_const = set()
+        self.unique_ind = set()
+        self.unique_conid = set()
+
         # Tactic Trees
         self.tactrs = []
 
     def finalize(self):
-        self.h_tactr_file.write("TOTAL {}: WERID: {}\n".format(
+        self.h_tactr_file.write("TOTAL: {} WERID: {}\n".format(
                                 self.num_lemmas, len(self.failed)))
+        self.h_tactr_file.write("UNIQUECONST: {}".format(len(self.unique_const)))
+        self.h_tactr_file.write("UNIQUEIND: {}".format(len(self.unique_ind)))
+        self.h_tactr_file.write("UNIQUECONID: {}".format(len(self.unique_conid)))
         self.h_tactr_file.close()
 
     def visualize_lemma(self, file, lemma):
@@ -74,6 +82,11 @@ class Visualize(object):
         # Compute tactic tree statistics
         tactr = tr_builder.get_tactree(self.f_verbose)
         info = tactr.log_stats(self.h_tactr_file)
+        
+        # Compute global statistics
+        self.unique_const = self.unique_const.union(tactr.chk.unique_const)
+        self.unique_ind = self.unique_ind.union(tactr.chk.unique_ind)
+        self.unique_conid = self.unique_conid.union(tactr.chk.unique_conid)
 
         if self.f_display:
             if self.f_jupyter:

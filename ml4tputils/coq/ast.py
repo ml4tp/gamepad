@@ -106,8 +106,8 @@ class Exp(object):
 class RelExp(Exp):
     """R %d
     A DeBruijn index.
-    \x. x        =  \. 0
-    \x. \y. y x  =  \. \. 0 1
+    fun x -> x        =  fun 0
+    fun x -> fun -> y y x  =  fun fun 0 1
     """
     def __init__(self, idx):
         assert isinstance(idx, int)
@@ -127,7 +127,7 @@ class RelExp(Exp):
 class VarExp(Exp):
     """V %s
     A named representation for a bound variable.
-    \x. x
+    fun x -> x
     """
     def __init__(self, x):
         assert isinstance(x, str)
