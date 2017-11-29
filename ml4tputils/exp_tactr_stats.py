@@ -198,44 +198,34 @@ class TacTrStats(object):
             hist[i] /= num_lemmas
         return hist
 
-    def coqexp_comp(self, f_avg=True, f_trunc=True):
-        hist_sf = {}
-        hist_sh = {}
-        hist_nm = {}
+    def coqexp_comp_p(self, hist_key, f_avg=True, f_trunc=True):
+        hist = {}
         for lemma, info in self.stats.items():
-            for x in info['static_full_comp']:
-                inc_update(hist_sf, x, 1.0)
-            for x in info['static_sh_comp']:
-                inc_update(hist_sh, x, 1.0)
-            for x in info['cbname_comp']:
-                inc_update(hist_nm, x, 1.0)
+            for x in info[hist_key]:
+                inc_update(hist, x, 1.0)
 
-        num_lemmas = len(self.stats)
-        for k, v in hist_sf.items():
-            hist_sf[k] /= num_lemmas
-        for k, v in hist_sh.items():
-            hist_sh[k] /= num_lemmas
-        for k, v in hist_nm.items():
-            hist_nm[k] /= num_lemmas
+        maxsize = max([k for k, v in hist.items()])
+        if f_trunc:
+            hist_p = {}
+            total = np.sum([v for k, v in hist.items()])
+            acc = 0.0
+            for k in range(maxsize + 1):
+                if k in hist:
+                    acc += hist[k]
+                    hist_p[k] = hist[k]
+                else:
+                    hist_p[k] = 0.0
+                if acc / total > 0.95:
+                    break
+        else:
+            hist_p = hist
 
-        return hist_sf, hist_sh, hist_nm
+        if f_avg:
+            num_lemmas = len(self.stats)
+            for k, v in hist_p.items():
+                hist_p[k] /= num_lemmas
 
-    """
-    def coqexp_sharing(self):
-        total = 0.0
-        avg = 0.0
-        num = 0.0
-        for lemma, info in self.stats.items():
-            avg += info['sharing'][0]
-            total += info['sharing'][1]
-            num += info['sharing'][2]
-        cnt = len(self.stats)
-
-        self._mylog("Average # of shared tokens: {}".format(num / cnt))
-        self._mylog("Average shared token usage: {}".format(avg / cnt))
-        self._mylog("Average total token usage: {}".format(total / cnt))
-        return num / cnt, avg / cnt, total / cnt
-    """
+        return hist_p, maxsize
 
 
 if __name__ == "__main__":
