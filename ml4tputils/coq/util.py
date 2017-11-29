@@ -1,21 +1,34 @@
 from coq.ast import *
 from lib.myhist import MyHist
-from lib.myutil import merge_hist, merge_hists
 
 """
 [Note]
 
 Utility functions on Coq expressions
+
+1: Base
+2: A 1 1
+3: A 2 2
+4: A 3 1
+
+2: (1, 2x)
+3: (2, 2x)
+4: (1, 1x), (3, 1x)
+
+2: (1, 2x)
+3: (1, 4x), (2, 2x)
+4: (1, 5x), (2, 2x), (3, 1x)
+
 """
 
 
 # -------------------------------------------------
-# Check the decoded representation 
+# Check the decoded representation
 
 class ChkCoqExp(object):
     def __init__(self, concr_ast):
         self.concr_ast = concr_ast
-        
+
         # Compute number of times an expression is used
         self.sharing = {}
 
@@ -137,10 +150,11 @@ class ChkCoqExp(object):
 # Computing sizes of coq-expressions efficiently
 
 class SizeCoqExp(object):
-    def __init__(self, concr_ast):
+    def __init__(self, concr_ast, f_shared=False):
         self.concr_ast = concr_ast
         ChkCoqExp(concr_ast).chk_concr_ast()
         self.size_ast = {}
+        self.f_shared = f_shared
 
     def _sizecon(self, key, size):
         self.size_ast[key] = size
@@ -153,7 +167,8 @@ class SizeCoqExp(object):
         key = c.tag
         if key in self.size_ast:
             sz = self.size_ast[key]
-            # self.size_ast[key] = 0
+            if self.f_shared:
+                self.size_ast[key] = 0
             return sz
 
         if isinstance(c, RelExp):
@@ -183,13 +198,10 @@ class SizeCoqExp(object):
             sz = 1 + self.size(c.c) + self.sizes(c.cs)
             return self._sizecon(key, sz)
         elif isinstance(c, ConstExp):
-            # TODO(deh): HMM?
-            return self._sizecon(key, 1) 
+            return self._sizecon(key, 1)
         elif isinstance(c, IndExp):
-            # TODO(deh): HMM?
             return self._sizecon(key, 1)
         elif isinstance(c, ConstructExp):
-            # TODO(deh): HMM?
             return self._sizecon(key, 1)
         elif isinstance(c, CaseExp):
             sz = 1 + self.size(c.ret) + self.size(c.match) + self.sizes(c.cases)
@@ -300,12 +312,13 @@ class HistCoqExp(object):
 3. let x = 5 in let x = x + x in x (show that this thing blows the fuck up)
 """
 
+
 class ShareCoqExp(object):
     def __init__(self, concr_ast):
         self.concr_ast = concr_ast
         ChkCoqExp(concr_ast).chk_concr_ast()
         self.seen = set()
-        
+
         self.unique_const = set()
         self.unique_sort = set()
         self.unique_prod = set()
@@ -351,7 +364,7 @@ class ShareCoqExp(object):
         elif isinstance(c, ConstExp):
             self.unique_const.add(c.const)
 
-            return self._sharecon(key, 1) 
+            return self._sharecon(key, 1)
         elif isinstance(c, IndExp):
             return self._sharecon(key, 1)
         elif isinstance(c, ConstructExp):
@@ -381,7 +394,7 @@ class UniqueCoqExp(object):
         self.concr_ast = concr_ast
         ChkCoqExp(concr_ast).chk_concr_ast()
         self.seen = set()
-        
+
         self.unique_rel = set()
         self.unique_var = set()
 

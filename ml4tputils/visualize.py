@@ -1,8 +1,5 @@
 import argparse
-import networkx as nx
-import numpy as np
 import os.path as op
-import pickle
 
 from lex_raw import TacStParser
 from parse_tacst import TacTreeParser
@@ -25,7 +22,7 @@ class Visualize(object):
         self.f_verbose = f_verbose
 
         # Target lemma?
-        self.tgtlem = tgtlem           
+        self.tgtlem = tgtlem
 
         # Tactic tree statistics
         self.tactr_file = tactr_file
@@ -43,9 +40,12 @@ class Visualize(object):
     def finalize(self):
         self.h_tactr_file.write("TOTAL: {} WERID: {}\n".format(
                                 self.num_lemmas, len(self.failed)))
-        self.h_tactr_file.write("UNIQUECONST: {}".format(len(self.unique_const)))
-        self.h_tactr_file.write("UNIQUEIND: {}".format(len(self.unique_ind)))
-        self.h_tactr_file.write("UNIQUECONID: {}".format(len(self.unique_conid)))
+        self.h_tactr_file.write("UNIQUECONST: {}\n".format(
+                                len(self.unique_const)))
+        self.h_tactr_file.write("UNIQUEIND: {}\n".format(
+                                len(self.unique_ind)))
+        self.h_tactr_file.write("UNIQUECONID: {}\n".format(
+                                len(self.unique_conid)))
         self.h_tactr_file.close()
 
     def visualize_lemma(self, file, lemma):
@@ -81,8 +81,8 @@ class Visualize(object):
 
         # Compute tactic tree statistics
         tactr = tr_builder.get_tactree(self.f_verbose)
-        info = tactr.log_stats(self.h_tactr_file)
-        
+        tactr.log_stats(self.h_tactr_file)
+
         # Compute global statistics
         self.unique_const = self.unique_const.union(tactr.chk.unique_const)
         self.unique_ind = self.unique_ind.union(tactr.chk.unique_ind)
@@ -95,7 +95,7 @@ class Visualize(object):
                 tr_builder.show()
 
         return tactr
-    
+
     def _visualize_lemma(self, ts_parser):
         lemma = ts_parser.parse_lemma()
         if self.f_verbose:
@@ -175,8 +175,8 @@ if __name__ == "__main__":
 
     bgfiles = [file for file in files if file.startswith("BG")]
     pffiles = [file for file in files if file.startswith("PF")]
-    
-    files = [ op.join(args.path, file) for file in files ]
+
+    files = [op.join(args.path, file) for file in files]
 
     # Visualize
     vis = Visualize(f_display=args.display, f_verbose=args.verbose,

@@ -1,8 +1,6 @@
-from enum import Enum
 import matplotlib.pyplot as plt
 import networkx as nx
 import plotly
-import plotly.plotly as py
 from plotly.graph_objs import *
 
 from parse_tacst import *
@@ -60,8 +58,8 @@ class TacEdge(object):
                 self.src, self.tgt, self.isbod)
 
     def __str__(self):
-        return "({}, {}, {}, {} -> {}, {})".format(self.eid, self.tid, self.name,
-                                                   self.src, self.tgt, self.isbod)
+        x = self.eid, self.tid, self.name, self.src, self.tgt, self.isbod
+        return "({}, {}, {}, {} -> {}, {})".format(*x)
 
 
 # -------------------------------------------------
@@ -86,12 +84,12 @@ class TacTreeBuilder(object):
 
         # Reconstruction state
         self.tacs = tacs
-        self.it_tacs = MyIter(tacs)   
-        self.edges = []                    # [TacEdge]
-        self.graph = nx.MultiDiGraph()     # graph with goal ids as nodes,
-                                           # tactics as edges
-        self.tacst_info = tacst_info       # Dict[int, tacst]
-        self.ftac_inscope = ftac_inscope   # full-tactic in scope?
+        self.it_tacs = MyIter(tacs)
+        self.edges = []                     # [TacEdge]
+        # graph with goal ids as nodes, tactics as edges
+        self.graph = nx.MultiDiGraph()
+        self.tacst_info = tacst_info        # Dict[int, tacst]
+        self.ftac_inscope = ftac_inscope    # full-tactic in scope?
 
         # Internal symbol generation for reconstruction
         self.gensym_edgeid = gensym_edgeid
@@ -177,7 +175,6 @@ class TacTreeBuilder(object):
             self._add_edges(edges)
         elif naf % nbf == 0:
             # Compute branching ratio
-            nbod = len(tac.bods)
             af2bf = int(naf / nbf)
 
             # 1. 1-many connection
@@ -253,7 +250,7 @@ class TacTreeBuilder(object):
                 edges = []
                 for bf_decl, af_decl in zip(tac.bf_decls, tac.af_decls):
                     edges += self._mk_edge(tac, bf_decl, af_decl)
-                
+
                 # Accumulate changes
                 self._add_edges(edges)
             else:
@@ -448,7 +445,7 @@ class TacTreeBuilder(object):
     def build_tacs(self):
         # Internal
         it_tacs = self.it_tacs
-        
+
         while it_tacs.has_next():
             tac = it_tacs.peek()
             if tac.kind == TacKind.ATOMIC:
@@ -501,8 +498,8 @@ class TacTreeBuilder(object):
         # Edge info
         marker = Marker(showscale=True, colorscale='YIGnBu', reversescale=True,
                         color=[], size=5, line=dict(width=2))
-        einfo_trace = Scatter(x=[], y=[], text=[], mode='markers', 
-                             hoverinfo='text', marker=marker)
+        einfo_trace = Scatter(x=[], y=[], text=[], mode='markers',
+                              hoverinfo='text', marker=marker)
         for edge in self.edges:
             x0, y0 = pos[edge.src]
             x1, y1 = pos[edge.tgt]
@@ -514,7 +511,7 @@ class TacTreeBuilder(object):
         # Nodes
         marker = Marker(showscale=True, colorscale='YIGnBu', reversescale=True,
                         color=[], size=10, line=dict(width=2))
-        node_trace = Scatter(x=[], y=[], text=[], mode='markers', 
+        node_trace = Scatter(x=[], y=[], text=[], mode='markers',
                              hoverinfo='text', marker=marker)
         for node in G.nodes():
             x, y = pos[node]
@@ -525,7 +522,7 @@ class TacTreeBuilder(object):
         for node in pos.keys():
             if node in self.tacst_info:
                 ctx, goal, ctx_e, goal_e = self.tacst_info[node]
-                s_ctx = "<br>".join([x + ": " + t for x, t in ctx.items()])
+                s_ctx = "<br>".join([z + ": " + t for z, t in ctx.items()])
                 node_info = "gid: {}<br>{}<br>=====================<br>{}".format(node, s_ctx, goal)
             else:
                 node_info = "gid: {}".format(node)

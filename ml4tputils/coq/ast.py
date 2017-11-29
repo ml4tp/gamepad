@@ -62,31 +62,28 @@ class CaseInfo(object):
         assert isinstance(ind, Inductive)
         assert isinstance(npar, int)
 
+        # inductive type to which belongs the value that is being matched
         self.ind = ind
+        # number of parameters of the above inductive type
         self.npar = npar
+        # For each constructor, the corresponding integer determines
+        # the number of values that can be bound in a match-construct.
+        # NOTE: parameters of the inductive type are therefore excluded
+        # from the count
         self.cstr_ndecls = cstr_ndecls
+        # for each constructor, the corresponding integers determines
+        # the number of values that can be applied to the constructor,
+        # in addition to the parameters of the related inductive type
+        # NOTE: "lets" are therefore excluded from the count
+        # NOTE: parameters of the inductive type are also excluded
+        # from the count
         self.cstr_nargs = cstr_nargs
 
     def __str__(self):
         s_cstr_ndecls = ",".join([str(x) for x in self.cstr_ndecls])
         s_cstr_nargs = ",".join([str(x) for x in self.cstr_nargs])
-        return "{}; {}; {}; [{}]; [{}]".format(self.mutind, self.pos,
-               self.npar, s_cstr_ndecls, s_cstr_nargs)
-"""
-case_info =
-  { ci_ind        : inductive;      (* inductive type to which belongs the value that is being matched *)
-    ci_npar       : int;            (* number of parameters of the above inductive type *)
-    ci_cstr_ndecls : int array;     (* For each constructor, the corresponding integer determines
-                                       the number of values that can be bound in a match-construct.
-                                       NOTE: parameters of the inductive type are therefore excluded from the count *)
-    ci_cstr_nargs : int array;      (* for each constructor, the corresponding integers determines
-                                       the number of values that can be applied to the constructor,
-                                       in addition to the parameters of the related inductive type
-                                       NOTE: "lets" are therefore excluded from the count
-                                       NOTE: parameters of the inductive type are also excluded from the count *)
-    ci_pp_info    : case_printing   (* not interpreted by the kernel *)
-  }
-"""
+        x = self.mutind, self.pos, self.npar, s_cstr_ndecls, s_cstr_nargs
+        return "{}; {}; {}; [{}]; [{}]".format(*x)
 
 
 # -------------------------------------------------
@@ -155,7 +152,6 @@ class MetaExp(Exp):
         self.mv = mv
 
     def size(self):
-        # NOTE(deh): wtf?
         return 1
 
     def __hash__(self):
@@ -366,7 +362,7 @@ class IndExp(Exp):
         return hash(self.mutind) + self.pos
 
     def __str__(self):
-        return "I({}, {}, {})".format(self.mutind, self.pos, self.ui)
+        return "I({}, {})".format(self.ind, self.ui)
 
 
 class ConstructExp(Exp):
@@ -386,11 +382,10 @@ class ConstructExp(Exp):
         return 1
 
     def __hash__(self):
-        return hash(self.mutind) + self.pos + self.conid
+        return hash(self.ind) + self.pos + self.conid
 
     def __str__(self):
-        return "CO({}, {}, {}, {})".format(self.mutind, self.pos,
-                                           self.conid, self.ui)
+        return "CO({}, {}, {})".format(self.ind, self.conid, self.ui)
 
 
 class CaseExp(Exp):
@@ -409,7 +404,7 @@ class CaseExp(Exp):
             assert isinstance(c_p, Exp)
         super().__init__()
         # [mkCase ci p c ac] stands for
-        # match [c] as [x] in [I args] return [p] with [ac] 
+        # match [c] as [x] in [I args] return [p] with [ac]
         # presented as describe in [ci].
         self.ci = ci          # case info
         self.ret = ret        # dependent return
@@ -517,7 +512,7 @@ class ProjExp(Exp):
     Projection from a record.
     """
     def __init__(self, proj, c):
-        assert isinstance(proj, Name) # TODO(deh): Name.Projection?
+        assert isinstance(proj, Name)  # TODO(deh): Name.Projection?
         assert isinstance(c, Exp)
         super().__init__()
         self.proj = proj

@@ -3,9 +3,9 @@ import json
 import numpy as np
 import scipy.stats as sps
 
-# from lib.myutil import merge_hist
+from lib.myutil import inc_update
 from coq.util import COQEXP_HIST
-from tactr import TACTICS, TACTIC_IDS, ID_TACTIC_MAP
+from tactr import TACTIC_IDS, ID_TACTIC_MAP
 
 
 # -------------------------------------------------
@@ -26,14 +26,14 @@ def load_tactr_stats(filename):
             elif line.startswith("UNIQUEIND"):
                 toks = line.split()
                 unique['ind'] = int(toks[1].strip())
-            elif line.startswith("UNIQUECONIND"):
+            elif line.startswith("UNIQUECONID"):
                 toks = line.split()
                 unique['conid'] = int(toks[1].strip())
             else:
                 line = line.strip()
                 x = json.loads(line)
                 stats[x['lemma']] = x['info']
-    return stats, unique_const, unique_ind, unique_conid
+    return stats, unique
 
 
 class DepthMode(Enum):
@@ -168,7 +168,6 @@ class TacTrStats(object):
             hist[depth] = 0
 
         norm = [0 for _ in range(0, MAX_DEPTH)]
-        maxsize = 0
         for lemma, info in self.stats.items():
             for depth, dsize in projfn(info):
                 hist[depth] += dsize
@@ -194,10 +193,32 @@ class TacTrStats(object):
                 hist[i] += v
 
         # Normalize
-        l = len(self.stats)
+        num_lemmas = len(self.stats)
         for i in range(MAX_SHARE):
-            hist[i] /= l
+            hist[i] /= num_lemmas
         return hist
+
+    def coqexp_comp(self, f_avg=True, f_trunc=True):
+        hist_sf = {}
+        hist_sh = {}
+        hist_nm = {}
+        for lemma, info in self.stats.items():
+            for x in info['static_full_comp']:
+                inc_update(hist_sf, x, 1.0)
+            for x in info['static_sh_comp']:
+                inc_update(hist_sh, x, 1.0)
+            for x in info['cbname_comp']:
+                inc_update(hist_nm, x, 1.0)
+
+        num_lemmas = len(self.stats)
+        for k, v in hist_sf.items():
+            hist_sf[k] /= num_lemmas
+        for k, v in hist_sh.items():
+            hist_sh[k] /= num_lemmas
+        for k, v in hist_nm.items():
+            hist_nm[k] /= num_lemmas
+
+        return hist_sf, hist_sh, hist_nm
 
     """
     def coqexp_sharing(self):

@@ -98,7 +98,7 @@ class DecodeCoqExp(object):
             # E %d [%s]
             exk = int(toks[1].strip())
             cs_idxs = self._santize_keys(toks[2].strip())
-            
+
             self.rawasts[key] = ("E", exk, cs_idxs)
             self._add_edges(key, cs_idxs)
         elif kind == "S":
@@ -119,7 +119,7 @@ class DecodeCoqExp(object):
             name = self._decode_rawname(toks[1].strip())
             ty1_idx = int(toks[2].strip())
             ty2_idx = int(toks[3].strip())
-            
+
             self.rawasts[key] = ("P", name, ty1_idx, ty2_idx)
             self._add_edges(key, [ty1_idx, ty2_idx])
         elif kind == "L":
@@ -150,7 +150,7 @@ class DecodeCoqExp(object):
             # C %s [%s]
             const = self._decode_rawname(toks[1].strip())
             ui = self._decode_rawuniverse_instance(toks[2].strip())
-            
+
             self.rawasts[key] = ("C", const, ui)
         elif kind == "I":
             # I %s %d [%s]
@@ -183,7 +183,7 @@ class DecodeCoqExp(object):
             names = self._decode_rawnames(toks[3].strip())
             ty_idxs = self._santize_keys(toks[4].strip())
             cs_idxs = self._santize_keys(toks[5].strip())
-            
+
             self.rawasts[key] = ("F", iarr, idx, names, ty_idxs, cs_idxs)
             self._add_edges(key, ty_idxs + cs_idxs)
         elif kind == "CF":
@@ -244,7 +244,6 @@ class DecodeCoqExp(object):
         cstr_nargs = toks[4].strip()
         return CaseInfo(Inductive(mutind, pos), npar, cstr_ndecls, cstr_nargs)
 
-
     # -------------------------------------------------
     # Second pass of decoding
     def _mkcon(self, key, c):
@@ -253,7 +252,7 @@ class DecodeCoqExp(object):
         else:
             c.tag = key
             self.concr_ast[key] = c
-            return c            
+            return c
 
     def _decode_ast(self, key):
         """Complete decoding"""
@@ -319,7 +318,7 @@ class DecodeCoqExp(object):
             return self._mkcon(key, AppExp(c, cs))
         elif kind == "C":
             # C %s [%s]
-            const, ui = rest 
+            const, ui = rest
             return self._mkcon(key, ConstExp(const, ui))
         elif kind == "I":
             # I %s %d [%s]

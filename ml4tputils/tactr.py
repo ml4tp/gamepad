@@ -2,9 +2,11 @@ import json
 import networkx as nx
 import numpy as np
 
-from coq.ast import *
+from coq.ast import Name
+from coq.interp import InterpCBName, SizeCoqVal
 from coq.util import ChkCoqExp, SizeCoqExp, HistCoqExp, COQEXP_HIST
 from lib.myutil import dict_ls_app
+from lib.myenv import MyEnv
 
 """
 [Note]
@@ -90,8 +92,9 @@ class TacTree(object):
         self.decoder = decoder         # Decode asts
         self.chk = ChkCoqExp(decoder.concr_ast)
         self.chk.chk_concr_ast()
-        self.dsize = SizeCoqExp(decoder.concr_ast)
-        self.dhist = HistCoqExp(decoder.concr_ast)
+        self.sce_full = SizeCoqExp(decoder.concr_ast, f_shared=False)
+        self.sce_sh = SizeCoqExp(decoder.concr_ast, f_shared=True)
+        self.hce = HistCoqExp(decoder.concr_ast)
 
         self.notok = []
 
@@ -254,7 +257,7 @@ class TacTree(object):
                 ls = []
                 for ident in ctx_e:
                     key = self.decoder.typs_table[ident]
-                    size = self.dsize.decode_size(key)
+                    size = self.sce_full.decode_size(key)
                     ls += [size]
                 v = np.sum(ls)
             else:
@@ -266,7 +269,7 @@ class TacTree(object):
         """Returns Dict[depth, [total ast typ size]]"""
         hist = {}
         for depth, gid, ctx, goal, ctx_e, goal_e, tac in self.flatview:
-            dict_ls_app(hist, depth, self.dsize.decode_size(goal_e))
+            dict_ls_app(hist, depth, self.sce_full.decode_size(goal_e))
         return hist
 
     def view_depth_tactic_hist(self):
@@ -283,14 +286,13 @@ class TacTree(object):
         return hist
 
     def hist_coqexp(self):
-        hists = [self.dhist.decode_hist(edx) for ident, edx in self.decoder.typs_table.items()]
-        # hist = COQEXP_HIST.merges(hists)
-        
+        hists = [self.hce.decode_hist(edx) for ident, edx in self.decoder.typs_table.items()]
+
         acc = []
         seen = set()
         for depth, gid, ctx, goal, ctx_e, goal_e, tac in self.flatview:
             if goal_e not in seen:
-                acc += [self.dhist.decode_hist(goal_e)]
+                acc += [self.hce.decode_hist(goal_e)]
                 seen.add(goal_e)
         return COQEXP_HIST.merges(hists + acc)
 
@@ -300,13 +302,34 @@ class TacTree(object):
         for k, v in self.chk.sharing.items():
             hist[v] += 1
         return hist
-        """
-        cnt = [v for k, v in self.chk.sharing.items()]
-        total = sum(cnt)
-        avg = np.mean(cnt)
-        num = len(self.chk.sharing)
-        return avg, total, num
-        """
+
+    def view_comp(self):
+        vals = {}
+        static_full_comp = {}
+        static_sh_comp = {}
+        cbname_comp = {}
+        scv = SizeCoqVal(self.decoder.concr_ast)
+        for depth, gid, ctx, goal, ctx_e, goal_e, tac in self.flatview:
+            env = MyEnv()
+            for ident in ctx_e:
+                if ident in vals:
+                    v = vals[ident]
+                else:
+                    edx = self.decoder.typs_table[ident]
+                    c = self.decoder.decode_ast(edx)
+                    # print("Interping: ", ident, ctx[ident])
+                    cbname = InterpCBName()
+                    v = cbname.interp(env, c)
+                    vals[ident] = v
+                    edx = self.decoder.typs_table[ident]
+                    static_full_comp[ident] = self.sce_full.decode_size(edx)
+                    static_sh_comp[ident] = self.sce_sh.decode_size(edx)
+                    # print("FULL_SIZE:", static_full_comp[ident])
+                    # print("SH_SIZE:", static_sh_comp[ident])
+                    cbname_comp[ident] = scv.size(v)
+                    # cbname_comp[ident] = 0
+                env = env.extend(Name(ident), v)
+        return static_full_comp, static_sh_comp, cbname_comp
 
     def stats(self):
         term_path_lens = [len(path) for path in self.view_term_paths()]
@@ -316,6 +339,7 @@ class TacTree(object):
         avg_depth_goal_size = [(k, np.mean(tysz)) for k, tysz in self.view_depth_goal_size().items()]
         avg_depth_astctx_size = [(k, np.mean(v)) for k, v in self.view_depth_astctx_size().items()]
         avg_depth_astgoal_size = [(k, np.mean(tysz)) for k, tysz in self.view_depth_astgoal_size().items()]
+        static_full_comp, static_sh_comp, cbname_comp = self.view_comp()
         info = {'hist': self.view_tactic_hist(f_compress=True),
                 'num_tacs': len(self.tactics),
                 'num_goals': len(self.goals),
@@ -331,6 +355,9 @@ class TacTree(object):
                 'avg_depth_astgoal_size': avg_depth_astgoal_size,
                 'hist_coqexp': self.hist_coqexp(),
                 'sharing': self.view_astsharing(),
+                'static_full_comp': [v for _, v in static_full_comp.items()],
+                'static_sh_comp': [v for _, v in static_sh_comp.items()],
+                'cbname_comp': [v for _, v in cbname_comp.items()],
                 'notok': self.notok}
         return info
 

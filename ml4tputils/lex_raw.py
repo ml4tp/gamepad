@@ -38,6 +38,7 @@ TOK_ML = "ML"
 TOK_NAME = "Name"
 TOK_NOTE = "Not"
 
+
 def is_after(mode):
     return mode.startswith(TOK_AFTER) or mode.startswith(TOK_AFTER_ERR)
 
@@ -138,7 +139,7 @@ class LemTacSt(object):
 
         self.name = name                     # Name of the lemma
         self.decls = decls                   # List of TacStDecl "tokens"
-        
+
         # Decode low-level Coq expression
         self.decoder = DecodeCoqExp(typs_table, bods_table, constrs_table)
 
@@ -147,7 +148,6 @@ class LemTacSt(object):
         for decl in self.decls:
             gid = decl.hdr.gid
             if gid not in tacst_info:
-                # tacst_info[gid] = (decl.ctx, decl.goal, decl.ast_ctx, decl.ast_goal)
                 # TODO(deh): can be optimized
                 ctx = {}
                 for ident in decl.ctx_idents:
@@ -183,12 +183,12 @@ class TacStParser(object):
 
         # Lemma-sepcific state
         self.decls = []           # Accumlated decls in lemma
-        
+
         # Lemma-sepcific decoding low-level Coq expressions
         self.typs_table = {}      # Dict[str, int], typ ident to exp idx
         self.bods_table = {}      # Dict[str, int], exp ident to exp idx
         self.constrs_table = {}   # Dict[int, string], exp idx to unparsed string
-        
+
         # Pretty print information
         self.prtyps_table = {}    # Dict[str, str], typ ident to pretty
         self.prbods_table = {}    # Dict[str, str], exp ident to pretty
@@ -224,6 +224,8 @@ class TacStParser(object):
             idents = []
         else:
             idents = [ident.strip() for ident in ctx_idents.split(",")]
+        # TODO(deh): Fix coq dump to print put in correct order?
+        idents.reverse()
         return idents, cid
 
     def parse_decl(self, d_id, mode, tac, kind, loc):
@@ -333,7 +335,7 @@ class TacStParser(object):
         hdr = self.h_head.consume_line()
         end = hdr.find(":")
         key = hdr[:end].strip()
-        val = hdr[end+1:].strip()
+        val = hdr[end + 1:].strip()
         return key, val
 
     def parse_typs_table(self):
@@ -342,7 +344,7 @@ class TacStParser(object):
         self._mylog("@parse_typs_table:before<{}>".format(h_head.peek_line()))
 
         # Parse identifier to expression identifier
-        _ = h_head.consume_line()
+        h_head.consume_line()
         while not h_head.peek_line().startswith(TOK_BODS):
             k, v = self._parse_table_entry()
             self.typs_table[k] = int(v)
@@ -353,7 +355,7 @@ class TacStParser(object):
         self._mylog("@parse_bods_table:before<{}>".format(h_head.peek_line()))
 
         # Parse identifier to expression identifier
-        _ = h_head.consume_line()
+        h_head.consume_line()
         while not h_head.peek_line().startswith(TOK_CONSTRS):
             k, v = self._parse_table_entry()
             self.bods_table[k] = int(v)
@@ -364,7 +366,7 @@ class TacStParser(object):
         self._mylog("@parse_constrs_table:before<{}>".format(h_head.peek_line()))
 
         # Parse expression identifier to low-level constr expression
-        _ = h_head.consume_line()
+        h_head.consume_line()
         while not h_head.peek_line().startswith(TOK_PRTYPS):
             k, v = self._parse_table_entry()
             self.constrs_table[int(k)] = v
@@ -375,7 +377,7 @@ class TacStParser(object):
         self._mylog("@parse_prtyps_table:before<{}>".format(h_head.peek_line()))
 
         # Parse identifier to pretty-print expression
-        _ = h_head.consume_line()
+        h_head.consume_line()
         while not h_head.peek_line().startswith(TOK_PRBODS):
             k, v = self._parse_table_entry()
             self.prtyps_table[k] = v
@@ -386,7 +388,7 @@ class TacStParser(object):
         self._mylog("@parse_prbods_table:before<{}>".format(h_head.peek_line()))
 
         # Parse identifier to pretty-print expression
-        _ = h_head.consume_line()
+        h_head.consume_line()
         while not h_head.peek_line().startswith(TOK_PRGLS):
             k, v = self._parse_table_entry()
             self.prbods_table[k] = v
@@ -397,7 +399,7 @@ class TacStParser(object):
         self._mylog("@parse_prgls_table:before<{}>".format(h_head.peek_line()))
 
         # Parse index to pretty-print expression
-        _ = h_head.consume_line()
+        h_head.consume_line()
         while not h_head.peek_line().startswith(TOK_END_PF):
             k, v = self._parse_table_entry()
             self.prgls_table[int(k)] = v
@@ -468,7 +470,7 @@ class TacStParser(object):
 
                 # Reset for new lemma
                 self._reset()
-                
+
                 return lemma
             elif line.startswith(TOK_BEG_SUB_PF):
                 self.parse_begsubpf()
@@ -507,163 +509,3 @@ class TacStParser(object):
             line = h_head.raw_peek_line()
         self.exhausted = True
         return self.lems
-
-
-"""
-TOK_SEP = "{!}"
-TOK_DIV = "============================"
-TOK_BEFORE = "before"
-TOK_AFTER = "after"
-TOK_AFTER_ERR = "afterE"
-TOK_BEG_TAC_ST = "begin(tacst)"
-TOK_END_TAC_ST = "end(tacst)"
-TOK_BEG_SUB_PF = "begin(subpf)"
-TOK_END_SUB_PF = "end(subpf)"
-TOK_BEG_PF = "begin(pf)"
-TOK_END_PF = "end(pf)"
-TOK_TYPS = "Typs"
-TOK_BODS = "Bods"
-TOK_CONSTRS = "Constrs"
-TOK_PRTYPS = "PrTyps"
-TOK_PRBODS = "PrBods"
-TOK_PRGLS = "PrGls"
-"""
-
-
-"""
-class TacStDecl(object):
-    def __init__(self, hdr, ctx, goal, ast_ctx, ast_goal):
-        assert isinstance(hdr, TacStHdr)
-        assert isinstance(ctx, dict)
-        assert isinstance(goal, str)
-        assert isinstance(ast_ctx, list)
-        assert isinstance(ast_goal, int)
-
-        self.hdr = hdr            # tactic state header
-        self.ctx = ctx            # context as Dict[id, str]
-        self.goal = goal          # goal as string
-        self.ast_ctx = ast_ctx    # ctx as [id]
-        self.ast_goal = ast_goal  # goal as int
-
-    def pp(self, tab=0):
-        s1 = self.hdr.pp(tab) + "\n"
-        s2 = "\n".join([pp_tab(tab + 2, "{}: {}".format(x, ty)) for (x, ty) in self.ctx.items()]) + "\n"
-        s3 = pp_tab(tab + 2, "=====================\n")
-        s4 = pp_tab(tab + 2, self.goal)
-        return s1 + s2 + s3 + s4
-
-    def __str__(self):
-        if self.hdr.mode == TOK_BEFORE:
-            s_mode = "B"
-        elif self.hdr.mode == TOK_AFTER:
-            s_mode = "A"
-        elif self.hdr.mode == TOK_AFTER_ERR:
-            s_mode = "E"
-        info = s_mode, self.hdr.uid, self.hdr.gid, self.hdr.tac, self.hdr.loc
-        return "{}(uid={}, gid={}, tac={}, loc={})".format(*info)
-"""
-
-"""
-def parse_sep(self):
-    # Internal
-    h_head = self.h_head
-    self._mylog("@parse_sep:before<{}>".format(h_head.peek_line()))
-
-    # Parse separator
-    line = h_head.consume_line()
-    return line
-
-def parse_newline(self):
-    # Internal
-    h_head = self.h_head
-    self._mylog("@parse_newline:before<{}>".format(h_head.peek_line()))
-
-    # Parse new line
-    line = h_head.consume_line()
-    return line
-
-def parse_local_decl(self):
-    # Internal
-    h_head = self.h_head
-    self._mylog("@parse_local_decl:before<{}>".format(h_head.peek_line()))
-
-    # Parse local decl
-    ldecl = h_head.consume_line()
-    idx = ldecl.find(':')
-    if idx < 0:
-        raise NameError("Parsing local declaration but found {}".
-                        format(ldecl))
-    _idents = ldecl[:idx].strip()
-    typ = ldecl[idx + 1:].strip()
-
-    # The context is compacted so that multiple identifiers
-    # may have the same type
-    idents = [x.strip() for x in _idents.split(",")]
-
-    # Parse rest of type it is on newline
-    line = h_head.peek_line()
-    while line != TOK_DIV and line.find(':') < 0:
-        typ += " " + line.strip()
-        line = h_head.advance_line()
-    return (idents, typ)
-
-def parse_local_ctx(self):
-    # Internal
-    h_head = self.h_head
-    self._mylog("@parse_local_ctx:before<{}>".format(h_head.peek_line()))
-
-    # Parse local context
-    local_ctx = {}
-    line = h_head.peek_line()
-    while line.find(':') >= 0:
-        idents, typ = self.parse_local_decl()
-        for ident in idents:
-            local_ctx[ident] = typ
-        line = h_head.peek_line()
-    return local_ctx
-
-def parse_local_ast_ctx(self):
-    # Internal
-    h_head = self.h_head
-    self._mylog("@parse_local_ast_ctx:before<{}>".format(h_head.peek_line()))
-
-    # Parse local ctx
-    line = h_head.consume_line()
-    if line == "":
-        return []
-    else:
-        idents = [ident.strip() for ident in line.split(",")]
-        return idents
-
-def parse_pf_div(self):
-    # Internal
-    h_head = self.h_head
-    self._mylog("@parse_pf_div:before<{}>".format(h_head.peek_line()))
-
-    # Parse proof divider
-    line = h_head.consume_line()
-    if line != TOK_DIV:
-        raise NameError("Found {} instead of {}".format(line, TOK_DIV))
-    return line
-
-def parse_ast_goal(self):
-    # Internal
-    h_head = self.h_head
-    self._mylog("@parse_ast_goal:before<{}>".format(h_head.peek_line()))
-
-    goal = h_head.consume_line()
-    return int(goal)
-
-def parse_goal(self):
-    # Internal
-    h_head = self.h_head
-    self._mylog("@parse_goal:before<{}>".format(h_head.peek_line()))
-
-    # Parse goal
-    goal = h_head.consume_line()
-    line = h_head.peek_line()
-    while not line.startswith(TOK_SEP):
-        goal += line
-        line = h_head.advance_line()
-    return goal
-"""
