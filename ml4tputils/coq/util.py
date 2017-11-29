@@ -62,7 +62,8 @@ class ChkCoqExp(object):
         c_p = self.concr_ast[c.tag]
         self._sharing(c)
         if c_p.tag != c.tag:
-            raise NameError("Tags {} and {} do not match {} {}".format(c.tag, c_p.tag, type(c.tag), type(c_p.tag)))
+            raise NameError("Tags {} and {} do not match {} {}".
+                            format(c.tag, c_p.tag, type(c.tag), type(c_p.tag)))
 
         if isinstance(c, RelExp):
             pass
@@ -204,7 +205,8 @@ class SizeCoqExp(object):
         elif isinstance(c, ConstructExp):
             return self._sizecon(key, 1)
         elif isinstance(c, CaseExp):
-            sz = 1 + self.size(c.ret) + self.size(c.match) + self.sizes(c.cases)
+            sz = (1 + self.size(c.ret) + self.size(c.match) +
+                  self.sizes(c.cases))
             return self._sizecon(key, sz)
         elif isinstance(c, FixExp):
             sz = 1 + self.sizes(c.tys) + self.sizes(c.cs)
@@ -312,7 +314,7 @@ class HistCoqExp(object):
 3. let x = 5 in let x = x + x in x (show that this thing blows the fuck up)
 """
 
-
+"""
 class ShareCoqExp(object):
     def __init__(self, concr_ast):
         self.concr_ast = concr_ast
@@ -363,14 +365,14 @@ class ShareCoqExp(object):
             self.shares(c.cs)
         elif isinstance(c, ConstExp):
             self.unique_const.add(c.const)
-
             return self._sharecon(key, 1)
         elif isinstance(c, IndExp):
             return self._sharecon(key, 1)
         elif isinstance(c, ConstructExp):
             return self._sharecon(key, 1)
         elif isinstance(c, CaseExp):
-            sz = 1 + self.share(c.ret) + self.share(c.match) + self.shares(c.cases)
+            sz = (1 + self.share(c.ret) + self.share(c.match) +
+                  self.shares(c.cases))
             return self._sharecon(key, sz)
         elif isinstance(c, FixExp):
             sz = 1 + self.shares(c.tys) + self.shares(c.cs)
@@ -386,6 +388,7 @@ class ShareCoqExp(object):
 
     def shares(self, cs):
         return sum([self.share(c) for c in cs])
+"""
 
 
 """

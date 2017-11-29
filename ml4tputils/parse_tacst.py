@@ -53,7 +53,7 @@ class RawTac(object):
         self.kind = kind           # Kind of the tactic
         self.ftac = ftac           # Full tactic
         self.bf_decls = bf_decls   # Before declarations
-        self.af_decls = af_decls   # After declarations  
+        self.af_decls = af_decls   # After declarations
         self.bods = bods           # Raw tactics in the body
 
     def base_stats(self):
@@ -117,7 +117,7 @@ class TacTreeParser(object):
         self.f_log = f_log
         self.lemma = lemma
         self.it = MyIter(lemma.decls)
-        
+
         self.gensym = GenSym()          # RawTac uid gensym
         self.depth = 0                  # Nesting depth
         self.uidstk = []                # RawTac uid stack (for after)
@@ -216,7 +216,7 @@ class TacTreeParser(object):
 
         # Parse body
         body = self.parse_tactree()
-        
+
         # Parse after
         afters = []
         while it.has_next() and \

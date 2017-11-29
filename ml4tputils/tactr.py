@@ -5,8 +5,10 @@ import numpy as np
 from coq.ast import Name
 from coq.interp import InterpCBName, SizeCoqVal
 from coq.util import ChkCoqExp, SizeCoqExp, HistCoqExp, COQEXP_HIST
-from lib.myutil import dict_ls_app
 from lib.myenv import MyEnv
+from lib.myhist import MyHist
+from lib.myutil import dict_ls_app
+from parse_tacst import TacKind
 
 """
 [Note]
@@ -66,17 +68,7 @@ TACTICS = ["<coretactics::intro@0>",
            ]
 
 
-TACTIC_IDS = [i for i, _ in enumerate(TACTICS)]
-
-
-TACTIC_ID_MAP = {}
-for i, tactic in enumerate(TACTICS):
-    TACTIC_ID_MAP[tactic] = i
-
-
-ID_TACTIC_MAP = {}
-for i, tactic in enumerate(TACTICS):
-    ID_TACTIC_MAP[i] = tactic
+TACTIC_HIST = MyHist(TACTICS)
 
 
 # -------------------------------------------------
@@ -208,18 +200,16 @@ class TacTree(object):
         return acc
 
     def view_tactic_hist(self, f_compress=False):
-        hist = [0 for _ in TACTIC_IDS]
+        hist = TACTIC_HIST.empty()
         for k, tacs in self.tactics.items():
             tac = tacs[0]
-            for idx, tactic in enumerate(TACTICS):
-                if tac.name.startswith(tactic):
-                    hist[idx] += 1
-                    break
-
+            if tac.tkind == TacKind.ML:
+                tac_name = tac.name.split()[0]
+                hist = TACTIC_HIST.inc_insert(hist, tac_name, 1)
         if f_compress:
-            return hist
+            return [v for _, v in TACTIC_HIST.view(hist)]
         else:
-            return [(tactic, cnt) for tactic, cnt in zip(TACTICS, hist)]
+            return TACTIC_HIST.view(hist)
 
     def view_depth_ctx_items(self):
         hist = {}
@@ -276,17 +266,15 @@ class TacTree(object):
         max_depth = max([depth for depth, _, _, _, _, _, _ in self.flatview])
         hist = {}
         for depth in range(max_depth + 1):
-            hist[depth] = [0 for _ in TACTIC_IDS]
+            hist[depth] = TACTIC_HIST.empty()
 
         for depth, gid, ctx, goal, ctx_e, goal_e, tac in self.flatview:
-            for idx, tactic in enumerate(TACTICS):
-                if tac.name.startswith(tactic):
-                    hist[depth][idx] += 1
-                    break
+            TACTIC_HIST.inc_insert(hist[depth], tac.name, 1)
         return hist
 
     def hist_coqexp(self):
-        hists = [self.hce.decode_hist(edx) for ident, edx in self.decoder.typs_table.items()]
+        hists = [self.hce.decode_hist(edx) for ident, edx in
+                 self.decoder.typs_table.items()]
 
         acc = []
         seen = set()
@@ -317,28 +305,29 @@ class TacTree(object):
                 else:
                     edx = self.decoder.typs_table[ident]
                     c = self.decoder.decode_ast(edx)
-                    # print("Interping: ", ident, ctx[ident])
                     cbname = InterpCBName()
                     v = cbname.interp(env, c)
                     vals[ident] = v
                     edx = self.decoder.typs_table[ident]
                     static_full_comp[ident] = self.sce_full.decode_size(edx)
                     static_sh_comp[ident] = self.sce_sh.decode_size(edx)
-                    # print("FULL_SIZE:", static_full_comp[ident])
-                    # print("SH_SIZE:", static_sh_comp[ident])
                     cbname_comp[ident] = scv.size(v)
-                    # cbname_comp[ident] = 0
                 env = env.extend(Name(ident), v)
         return static_full_comp, static_sh_comp, cbname_comp
 
     def stats(self):
         term_path_lens = [len(path) for path in self.view_term_paths()]
         err_path_lens = [len(path) for path in self.view_err_paths()]
-        avg_depth_ctx_items = [(k, np.mean(v)) for k, v in self.view_depth_ctx_items().items()]
-        avg_depth_ctx_size = [(k, np.mean(v)) for k, v in self.view_depth_ctx_size().items()]
-        avg_depth_goal_size = [(k, np.mean(tysz)) for k, tysz in self.view_depth_goal_size().items()]
-        avg_depth_astctx_size = [(k, np.mean(v)) for k, v in self.view_depth_astctx_size().items()]
-        avg_depth_astgoal_size = [(k, np.mean(tysz)) for k, tysz in self.view_depth_astgoal_size().items()]
+        avg_depth_ctx_items = [(k, np.mean(v)) for k, v in
+                               self.view_depth_ctx_items().items()]
+        avg_depth_ctx_size = [(k, np.mean(v)) for k, v in
+                              self.view_depth_ctx_size().items()]
+        avg_depth_goal_size = [(k, np.mean(tysz)) for k, tysz in
+                               self.view_depth_goal_size().items()]
+        avg_depth_astctx_size = [(k, np.mean(v)) for k, v in
+                                 self.view_depth_astctx_size().items()]
+        avg_depth_astgoal_size = [(k, np.mean(tysz)) for k, tysz in
+                                  self.view_depth_astgoal_size().items()]
         static_full_comp, static_sh_comp, cbname_comp = self.view_comp()
         info = {'hist': self.view_tactic_hist(f_compress=True),
                 'num_tacs': len(self.tactics),

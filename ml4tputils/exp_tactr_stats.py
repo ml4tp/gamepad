@@ -5,7 +5,7 @@ import scipy.stats as sps
 
 from lib.myutil import inc_update
 from coq.util import COQEXP_HIST
-from tactr import TACTIC_IDS, ID_TACTIC_MAP
+from tactr import TACTIC_HIST
 
 
 # -------------------------------------------------
@@ -70,17 +70,13 @@ class TacTrStats(object):
 
     def avg_hist(self, f_sort=True):
         """Histogram of tactic vs count"""
-        hist = [0 for _ in TACTIC_IDS]
-        total = len(self.stats)
+        hist = TACTIC_HIST.empty()
         for lemma, info in self.stats.items():
-            for idx, cnt in enumerate(info['hist']):
-                hist[idx] += cnt
+            hist = TACTIC_HIST.merge(hist, info['hist'])
 
-        avg = [(ID_TACTIC_MAP[idx], float(cnt) / total) for idx, cnt in enumerate(hist)]
-        if f_sort:
-            return sorted(avg, key=lambda k: (k[1], k[0]), reverse=True)
-        else:
-            return avg
+        total = len(self.stats)
+        avg = TACTIC_HIST.map(hist, lambda x: x / total)
+        return TACTIC_HIST.view(avg, f_sort)
 
     def descrip_tacs(self):
         """Descriptive statistics on number of tactics used per lemma"""
@@ -231,30 +227,3 @@ class TacTrStats(object):
 if __name__ == "__main__":
     stats = load_tactr_stats("log/tactr-build-10.log")
     tactr_stats = TacTrStats(stats)
-    # compute_all(stats)
-
-"""
-def compute_all(stats):
-    # Hist[tactic, cnt]
-    print(avg_hist(stats, f_sort=True))
-
-    # var, max, min, quartiles
-    print("Average # of tactics (per lemma): {}".format(avg_tacs(stats)))
-    # var, max, min, quartiles
-    print("Average # of goals (per lemma): {}".format(avg_goals(stats)))
-    # var, max, min, quartiles
-    print("Average # of terminal states (per lemma): {}".format(avg_term(stats)))
-    # var, max, min, quartiles
-    print("Average # of error states (per lemma): {}".format(avg_err(stats)))
-    # var, max, min, quartiles
-    # print(gather_have_info(stats))
-
-    # Matrix[lemma#, lens]
-    print(gather_term_path_lens(stats))
-    # Matrix[lemma#, lens]
-    print(gather_err_path_lens(stats))
-    # Hist[depth, avg]
-    print(avg_depth_size(stats, DepthMode.CONTEXT))
-    # Hist[depth, avg]
-    print(avg_depth_size(stats, DepthMode.GOAL))
-"""

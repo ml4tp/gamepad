@@ -21,13 +21,36 @@ class Name(object):
         return self.base == other.base and self.hierch == other.hierch
 
     def __hash__(self):
-        return hash(str(self))
+        return 3 * hash(self.base) + hash(self.hierch)
 
     def __str__(self):
         if self.hierch:
-            return "{}.{}".format(self.base, self.hierch)
+            return "{}.{}".format(self.base, str(self.hierch))
         else:
             return self.base
+
+
+"""
+class DecodeName(object):
+    def __init__(self):
+        self.names = {}
+
+    def _hcons(self, tok):
+        if tok in self.names:
+
+    def str_to_name(self, s):
+        toks = s.split('.')
+        if len(toks) == 0:
+            raise NameError("Cannot convert empty string {}".format(s))
+        elif len(toks) == 1:
+            return Name(toks[0])
+        else:
+            name = Name(toks[-1])
+            toks = toks[:-1]
+            for tok in toks[::-1]:
+                name = Name(tok, name)
+        return name
+"""
 
 
 class UniverseInstance(object):

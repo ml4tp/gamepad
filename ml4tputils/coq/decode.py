@@ -36,24 +36,21 @@ class DecodeCoqExp(object):
         self.edges = []
         self.rawasts = {}
 
+        # Lex raw-ast and build dependency graph
         G = nx.DiGraph()
         for key, entry in self.constrs_table.items():
             G.add_node(key)
-            self._decode_rawast(key, entry)
+            self._parse_rawast(key, entry)
         G.add_edges_from(self.edges)
         if f_display:
             nx.drawing.nx_pylab.draw_kamada_kawai(G, with_labels=True)
             plt.show()
 
+        # Use topological sort of dependencies to decode ast
         keys = list(nx.algorithms.dag.topological_sort(G))
         for key in keys:
             c = self._decode_ast(key)
             self._mkcon(key, c)
-            """
-            if key not in self.concr_ast:
-                c.tag = key
-                self.concr_ast[key] = c
-            """
 
         # Clear state
         self.edges = []
@@ -75,7 +72,7 @@ class DecodeCoqExp(object):
         toks = re.findall(r'\[[^}]*?\]|\S+', entry)
         return toks
 
-    def _decode_rawast(self, key, entry):
+    def _parse_rawast(self, key, entry):
         """First pass decoding to build dependency graph"""
         toks = self._split_entry(entry)
         kind = toks[0].strip()
@@ -116,7 +113,7 @@ class DecodeCoqExp(object):
             self._add_edges(key, [c_idx, ty_idx])
         elif kind == "P":
             # P %s %d %d
-            name = self._decode_rawname(toks[1].strip())
+            name = self._parse_rawname(toks[1].strip())
             ty1_idx = int(toks[2].strip())
             ty2_idx = int(toks[3].strip())
 
@@ -124,7 +121,7 @@ class DecodeCoqExp(object):
             self._add_edges(key, [ty1_idx, ty2_idx])
         elif kind == "L":
             # L %s %d %d
-            name = self._decode_rawname(toks[1].strip())
+            name = self._parse_rawname(toks[1].strip())
             ty_idx = int(toks[2].strip())
             c_idx = int(toks[3].strip())
 
@@ -132,7 +129,7 @@ class DecodeCoqExp(object):
             self._add_edges(key, [ty_idx, c_idx])
         elif kind == "LI":
             # LI %s %d %d %d
-            name = self._decode_rawname(toks[1].strip())
+            name = self._parse_rawname(toks[1].strip())
             c1_idx = int(toks[2].strip())
             ty_idx = int(toks[3].strip())
             c2_idx = int(toks[4].strip())
@@ -148,28 +145,28 @@ class DecodeCoqExp(object):
             self._add_edges(key, [c_idx] + cs_idxs)
         elif kind == "C":
             # C %s [%s]
-            const = self._decode_rawname(toks[1].strip())
-            ui = self._decode_rawuniverse_instance(toks[2].strip())
+            const = self._parse_rawname(toks[1].strip())
+            ui = self._parse_rawuniverse_instance(toks[2].strip())
 
             self.rawasts[key] = ("C", const, ui)
         elif kind == "I":
             # I %s %d [%s]
-            mutind = self._decode_rawname(toks[1].strip())
+            mutind = self._parse_rawname(toks[1].strip())
             pos = int(toks[2].strip())
-            ui = self._decode_rawuniverse_instance(toks[3].strip())
+            ui = self._parse_rawuniverse_instance(toks[3].strip())
 
             self.rawasts[key] = ("I", mutind, pos, ui)
         elif kind == "CO":
             # CO %s %d %d [%s]
-            mutind = self._decode_rawname(toks[1].strip())
+            mutind = self._parse_rawname(toks[1].strip())
             pos = int(toks[2].strip())
             conid = int(toks[3].strip())
-            ui = self._decode_rawuniverse_instance(toks[4].strip())
+            ui = self._parse_rawuniverse_instance(toks[4].strip())
 
             self.rawasts[key] = ("CO", mutind, pos, conid, ui)
         elif kind == "CS":
             # CS [%s] %d %d [%s]
-            case_info = self._decode_rawcase_info(toks[1].strip())
+            case_info = self._parse_rawcase_info(toks[1].strip())
             c1_idx = int(toks[2].strip())
             c2_idx = int(toks[3].strip())
             cs_idxs = self._santize_keys(toks[4].strip())
@@ -178,9 +175,9 @@ class DecodeCoqExp(object):
             self._add_edges(key, [c1_idx, c2_idx] + cs_idxs)
         elif kind == "F":
             # F [%s] %d [%s] [%s] [%s]
-            iarr = self._decode_rawiarr(toks[1].strip())
+            iarr = self._parse_rawiarr(toks[1].strip())
             idx = int(toks[2].strip())
-            names = self._decode_rawnames(toks[3].strip())
+            names = self._parse_rawnames(toks[3].strip())
             ty_idxs = self._santize_keys(toks[4].strip())
             cs_idxs = self._santize_keys(toks[5].strip())
 
@@ -188,7 +185,7 @@ class DecodeCoqExp(object):
             self._add_edges(key, ty_idxs + cs_idxs)
         elif kind == "CF":
             idx = int(toks[2].strip())
-            names = self._decode_rawnames(toks[3].strip())
+            names = self._parse_rawnames(toks[3].strip())
             ty_idxs = self._santize_keys(toks[4].strip())
             cs_idxs = self._santize_keys(toks[5].strip())
 
@@ -203,44 +200,33 @@ class DecodeCoqExp(object):
         else:
             raise NameError("Kind {} not supported.".format(kind))
 
-    def _decode_rawname(self, name):
-        """
-        toks = name.split(".")
-        base = toks[0]
-        rest = toks[1:]
-        if rest:
-            _name = Name(base, rest[0])
-            for i in range(len(rest) - 1):
-                _name = Name(rest[i], _name)
-            return _name
-        else:
-            return Name(base)
-        """
+    def _parse_rawname(self, name):
+        # TODO(deh): Hierarchical parsing?
         return Name(name.strip())
 
-    def _decode_rawnames(self, names):
+    def _parse_rawnames(self, names):
         names = names[1:-1]
-        return [self._decode_rawname(name) for name in names.split()]
+        return [self._parse_rawname(name) for name in names.split()]
 
-    def _decode_rawuniverse_instance(self, ui):
+    def _parse_rawuniverse_instance(self, ui):
         ui = ui[1:-1]
         return UniverseInstance([u.strip() for u in ui.split()])
 
-    def _decode_rawiarr(self, iarr):
+    def _parse_rawiarr(self, iarr):
         iarr = iarr[1:-1]
         return [int(i.strip()) for i in iarr.split()]
 
-    def _decode_rawcase_info(self, ci):
+    def _parse_rawcase_info(self, ci):
         ci = ci[1:-1]
         toks = self._split_entry(ci)
-        mutind = self._decode_rawname(toks[0])
+        mutind = self._parse_rawname(toks[0])
         pos = int(toks[1])
         npar = int(toks[2].strip())
         # TODO(deh): check latest coq format
-        # cstr_ndecls = self._decode_rawiarr(toks[3].strip())
+        # cstr_ndecls = self._parse_rawiarr(toks[3].strip())
         cstr_ndecls = toks[3].strip()
         # TODO(deh): check latest coq format
-        # cstr_nargs = self._decode_rawiarr(toks[4].strip())
+        # cstr_nargs = self._parse_rawiarr(toks[4].strip())
         cstr_nargs = toks[4].strip()
         return CaseInfo(Inductive(mutind, pos), npar, cstr_ndecls, cstr_nargs)
 
@@ -327,7 +313,8 @@ class DecodeCoqExp(object):
         elif kind == "CO":
             # CO %s %d %d [%s]
             mutind, pos, conid, ui = rest
-            return self._mkcon(key, ConstructExp(Inductive(mutind, pos), conid, ui))
+            return self._mkcon(key,
+                               ConstructExp(Inductive(mutind, pos), conid, ui))
         elif kind == "CS":
             # CS [%s] %d %d [%s]
             case_info, c1_idx, c2_idx, cs_idxs = rest

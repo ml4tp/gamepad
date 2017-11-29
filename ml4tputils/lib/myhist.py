@@ -13,8 +13,18 @@ class MyHist(object):
         hist = self.empty()
         return self.insert(hist, key, 1)
 
+    def from_ls(self, ls):
+        hist = {}
+        for i, cnt in enumerate(ls):
+            hist[self.id2bin[i]] = cnt
+        return hist
+
     def insert(self, hist, key, value):
         hist[self.bin2id[key]] = value
+        return hist
+
+    def inc_insert(self, hist, key, value):
+        hist[self.bin2id[key]] += value
         return hist
 
     def merge(self, hist1, hist2):
@@ -33,3 +43,6 @@ class MyHist(object):
             return sorted(ls, key=lambda k: (k[1], k[0]), reverse=True)
         else:
             return ls
+
+    def map(self, hist, f):
+        return [f(x) for x in hist]
