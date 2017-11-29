@@ -363,7 +363,8 @@ class TacStParser(object):
     def parse_constrs_table(self):
         # Internal
         h_head = self.h_head
-        self._mylog("@parse_constrs_table:before<{}>".format(h_head.peek_line()))
+        self._mylog("@parse_constrs_table:before<{}>".format(
+                    h_head.peek_line()))
 
         # Parse expression identifier to low-level constr expression
         h_head.consume_line()
@@ -374,7 +375,8 @@ class TacStParser(object):
     def parse_prtyps_table(self):
         # Internal
         h_head = self.h_head
-        self._mylog("@parse_prtyps_table:before<{}>".format(h_head.peek_line()))
+        self._mylog("@parse_prtyps_table:before<{}>".format(
+                    h_head.peek_line()))
 
         # Parse identifier to pretty-print expression
         h_head.consume_line()
@@ -385,7 +387,8 @@ class TacStParser(object):
     def parse_prbods_table(self):
         # Internal
         h_head = self.h_head
-        self._mylog("@parse_prbods_table:before<{}>".format(h_head.peek_line()))
+        self._mylog("@parse_prbods_table:before<{}>".format(
+                    h_head.peek_line()))
 
         # Parse identifier to pretty-print expression
         h_head.consume_line()

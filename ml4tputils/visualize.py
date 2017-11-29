@@ -84,9 +84,9 @@ class Visualize(object):
         tactr.log_stats(self.h_tactr_file)
 
         # Compute global statistics
-        self.unique_const = self.unique_const.union(tactr.chk.unique_const)
-        self.unique_ind = self.unique_ind.union(tactr.chk.unique_ind)
-        self.unique_conid = self.unique_conid.union(tactr.chk.unique_conid)
+        self.unique_const = self.unique_const.union(tactr.unique_const())
+        self.unique_ind = self.unique_ind.union(tactr.unique_ind())
+        self.unique_conid = self.unique_conid.union(tactr.unique_conid())
 
         if self.f_display:
             if self.f_jupyter:

@@ -102,8 +102,10 @@ class RawTac(object):
     def __str__(self):
         bf_decl = ", ".join([str(bf_decl) for bf_decl in self.bf_decls])
         af_decls = ", ".join([str(af_decl) for af_decl in self.af_decls])
-        bods = "\n".join([", ".join([str(tac) for tac in body]) for body in self.bods])
-        return "{}({}; {}; {}; {})".format(self.name, self.uid, bf_decl, af_decls, bods)
+        bods = "\n".join([", ".join([str(tac) for tac in body])
+                         for body in self.bods])
+        return "{}({}; {}; {}; {})".format(self.name, self.uid,
+                                           bf_decl, af_decls, bods)
 
 
 # -------------------------------------------------
@@ -142,15 +144,15 @@ class TacTreeParser(object):
         # Parse before
         befores = []
         start_decl = it.peek()
-        while it.peek().hdr.mode == TOK_BEFORE and \
-              it.peek().hdr.uid == start_decl.hdr.uid:
+        while (it.peek().hdr.mode == TOK_BEFORE and
+               it.peek().hdr.uid == start_decl.hdr.uid):
             befores += [next(it)]
 
         # Parse after
         afters = []
-        while it.has_next() and \
-              is_after(it.peek().hdr.mode) and \
-              it.peek().hdr.uid == start_decl.hdr.uid:
+        while (it.has_next() and
+               is_after(it.peek().hdr.mode) and
+               it.peek().hdr.uid == start_decl.hdr.uid):
             afters += [next(it)]
 
         return RawTac(self._fresh_uid(), befores[0].hdr.tac, TacKind.ATOMIC,
@@ -164,15 +166,15 @@ class TacTreeParser(object):
         # Parse before
         befores = []
         start_decl = it.peek()
-        while it.peek().hdr.mode == TOK_BEFORE and \
-              it.peek().hdr.uid == start_decl.hdr.uid:
+        while (it.peek().hdr.mode == TOK_BEFORE and
+               it.peek().hdr.uid == start_decl.hdr.uid):
             befores += [next(it)]
 
         # Parse after
         afters = []
-        while it.has_next() and \
-              is_after(it.peek().hdr.mode) and \
-              it.peek().hdr.uid == start_decl.hdr.uid:
+        while (it.has_next() and
+               is_after(it.peek().hdr.mode) and
+               it.peek().hdr.uid == start_decl.hdr.uid):
             afters += [next(it)]
 
         return RawTac(self._fresh_uid(), befores[0].hdr.tac, TacKind.NAME,
@@ -187,16 +189,16 @@ class TacTreeParser(object):
         befores = []
         bods = []
         start_decl = it.peek()
-        while it.peek().hdr.mode == TOK_BEFORE and \
-              it.peek().hdr.uid == start_decl.hdr.uid:
+        while (it.peek().hdr.mode == TOK_BEFORE and
+               it.peek().hdr.uid == start_decl.hdr.uid):
             befores += [next(it)]
             bods += [self.parse_tactree()]
 
         # Parse after
         afters = []
-        while it.has_next() and \
-              is_after(it.peek().hdr.mode) and \
-              it.peek().hdr.uid == start_decl.hdr.uid:
+        while (it.has_next() and
+               is_after(it.peek().hdr.mode) and
+               it.peek().hdr.uid == start_decl.hdr.uid):
             afters += [next(it)]
 
         return RawTac(self._fresh_uid(), befores[0].hdr.tac, TacKind.NOTATION,
@@ -210,8 +212,8 @@ class TacTreeParser(object):
         # Parse before
         befores = []
         start_decl = it.peek()
-        while it.peek().hdr.mode == TOK_BEFORE and \
-              it.peek().hdr.uid == start_decl.hdr.uid:
+        while (it.peek().hdr.mode == TOK_BEFORE and
+               it.peek().hdr.uid == start_decl.hdr.uid):
             befores += [next(it)]
 
         # Parse body
@@ -219,9 +221,9 @@ class TacTreeParser(object):
 
         # Parse after
         afters = []
-        while it.has_next() and \
-              is_after(it.peek().hdr.mode) and \
-              it.peek().hdr.uid == start_decl.hdr.uid:
+        while (it.has_next() and
+               is_after(it.peek().hdr.mode) and
+               it.peek().hdr.uid == start_decl.hdr.uid):
             afters += [next(it)]
 
         return RawTac(self._fresh_uid(), befores[0].hdr.tac, TacKind.ML,
@@ -241,25 +243,21 @@ class TacTreeParser(object):
             decl = it.peek()
 
             # Simple cases
-            if decl.hdr.mode == TOK_BEFORE and \
-                 decl.hdr.kind == TOK_ATOM:
+            if decl.hdr.mode == TOK_BEFORE and decl.hdr.kind == TOK_ATOM:
                 acc += [self.parse_atom_call()]
 
-            elif decl.hdr.mode == TOK_BEFORE and \
-                 decl.hdr.kind == TOK_NAME:
+            elif decl.hdr.mode == TOK_BEFORE and decl.hdr.kind == TOK_NAME:
                 acc += [self.parse_name_call()]
 
             # Nested cases
-            elif decl.hdr.mode == TOK_BEFORE and \
-                 decl.hdr.kind == TOK_NOTE:
+            elif decl.hdr.mode == TOK_BEFORE and decl.hdr.kind == TOK_NOTE:
                 if len(self.uidstk) > 0 and \
                    decl.hdr.uid == self.uidstk[-1]:
                     return acc
                 else:
                     self.uidstk.append(decl.hdr.uid)
                     acc += [self.parse_notation_call()]
-            elif is_after(decl.hdr.mode) and \
-                 decl.hdr.kind == TOK_NOTE:
+            elif is_after(decl.hdr.mode) and decl.hdr.kind == TOK_NOTE:
                 # TODO(deh): kludge wtf?
                 # BGsection4: 1 apply missing
                 # BGsection3: 1 apply missing, 1 case missing
@@ -276,11 +274,9 @@ class TacTreeParser(object):
                     self.uidstk.pop()
                     return acc
 
-            elif decl.hdr.mode == TOK_BEFORE and \
-                 decl.hdr.kind == TOK_ML:
+            elif decl.hdr.mode == TOK_BEFORE and decl.hdr.kind == TOK_ML:
                 acc += [self.parse_ml_call()]
-            elif is_after(decl.hdr.mode) and \
-                 decl.hdr.kind == TOK_ML:
+            elif is_after(decl.hdr.mode) and decl.hdr.kind == TOK_ML:
                 return acc
 
             else:

@@ -27,12 +27,7 @@ Utility functions on Coq expressions
 
 class ChkCoqExp(object):
     def __init__(self, concr_ast):
-        self.concr_ast = concr_ast
-
-        # Unique
-        self.unique_const = set()
-        self.unique_ind = set()
-        self.unique_conid = set()
+        self.concr_ast = concr_ast   # Dict[int, Exp]
 
     def chk_concr_ast(self):
         for k, c in self.concr_ast.items():
@@ -100,11 +95,11 @@ class ChkCoqExp(object):
                 self._chk_ast(False, c.c)
                 self._chk_asts(False, c.cs)
         elif isinstance(c, ConstExp):
-            self.unique_const.add(c.const)
+            pass
         elif isinstance(c, IndExp):
-            self.unique_ind.add(c.ind.mutind)
+            pass
         elif isinstance(c, ConstructExp):
-            self.unique_conid.add((c.ind.mutind, c.conid))
+            pass
         elif isinstance(c, CaseExp):
             self._occurs_ast(c.tag, c.ret)
             self._occurs_ast(c.tag, c.match)
@@ -215,7 +210,7 @@ class SizeCoqExp(object):
 
 
 # -------------------------------------------------
-# Computing histogram of coq-expressions efficiently
+# Computing histogram of coq expressions
 
 COQEXP = ['RelExp', 'VarExp', 'MetaExp', 'EvarExp', 'SortExp', 'CastExp',
           'ProdExp', 'LambdaExp', 'LetInExp', 'AppExp', 'ConstExp',
@@ -227,9 +222,17 @@ COQEXP_HIST = MyHist(COQEXP)
 
 class HistCoqExp(object):
     def __init__(self, concr_ast):
+        # Dict[int, Exp]
         self.concr_ast = concr_ast
         ChkCoqExp(concr_ast).chk_concr_ast()
+
+        # Histogram
         self.hist_ast = {}
+
+        # Unique
+        self.unique_const = set()
+        self.unique_ind = set()
+        self.unique_conid = set()
 
     def _histcon(self, key, hist):
         self.hist_ast[key] = hist
@@ -283,10 +286,13 @@ class HistCoqExp(object):
                                        COQEXP_HIST.delta('AppExp')])
             return self._histcon(key, hist)
         elif isinstance(c, ConstExp):
+            self.unique_const.add(c.const)
             return self._histcon(key, COQEXP_HIST.delta('ConstExp'))
         elif isinstance(c, IndExp):
+            self.unique_ind.add(c.ind.mutind)
             return self._histcon(key, COQEXP_HIST.delta('IndExp'))
         elif isinstance(c, ConstructExp):
+            self.unique_conid.add((c.ind.mutind, c.conid))
             return self._histcon(key, COQEXP_HIST.delta('ConstructExp'))
         elif isinstance(c, CaseExp):
             hist = COQEXP_HIST.merges([self.hist(c.ret),

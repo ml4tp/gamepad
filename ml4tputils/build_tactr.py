@@ -112,7 +112,7 @@ class TacTreeBuilder(object):
     def _add_edges(self, edges):
         self.edges += edges
         for edge in edges:
-            self.graph.add_edge(edge.src, edge.tgt, key=edge.eid) 
+            self.graph.add_edge(edge.src, edge.tgt, key=edge.eid)
 
     def _mk_edge(self, tac, bf_decl, af_decl):
         if bf_decl.hdr.gid == GID_SOLVED:
@@ -145,8 +145,8 @@ class TacTreeBuilder(object):
         return edge
 
     def _launch_rec(self, tacs, ftac_inscope):
-        tr_builder = TacTreeBuilder(self.name, tacs, self.tacst_info, self.decoder,
-                                    ftac_inscope=ftac_inscope,
+        tr_builder = TacTreeBuilder(self.name, tacs, self.tacst_info,
+                                    self.decoder, ftac_inscope=ftac_inscope,
                                     gensym_edgeid=self.gensym_edgeid,
                                     gensym_errid=self.gensym_errid,
                                     gensym_termid=self.gensym_termid)
@@ -255,11 +255,11 @@ class TacTreeBuilder(object):
                 self._add_edges(edges)
             else:
                 self.notok += [tac]
-        elif tac.name.startswith("<coretactics::constructor@0>") or \
-             tac.name.startswith("<coretactics::exists@1>") or \
-             tac.name.startswith("<coretactics::split@0>") or \
-             tac.name.startswith("<ssreflect_plugin::ssrapply@1>") or \
-             tac.name.startswith("<ssreflect_plugin::ssrcase@1>"):
+        elif (tac.name.startswith("<coretactics::constructor@0>") or
+              tac.name.startswith("<coretactics::exists@1>") or
+              tac.name.startswith("<coretactics::split@0>") or
+              tac.name.startswith("<ssreflect_plugin::ssrapply@1>") or
+              tac.name.startswith("<ssreflect_plugin::ssrcase@1>")):
             """
             TACTIC, # BEFORE, # BODY, # AFTER, FREQUENCY
             <coretactics::constructor@0>, 2, 0, 2, 2
@@ -306,8 +306,8 @@ class TacTreeBuilder(object):
                 self._add_edges(edges)
             else:
                 self.notok += [tac]
-        elif tac.name.startswith("<g_auto::auto@0>") or \
-             tac.name.startswith("<g_auto::eauto@0>"):
+        elif (tac.name.startswith("<g_auto::auto@0>") or
+              tac.name.startswith("<g_auto::eauto@0>")):
             """
             <g_auto::auto@0>, 13, 0, 1, 1
             <g_auto::auto@0>, 6, 0, 1, 1
@@ -326,31 +326,31 @@ class TacTreeBuilder(object):
             else:
                 self.notok += [tac]
             pass
-        elif tac.name.startswith("<coretactics::assumption@0>") or \
-             tac.name.startswith("<coretactics::clear@0>") or \
-             tac.name.startswith("<coretactics::clearbody@0>") or \
-             tac.name.startswith("<coretactics::constructor@1>") or \
-             tac.name.startswith("<coretactics::exact@0>") or \
-             tac.name.startswith("<coretactics::left@0>") or \
-             tac.name.startswith("<coretactics::right@0>") or \
-             tac.name.startswith("<coretactics::right_with@0>") or \
-             tac.name.startswith("<coretactics::symmetry@0>") or \
-             tac.name.startswith("<coretactics::reflexivity@0>") or \
-             tac.name.startswith("<coretactics::transitivity@0>") or \
-             tac.name.startswith("<extratactics::contradiction@0>") or \
-             tac.name.startswith("<extratactics::discriminate@0>") or \
-             tac.name.startswith("<g_auto::trivial@0>") or \
-             tac.name.startswith("<ssreflect_plugin::ssrclear@0>") or \
-             tac.name.startswith("<ssreflect_plugin::ssrcongr@0>") or \
-             tac.name.startswith("<ssreflect_plugin::ssrmove@0>") or \
-             tac.name.startswith("<ssreflect_plugin::ssrmove@2>") or \
-             tac.name.startswith("<ssreflect_plugin::ssrpose@0>") or \
-             tac.name.startswith("<ssreflect_plugin::ssrpose@2>") or \
-             tac.name.startswith("<ssreflect_plugin::ssrset@0>") or \
-             tac.name.startswith("<ssreflect_plugin::ssrwithoutloss@0>") or \
-             tac.name.startswith("<ssreflect_plugin::ssrwithoutlossss@0>") or \
-             tac.name.startswith("<ssreflect_plugin::ssrwlogss@0>") or \
-             tac.name.startswith("<ssreflect_plugin::ssrwlogs@0>"):
+        elif (tac.name.startswith("<coretactics::assumption@0>") or
+              tac.name.startswith("<coretactics::clear@0>") or
+              tac.name.startswith("<coretactics::clearbody@0>") or
+              tac.name.startswith("<coretactics::constructor@1>") or
+              tac.name.startswith("<coretactics::exact@0>") or
+              tac.name.startswith("<coretactics::left@0>") or
+              tac.name.startswith("<coretactics::right@0>") or
+              tac.name.startswith("<coretactics::right_with@0>") or
+              tac.name.startswith("<coretactics::symmetry@0>") or
+              tac.name.startswith("<coretactics::reflexivity@0>") or
+              tac.name.startswith("<coretactics::transitivity@0>") or
+              tac.name.startswith("<extratactics::contradiction@0>") or
+              tac.name.startswith("<extratactics::discriminate@0>") or
+              tac.name.startswith("<g_auto::trivial@0>") or
+              tac.name.startswith("<ssreflect_plugin::ssrclear@0>") or
+              tac.name.startswith("<ssreflect_plugin::ssrcongr@0>") or
+              tac.name.startswith("<ssreflect_plugin::ssrmove@0>") or
+              tac.name.startswith("<ssreflect_plugin::ssrmove@2>") or
+              tac.name.startswith("<ssreflect_plugin::ssrpose@0>") or
+              tac.name.startswith("<ssreflect_plugin::ssrpose@2>") or
+              tac.name.startswith("<ssreflect_plugin::ssrset@0>") or
+              tac.name.startswith("<ssreflect_plugin::ssrwithoutloss@0>") or
+              tac.name.startswith("<ssreflect_plugin::ssrwithoutlossss@0>") or
+              tac.name.startswith("<ssreflect_plugin::ssrwlogss@0>") or
+              tac.name.startswith("<ssreflect_plugin::ssrwlogs@0>")):
             if len(tac.bf_decls) == 1 and len(body) == 0:
                 edges = []
                 bf_decl = tac.bf_decls[0]
@@ -360,18 +360,18 @@ class TacTreeBuilder(object):
                 self._add_edges(edges)
             else:
                 self.notok += [tac]
-        elif tac.name.startswith("<ssreflect_plugin::ssrapply@0>") or \
-             tac.name.startswith("<ssreflect_plugin::ssrcase@0>") or \
-             tac.name.startswith("<ssreflect_plugin::ssrelim@0>") or \
-             tac.name.startswith("<ssreflect_plugin::ssrexact@0>") or \
-             tac.name.startswith("<ssreflect_plugin::ssrexact@1>") or \
-             tac.name.startswith("<ssreflect_plugin::ssrhave@0>") or \
-             tac.name.startswith("<ssreflect_plugin::ssrmove@1>") or \
-             tac.name.startswith("<ssreflect_plugin::ssrrewrite@0>") or \
-             tac.name.startswith("<ssreflect_plugin::ssrsuff@0>") or \
-             tac.name.startswith("<ssreflect_plugin::ssrsuffices@0>") or \
-             tac.name.startswith("<ssreflect_plugin::ssrtclseq@0>") or \
-             tac.name.startswith("<ssreflect_plugin::ssrwlog@0>"):
+        elif (tac.name.startswith("<ssreflect_plugin::ssrapply@0>") or
+              tac.name.startswith("<ssreflect_plugin::ssrcase@0>") or
+              tac.name.startswith("<ssreflect_plugin::ssrelim@0>") or
+              tac.name.startswith("<ssreflect_plugin::ssrexact@0>") or
+              tac.name.startswith("<ssreflect_plugin::ssrexact@1>") or
+              tac.name.startswith("<ssreflect_plugin::ssrhave@0>") or
+              tac.name.startswith("<ssreflect_plugin::ssrmove@1>") or
+              tac.name.startswith("<ssreflect_plugin::ssrrewrite@0>") or
+              tac.name.startswith("<ssreflect_plugin::ssrsuff@0>") or
+              tac.name.startswith("<ssreflect_plugin::ssrsuffices@0>") or
+              tac.name.startswith("<ssreflect_plugin::ssrtclseq@0>") or
+              tac.name.startswith("<ssreflect_plugin::ssrwlog@0>")):
             if len(tac.bf_decls) == 1:
                 edges = []
                 if body:
@@ -406,9 +406,9 @@ class TacTreeBuilder(object):
                 self._add_edges(edges)
             else:
                 self.notok += [tac]
-        elif tac.name.startswith("<ssreflect_plugin::ssrtclby@0>") or \
-             tac.name.startswith("<ssreflect_plugin::ssrtcldo@0>") or \
-             tac.name.startswith("<ssreflect_plugin::ssrtclintros@0>"):
+        elif (tac.name.startswith("<ssreflect_plugin::ssrtclby@0>") or
+              tac.name.startswith("<ssreflect_plugin::ssrtcldo@0>") or
+              tac.name.startswith("<ssreflect_plugin::ssrtclintros@0>")):
             # NOTE(deh): ssrtclby@0 always ends in terminal?
             # 1. connect up body
             body_edges, body_graph = self._launch_rec(body, tac.ftac)
@@ -487,7 +487,7 @@ class TacTreeBuilder(object):
         pos = nx.drawing.layout.kamada_kawai_layout(G)
 
         # Edges
-        edge_trace = Scatter(x=[], y=[], line=Line(width=0.5,color='#888'),
+        edge_trace = Scatter(x=[], y=[], line=Line(width=0.5, color='#888'),
                              hoverinfo=None, mode='lines')
         for edge in G.edges():
             x0, y0 = pos[edge[0]]
@@ -533,9 +533,12 @@ class TacTreeBuilder(object):
                         titlefont=dict(size=16),
                         showlegend=False,
                         hovermode='closest',
-                        margin=dict(b=20,l=5,r=5,t=40),
-                        xaxis=XAxis(showgrid=False, zeroline=False, showticklabels=False),
-                        yaxis=YAxis(showgrid=False, zeroline=False, showticklabels=False))
-        fig = Figure(data=Data([edge_trace, node_trace, einfo_trace]), layout=layout)
+                        margin=dict(b=20, l=5, r=5, t=40),
+                        xaxis=XAxis(showgrid=False, zeroline=False,
+                                    showticklabels=False),
+                        yaxis=YAxis(showgrid=False, zeroline=False,
+                                    showticklabels=False))
+        fig = Figure(data=Data([edge_trace, node_trace, einfo_trace]),
+                     layout=layout)
         plotly.offline.init_notebook_mode(connected=True)
         plotly.offline.iplot(fig, filename='networkx')

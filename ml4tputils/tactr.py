@@ -166,6 +166,15 @@ class TacTree(object):
                 acc += [edge]
         return acc
 
+    def unique_const(self):
+        return self.hce.unique_const
+
+    def unique_ind(self):
+        return self.hce.unique_ind
+
+    def unique_conid(self):
+        return self.hce.unique_conid
+
     def view_err_paths(self):
         acc = []
         for egid in self.err_goals:
