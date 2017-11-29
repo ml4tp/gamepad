@@ -36,6 +36,12 @@ class UniverseInstance(object):
             assert isinstance(univ, str)
         self.univs = univs
 
+    def __eq__(self, other):
+        return all([u1 == u2 for u1, u2 in zip(self.univs, other.univs)])
+
+    def __hash__(self):
+        return hash("".join(self.univs))
+
     def __str__(self):
         return ",".join([univ for univ in self.univs])
 
@@ -62,6 +68,7 @@ class CaseInfo(object):
         assert isinstance(ind, Inductive)
         assert isinstance(npar, int)
 
+        # NOTE(deh): Comment taken from Coq 8.6.1 source-code
         # inductive type to which belongs the value that is being matched
         self.ind = ind
         # number of parameters of the above inductive type
@@ -93,9 +100,6 @@ class Exp(object):
     def __init__(self):
         self.tag = None
 
-    def size(self):
-        raise NotImplementedError
-
     def __hash__(self):
         raise NotImplementedError
 
@@ -110,9 +114,6 @@ class RelExp(Exp):
         assert isinstance(idx, int)
         super().__init__()
         self.idx = idx
-
-    def size(self):
-        return 1
 
     def __hash__(self):
         return self.idx
@@ -131,9 +132,6 @@ class VarExp(Exp):
         super().__init__()
         self.x = x
 
-    def size(self):
-        return 1
-
     def __hash__(self):
         return hash(self.x)
 
@@ -150,9 +148,6 @@ class MetaExp(Exp):
         assert isinstance(mv, int)
         super().__init__()
         self.mv = mv
-
-    def size(self):
-        return 1
 
     def __hash__(self):
         return self.mv
@@ -176,15 +171,12 @@ class EvarExp(Exp):
         self.exk = exk
         self.cs = cs
 
-    def size(self):
-        # NOTE(deh): wtf?
-        return 1 + sum([c.size() for c in self.cs])
-
     def __hash__(self):
         return sum([hash(c) for c in self.cs])
 
     def __str__(self):
-        return "E({}, {})".format(self.exk, ",".join([str(c) for c in self.cs]))
+        return "E({}, {})".format(self.exk,
+                                  ",".join([str(c) for c in self.cs]))
 
 
 class SortExp(Exp):
@@ -192,12 +184,9 @@ class SortExp(Exp):
     The kind of a term, i.e., Set/Prop, or Type-0, Type-1, ...
     """
     def __init__(self, sort):
-        # TODO(deh): what is it's type?
+        assert isinstance(sort, str)
         super().__init__()
         self.sort = sort
-
-    def size(self):
-        return 1
 
     def __hash__(self):
         return hash(self.sort)
@@ -219,9 +208,6 @@ class CastExp(Exp):
         self.ck = ck
         self.ty = ty
 
-    def size(self):
-        return 1 + self.c.size() + self.ty.size()
-
     def __hash__(self):
         return hash(self.c) + sum([hash(c) for c in self.cs])
 
@@ -242,9 +228,6 @@ class ProdExp(Exp):
         self.ty1 = ty1
         self.ty2 = ty2
 
-    def size(self):
-        return 1 + self.ty1.size() + self.ty2.size()
-
     def __hash__(self):
         return hash(self.ty1) + hash(self.ty2)
 
@@ -264,9 +247,6 @@ class LambdaExp(Exp):
         self.name = name
         self.ty = ty
         self.c = c
-
-    def size(self):
-        return 1 + self.ty.size() + self.c.size()
 
     def __hash__(self):
         return hash(self.ty) + hash(self.c)
@@ -290,14 +270,12 @@ class LetInExp(Exp):
         self.ty = ty
         self.c2 = c2
 
-    def size(self):
-        return 1 + self.c1.size() + self.ty.size() + self.c2.size()
-
     def __hash__(self):
         return hash(self.c1) + hash(self.ty) + hash(self.c2)
 
     def __str__(self):
-        return "LI({}, {}, {}, {})".format(self.name, str(self.c1), str(self.ty), str(self.c2))
+        return "LI({}, {}, {}, {})".format(self.name, str(self.c1),
+                                           str(self.ty), str(self.c2))
 
 
 class AppExp(Exp):
@@ -312,14 +290,12 @@ class AppExp(Exp):
         self.c = c
         self.cs = cs
 
-    def size(self):
-        return 1 + self.c.size() + sum([c.size() for c in self.cs])
-
     def __hash__(self):
         return hash(self.c) + sum([hash(c) for c in self.cs])
 
     def __str__(self):
-        return "A({}, {})".format(str(self.c), ",".join([str(c) for c in self.cs]))
+        return "A({}, {})".format(str(self.c),
+                                  ",".join([str(c) for c in self.cs]))
 
 
 class ConstExp(Exp):
@@ -327,14 +303,11 @@ class ConstExp(Exp):
     A constant expression with global identifier <const>.
     """
     def __init__(self, const, ui):
-        assert isinstance(const, Name) # TODO(deh): Name.Constant?
+        assert isinstance(const, Name)  # TODO(deh): Name.Constant?
         assert isinstance(ui, UniverseInstance)
         super().__init__()
         self.const = const
         self.ui = ui
-
-    def size(self):
-        return 1
 
     def __hash__(self):
         return hash(self.const)
@@ -354,10 +327,6 @@ class IndExp(Exp):
         self.ind = ind   # Name of the inductive type
         self.ui = ui
 
-    def size(self):
-        # TODO(deh): wtf?
-        return 1
-
     def __hash__(self):
         return hash(self.mutind) + self.pos
 
@@ -376,10 +345,6 @@ class ConstructExp(Exp):
         self.ind = ind         # Name of the inductive type
         self.conid = conid     # Constructor number (1-indexing)
         self.ui = ui
-
-    def size(self):
-        # TODO(deh): wtf?
-        return 1
 
     def __hash__(self):
         return hash(self.ind) + self.pos + self.conid
@@ -403,6 +368,7 @@ class CaseExp(Exp):
         for c_p in cases:
             assert isinstance(c_p, Exp)
         super().__init__()
+        # NOTE(deh): Comment taken from Coq 8.6.1 source-code
         # [mkCase ci p c ac] stands for
         # match [c] as [x] in [I args] return [p] with [ac]
         # presented as describe in [ci].
@@ -411,14 +377,14 @@ class CaseExp(Exp):
         self.match = match    # what you match on
         self.cases = cases    # cases
 
-    def size(self):
-        return 1 + self.ret.size() + self.match.size() + sum([c.size() for c in self.cases])
-
     def __hash__(self):
-        return hash(self.ret) + hash(self.match) + sum([hash(c) for c in self.cases])
+        return (hash(self.ret) + hash(self.match) +
+                sum([hash(c) for c in self.cases]))
 
     def __str__(self):
-        return "CS({}, {}, {}, {})".format(self.ci, str(self.ret), str(self.match), ",".join([str(c) for c in self.cases]))
+        s_cases = ",".join([str(c) for c in self.cases])
+        return "CS({}, {}, {}, {})".format(self.ci, str(self.ret),
+                                           str(self.match), s_cases)
 
 
 class FixExp(Exp):
@@ -445,17 +411,20 @@ class FixExp(Exp):
         for c_p in cs:
             assert isinstance(c_p, Exp)
 
+        # NOTE(deh): Comment taken from Coq 8.6.1 source-code
         # [recindxs = [|i1,...in|]]
         # [funnames = [|f1,.....fn|]]
         # [typarray = [|t1,...tn|]]
         # [bodies   = [|b1,.....bn|]]
         # then [mkFix ((recindxs,i), funnames, typarray, bodies) ]
-        # constructs the {% $ %}i{% $ %}th function of the block (counting from 0)
+        # constructs the {% $ %}i{% $ %}th function of the block
+        # (counting from 0)
         # [Fixpoint f1 [ctx1] = b1
         # with     f2 [ctx2] = b2
         # ...
         # with     fn [ctxn] = bn.]
-        # where the length of the {% $ %}j{% $ %}th context is {% $ %}ij{% $ %}.
+        # where the length of the {% $ %}j{% $ %}th context is
+        # {% $ %}ij{% $ %}.
         super().__init__()
         self.iarr = iarr
         self.idx = idx
@@ -463,11 +432,9 @@ class FixExp(Exp):
         self.tys = tys
         self.cs = cs
 
-    def size(self):
-        return 1 + sum([ty.size() for ty in self.tys]) + sum([c.size() for c in self.cs])
-
     def __hash__(self):
-        return sum([hash(c) for c in self.cs]) + sum([hash(ty) for ty in self.tys])
+        return (sum([hash(c) for c in self.cs]) +
+                sum([hash(ty) for ty in self.tys]))
 
     def __str__(self):
         s1 = ",".join([name for name in self.names])
@@ -494,11 +461,9 @@ class CoFixExp(Exp):
         self.tys = tys
         self.cs = cs
 
-    def size(self):
-        return 1 + sum([ty.size() for ty in self.tys]) + sum([c.size() for c in self.cs])
-
     def __hash__(self):
-        return sum([hash(c) for c in self.cs]) + sum([hash(ty) for ty in self.tys])
+        return (sum([hash(c) for c in self.cs]) +
+                sum([hash(ty) for ty in self.tys]))
 
     def __str__(self):
         s1 = ",".join([name for name in self.names])
@@ -517,9 +482,6 @@ class ProjExp(Exp):
         super().__init__()
         self.proj = proj
         self.c = c
-
-    def size(self):
-        return 1 + self.c.size()
 
     def __hash__(self):
         return hash(self.proj) + hash(self.c)
