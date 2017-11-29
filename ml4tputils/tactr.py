@@ -284,13 +284,6 @@ class TacTree(object):
                 seen.add(goal_e)
         return COQEXP_HIST.merges(hists + acc)
 
-    def view_astsharing(self):
-        maxuse = max([v for _, v in self.chk.sharing.items()]) + 1
-        hist = [0 for _ in range(maxuse)]
-        for k, v in self.chk.sharing.items():
-            hist[v] += 1
-        return hist
-
     def view_comp(self):
         vals = {}
         static_full_comp = {}
@@ -343,7 +336,6 @@ class TacTree(object):
                 'avg_depth_astctx_size': avg_depth_astctx_size,
                 'avg_depth_astgoal_size': avg_depth_astgoal_size,
                 'hist_coqexp': self.hist_coqexp(),
-                'sharing': self.view_astsharing(),
                 'static_full_comp': [v for _, v in static_full_comp.items()],
                 'static_sh_comp': [v for _, v in static_sh_comp.items()],
                 'cbname_comp': [v for _, v in cbname_comp.items()],

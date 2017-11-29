@@ -94,7 +94,8 @@ class EvarVal(Val):
         self.vs = vs
 
     def __str__(self):
-        return "EV({}, {})".format(self.exk, ",".join([str(v) for v in self.vs]))
+        return "EV({}, {})".format(self.exk,
+                                   ",".join([str(v) for v in self.vs]))
 
 
 class CastVal(Val):
@@ -119,7 +120,8 @@ class ProdVal(Val):
         self.v_ty2 = v_ty2
 
     def __str__(self):
-        return "PV({}, {}, {})".format(self.name, str(self.v_ty1), str(self.v_ty2))
+        return "PV({}, {}, {})".format(self.name, str(self.v_ty1),
+                                       str(self.v_ty2))
 
 
 class CloVal(Val):
@@ -142,7 +144,8 @@ class AppVal(Val):
         self.v_cs = v_cs
 
     def __str__(self):
-        return "AV({}, {})".format(str(self.v_c), ",".join([str(v_p) for v_p in self.v_cs]))
+        return "AV({}, {})".format(str(self.v_c),
+                                   ",".join([str(v_p) for v_p in self.v_cs]))
 
 
 class CaseVal(Val):
@@ -158,7 +161,9 @@ class CaseVal(Val):
         self.cases = cases
 
     def __str__(self):
-        return "CSV({}, {}, {}, {})".format(self.ci, str(self.ret), str(self.match), ",".join([str(v_p) for v_p in self.cases]))
+        x = (self.ci, str(self.ret), str(self.match),
+             ",".join([str(v_p) for v_p in self.cases]))
+        return "CSV({}, {}, {}, {})".format(*x)
 
 
 class ProjVal(Val):
@@ -281,7 +286,8 @@ class SizeCoqVal(object):
         elif isinstance(v, AppVal):
             return 1 + self.size(v.v_c) + self.sizes(v.v_cs)
         elif isinstance(v, CaseVal):
-            return 1 + self.size(v.ret) + self.size(v.match) + self.sizes(v.cases)
+            return (1 + self.size(v.ret) + self.size(v.match) +
+                    self.sizes(v.cases))
         elif isinstance(v, ProjVal):
             return 1 + self.size(v.v_c)
         else:

@@ -179,21 +179,6 @@ class TacTrStats(object):
         hist = COQEXP_HIST.merges(hists)
         return COQEXP_HIST.view(hist, f_sort)
 
-    def coqexp_sharing(self):
-        MAX_SHARE = max([len(info['sharing']) for _, info in self.stats.items()]) + 1
-        hist = [0.0 for _ in range(MAX_SHARE)]
-
-        # Sum
-        for lemma, info in self.stats.items():
-            for i, v in enumerate(info['sharing']):
-                hist[i] += v
-
-        # Normalize
-        num_lemmas = len(self.stats)
-        for i in range(MAX_SHARE):
-            hist[i] /= num_lemmas
-        return hist
-
     def coqexp_comp_p(self, hist_key, f_avg=True, f_trunc=True):
         hist = {}
         for lemma, info in self.stats.items():

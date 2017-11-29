@@ -29,9 +29,6 @@ class ChkCoqExp(object):
     def __init__(self, concr_ast):
         self.concr_ast = concr_ast
 
-        # Compute number of times an expression is used
-        self.sharing = {}
-
         # Unique
         self.unique_const = set()
         self.unique_ind = set()
@@ -52,15 +49,8 @@ class ChkCoqExp(object):
         for c in cs:
             self._occurs_ast(tag, c)
 
-    def _sharing(self, c):
-        if c.tag in self.sharing:
-            self.sharing[c.tag] += 1
-        else:
-            self.sharing[c.tag] = 1
-
     def _chk_ast(self, f_chk, c):
         c_p = self.concr_ast[c.tag]
-        self._sharing(c)
         if c_p.tag != c.tag:
             raise NameError("Tags {} and {} do not match {} {}".
                             format(c.tag, c_p.tag, type(c.tag), type(c_p.tag)))
@@ -261,212 +251,65 @@ class HistCoqExp(object):
         elif isinstance(c, MetaExp):
             return self._histcon(key, COQEXP_HIST.delta('MetaExp'))
         elif isinstance(c, EvarExp):
-            hist = self.hists(c.cs)
-            return self._histcon(key, COQEXP_HIST.merge(hist, COQEXP_HIST.delta('EvarExp')))
+            hist = COQEXP_HIST.merge(self.hists(c.cs),
+                                     COQEXP_HIST.delta('EvarExp'))
+            return self._histcon(key, hist)
         elif isinstance(c, SortExp):
             return self._histcon(key, COQEXP_HIST.delta('SortExp'))
         elif isinstance(c, CastExp):
-            hist = COQEXP_HIST.merge(self.hist(c.c), self.hist(c.ty))
-            return self._histcon(key, COQEXP_HIST.merge(hist, COQEXP_HIST.delta('CastExp')))
+            hist = COQEXP_HIST.merges([self.hist(c.c),
+                                       self.hist(c.ty),
+                                       COQEXP_HIST.delta('CastExp')])
+            return self._histcon(key, hist)
         elif isinstance(c, ProdExp):
-            hist = COQEXP_HIST.merge(self.hist(c.ty1), self.hist(c.ty2))
-            return self._histcon(key, COQEXP_HIST.merge(hist, COQEXP_HIST.delta('ProdExp')))
+            hist = COQEXP_HIST.merges([self.hist(c.ty1),
+                                       self.hist(c.ty2),
+                                       COQEXP_HIST.delta('ProdExp')])
+            return self._histcon(key, hist)
         elif isinstance(c, LambdaExp):
-            hist = COQEXP_HIST.merge(self.hist(c.ty), self.hist(c.c))
-            return self._histcon(key, COQEXP_HIST.merge(hist, COQEXP_HIST.delta('LambdaExp')))
+            hist = COQEXP_HIST.merges([self.hist(c.ty),
+                                       self.hist(c.c),
+                                       COQEXP_HIST.delta('LambdaExp')])
+            return self._histcon(key, hist)
         elif isinstance(c, LetInExp):
-            hist = COQEXP_HIST.merges([self.hist(c.c1), self.hist(c.ty), self.hist(c.c2)])
-            return self._histcon(key, COQEXP_HIST.merge(hist, COQEXP_HIST.delta('LetInExp')))
+            hist = COQEXP_HIST.merges([self.hist(c.c1),
+                                       self.hist(c.ty),
+                                       self.hist(c.c2),
+                                       COQEXP_HIST.delta('LetInExp')])
+            return self._histcon(key, hist)
         elif isinstance(c, AppExp):
-            hist = COQEXP_HIST.merge(self.hist(c.c), self.hists(c.cs))
-            return self._histcon(key, COQEXP_HIST.merge(hist, COQEXP_HIST.delta('AppExp')))
+            hist = COQEXP_HIST.merges([self.hist(c.c),
+                                       self.hists(c.cs),
+                                       COQEXP_HIST.delta('AppExp')])
+            return self._histcon(key, hist)
         elif isinstance(c, ConstExp):
-            return self._histcon(key, COQEXP_HIST.delta('ConstExp')) 
+            return self._histcon(key, COQEXP_HIST.delta('ConstExp'))
         elif isinstance(c, IndExp):
             return self._histcon(key, COQEXP_HIST.delta('IndExp'))
         elif isinstance(c, ConstructExp):
             return self._histcon(key, COQEXP_HIST.delta('ConstructExp'))
         elif isinstance(c, CaseExp):
-            hist = COQEXP_HIST.merges([self.hist(c.ret), self.hist(c.match), self.hists(c.cases)])
-            return self._histcon(key, COQEXP_HIST.merge(hist, COQEXP_HIST.delta('CaseExp')))
+            hist = COQEXP_HIST.merges([self.hist(c.ret),
+                                       self.hist(c.match),
+                                       self.hists(c.cases),
+                                       COQEXP_HIST.delta('CaseExp')])
+            return self._histcon(key, hist)
         elif isinstance(c, FixExp):
-            hist = COQEXP_HIST.merge(self.hists(c.tys), self.hists(c.cs))
-            return self._histcon(key, COQEXP_HIST.merge(hist, COQEXP_HIST.delta('FixExp')))
+            hist = COQEXP_HIST.merges([self.hists(c.tys),
+                                       self.hists(c.cs),
+                                       COQEXP_HIST.delta('FixExp')])
+            return self._histcon(key, hist)
         elif isinstance(c, CoFixExp):
-            hist = COQEXP_HIST.merge(self.hists(c.tys), self.hists(c.cs))
-            return self._histcon(key, COQEXP_HIST.merge(hist, COQEXP_HIST.delta('CoFixExp')))
+            hist = COQEXP_HIST.merges([self.hists(c.tys),
+                                       self.hists(c.cs),
+                                       COQEXP_HIST.delta('CoFixExp')])
+            return self._histcon(key, hist)
         elif isinstance(c, ProjExp):
-            hist = self.hist(c.c)
-            return self._histcon(key, COQEXP_HIST.merge(hist, COQEXP_HIST.delta('ProjExp')))
+            hist = COQEXP_HIST.merges([self.hist(c.c),
+                                       COQEXP_HIST.delta('ProjExp')])
+            return self._histcon(key, hist)
         else:
             raise NameError("Kind {} not supported".format(c))
 
     def hists(self, cs):
         return COQEXP_HIST.merges([self.hist(c) for c in cs])
-
-
-# -------------------------------------------------
-# Compute sharing in Coq expression
-
-"""
-1. unique const exp's (size of the embedding matrix)
-2. A(e, e) sharing (for each ast, computation as distribution, unshared, vs size)
-3. let x = 5 in let x = x + x in x (show that this thing blows the fuck up)
-"""
-
-"""
-class ShareCoqExp(object):
-    def __init__(self, concr_ast):
-        self.concr_ast = concr_ast
-        ChkCoqExp(concr_ast).chk_concr_ast()
-        self.seen = set()
-
-        self.unique_const = set()
-        self.unique_sort = set()
-        self.unique_prod = set()
-        self.usage_ast = {}
-
-    def decode_share(self, key):
-        return self.share(self.concr_ast[key])
-
-    def share(self, env, c):
-        key = c.tag
-        if key in self.seen:
-            return
-
-        self.seen.add(c.tag)
-        if isinstance(c, RelExp):
-            env.lookup_rel(c.idx)
-        elif isinstance(c, VarExp):
-            env.lookup_id(c.x)
-        elif isinstance(c, MetaExp):
-            pass
-        elif isinstance(c, EvarExp):
-            pass
-        elif isinstance(c, SortExp):
-            self.unique_sort.add(c.sort)
-        elif isinstance(c, CastExp):
-            self.share(env, c.c)
-            self.share(env, c.ty)
-        elif isinstance(c, ProdExp):
-            self.unique_prod.add(c.name)
-            self.share(env, c.ty1)
-            self.share(env, c.ty2)
-        elif isinstance(c, LambdaExp):
-            c.name
-            self.share(env, c.ty)
-            self.share(env, c.c)
-        elif isinstance(c, LetInExp):
-            self.share(env, c.c1)
-            self.share(env, c.ty)
-            self.share(env.extend(c.name, ), c.c2)
-        elif isinstance(c, AppExp):
-            self.share(c.c)
-            self.shares(c.cs)
-        elif isinstance(c, ConstExp):
-            self.unique_const.add(c.const)
-            return self._sharecon(key, 1)
-        elif isinstance(c, IndExp):
-            return self._sharecon(key, 1)
-        elif isinstance(c, ConstructExp):
-            return self._sharecon(key, 1)
-        elif isinstance(c, CaseExp):
-            sz = (1 + self.share(c.ret) + self.share(c.match) +
-                  self.shares(c.cases))
-            return self._sharecon(key, sz)
-        elif isinstance(c, FixExp):
-            sz = 1 + self.shares(c.tys) + self.shares(c.cs)
-            return self._sharecon(key, sz)
-        elif isinstance(c, CoFixExp):
-            sz = 1 + self.shares(c.tys) + self.shares(c.cs)
-            return self._sharecon(key, sz)
-        elif isinstance(c, ProjExp):
-            sz = 1 + self.share(c.c)
-            return self._sharecon(key, sz)
-        else:
-            raise NameError("Kind {} not supported".format(c))
-
-    def shares(self, cs):
-        return sum([self.share(c) for c in cs])
-"""
-
-
-"""
-class UniqueCoqExp(object):
-    def __init__(self, concr_ast):
-        self.concr_ast = concr_ast
-        ChkCoqExp(concr_ast).chk_concr_ast()
-        self.seen = set()
-
-        self.unique_rel = set()
-        self.unique_var = set()
-
-    def decode_unique(self, key):
-        return self.unique(self.concr_ast[key])
-
-    def unique(self, c):
-        key = c.tag
-        if key in self.seen:
-            return
-
-        self.seen.add(c.tag)
-        if isinstance(c, RelExp):
-            if c.idx in self.unique_rel:
-                self.unique_rel.add(c.idx)
-        elif isinstance(c, VarExp):
-            if c.x in self.unique_var:
-                self.unique_var.add(c.x)
-        elif isinstance(c, MetaExp):
-            if c.mv in self.unique_mv:
-                self.unique_mv.add(c.mv)
-        elif isinstance(c, EvarExp):
-            if c.exk in self.unique_ev:
-                self.unique_ev.add(c.exk)
-        elif isinstance(c, SortExp):
-            if c.sort in self.unique_sort:
-                self.unique_sort.add(c.sort)
-        elif isinstance(c, CastExp):
-            self.unique(c.c)
-            self.unique(c.ty)
-        elif isinstance(c, ProdExp):
-            self.unique(c.ty1)
-            self.unique(c.ty2)
-        elif isinstance(c, LambdaExp):
-            c.name
-            self.unique(c.ty)
-            self.unique(c.c)
-        elif isinstance(c, LetInExp):
-            self.unique(c.c1)
-            self.unique(c.ty)
-            self.unique(c.c2)
-        elif isinstance(c, AppExp):
-            self.unique(c.c)
-            self.uniques(c.cs)
-        elif isinstance(c, ConstExp):
-            # TODO(deh): HMM?
-            self.unique
-            return self._uniquecon(key, 1) 
-        elif isinstance(c, IndExp):
-            # TODO(deh): HMM?
-            return self._uniquecon(key, 1)
-        elif isinstance(c, ConstructExp):
-            # TODO(deh): HMM?
-            return self._uniquecon(key, 1)
-        elif isinstance(c, CaseExp):
-            sz = 1 + self.unique(c.ret) + self.unique(c.match) + self.uniques(c.cases)
-            return self._uniquecon(key, sz)
-        elif isinstance(c, FixExp):
-            sz = 1 + self.uniques(c.tys) + self.uniques(c.cs)
-            return self._uniquecon(key, sz)
-        elif isinstance(c, CoFixExp):
-            sz = 1 + self.uniques(c.tys) + self.uniques(c.cs)
-            return self._uniquecon(key, sz)
-        elif isinstance(c, ProjExp):
-            sz = 1 + self.unique(c.c)
-            return self._uniquecon(key, sz)
-        else:
-            raise NameError("Kind {} not supported".format(c))
-
-    def uniques(self, cs):
-        return sum([self.unique(c) for c in cs])
-"""
