@@ -1,6 +1,7 @@
 import argparse
 import os.path as op
 
+from ml.embed import EmbedCoqTacTr
 from recon.lex_raw import TacStParser
 from recon.parse_tacst import TacTreeParser
 from recon.build_tactr import TacTreeBuilder
@@ -37,6 +38,9 @@ class Visualize(object):
         # Tactic Trees
         self.tactrs = []
 
+        # TODO(deh): deprecate me once debugged
+        self.bad_idents = {}
+
     def finalize(self):
         self.h_tactr_file.write("TOTAL: {} WERID: {}\n".format(
                                 self.num_lemmas, len(self.failed)))
@@ -46,6 +50,9 @@ class Visualize(object):
                                 len(self.unique_ind)))
         self.h_tactr_file.write("UNIQUECONID: {}\n".format(
                                 len(self.unique_conid)))
+        print("BADIDENTS")
+        for lemma, v in self.bad_idents.items():
+            print("{}: {}".format(lemma, v))
         self.h_tactr_file.close()
 
     def visualize_lemma(self, file, lemma):
@@ -87,6 +94,14 @@ class Visualize(object):
         self.unique_const = self.unique_const.union(tactr.unique_const())
         self.unique_ind = self.unique_ind.union(tactr.unique_ind())
         self.unique_conid = self.unique_conid.union(tactr.unique_conid())
+
+        # TODO(deh): Move me
+        # Test embedding
+        embedder = EmbedCoqTacTr(tactr)
+        embedder.embed()
+        if len(embedder.ece.bad_idents) > 0:
+            self.bad_idents[lemma] = embedder.ece.bad_idents
+            print("BAD IDENTS: {}/{}".format(len(self.bad_idents), self.num_lemmas))
 
         if self.f_display:
             if self.f_jupyter:
@@ -173,8 +188,10 @@ if __name__ == "__main__":
              "PFsection14.v.dump",
              "stripped_odd_order_theorem.v.dump"]
 
-    bgfiles = [file for file in files if file.startswith("BG")]
-    pffiles = [file for file in files if file.startswith("PF")]
+    bgfiles = [op.join(args.path, file) for file in
+               files if file.startswith("BG")]
+    pffiles = [op.join(args.path, file) for file in
+               files if file.startswith("PF")]
 
     files = [op.join(args.path, file) for file in files]
 

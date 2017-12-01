@@ -2,8 +2,8 @@ import numpy as np
 
 from coq.ast import *
 # from lib.gensym import GenSym
-# from lib.myenv import MyEnv
-# from lib.myutil import ImplementMe
+from lib.myenv import MyEnv
+from lib.myutil import NotFound
 
 """
 [Note]
@@ -19,6 +19,9 @@ Create embedding of Coq Tactic Trees into R^D vectors.
 
 class EmbedCoqExp(object):
     def __init__(self, concr_ast):
+        # Dimension of embedding
+        self.D = 3
+
         # Shared representation
         self.concr_ast = concr_ast
 
@@ -35,11 +38,14 @@ class EmbedCoqExp(object):
         # Keep track of shared embeddings
         self.embeddings = {}
 
+        # TODO(deh): deprecate me once debugged?
+        self.bad_idents = set()
+
     def embed_ast(self, env, c):
         return self._embed_ast(env, Kind.TERM, c)
 
     def _embedcon(self, key, embed_vec):
-        self.embed[key] = embed_vec
+        self.embeddings[key] = embed_vec
         return embed_vec
 
     def _global_embed(self, key, table, embed_fn):
@@ -71,16 +77,27 @@ class EmbedCoqExp(object):
             return self.embeddings[key]
 
         if isinstance(c, RelExp):
-            ev_idx = env.lookup_rel(c.idx)
+            try:
+                ev_idx = env.lookup_rel(c.idx)
+            except NotFound:
+                # TODO(deh): some weird shit going on in Coq printing
+                ev_idx = self.embed_local_var(None)
+                self.bad_idents.add(c.idx)
             return self._embedcon(key, self.embed_rel(ev_idx))
         elif isinstance(c, VarExp):
-            ev_x = env.lookup_id(c.x)
+            try:
+                ev_x = env.lookup_id(Name(c.x))
+            except NotFound:
+                # TODO(deh): some weird shit going on in Coq printing
+                ev_x = self.embed_local_var(None)
+                self.bad_idents.add(c.x)
             return self._embedcon(key, self.embed_var(ev_x))
         elif isinstance(c, MetaExp):
             assert False, "NOTE(deh): MetaExp should never be in dataset"
         elif isinstance(c, EvarExp):
-            ev_exk = self._extend_evar(c.exk)
-            return self._embedcon(key, self.embed_evar(ev_exk, c.cs))
+            ev_exk = self._extend_evar(c.exk, self.embed_evar_name)
+            ev_cs = self._embed_asts(env, Kind.TYPE, c.cs)
+            return self._embedcon(key, self.embed_evar(ev_exk, ev_cs))
         elif isinstance(c, SortExp):
             ev_sort = self._extend_sort(c.sort, self.embed_sort_name)
             return self._embedcon(key, self.embed_sort(ev_sort))
@@ -107,7 +124,7 @@ class EmbedCoqExp(object):
                                                         ev_ty, ev_c2))
         elif isinstance(c, AppExp):
             ev_c = self._embed_ast(env, Kind.TERM, c.c)
-            ev_cs = self._embed_ast(env, Kind.TERM, c.cs)
+            ev_cs = self._embed_asts(env, Kind.TERM, c.cs)
             return self._embedcon(key, self.embed_app(ev_c, ev_cs))
         elif isinstance(c, ConstExp):
             ev_const = self._extend_const(c.const, self.embed_const_name)
@@ -127,9 +144,9 @@ class EmbedCoqExp(object):
         elif isinstance(c, CaseExp):
             ev_ret = self._embed_ast(env, Kind.TERM, c.ret)
             ev_match = self._embed_ast(env, Kind.TERM, c.match)
-            ev_cs = self._embed_asts(env, Kind.TERM, c.cs)
-            return self._embedcon(self.embed_case(c.ci, ev_ret, ev_match,
-                                                  ev_cs))
+            ev_cases = self._embed_asts(env, Kind.TERM, c.cases)
+            return self._embedcon(key, self.embed_case(c.ci, ev_ret, ev_match,
+                                                       ev_cases))
         elif isinstance(c, FixExp):
             # 1. Create initial embeddings
             for name in c.names:
@@ -141,20 +158,20 @@ class EmbedCoqExp(object):
             ev_tys = []
             ev_cs = []
             for ty, body in zip(c.tys, c.cs):
-                ev_tys += [self._embed_asts(env, Kind.TYPE, c.tys)]
-                ev_c = self._embed_ast(env, Kind.TERM, c.cs)
+                ev_tys += [self._embed_ast(env, Kind.TYPE, ty)]
+                ev_c = self._embed_ast(env, Kind.TERM, body)
                 # Tie the knot appropriately
                 self.fix_embed[name] = ev_c
                 ev_cs += [ev_c]
-            return self._embedcon(self.embed_fix(c.iarr, c.idx, c.names,
-                                                 ev_tys, ev_cs))
+            return self._embedcon(key, self.embed_fix(c.iarr, c.idx, c.names,
+                                                      ev_tys, ev_cs))
         elif isinstance(c, CoFixExp):
             # NOTE(deh): CoFixExp not in dataset
             raise NameError("NOTE(deh): CoFixExp not in dataset")
         elif isinstance(c, ProjExp):
             # NOTE(deh): MetaExp not in dataset
             ev = self._embed_ast(env, Kind.TERM, c.c)
-            return self._embedcon(self.combine_proj(c.proj, ev))
+            return self._embedcon(key, self.combine_proj(c.proj, ev))
         else:
             raise NameError("Kind {} not supported".format(c))
 
@@ -194,80 +211,82 @@ class EmbedCoqExp(object):
 
     def embed_local_var(self, ty):
         """Override Me"""
-        raise NotImplementedError
+        return np.random.multivariate_normal(np.zeros(self.D), np.eye(self.D))
 
     # -------------------------------------------
     # Combining embeddings
 
     def embed_rel(self, ev_idx):
         """Override Me"""
-        raise NotImplementedError
+        return ev_idx
 
     def embed_var(self, ev_x):
         """Override Me"""
-        raise NotImplementedError
+        return ev_x
 
-    def embed_evar(self, ev_ev):
+    def embed_evar(self, ev_evar, ev_cs):
         """Override Me"""
-        raise NotImplementedError
+        return ev_evar
 
     def embed_sort(self, ev_sort):
         """Override Me"""
-        raise NotImplementedError
+        return ev_sort
 
     def embed_cast(self, ev_c, ck, ev_ty):
         """Override Me"""
-        raise NotImplementedError
+        return ev_c
 
     def embed_prod(self, name, ev_ty1, ev_ty2):
         """Override Me"""
-        raise NotImplementedError
+        return ev_ty1
 
     def embed_lambda(self, name, ev_ty, ev_body):
         """Override Me"""
-        raise NotImplementedError
+        return ev_body
 
     def embed_letin(self, name, ev_c1, ev_ty, ev_c2):
         """Override Me"""
-        raise NotImplementedError
+        return ev_c2
 
     def embed_app(self, ev_c, ev_cs):
         """Override Me"""
-        raise NotImplementedError
+        return ev_c
 
     def embed_const(self, ev_const, ev_ui):
         """Override Me"""
-        raise NotImplementedError
+        return ev_const
 
     def embed_ind(self, ev_ind, ev_ui):
         """Override Me"""
-        raise NotImplementedError
+        return ev_ind
 
-    def embed_construct(self, ev_ind, ev_coind, ev_ui):
+    def embed_construct(self, ev_ind, ev_conid, ev_ui):
         """Override Me"""
-        raise NotImplementedError
+        return ev_conid
 
     def embed_case(self, ci, ev_ret, ev_match, ev_cases):
         """Override Me"""
-        raise NotImplementedError
+        return ev_ret
 
     def embed_fix(self, iarr, idx, names, ev_tys, ev_cs):
         """Override Me"""
-        raise NotImplementedError
+        return ev_cs[0]
 
     def embed_cofix(self, idx, names, ev_tys, ev_cs):
         """Override Me"""
-        raise NotImplementedError
+        return ev_cs[0]
 
     def embed_proj(self, proj, ev_c):
         """Override Me"""
-        raise NotImplementedError
+        return ev_c
 
     # -------------------------------------------
     # Embed universes
-    # NOTE(deh): can probably punt on this for now
     def embed_ui(self, ui):
-        raise NotImplementedError
+        """Override Me"""
+        # NOTE(deh): Punting on this for now
+        # how many universe instances are there?
+        return None
 
     def embed_uis(self, uis):
         return [self.embed_ui(ui) for ui in uis]
@@ -283,13 +302,13 @@ class EmbedCoqTacTr(object):
         self.goal_embeds = {}
 
     def embed(self):
-        bfs = tactr.bfs_traverse()
+        bfs = self.tactr.bfs_traverse()
         acc = []
         for node in bfs:
             if node[0] == 'OPEN':
                 _, gid, _, _, ctx_ids, goal_idx, edge = node
-                evs = self.embed_ctx(ctx_ids)
-                ev = self.embed_goal(goal_idx)
+                env, evs = self.embed_ctx(ctx_ids)
+                ev = self.embed_goal(env, goal_idx)
                 acc += [(evs, ev)]
             else:
                 # TODO(deh): what to do on terminal nodes?
@@ -298,26 +317,28 @@ class EmbedCoqTacTr(object):
 
     def embed_ctx(self, ctx_idents):
         evs = []
+        env = MyEnv()
         for ident in ctx_idents:
-            ev = self.embed_ctx_ident(ident)
+            ev = self.embed_ctx_ident(env, ident)
+            env = env.extend(Name(ident), ev)
             evs += [ev]
-        return evs
+        return env, evs
 
-    def embed_ctx_ident(self, ident):
+    def embed_ctx_ident(self, env, ident):
         if ident in self.ctxid_embeds:
             return self.ctxid_embeds[ident]
         else:
             c = self.tactr.decoder.decode_exp_by_ctxid(ident)
-            ev = self.ece.embed_exp(c)
+            ev = self.ece.embed_ast(env, c)
             self.ctxid_embeds[ident] = ev
             return ev
 
-    def embed_goal(self, goal_idx):
+    def embed_goal(self, env, goal_idx):
         if goal_idx in self.goal_embeds:
             return self.goal_embeds[goal_idx]
         else:
             c = self.tactr.decoder.decode_exp_by_key(goal_idx)
-            ev = self.ece.embed_exp(c)
+            ev = self.ece.embed_ast(env, c)
             self.goal_embeds[goal_idx] = ev
             return ev
 

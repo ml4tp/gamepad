@@ -181,14 +181,14 @@ class TacTree(object):
 
     def _traverse_info(self, ordered_gids):
         acc = []
-        for gid in ordered_gids:
-            if gid in self.tacst_info:
-                pp_ctx, pp_goal, ctx_ids, goal_idx = self.tacst_info[gid]
-                acc += [('OPEN', gid, pp_ctx, pp_goal, ctx_ids,
-                         goal_idx, self.gid_tactic[gid])]
-            elif (recon.build_tactr.is_err(gid) or
-                  recon.build_tactr.is_term(gid)):
-                acc += [('STOP', gid, self.gid_tactic[gid])]
+        for src_gid, tgt_gid in ordered_gids:
+            if src_gid in self.tacst_info:
+                pp_ctx, pp_goal, ctx_ids, goal_idx = self.tacst_info[src_gid]
+                acc += [('OPEN', src_gid, pp_ctx, pp_goal, ctx_ids,
+                         goal_idx, self.gid_tactic[src_gid])]
+            elif (recon.build_tactr.is_err(tgt_gid) or
+                  recon.build_tactr.is_term(tgt_gid)):
+                acc += [('STOP', tgt_gid, self.gid_tactic[tgt_gid])]
         return acc
 
     def bfs_traverse(self):
