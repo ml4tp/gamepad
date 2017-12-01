@@ -1,9 +1,8 @@
-from enum import Enum
 import numpy as np
 
 from coq.ast import *
-from lib.gensym import GenSym
-from lib.myenv import MyEnv
+# from lib.gensym import GenSym
+# from lib.myenv import MyEnv
 # from lib.myutil import ImplementMe
 
 """
@@ -13,14 +12,6 @@ Create embedding of Coq Tactic Trees into R^D vectors.
 
 
 """
-
-
-# -------------------------------------------------
-# Helper-classes
-
-class Kind(Enum):
-    TERM = 0
-    TYPE = 1
 
 
 # -------------------------------------------------

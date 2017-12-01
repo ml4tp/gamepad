@@ -1,3 +1,5 @@
+from enum import Enum
+
 """
 [Note]
 
@@ -511,3 +513,11 @@ class ProjExp(Exp):
 
     def __str__(self):
         return "PJ({}, {})".format(self.proj, str(self.c))
+
+
+# -------------------------------------------------
+# Helper-classes
+
+class Kind(Enum):
+    TERM = 0
+    TYPE = 1
