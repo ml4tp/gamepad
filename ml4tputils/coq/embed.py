@@ -1,17 +1,17 @@
 from enum import Enum
+import numpy as np
 
 from coq.ast import *
 from lib.gensym import GenSym
 from lib.myenv import MyEnv
-from lib.myutil import ImplementMe
+# from lib.myutil import ImplementMe
 
 """
 [Note]
 
-Create embedding of AST into vector.
+Create embedding of Coq Tactic Trees into R^D vectors.
 
-- Keep track of globals and locals separately
-- Local names need to be shadowed appropriately
+
 """
 
 
@@ -102,7 +102,7 @@ class EmbedCoqExp(object):
             ev_ty2 = self._embed_ast(env, Kind.TYPE, c.ty2)
             return self._embedcon(key, self.embed_prod(c.name, ev_ty1, ev_ty2))
         elif isinstance(c, LambdaExp):
-            ev_x = self.local_var_init(c.ty)
+            ev_x = self.embed_local_var(c.ty)
             ev_ty = self._embed_ast(env, Kind.TERM, c.ty)
             ev_c = self._embed_ast(env.extend(c.name, ev_x),
                                    Kind.TYPE, c.c)
@@ -172,78 +172,104 @@ class EmbedCoqExp(object):
 
     # -------------------------------------------
     # Global embedding initialization
+
     def embed_evar_name(self, exk):
-        raise NotImplementedError
+        """Override Me"""
+        return np.random.multivariate_normal(np.zeros(self.D), np.eye(self.D))
 
     def embed_const_name(self, const):
-        raise NotImplementedError
+        """Override Me"""
+        return np.random.multivariate_normal(np.zeros(self.D), np.eye(self.D))
 
     def embed_sort_name(self, sort):
-        raise NotImplementedError
+        """Override Me"""
+        return np.random.multivariate_normal(np.zeros(self.D), np.eye(self.D))
 
     def embed_ind_name(self, ind):
-        raise NotImplementedError
+        """Override Me"""
+        return np.random.multivariate_normal(np.zeros(self.D), np.eye(self.D))
 
     def embed_conid_name(self, ind_and_conid):
+        """Override Me"""
         ind, conid = ind_and_conid
-        raise NotImplementedError
+        return np.random.multivariate_normal(np.zeros(self.D), np.eye(self.D))
 
     def embed_rec_name(self, name):
-        raise NotImplementedError
+        """Override Me"""
+        return np.random.multivariate_normal(np.zeros(self.D), np.eye(self.D))
 
     # -------------------------------------------
     # Local embedding initialization
-    def local_var_init(self, ty):
+
+    def embed_local_var(self, ty):
+        """Override Me"""
         raise NotImplementedError
 
     # -------------------------------------------
     # Combining embeddings
+
     def embed_rel(self, ev_idx):
+        """Override Me"""
         raise NotImplementedError
 
     def embed_var(self, ev_x):
+        """Override Me"""
         raise NotImplementedError
 
     def embed_evar(self, ev_ev):
+        """Override Me"""
         raise NotImplementedError
 
     def embed_sort(self, ev_sort):
+        """Override Me"""
         raise NotImplementedError
 
     def embed_cast(self, ev_c, ck, ev_ty):
+        """Override Me"""
         raise NotImplementedError
 
     def embed_prod(self, name, ev_ty1, ev_ty2):
+        """Override Me"""
         raise NotImplementedError
 
     def embed_lambda(self, name, ev_ty, ev_body):
+        """Override Me"""
         raise NotImplementedError
 
     def embed_letin(self, name, ev_c1, ev_ty, ev_c2):
+        """Override Me"""
         raise NotImplementedError
 
     def embed_app(self, ev_c, ev_cs):
+        """Override Me"""
         raise NotImplementedError
 
     def embed_const(self, ev_const, ev_ui):
+        """Override Me"""
         raise NotImplementedError
 
     def embed_ind(self, ev_ind, ev_ui):
+        """Override Me"""
         raise NotImplementedError
 
     def embed_construct(self, ev_ind, ev_coind, ev_ui):
+        """Override Me"""
         raise NotImplementedError
 
     def embed_case(self, ci, ev_ret, ev_match, ev_cases):
+        """Override Me"""
         raise NotImplementedError
 
     def embed_fix(self, iarr, idx, names, ev_tys, ev_cs):
+        """Override Me"""
         raise NotImplementedError
 
     def embed_cofix(self, idx, names, ev_tys, ev_cs):
+        """Override Me"""
         raise NotImplementedError
 
     def embed_proj(self, proj, ev_c):
+        """Override Me"""
         raise NotImplementedError
 
     # -------------------------------------------
