@@ -3,7 +3,7 @@ import networkx as nx
 import plotly
 from plotly.graph_objs import *
 
-from parse_tacst import *
+from recon.parse_tacst import *
 from tactr import *
 
 """

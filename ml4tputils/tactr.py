@@ -8,8 +8,8 @@ from coq.util import ChkCoqExp, SizeCoqExp, HistCoqExp, COQEXP_HIST
 from lib.myenv import MyEnv
 from lib.myhist import MyHist
 from lib.myutil import dict_ls_app
-from parse_tacst import TacKind
-import build_tactr
+from recon.parse_tacst import TacKind
+import recon.build_tactr
 
 """
 [Note]
@@ -179,9 +179,6 @@ class TacTree(object):
     def unique_conid(self):
         return self.hce.unique_conid
 
-    def decode_ctxid(self, ident):
-        edx = self.decoder.typs_table[ident]
-
     def _traverse_info(self, ordered_gids):
         acc = []
         for gid in ordered_gids:
@@ -189,7 +186,8 @@ class TacTree(object):
                 pp_ctx, pp_goal, ctx_ids, goal_idx = self.tacst_info[gid]
                 acc += [('OPEN', gid, pp_ctx, pp_goal, ctx_ids,
                          goal_idx, self.gid_tactic[gid])]
-            elif build_tactr.is_err(gid) or build_tactr.is_term(gid):
+            elif (recon.build_tactr.is_err(gid) or
+                  recon.build_tactr.is_term(gid)):
                 acc += [('STOP', gid, self.gid_tactic[gid])]
         return acc
 

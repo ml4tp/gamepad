@@ -3,7 +3,7 @@ from enum import Enum
 from lib.gensym import GenSym
 from lib.myiter import MyIter
 from lib.myutil import pp_tab, inc_update
-from lex_raw import *
+from recon.lex_raw import *
 
 """
 [Note]

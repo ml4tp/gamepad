@@ -1,9 +1,9 @@
 import argparse
 import os.path as op
 
-from lex_raw import TacStParser
-from parse_tacst import TacTreeParser
-from build_tactr import TacTreeBuilder
+from recon.lex_raw import TacStParser
+from recon.parse_tacst import TacTreeParser
+from recon.build_tactr import TacTreeBuilder
 
 
 class Visualize(object):
