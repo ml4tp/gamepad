@@ -1,6 +1,7 @@
 from coq.ast import *
 from coq.util import SizeCoqExp
-from lib.myenv import MyEnv, NotFound
+from lib.myenv import MyEnv
+from lib.myutil import NotFound
 
 """
 [Note]

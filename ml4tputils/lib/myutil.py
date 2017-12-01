@@ -5,6 +5,16 @@ Utility functions.
 """
 
 
+class NotFound(Exception):
+    def __init__(self, msg):
+        self.msg = msg
+
+
+class ImplmentMe(Exception):
+    def __init__(self, msg=""):
+        self.msg = msg
+
+
 def pp_tab(tab, str):
     return tab * " " + str
 

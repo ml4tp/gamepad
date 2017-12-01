@@ -73,7 +73,7 @@ class Visualize(object):
 
         # [RawTac] to tactic tree
         tr_builder = TacTreeBuilder(lemma.name, tacs, lemma.get_tacst_info(),
-                                    lemma.decoder, False)
+                                    {}, lemma.decoder, False)
         tr_builder.build_tacs()
         succ, ncc = tr_builder.check_success()
         if not succ:

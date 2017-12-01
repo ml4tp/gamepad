@@ -28,8 +28,11 @@ class DecodeCoqExp(object):
         self._decode_constrs()
         ChkCoqExp(self.concr_ast).chk_concr_ast()
 
-    def decode_ast(self, key):
+    def decode_exp_by_key(self, key):
         return self.concr_ast[key]
+
+    def decode_exp_by_ctxid(self, ident):
+        return self.decode_exp_by_key(self.typs_table[ident])
 
     def _decode_constrs(self, f_display=False):
         # Initialize state

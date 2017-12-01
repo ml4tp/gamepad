@@ -9,6 +9,7 @@ from lib.myenv import MyEnv
 from lib.myhist import MyHist
 from lib.myutil import dict_ls_app
 from parse_tacst import TacKind
+import build_tactr
 
 """
 [Note]
@@ -30,6 +31,7 @@ TACTICS = ["<coretactics::intro@0>",
            "<coretactics::exists@1>",
            "<coretactics::left@0>",
            "<coretactics::right@0>",
+           "<coretactics::right_with@0>",
            "<coretactics::split@0>",
            "<coretactics::symmetry@0>",
            "<coretactics::transitivity@0>",
@@ -51,6 +53,7 @@ TACTICS = ["<coretactics::intro@0>",
            "<ssreflect_plugin::ssrmove@0>",
            "<ssreflect_plugin::ssrmove@1>",
            "<ssreflect_plugin::ssrmove@2>",
+           "<ssreflect_plugin::ssrpose@0>",
            "<ssreflect_plugin::ssrpose@2>",
            "<ssreflect_plugin::ssrrewrite@0>",
            "<ssreflect_plugin::ssrset@0>",
@@ -75,12 +78,13 @@ TACTIC_HIST = MyHist(TACTICS)
 # Tactic Tree
 
 class TacTree(object):
-    def __init__(self, name, edges, graph, tacst_info, decoder):
+    def __init__(self, name, edges, graph, tacst_info, gid_tactic, decoder):
         # Input
         self.name = name               # Lemma name
         self.edges = edges             # [TacEdge]
         self.graph = graph             # nx.MultDiGraph[Int, Int]
         self.tacst_info = tacst_info   # Dict[gid, (ctx, goal, ctx_e, goal_e)]
+        self.gid_tactic = gid_tactic   # Dict[int, TacEdge]
         self.decoder = decoder         # Decode asts
         self.chk = ChkCoqExp(decoder.concr_ast)
         self.chk.chk_concr_ast()
@@ -174,6 +178,28 @@ class TacTree(object):
 
     def unique_conid(self):
         return self.hce.unique_conid
+
+    def decode_ctxid(self, ident):
+        edx = self.decoder.typs_table[ident]
+
+    def _traverse_info(self, ordered_gids):
+        acc = []
+        for gid in ordered_gids:
+            if gid in self.tacst_info:
+                pp_ctx, pp_goal, ctx_ids, goal_idx = self.tacst_info[gid]
+                acc += [('OPEN', gid, pp_ctx, pp_goal, ctx_ids,
+                         goal_idx, self.gid_tactic[gid])]
+            elif build_tactr.is_err(gid) or build_tactr.is_term(gid):
+                acc += [('STOP', gid, self.gid_tactic[gid])]
+        return acc
+
+    def bfs_traverse(self):
+        bfs = list(nx.bfs_edges(self.graph, self.root))
+        return self._traverse_info(bfs)
+
+    def dfs_traverse(self):
+        dfs = list(nx.dfs_edges(self.graph, source=self.root))
+        return self._traverse_info(dfs)
 
     def view_err_paths(self):
         acc = []
@@ -306,7 +332,7 @@ class TacTree(object):
                     v = vals[ident]
                 else:
                     edx = self.decoder.typs_table[ident]
-                    c = self.decoder.decode_ast(edx)
+                    c = self.decoder.decode_exp_by_key(edx)
                     cbname = InterpCBName()
                     v = cbname.interp(env, c)
                     vals[ident] = v
@@ -331,6 +357,8 @@ class TacTree(object):
         avg_depth_astgoal_size = [(k, np.mean(tysz)) for k, tysz in
                                   self.view_depth_astgoal_size().items()]
         static_full_comp, static_sh_comp, cbname_comp = self.view_comp()
+        self.bfs_traverse()
+        self.dfs_traverse()
         info = {'hist': self.view_tactic_hist(f_compress=True),
                 'num_tacs': len(self.tactics),
                 'num_goals': len(self.goals),

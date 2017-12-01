@@ -25,6 +25,14 @@ rank2_coprime_comm_cprod
 """
 
 
+def is_err(gid):
+    return isinstance(gid, str) and gid.startswith("e")
+
+
+def is_term(gid):
+    return isinstance(gid, str) and gid.startswith("t")
+
+
 # -------------------------------------------------
 # Data structures
 
@@ -48,10 +56,10 @@ class TacEdge(object):
         self.isbod = isbod     # Is the connection to a body?
 
     def conn2err(self):
-        return isinstance(self.tgt, str) and self.tgt.startswith("e")
+        return is_err(self.tgt)
 
     def conn2term(self):
-        return isinstance(self.tgt, str) and self.tgt.startswith("t")
+        return is_term(self.tgt)
 
     def unpack(self):
         return (self.eid, self.tid, self.name, str(self.tkind), self.ftac,
@@ -66,8 +74,9 @@ class TacEdge(object):
 # Tactic Tree Building
 
 class TacTreeBuilder(object):
-    def __init__(self, name, tacs, tacst_info, decoder, ftac_inscope=None,
-                 gensym_edgeid=GenSym(), gensym_errid=GenSym(prefix="e"),
+    def __init__(self, name, tacs, tacst_info, gid_tactic, decoder,
+                 ftac_inscope=None, gensym_edgeid=GenSym(),
+                 gensym_errid=GenSym(prefix="e"),
                  gensym_termid=GenSym(prefix="t"), f_log=False):
         for tac in tacs:
             assert isinstance(tac, RawTac)
@@ -90,6 +99,7 @@ class TacTreeBuilder(object):
         self.graph = nx.MultiDiGraph()
         self.tacst_info = tacst_info        # Dict[int, tacst]
         self.ftac_inscope = ftac_inscope    # full-tactic in scope?
+        self.gid_tactic = gid_tactic        # Dict[int, TacEdge]
 
         # Internal symbol generation for reconstruction
         self.gensym_edgeid = gensym_edgeid
@@ -132,6 +142,10 @@ class TacTreeBuilder(object):
         else:
             edge = TacEdge(self._fresh_edgeid(), tac.uid, tac.name, tac.kind,
                            ftac, bf_decl.hdr.gid, af_decl.hdr.gid)
+        if edge.src in self.gid_tactic:
+            self.gid_tactic[edge.src] += [edge]
+        else:
+            self.gid_tactic[edge.src] = [edge]
         return [edge]
 
     def _mk_body_edge(self, tac, bf_decl, gid):
@@ -146,7 +160,8 @@ class TacTreeBuilder(object):
 
     def _launch_rec(self, tacs, ftac_inscope):
         tr_builder = TacTreeBuilder(self.name, tacs, self.tacst_info,
-                                    self.decoder, ftac_inscope=ftac_inscope,
+                                    self.gid_tactic, self.decoder,
+                                    ftac_inscope=ftac_inscope,
                                     gensym_edgeid=self.gensym_edgeid,
                                     gensym_errid=self.gensym_errid,
                                     gensym_termid=self.gensym_termid)
@@ -470,7 +485,7 @@ class TacTreeBuilder(object):
 
     def get_tactree(self, f_verbose=False):
         tactr = TacTree(self.name, self.edges, self.graph,
-                        self.tacst_info, self.decoder)
+                        self.tacst_info, self.gid_tactic, self.decoder)
 
         if f_verbose:
             tactr.dump()

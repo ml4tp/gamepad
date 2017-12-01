@@ -1,9 +1,5 @@
 from coq.ast import Name
-
-
-class NotFound(Exception):
-    def __init__(self, msg):
-        self.msg = msg
+from lib.myutil import NotFound
 
 
 class MyEnv(object):
