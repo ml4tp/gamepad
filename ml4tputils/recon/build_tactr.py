@@ -4,7 +4,7 @@ import plotly
 from plotly.graph_objs import *
 
 from recon.parse_tacst import *
-from recon.tactr import *
+from recon.tactr import TacTree
 
 """
 [Note]

@@ -5,7 +5,7 @@ import scipy.stats as sps
 
 from lib.myutil import inc_update
 from coq.util import COQEXP_HIST
-from tactr import TACTIC_HIST
+from recon.tactr import TACTIC_HIST
 
 
 # -------------------------------------------------
