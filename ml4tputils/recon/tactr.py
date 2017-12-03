@@ -82,7 +82,7 @@ class TacTree(object):
         # Input
         self.name = name               # Lemma name
         self.edges = edges             # [TacEdge]
-        self.graph = graph             # nx.MultDiGraph[Int, Int]
+        self.graph = graph             # nx.MultDiGraph[TacStId, TacStId]
         self.tacst_info = tacst_info   # Dict[gid, (ctx, goal, ctx_e, goal_e)]
         self.gid_tactic = gid_tactic   # Dict[int, TacEdge]
         self.decoder = decoder         # Decode asts
@@ -144,11 +144,12 @@ class TacTree(object):
             try:
                 depth = len(nx.algorithms.shortest_path(self.graph, self.root, edge.tgt))
                 if edge.tid not in seen:
-                    if edge.tgt in self.tacst_info:
-                        ctx, goal, ctx_e, goal_e = self.tacst_info[edge.tgt]
+                    if edge.tgt.gid in self.tacst_info:
+                        ctx, goal, ctx_e, goal_e = self.tacst_info[edge.tgt.gid]
                         self.flatview += [(depth, edge.tgt, ctx, goal, ctx_e, goal_e, edge)]
                     elif edge.conn2err() or edge.conn2term():
-                        ctx, goal, ctx_e, goal_e = self.tacst_info[edge.src]
+                        # print("DOING", edge.src, self.tacst_info)
+                        ctx, goal, ctx_e, goal_e = self.tacst_info[edge.src.gid]
                         self.flatview += [(depth, edge.tgt, ctx, goal, ctx_e, goal_e, edge)]
             except nx.exception.NetworkXNoPath:
                 pass
@@ -205,7 +206,7 @@ class TacTree(object):
             try:
                 acc += [nx.algorithms.shortest_path(self.graph, self.root, egid)]
             except nx.exception.NetworkXNoPath:
-                self.notok += [egid]
+                self.notok += [str(egid)]
         return acc
 
     def view_term_paths(self):
@@ -214,7 +215,7 @@ class TacTree(object):
             try:
                 acc += [nx.algorithms.shortest_path(self.graph, self.root, tgid)]
             except nx.exception.NetworkXNoPath:
-                self.notok += [tgid]
+                self.notok += [str(tgid)]
         return acc
 
     def view_have_info(self):
@@ -279,6 +280,7 @@ class TacTree(object):
             if ctx_e:
                 ls = []
                 for ident in ctx_e:
+                    # print(ctx_e, self.decoder.typs_table)
                     key = self.decoder.typs_table[ident]
                     size = self.sce_full.decode_size(key)
                     ls += [size]
@@ -344,6 +346,7 @@ class TacTree(object):
     def stats(self):
         term_path_lens = [len(path) for path in self.view_term_paths()]
         err_path_lens = [len(path) for path in self.view_err_paths()]
+        """
         avg_depth_ctx_items = [(k, np.mean(v)) for k, v in
                                self.view_depth_ctx_items().items()]
         avg_depth_ctx_size = [(k, np.mean(v)) for k, v in
@@ -354,9 +357,8 @@ class TacTree(object):
                                  self.view_depth_astctx_size().items()]
         avg_depth_astgoal_size = [(k, np.mean(tysz)) for k, tysz in
                                   self.view_depth_astgoal_size().items()]
-        static_full_comp, static_sh_comp, cbname_comp = self.view_comp()
-        self.bfs_traverse()
-        self.dfs_traverse()
+        """
+        #static_full_comp, static_sh_comp, cbname_comp = self.view_comp()
         info = {'hist': self.view_tactic_hist(f_compress=True),
                 'num_tacs': len(self.tactics),
                 'num_goals': len(self.goals),
@@ -364,22 +366,22 @@ class TacTree(object):
                 'num_err': len(self.err_goals),
                 'term_path_lens': term_path_lens,
                 'err_path_lens': err_path_lens,
-                'have_info': self.view_have_info(),
-                'avg_depth_ctx_items': avg_depth_ctx_items,
-                'avg_depth_ctx_size': avg_depth_ctx_size,
-                'avg_depth_goal_size': avg_depth_goal_size,
-                'avg_depth_astctx_size': avg_depth_astctx_size,
-                'avg_depth_astgoal_size': avg_depth_astgoal_size,
-                'hist_coqexp': self.hist_coqexp(),
-                'static_full_comp': [v for _, v in static_full_comp.items()],
-                'static_sh_comp': [v for _, v in static_sh_comp.items()],
-                'cbname_comp': [v for _, v in cbname_comp.items()],
+                #'have_info': self.view_have_info(),
+                #'avg_depth_ctx_items': avg_depth_ctx_items,
+                #'avg_depth_ctx_size': avg_depth_ctx_size,
+                #'avg_depth_goal_size': avg_depth_goal_size,
+                #'avg_depth_astctx_size': avg_depth_astctx_size,
+                #'avg_depth_astgoal_size': avg_depth_astgoal_size,
+                #'hist_coqexp': self.hist_coqexp(),
+                #'static_full_comp': [v for _, v in static_full_comp.items()],
+                #'static_sh_comp': [v for _, v in static_sh_comp.items()],
+                #'cbname_comp': [v for _, v in cbname_comp.items()],
                 'notok': self.notok}
         return info
 
     def log_stats(self, h_file):
         info = self.stats()
-        msg = json.dumps({"lemma": self.name, "info": info})
+        msg = json.dumps({"lemma": self.name, "info": info}, cls=recon.build_tactr.TacStIdEncoder)
         h_file.write(msg)
         h_file.write("\n")
         return info
@@ -387,15 +389,15 @@ class TacTree(object):
     def dump(self):
         print(">>>>>>>>>>>>>>>>>>>>")
         print("Root:", self.root)
-        print("Goals:", self.goals)
+        print("Goals: ", "[{}]".format(",".join([str(g) for g in self.goals])))
         print("Tactics:", self.tactics)
         for gid in self.goals:
             s1 = ", ".join([str(x) for x in self.in_edge(gid)])
             print("In edge for {}:".format(gid), s1)
             s2 = ", ".join([str(x) for x in self.out_edges(gid)])
             print("Out edges for {}:".format(gid), s2)
-        print("Terminal states:", self.term_goals)
-        print("Error states:", self.err_goals)
+        print("Terminal states:", "[{}]".format(",".join([str(g) for g in self.term_goals])))
+        print("Error states:", "[{}]".format(",".join([str(g) for g in self.err_goals])))
         print("Terminal path lengths:", self.view_term_paths())
         print("Error path lengths:", self.view_err_paths())
         print("<<<<<<<<<<<<<<<<<<<<")

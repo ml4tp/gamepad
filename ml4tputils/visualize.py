@@ -40,6 +40,24 @@ class Visualize(object):
 
         # TODO(deh): deprecate me once debugged
         self.bad_idents = {}
+        self.kludge = []
+
+    def compute_kludge(self):
+        foobar = {}
+        print(self.kludge)
+        for x in self.kludge:
+            if x in foobar:
+                foobar[x] += 1
+            else:
+                foobar[x] = 1
+
+        acc = []
+        for (tac, len_bf, len_af, len_body, num_cc, num_matched), cnt in foobar.items():
+            acc += [(tac, len_bf, len_af, len_body, num_cc, num_matched, cnt)]
+        acc = sorted(acc, key=lambda k: (k[0], k[1], k[2], k[3], k[4], k[5]))
+        
+        for tac, len_bf, len_af, len_body, num_cc, num_matched, cnt in acc:
+            print("tac={}, #bf={}, #af={}, #body={}, #cc={}, #matched={}, cnt={}".format(tac, len_bf, len_af, len_body, num_cc, num_matched, cnt))
 
     def finalize(self):
         self.h_tactr_file.write("TOTAL: {} WERID: {}\n".format(
@@ -52,7 +70,8 @@ class Visualize(object):
                                 len(self.unique_conid)))
         print("BADIDENTS")
         for lemma, v in self.bad_idents.items():
-            print("{}: {}".format(lemma, v))
+            print("{}: {}".format(lemma.name, v))
+        self.compute_kludge()
         self.h_tactr_file.close()
 
     def visualize_lemma(self, file, lemma):
@@ -80,11 +99,12 @@ class Visualize(object):
 
         # [RawTac] to tactic tree
         tr_builder = TacTreeBuilder(lemma.name, tacs, lemma.get_tacst_info(),
-                                    {}, lemma.decoder, False)
+                                    {}, lemma.decoder, [], False)
         tr_builder.build_tacs()
         succ, ncc = tr_builder.check_success()
         if not succ:
             self.failed += [(file, lemma.name, ncc, len(tr_builder.notok))]
+        self.kludge += tr_builder.kludge
 
         # Compute tactic tree statistics
         tactr = tr_builder.get_tactree(self.f_verbose)

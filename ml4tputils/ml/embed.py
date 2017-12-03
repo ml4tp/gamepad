@@ -40,6 +40,7 @@ class EmbedCoqExp(object):
 
         # TODO(deh): deprecate me once debugged?
         self.bad_idents = set()
+        self.GID = 0
 
     def embed_ast(self, env, c):
         return self._embed_ast(env, Kind.TERM, c)
@@ -83,6 +84,7 @@ class EmbedCoqExp(object):
                 # TODO(deh): some weird shit going on in Coq printing
                 ev_idx = self.embed_local_var(None)
                 self.bad_idents.add(c.idx)
+                print("FAILED TO LOOKUP {} in gid {}".format(c.idx, self.GID))
             return self._embedcon(key, self.embed_rel(ev_idx))
         elif isinstance(c, VarExp):
             try:
@@ -91,6 +93,7 @@ class EmbedCoqExp(object):
                 # TODO(deh): some weird shit going on in Coq printing
                 ev_x = self.embed_local_var(None)
                 self.bad_idents.add(c.x)
+                print("FAILED TO LOOKUP {} in gid {}".format(c.x, self.GID))
             return self._embedcon(key, self.embed_var(ev_x))
         elif isinstance(c, MetaExp):
             assert False, "NOTE(deh): MetaExp should never be in dataset"
@@ -307,37 +310,41 @@ class EmbedCoqTacTr(object):
         for node in bfs:
             if node[0] == 'OPEN':
                 _, gid, _, _, ctx_ids, goal_idx, edge = node
-                env, evs = self.embed_ctx(ctx_ids)
-                ev = self.embed_goal(env, goal_idx)
+                env, evs = self.embed_ctx(gid, ctx_ids)
+                ev = self.embed_goal(gid, env, goal_idx)
                 acc += [(evs, ev)]
             else:
                 # TODO(deh): what to do on terminal nodes?
                 _, gid, edge = node
         return acc
 
-    def embed_ctx(self, ctx_idents):
+    def embed_ctx(self, gid, ctx_idents):
         evs = []
         env = MyEnv()
         for ident in ctx_idents:
-            ev = self.embed_ctx_ident(env, ident)
+            #if gid == 1128:
+            #    print("EMBEDDING ident: {}".format(ident))
+            ev = self.embed_ctx_ident(gid, env, ident)
             env = env.extend(Name(ident), ev)
             evs += [ev]
         return env, evs
 
-    def embed_ctx_ident(self, env, ident):
+    def embed_ctx_ident(self, gid, env, ident):
         if ident in self.ctxid_embeds:
             return self.ctxid_embeds[ident]
         else:
             c = self.tactr.decoder.decode_exp_by_ctxid(ident)
+            self.ece.GID = gid
             ev = self.ece.embed_ast(env, c)
             self.ctxid_embeds[ident] = ev
             return ev
 
-    def embed_goal(self, env, goal_idx):
+    def embed_goal(self, gid, env, goal_idx):
         if goal_idx in self.goal_embeds:
             return self.goal_embeds[goal_idx]
         else:
             c = self.tactr.decoder.decode_exp_by_key(goal_idx)
+            self.ece.GID = gid
             ev = self.ece.embed_ast(env, c)
             self.goal_embeds[goal_idx] = ev
             return ev
