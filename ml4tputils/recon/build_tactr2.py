@@ -7,7 +7,7 @@ from plotly.graph_objs import *
 from coq.decode import DecodeCoqExp
 from recon.parse_rawtac import *
 from recon.tactr import TacStKind, TacTrNode, TacEdge, TacTree
-from recon.tactics import TACTICS, Conn, Type
+# from recon.tactics import TACTICS, Conn, Type
 
 """
 [Note]
@@ -112,7 +112,9 @@ class TacTreeBuilder(object):
         if self.ftac_inscope:
             ftac = self.ftac_inscope
         else:
-            ftac = bf_decl.hdr.ftac
+            # TODO(deh): investigate why this is happening in Coq dump
+            # ftac = bf_decl.hdr.ftac
+            ftac = bf_decl.hdr.tac
 
         if af_decl.hdr.gid == GID_SOLVED:
             bf_node = self._mk_live_node(bf_decl)
@@ -156,7 +158,9 @@ class TacTreeBuilder(object):
         if self.ftac_inscope:
             ftac = self.ftac_inscope
         else:
-            ftac = bf_decl.hdr.ftac
+            # TODO(deh): investigate why this is happening in Coq dump
+            # ftac = bf_decl.hdr.ftac
+            ftac = bf_decl.hdr.tac
 
         edge = TacEdge(self._fresh_edgeid(),
                        rawtac.uid, rawtac.name, rawtac.tkind,

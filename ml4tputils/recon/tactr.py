@@ -47,17 +47,31 @@ class TacTrNode(object):
         elif self.kind == TacStKind.DEAD:
             self.uid = "E{}".format(x)
         else:
-            self.uid = "L{}".format(x)
+            # self.uid = self.gid
+            self.uid = x
 
     def __eq__(self, other):
         return (isinstance(other, TacTrNode) and self.gid == other.gid and
                 self.kind == other.kind and self.order == other.order)
 
     def __hash__(self):
+        # return self.gid
         return hash(self.uid)
+        """
+        if self.kind == TacStKind.LIVE:
+            return self.uid
+        else:
+            return hash(self.uid)
+        """
 
     def __str__(self):
         return self.uid
+        """
+        if self.kind == TacStKind.LIVE:
+            return str(self.uid)
+        else:
+            return self.uid
+        """
 
 
 def is_err(gid):
@@ -216,8 +230,9 @@ class TacTree(object):
                 pp_ctx, pp_goal, ctx_ids, goal_idx = self.tacst_info[src_gid]
                 acc += [('OPEN', src_gid, pp_ctx, pp_goal, ctx_ids,
                          goal_idx, self.gid_tactic[src_gid])]
-            elif is_err(tgt_gid) or is_term(tgt_gid):
-                acc += [('STOP', tgt_gid, self.gid_tactic[tgt_gid])]
+            # elif (tgt_gid.kind == TacStKind.DEAD or
+            #       tgt_gid.kind == TacStKind.TERM):
+            #     acc += [('STOP', tgt_gid, self.gid_tactic[src_gid.gid])]
         return acc
 
     def bfs_traverse(self):
