@@ -16,23 +16,23 @@ Decode shared representation of Coq in .dump into table.
 # Decoding low-level expressions
 
 class DecodeCoqExp(object):
-    def __init__(self, typs_table, bods_table, constrs_table):
+    def __init__(self, ctx_typs, ctx_bods, constr_share):
         # Internal state
-        self.typs_table = typs_table          # Dict[id, int]
-        self.bods_table = bods_table          # Dict[id, int]
-        self.constrs_table = constrs_table    # Dict[int, string]
+        self.ctx_typs = ctx_typs           # Dict[id, int]
+        self.ctx_bods = ctx_bods           # Dict[id, int]
+        self.constr_share = constr_share   # Dict[int, string]
 
         # Shared representation
-        self.concr_ast = {}
+        self.decoded = {}
         self.f_decoded = False
         self._decode_constrs()
-        ChkCoqExp(self.concr_ast).chk_concr_ast()
+        ChkCoqExp(self.decoded).chk_decoded()
 
     def decode_exp_by_key(self, key):
-        return self.concr_ast[key]
+        return self.decoded[key]
 
     def decode_exp_by_ctxid(self, ident):
-        return self.decode_exp_by_key(self.typs_table[ident])
+        return self.decode_exp_by_key(self.ctx_typs[ident])
 
     def _decode_constrs(self, f_display=False):
         # Initialize state
@@ -41,7 +41,7 @@ class DecodeCoqExp(object):
 
         # Lex raw-ast and build dependency graph
         G = nx.DiGraph()
-        for key, entry in self.constrs_table.items():
+        for key, entry in self.constr_share.items():
             G.add_node(key)
             self._parse_rawast(key, entry)
         G.add_edges_from(self.edges)
@@ -169,7 +169,6 @@ class DecodeCoqExp(object):
             self.rawasts[key] = ("CO", mutind, pos, conid, ui)
         elif kind == "CS":
             # CS [%s] %d %d [%s]
-            # toks = self._split_entry(entry)
             idx = entry.find(']]')
             hd = entry[2:idx]
             tl = entry[idx+2:]
@@ -247,17 +246,17 @@ class DecodeCoqExp(object):
     # -------------------------------------------------
     # Second pass of decoding
     def _mkcon(self, key, c):
-        if key in self.concr_ast:
-            return self.concr_ast[key]
+        if key in self.decoded:
+            return self.decoded[key]
         else:
             c.tag = key
-            self.concr_ast[key] = c
+            self.decoded[key] = c
             return c
 
     def _decode_ast(self, key):
         """Complete decoding"""
-        if key in self.concr_ast:
-            return self.concr_ast[key]
+        if key in self.decoded:
+            return self.decoded[key]
 
         toks = self.rawasts[key]
         kind = toks[0]
@@ -360,5 +359,5 @@ class DecodeCoqExp(object):
         return [self._decode_ast(key) for key in keys]
 
     def pp(self, tab=0):
-        s = "\n".join(["{}: {}".format(ident, self.decode_ctx_typ(ident)) for ident, ty in self.typs_table.items()])
+        s = "\n".join(["{}: {}".format(ident, self.decode_ctx_typ(ident)) for ident, ty in self.ctx_typs.items()])
         return s

@@ -81,21 +81,16 @@ class TacStDecl(object):
         # Data
         self.hdr = hdr                # tactic state header
         self.ctx_idents = ctx_idents  # ctx as [id]
-        self.concl_idx = concl_idx    # conc as int
+        self.concl_idx = concl_idx    # conclusion expression as index
 
-        # Pretty-printing
-        self.ctx_prtyps = {}        # Dict[ident, str]
-        self.ctx_prbods = {}        # Dict[ident, str]
-        self.ctx_prgls = {}         # Dict[idx, str]
-
-    def pp(self, tab=0):
+    def pp(self, ctx_prtyps, ctx_prgls, tab=0):
         s1 = self.hdr.pp(tab) + "\n"
-        s2 = "\n".join([pp_tab(tab + 2, "{}: {}".format(x, self.ctx_prtyps[x])) for x in self.ctx_idents]) + "\n"
+        s2 = "\n".join([pp_tab(tab + 2, "{}: {}".format(x, ctx_prtyps[x])) for x in self.ctx_idents]) + "\n"
         s3 = pp_tab(tab + 2, "=====================\n")
         if self.concl_idx == -1:
             s4 = pp_tab(tab + 2, "SOLVED")
         else:
-            s4 = pp_tab(tab + 2, self.ctx_prgls[self.concl_idx])
+            s4 = pp_tab(tab + 2, ctx_prgls[self.concl_idx])
         return s1 + s2 + s3 + s4
 
     def __str__(self):
@@ -113,16 +108,20 @@ class LemTacSt(object):
     """
     Contains the lemma and the sequence of tactic states associated with it.
     """
-    def __init__(self, name, decls, ctx_typs, ctx_bods, constr_share):
+    def __init__(self, name, decls, ctx_typs, ctx_bods, ctx_prtyps,
+                 ctx_prbods, ctx_prgls, constr_share):
         assert isinstance(name, str)
         for decl in decls:
             assert isinstance(decl, TacStDecl)
 
-        self.name = name       # Name of the lemma
-        self.decls = decls     # List of TacStDecl "tokens"
+        self.name = name               # Name of the lemma
+        self.decls = decls             # List of TacStDecl "tokens"
 
         # Decode low-level Coq expression
         self.decoder = DecodeCoqExp(ctx_typs, ctx_bods, constr_share)
+        self.ctx_prtyps = ctx_prtyps   # Pretty-print typs in context
+        self.ctx_prbods = ctx_prbods   # Pretty-print bods in context
+        self.ctx_prgls = ctx_prgls     # Pretty-print goals in context
 
     def get_tacst_info(self):
         tacst_info = {}
@@ -132,18 +131,18 @@ class LemTacSt(object):
                 # TODO(deh): can be optimized
                 ctx = {}
                 for ident in decl.ctx_idents:
-                    ctx[ident] = decl.ctx_prtyps[ident]
+                    ctx[ident] = self.ctx_prtyps[ident]
                 if decl.concl_idx == -1:
                     goal = "SOLVED"
                 else:
-                    goal = decl.ctx_prgls[decl.concl_idx]
+                    goal = self.ctx_prgls[decl.concl_idx]
                 tacst_info[gid] = (ctx, goal, decl.ctx_idents, decl.concl_idx)
         return tacst_info
 
     def pp(self, tab=0):
         s1 = pp_tab(tab, self.name) + "\n"
-        s2 = "\n".join([decl.pp(tab + 2) for decl in self.decls]) + "\n"
-        # s3 = self.decoder.pp(tab)
+        s2 = "\n".join([decl.pp(self.ctx_prtyps, self.ctx_prgls, tab + 2)
+                       for decl in self.decls]) + "\n"
         return s1 + s2
 
     def __str__(self):
@@ -163,7 +162,7 @@ class TacStParser(object):
         self.exhausted = False
 
         # Lemma-sepcific state
-        self.decls = []           # Accumlated decls in lemma
+        self.decls = []          # Accumlated decls in lemma
 
         # Lemma-sepcific decoding low-level Coq expressions
         self.ctx_typs = {}       # Dict[str, int], typ ident to exp idx
@@ -205,7 +204,7 @@ class TacStParser(object):
             idents = []
         else:
             idents = [ident.strip() for ident in ctx_idents.split(",")]
-        # TODO(deh): Fix coq dump to print put in correct order?
+        # TODO(deh): Fix coq dump to print in reverse order?
         idents.reverse()
         return idents, cid
 
@@ -443,13 +442,11 @@ class TacStParser(object):
             elif line.startswith(TOK_END_PF):
                 self.parse_qed()
                 # Accumulate lemma
-                for decl in self.decls:
-                    decl.ctx_prtyps = self.ctx_prtyps
-                    decl.ctx_prbods = self.ctx_prbods
-                    decl.ctx_prgls = self.ctx_prgls
                 lem_name = lemname_stk.pop()
                 lemma = LemTacSt(lem_name, self.decls, self.ctx_typs,
-                                 self.ctx_bods, self.constr_share)
+                                 self.ctx_bods, self.ctx_prtyps,
+                                 self.ctx_prbods, self.ctx_prgls,
+                                 self.constr_share)
                 self.lems.append(lemma)
                 if h_head.raw_peek_line() == "":
                     self.exhausted = True
@@ -465,8 +462,8 @@ class TacStParser(object):
                 self.parse_endsubpf()
                 # TODO(deh): keep track of this?
             elif line.startswith(TOK_BEG_TAC_ST):
-                did, mode, tac, kind, loc = self.parse_begtacst()
-                decl = self.parse_decl(did, mode, tac, kind, loc)
+                callid, mode, tac, kind, loc = self.parse_begtacst()
+                decl = self.parse_decl(callid, mode, tac, kind, loc)
                 self.decls += [decl]
             elif line.startswith(TOK_END_TAC_ST):
                 self.parse_endtacst()

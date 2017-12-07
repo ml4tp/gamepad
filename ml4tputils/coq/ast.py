@@ -1,5 +1,7 @@
 from enum import Enum
 
+from lib.myhist import MyHist
+
 """
 [Note]
 
@@ -516,8 +518,30 @@ class ProjExp(Exp):
 
 
 # -------------------------------------------------
-# Helper-classes
+# Other
 
 class Kind(Enum):
     TERM = 0
     TYPE = 1
+
+
+COQEXP = ['RelExp',
+          'VarExp',
+          'MetaExp',
+          'EvarExp',
+          'SortExp',
+          'CastExp',
+          'ProdExp',
+          'LambdaExp',
+          'LetInExp',
+          'AppExp',
+          'ConstExp',
+          'IndExp',
+          'ConstructExp',
+          'CaseExp',
+          'FixExp',
+          'CoFixExp',
+          'ProjExp']
+
+
+COQEXP_HIST = MyHist(COQEXP)

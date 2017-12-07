@@ -40,14 +40,13 @@ for atom/ml/notation, should be able to connect bf/af using goal id
 # Tactic Tree Building
 
 class TacTreeBuilder(object):
-    def __init__(self, name, tacs, tacst_info, gid_tactic, decoder, kludge,
-                 ftac_inscope=None, gensym_edgeid=GenSym(),
-                 gensym_errid=GenSym(),
-                 gensym_termid=GenSym(),
-                 gid2tid={}, tid_gensyms={},
+    def __init__(self, name, rawtacs, tacst_info, gid_tactic, decoder,
+                 ftac_inscope=None,
+                 gs_edgeid=GenSym(), gs_deadid=GenSym(), gs_termid=GenSym(),
+                 gid2node={}, tid_gensyms={},
                  f_log=False):
-        for tac in tacs:
-            assert isinstance(tac, RawTac)
+        for rawtac in rawtacs:
+            assert isinstance(rawtac, RawTac)
         assert isinstance(decoder, DecodeCoqExp)
 
         # Internal state
@@ -56,58 +55,56 @@ class TacTreeBuilder(object):
         self.notok = []
 
         # Lemma-specific state
-        self.name = name            # Name of the lemma
-        self.decoder = decoder      # Expression decoder for lemma
+        self.name = name                    # Name of the lemma
+        self.tacst_info = tacst_info        # Dict[int, tacst]
+        self.decoder = decoder              # Expression decoder for lemma
 
         # Reconstruction state
-        self.tacs = tacs
-        self.it_tacs = MyIter(tacs)
+        self.rawtacs = rawtacs              # [RawTac]
+        self.it_rawtacs = MyIter(rawtacs)   # Iter<RawTac>
         self.edges = []                     # [TacEdge]
         # graph with goal ids as nodes, tactics as edges
         self.graph = nx.MultiDiGraph()
-        self.tacst_info = tacst_info        # Dict[int, tacst]
         self.ftac_inscope = ftac_inscope    # full-tactic in scope?
         self.gid_tactic = gid_tactic        # Dict[int, TacEdge]
 
         # Internal symbol generation for reconstruction
-        self.gensym_edgeid = gensym_edgeid
-        self.gensym_errid = gensym_errid
-        self.gensym_termid = gensym_termid
+        self.gs_edgeid = gs_edgeid
+        self.gs_deadid = gs_deadid
+        self.gs_termid = gs_termid
 
         # Mapping goal ids to tactic state ids
-        self.gid2tid = gid2tid
+        self.gid2node = gid2node
         self.tid_gensyms = tid_gensyms
-
-        self.kludge = kludge
 
     def _mylog(self, msg, f_log=False):
         if f_log or self.f_log:
             print(msg)
 
     def _fresh_edgeid(self):
-        return self.gensym_edgeid.gensym()
-
-    def _fresh_errid(self):
-        return TacTrNode(self.gensym_errid.gensym(), TacStKind.DEAD)
-
-    def _fresh_termid(self):
-        return TacTrNode(self.gensym_termid.gensym(), TacStKind.TERM)
+        return self.gs_edgeid.gensym()
 
     def _add_edges(self, edges):
         self.edges += edges
         for edge in edges:
             self.graph.add_edge(edge.src, edge.tgt, key=edge.eid)
 
-    def _live_tacst_id(self, decl):
+    def _mk_dead_node(self):
+        return TacTrNode(self.gs_deadid.gensym(), TacStKind.DEAD)
+
+    def _mk_term_node(self):
+        return TacTrNode(self.gs_termid.gensym(), TacStKind.TERM)
+
+    def _mk_live_node(self, decl):
         gid = decl.hdr.gid
-        if gid in self.gid2tid:
-            return self.gid2tid[gid]
+        if gid in self.gid2node:
+            return self.gid2node[gid]
         else:
             tid = TacTrNode(gid, TacStKind.LIVE)
-            self.gid2tid[gid] = tid
+            self.gid2node[gid] = tid
             return tid
 
-    def _mk_edge(self, tac, bf_decl, af_decl):
+    def _mk_edge(self, rawtac, bf_decl, af_decl):
         # Skip adding tactics which begin in solved states
         if bf_decl.hdr.gid == GID_SOLVED:
             return []
@@ -118,58 +115,62 @@ class TacTreeBuilder(object):
             ftac = bf_decl.hdr.ftac
 
         if af_decl.hdr.gid == GID_SOLVED:
-            bf_tid = self._live_tacst_id(bf_decl)
-            edge = TacEdge(self._fresh_edgeid(), tac.tid, tac.name, tac.tkind,
-                           ftac, bf_tid, self._fresh_termid())
+            bf_node = self._mk_live_node(bf_decl)
+            edge = TacEdge(self._fresh_edgeid(),
+                           rawtac.uid, rawtac.name, rawtac.tkind,
+                           ftac, bf_node, self._mk_term_node())
         elif af_decl.hdr.mode == TOK_DEAD:
-            bf_tid = self._live_tacst_id(bf_decl)
-            edge = TacEdge(self._fresh_edgeid(), tac.tid, tac.name, tac.tkind,
-                           ftac, bf_tid, self._fresh_errid())
+            bf_node = self._mk_live_node(bf_decl)
+            edge = TacEdge(self._fresh_edgeid(),
+                           rawtac.uid, rawtac.name, rawtac.tkind,
+                           ftac, bf_node, self._mk_dead_node())
         # elif bf_decl.hdr.gid == af_decl.hdr.gid:
         #     # Take care of self-loops
-        #     bf_tid = self._live_tacst_id(bf_decl)
+        #     bf_tid = self._mk_live_node(bf_decl)
         #     if bf_tid in self.tid_gensyms:
         #         gensym = self.tid_gensyms[bf_tid]
         #     else:
         #         gensym = GenSym()
         #         self.tid_gensyms[bf_tid] = gensym
         #     af_tid = TacTrNode(af_decl.hdr.gid, TACST_LIVE, order=gensym.gensym())
-        #     self.gid2tid[af_decl.hdr.gid] = af_tid
+        #     self.gid2node[af_decl.hdr.gid] = af_tid
         #     # self.tacst_info2[bf_tid] = self.tacst_info[af_tid.gid]
-        #     edge = TacEdge(self._fresh_edgeid(), tac.tid, tac.name, tac.tkind,
+        #     edge = TacEdge(self._fresh_edgeid(), tac.uid, tac.name, tac.tkind,
         #                    ftac, bf_tid, af_tid)
         else:
-            bf_tid = self._live_tacst_id(bf_decl)
-            af_tid = self._live_tacst_id(af_decl)
-            edge = TacEdge(self._fresh_edgeid(), tac.tid, tac.name, tac.tkind,
-                           ftac, bf_tid, af_tid)
+            bf_node = self._mk_live_node(bf_decl)
+            af_node = self._mk_live_node(af_decl)
+            edge = TacEdge(self._fresh_edgeid(),
+                           rawtac.uid, rawtac.name, rawtac.tkind,
+                           ftac, bf_node, af_node)
 
+        # TODO(deh): is this correct? should be node to edge?
         if edge.src in self.gid_tactic:
             self.gid_tactic[edge.src] += [edge]
         else:
             self.gid_tactic[edge.src] = [edge]
 
-        #print("ADDING EDGE", edge)
         return [edge]
 
-    def _mk_body_edge(self, tac, bf_decl, af_tid):
+    def _mk_body_edge(self, rawtac, bf_decl, af_node):
         if self.ftac_inscope:
             ftac = self.ftac_inscope
         else:
             ftac = bf_decl.hdr.ftac
 
-        edge = TacEdge(self._fresh_edgeid(), tac.tid, tac.name, tac.tkind,
-                       ftac, self._live_tacst_id(bf_decl), af_tid, True)
+        edge = TacEdge(self._fresh_edgeid(),
+                       rawtac.uid, rawtac.name, rawtac.tkind,
+                       ftac, self._mk_live_node(bf_decl), af_node, True)
         return edge
 
-    def _launch_rec(self, tacs, ftac_inscope):
-        tr_builder = TacTreeBuilder(self.name, tacs, self.tacst_info,
-                                    self.gid_tactic, self.decoder, self.kludge,
+    def _launch_rec(self, rawtacs, ftac_inscope):
+        tr_builder = TacTreeBuilder(self.name, rawtacs, self.tacst_info,
+                                    self.gid_tactic, self.decoder,
                                     ftac_inscope=ftac_inscope,
-                                    gensym_edgeid=self.gensym_edgeid,
-                                    gensym_errid=self.gensym_errid,
-                                    gensym_termid=self.gensym_termid,
-                                    gid2tid=self.gid2tid,
+                                    gs_edgeid=self.gs_edgeid,
+                                    gs_deadid=self.gs_deadid,
+                                    gs_termid=self.gs_termid,
+                                    gid2node=self.gid2node,
                                     tid_gensyms=self.tid_gensyms)
         tr_builder.build_tacs()
         self.notok += tr_builder.notok
@@ -178,20 +179,20 @@ class TacTreeBuilder(object):
 
     def build_name(self):
         # Internal
-        it_tacs = self.it_tacs
-        self._mylog("@build_name:before<{}>".format(it_tacs.peek()))
+        it_rawtacs = self.it_rawtacs
+        self._mylog("@build_name:before<{}>".format(it_rawtacs.peek()))
         self.numtacs += 1
 
         # Skip Name
-        tac = next(it_tacs)
+        tac = next(it_rawtacs)
 
     def build_foo(self):
         # Internal
-        it_tacs = self.it_tacs
-        self._mylog("@build_foo:before<{}>".format(it_tacs.peek()))
+        it_rawtacs = self.it_rawtacs
+        self._mylog("@build_foo:before<{}>".format(it_rawtacs.peek()))
         self.numtacs += 1
 
-        tac = next(it_tacs)
+        tac = next(it_rawtacs)
 
         if tac.body:
             # 1. Recursively connect up body
@@ -214,6 +215,7 @@ class TacTreeBuilder(object):
             self._add_edges(edges)
 
         if not tac.name.startswith("<ssreflect_plugin::ssrtclseq@0>"):
+            # TODO(deh): what other ones to avoid?
             # 3. Connect me up
             edges = []
             for af_decl in tac.af_decls:
@@ -222,10 +224,10 @@ class TacTreeBuilder(object):
 
     def build_tacs(self):
         # Internal
-        it_tacs = self.it_tacs
+        it_rawtacs = self.it_rawtacs
 
-        while it_tacs.has_next():
-            tac = it_tacs.peek()
+        while it_rawtacs.has_next():
+            tac = it_rawtacs.peek()
             if tac.tkind == TacKind.NAME:
                 self.build_name()
             else:
@@ -241,9 +243,6 @@ class TacTreeBuilder(object):
         return n == 1, n
 
     def get_tactree(self, f_verbose=False):
-        # print("NODES", self.graph.nodes)
-        # print("EDGES", self.graph.edges)
-
         tactr = TacTree(self.name, self.edges, self.graph,
                         self.tacst_info, self.gid_tactic, self.decoder)
 

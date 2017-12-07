@@ -1,5 +1,6 @@
 from enum import Enum
 
+from coq.tactics import TacKind
 from lib.gensym import GenSym
 from lib.myiter import MyIter
 from lib.myutil import pp_tab, inc_update
@@ -19,16 +20,9 @@ bf body af
 # -------------------------------------------------
 # Data structures
 
-class TacKind(Enum):
-    NAME = 1
-    ATOMIC = 2
-    NOTATION = 3
-    ML = 4
-
-
 class RawTac(object):
-    def __init__(self, tid, name, tkind, ftac, bf_decl, af_decls, body):
-        assert isinstance(tid, int)
+    def __init__(self, uid, name, tkind, ftac, bf_decl, af_decls, body):
+        assert isinstance(uid, int)
         assert isinstance(name, str)
         assert isinstance(tkind, TacKind)
         assert isinstance(bf_decl, TacStDecl)
@@ -37,7 +31,7 @@ class RawTac(object):
         for rawtac in body:
             assert isinstance(rawtac, RawTac)
 
-        self.tid = tid             # Tactic call identifier
+        self.uid = uid             # UID for raw tactic
         self.name = name           # Name of the tactic
         self.tkind = tkind         # Kind of the tactic
         self.ftac = ftac           # Full tactic
@@ -46,7 +40,7 @@ class RawTac(object):
         self.body = body           # Raw tactics in the body
 
     def pp(self, tab=0):
-        epi = pp_tab(tab, "{}({}) {{\n".format(self.name, self.tid))
+        epi = pp_tab(tab, "{}({}) {{\n".format(self.name, self.uid))
         bf = pp_tab(tab + 2, "bf_decl = {}\n".format(str(self.bf_decl)))
         if self.body:
             s1 = pp_tab(tab + 2, "bods = {\n")
@@ -182,67 +176,3 @@ class RawTacParser(object):
                 self._log_acc(acc)
                 raise NameError("Parsing alignment error {}".format(decl))
         return acc
-
-
-"""
-def parse_atom_call(self):
-    # Internal
-    it = self.it
-    self._mylog("@parse_atom_call:before<{}>".format(it.peek()))
-
-    return self._parse_nested(TacKind.ATOMIC)
-    rawtacs = []
-    start_decl = it.peek()
-    while it.has_next() and it.peek().hdr.uid == start_decl.hdr.uid:
-        bf_decl = next(it)
-        body = self.parse_rawtac()
-        af_decls = []
-        while (it.has_next() and
-               is_after(it.peek().hdr.mode) and
-               it.peek().hdr.uid == start_decl.hdr.uid):
-            af_decls += [next(it)]
-        rawtacs += [RawTac(self._fresh_uid(), start_decl.hdr.tac,
-                           TacKind.ATOMIC, start_decl.hdr.ftac, bf_decl,
-                           af_decls, body)]
-    return rawtacs
-
-def parse_notation_call(self):
-    # Internal
-    it = self.it
-    self._mylog("@parse_notation_call:before<{}>".format(it.peek()))
-
-    rawtacs = []
-    start_decl = it.peek()
-    while it.has_next() and it.peek().hdr.uid == start_decl.hdr.uid:
-        bf_decl = next(it)
-        body = self.parse_rawtac()
-        af_decls = []
-        while (it.has_next() and
-               is_after(it.peek().hdr.mode) and
-               it.peek().hdr.uid == start_decl.hdr.uid):
-            af_decls += [next(it)]
-        rawtacs += [RawTac(self._fresh_uid(), start_decl.hdr.tac,
-                           TacKind.NOTATION, start_decl.hdr.ftac, bf_decl,
-                           af_decls, body)]
-    return rawtacs
-
-def parse_ml_call(self):
-    # Internal
-    it = self.it
-    self._mylog("@parse_ml_call:before<{}>".format(it.peek()))
-
-    rawtacs = []
-    start_decl = it.peek()
-    while it.has_next() and it.peek().hdr.uid == start_decl.hdr.uid:
-        bf_decl = next(it)
-        body = self.parse_rawtac()
-        af_decls = []
-        while (it.has_next() and
-               is_after(it.peek().hdr.mode) and
-               it.peek().hdr.uid == start_decl.hdr.uid):
-            af_decls += [next(it)]
-        rawtacs += [RawTac(self._fresh_uid(), start_decl.hdr.tac,
-                           TacKind.ML, start_decl.hdr.ftac, bf_decl,
-                           af_decls, body)]
-    return rawtacs
-"""

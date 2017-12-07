@@ -4,8 +4,8 @@ import numpy as np
 import scipy.stats as sps
 
 from lib.myutil import inc_update
+from coq.tactics import TACTIC_HIST
 from coq.util import COQEXP_HIST
-from recon.tactr import TACTIC_HIST
 
 
 # -------------------------------------------------

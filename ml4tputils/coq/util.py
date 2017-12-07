@@ -26,11 +26,11 @@ Utility functions on Coq expressions
 # Check the decoded representation
 
 class ChkCoqExp(object):
-    def __init__(self, concr_ast):
-        self.concr_ast = concr_ast   # Dict[int, Exp]
+    def __init__(self, decoded):
+        self.decoded = decoded   # Dict[int, Exp]
 
-    def chk_concr_ast(self):
-        for k, c in self.concr_ast.items():
+    def chk_decoded(self):
+        for k, c in self.decoded.items():
             self.chk_ast(c)
 
     def chk_ast(self, c):
@@ -45,7 +45,7 @@ class ChkCoqExp(object):
             self._occurs_ast(tag, c)
 
     def _chk_ast(self, f_chk, c):
-        c_p = self.concr_ast[c.tag]
+        c_p = self.decoded[c.tag]
         if c_p.tag != c.tag:
             raise NameError("Tags {} and {} do not match {} {}".
                             format(c.tag, c_p.tag, type(c.tag), type(c_p.tag)))
@@ -136,9 +136,9 @@ class ChkCoqExp(object):
 # Computing sizes of coq-expressions efficiently
 
 class SizeCoqExp(object):
-    def __init__(self, concr_ast, f_shared=False):
-        self.concr_ast = concr_ast
-        ChkCoqExp(concr_ast).chk_concr_ast()
+    def __init__(self, decoded, f_shared=False):
+        self.decoded = decoded
+        ChkCoqExp(decoded).chk_decoded()
         self.size_ast = {}
         self.f_shared = f_shared
 
@@ -147,7 +147,7 @@ class SizeCoqExp(object):
         return size
 
     def decode_size(self, key):
-        return self.size(self.concr_ast[key])
+        return self.size(self.decoded[key])
 
     def size(self, c):
         key = c.tag
@@ -210,21 +210,13 @@ class SizeCoqExp(object):
 
 
 # -------------------------------------------------
-# Computing histogram of coq expressions
-
-COQEXP = ['RelExp', 'VarExp', 'MetaExp', 'EvarExp', 'SortExp', 'CastExp',
-          'ProdExp', 'LambdaExp', 'LetInExp', 'AppExp', 'ConstExp',
-          'IndExp', 'ConstructExp', 'CaseExp', 'FixExp', 'CoFixExp', 'ProjExp']
-
-
-COQEXP_HIST = MyHist(COQEXP)
-
+# Computing histogram of Coq expressions
 
 class HistCoqExp(object):
-    def __init__(self, concr_ast):
+    def __init__(self, decoded):
         # Dict[int, Exp]
-        self.concr_ast = concr_ast
-        ChkCoqExp(concr_ast).chk_concr_ast()
+        self.decoded = decoded
+        ChkCoqExp(decoded).chk_decoded()
 
         # Histogram
         self.hist_ast = {}
@@ -239,7 +231,7 @@ class HistCoqExp(object):
         return hist
 
     def decode_hist(self, key):
-        return self.hist(self.concr_ast[key])
+        return self.hist(self.decoded[key])
 
     def hist(self, c):
         key = c.tag

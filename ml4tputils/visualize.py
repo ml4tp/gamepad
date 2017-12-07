@@ -101,12 +101,12 @@ class Visualize(object):
 
         # [RawTac] to tactic tree
         tr_builder = TacTreeBuilder(lemma.name, tacs, lemma.get_tacst_info(),
-                                    {}, lemma.decoder, [], False)
+                                    {}, lemma.decoder,  False)
         tr_builder.build_tacs()
         succ, ncc = tr_builder.check_success()
         if not succ:
             self.failed += [(file, lemma.name, ncc, len(tr_builder.notok))]
-        self.kludge += tr_builder.kludge
+        # self.kludge += tr_builder.kludge
 
         # Compute tactic tree statistics
         tactr = tr_builder.get_tactree(self.f_verbose)
@@ -119,13 +119,11 @@ class Visualize(object):
 
         # TODO(deh): Move me
         # Test embedding
-        """
         embedder = EmbedCoqTacTr(tactr)
         embedder.embed()
         if len(embedder.ece.bad_idents) > 0:
             self.bad_idents[lemma] = embedder.ece.bad_idents
             print("BAD IDENTS: {}/{}".format(len(self.bad_idents), self.num_lemmas))
-        """
 
         if self.f_display:
             if self.f_jupyter:

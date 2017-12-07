@@ -5,12 +5,11 @@ import numpy as np
 
 from coq.ast import Name
 from coq.interp import InterpCBName, SizeCoqVal
+from coq.tactics import TacKind, TACTIC_HIST
 from coq.util import ChkCoqExp, SizeCoqExp, HistCoqExp, COQEXP_HIST
 from lib.myenv import MyEnv
-from lib.myhist import MyHist
 from lib.myutil import dict_ls_app
 # from recon.parse_tacst import TacKind
-from recon.parse_rawtac import TacKind
 # import recon.build_tactr
 
 """
@@ -18,63 +17,6 @@ from recon.parse_rawtac import TacKind
 
 A reconstructed tactic tree. Contains methods for computing statistics.
 """
-
-
-# -------------------------------------------------
-# Tactics
-
-TACTICS = ["<coretactics::intro@0>",
-           "<coretactics::assumption@0>",
-           "<coretactics::clear@0>",
-           "<coretactics::clearbody@0>",
-           "<coretactics::constructor@0>",
-           "<coretactics::constructor@1>",
-           "<coretactics::exact@0>",
-           "<coretactics::exists@1>",
-           "<coretactics::left@0>",
-           "<coretactics::reflexivity@0>",
-           "<coretactics::right@0>",
-           "<coretactics::right_with@0>",
-           "<coretactics::split@0>",
-           "<coretactics::symmetry@0>",
-           "<coretactics::transitivity@0>",
-           "<extratactics::contradiction@0>",
-           "<extratactics::discriminate@0>",
-           "<g_auto::auto@0>",
-           "<g_auto::eauto@0>",
-           "<g_auto::trivial@0>",
-           "<ssreflect_plugin::ssrapply@0>",
-           "<ssreflect_plugin::ssrapply@1>",
-           "<ssreflect_plugin::ssrcase@0>",
-           "<ssreflect_plugin::ssrcase@1>",
-           "<ssreflect_plugin::ssrclear@0>",
-           "<ssreflect_plugin::ssrcongr@0>",
-           "<ssreflect_plugin::ssrelim@0>",
-           "<ssreflect_plugin::ssrexact@0>",
-           "<ssreflect_plugin::ssrexact@1>",
-           "<ssreflect_plugin::ssrhave@0>",
-           "<ssreflect_plugin::ssrmove@0>",
-           "<ssreflect_plugin::ssrmove@1>",
-           "<ssreflect_plugin::ssrmove@2>",
-           "<ssreflect_plugin::ssrpose@0>",
-           "<ssreflect_plugin::ssrpose@2>",
-           "<ssreflect_plugin::ssrrewrite@0>",
-           "<ssreflect_plugin::ssrset@0>",
-           "<ssreflect_plugin::ssrsuff@0>",
-           "<ssreflect_plugin::ssrsuffices@0>",
-           "<ssreflect_plugin::ssrtclby@0>",
-           "<ssreflect_plugin::ssrtcldo@0>",
-           "<ssreflect_plugin::ssrtclintros@0>",
-           "<ssreflect_plugin::ssrtclseq@0>",
-           "<ssreflect_plugin::ssrwithoutloss@0>",
-           "<ssreflect_plugin::ssrwithoutlossss@0>",
-           "<ssreflect_plugin::ssrwlog@0>",
-           "<ssreflect_plugin::ssrwlogss@0>",
-           "<ssreflect_plugin::ssrwlogs@0>"
-           ]
-
-
-TACTIC_HIST = MyHist(TACTICS)
 
 
 # -------------------------------------------------
@@ -174,11 +116,11 @@ class TacTree(object):
         self.tacst_info = tacst_info   # Dict[gid, (ctx, goal, ctx_e, goal_e)]
         self.gid_tactic = gid_tactic   # Dict[int, TacEdge]
         self.decoder = decoder         # Decode asts
-        self.chk = ChkCoqExp(decoder.concr_ast)
-        self.chk.chk_concr_ast()
-        self.sce_full = SizeCoqExp(decoder.concr_ast, f_shared=False)
-        self.sce_sh = SizeCoqExp(decoder.concr_ast, f_shared=True)
-        self.hce = HistCoqExp(decoder.concr_ast)
+        self.chk = ChkCoqExp(decoder.decoded)
+        self.chk.chk_decoded()
+        self.sce_full = SizeCoqExp(decoder.decoded, f_shared=False)
+        self.sce_sh = SizeCoqExp(decoder.decoded, f_shared=True)
+        self.hce = HistCoqExp(decoder.decoded)
 
         self.notok = []
 
@@ -236,7 +178,6 @@ class TacTree(object):
                         ctx, goal, ctx_e, goal_e = self.tacst_info[edge.tgt.gid]
                         self.flatview += [(depth, edge.tgt, ctx, goal, ctx_e, goal_e, edge)]
                     elif edge.conn_to_dead() or edge.conn_to_term():
-                        # print("DOING", edge.src, self.tacst_info)
                         ctx, goal, ctx_e, goal_e = self.tacst_info[edge.src.gid]
                         self.flatview += [(depth, edge.tgt, ctx, goal, ctx_e, goal_e, edge)]
             except nx.exception.NetworkXNoPath:
@@ -367,8 +308,8 @@ class TacTree(object):
             if ctx_e:
                 ls = []
                 for ident in ctx_e:
-                    # print(ctx_e, self.decoder.typs_table)
-                    key = self.decoder.typs_table[ident]
+                    # print(ctx_e, self.decoder.ctx_typs)
+                    key = self.decoder.ctx_typs[ident]
                     size = self.sce_full.decode_size(key)
                     ls += [size]
                 v = np.sum(ls)
@@ -396,7 +337,7 @@ class TacTree(object):
 
     def hist_coqexp(self):
         hists = [self.hce.decode_hist(edx) for ident, edx in
-                 self.decoder.typs_table.items()]
+                 self.decoder.ctx_typs.items()]
 
         acc = []
         seen = set()
@@ -411,19 +352,19 @@ class TacTree(object):
         static_full_comp = {}
         static_sh_comp = {}
         cbname_comp = {}
-        scv = SizeCoqVal(self.decoder.concr_ast)
+        scv = SizeCoqVal(self.decoder.decoded)
         for depth, gid, ctx, goal, ctx_e, goal_e, tac in self.flatview:
             env = MyEnv()
             for ident in ctx_e:
                 if ident in vals:
                     v = vals[ident]
                 else:
-                    edx = self.decoder.typs_table[ident]
+                    edx = self.decoder.ctx_typs[ident]
                     c = self.decoder.decode_exp_by_key(edx)
                     cbname = InterpCBName()
                     v = cbname.interp(env, c)
                     vals[ident] = v
-                    edx = self.decoder.typs_table[ident]
+                    edx = self.decoder.ctx_typs[ident]
                     static_full_comp[ident] = self.sce_full.decode_size(edx)
                     static_sh_comp[ident] = self.sce_sh.decode_size(edx)
                     cbname_comp[ident] = scv.size(v)
@@ -433,7 +374,6 @@ class TacTree(object):
     def stats(self):
         term_path_lens = [len(path) for path in self.view_term_paths()]
         err_path_lens = [len(path) for path in self.view_err_paths()]
-        """
         avg_depth_ctx_items = [(k, np.mean(v)) for k, v in
                                self.view_depth_ctx_items().items()]
         avg_depth_ctx_size = [(k, np.mean(v)) for k, v in
@@ -445,7 +385,6 @@ class TacTree(object):
         avg_depth_astgoal_size = [(k, np.mean(tysz)) for k, tysz in
                                   self.view_depth_astgoal_size().items()]
         static_full_comp, static_sh_comp, cbname_comp = self.view_comp()
-        """
         info = {'hist': self.view_tactic_hist(f_compress=True),
                 'num_tacs': len(self.tactics),
                 'num_goals': len(self.goals),
@@ -453,16 +392,16 @@ class TacTree(object):
                 'num_err': len(self.err_goals),
                 'term_path_lens': term_path_lens,
                 'err_path_lens': err_path_lens,
-                #'have_info': self.view_have_info(),
-                #'avg_depth_ctx_items': avg_depth_ctx_items,
-                #'avg_depth_ctx_size': avg_depth_ctx_size,
-                #'avg_depth_goal_size': avg_depth_goal_size,
-                #'avg_depth_astctx_size': avg_depth_astctx_size,
-                #'avg_depth_astgoal_size': avg_depth_astgoal_size,
-                #'hist_coqexp': self.hist_coqexp(),
-                #'static_full_comp': [v for _, v in static_full_comp.items()],
-                #'static_sh_comp': [v for _, v in static_sh_comp.items()],
-                #'cbname_comp': [v for _, v in cbname_comp.items()],
+                'have_info': self.view_have_info(),
+                'avg_depth_ctx_items': avg_depth_ctx_items,
+                'avg_depth_ctx_size': avg_depth_ctx_size,
+                'avg_depth_goal_size': avg_depth_goal_size,
+                'avg_depth_astctx_size': avg_depth_astctx_size,
+                'avg_depth_astgoal_size': avg_depth_astgoal_size,
+                'hist_coqexp': self.hist_coqexp(),
+                'static_full_comp': [v for _, v in static_full_comp.items()],
+                'static_sh_comp': [v for _, v in static_sh_comp.items()],
+                'cbname_comp': [v for _, v in cbname_comp.items()],
                 'notok': self.notok}
         return info
 

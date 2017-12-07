@@ -18,12 +18,12 @@ Create embedding of Coq Tactic Trees into R^D vectors.
 # Embedding class
 
 class EmbedCoqExp(object):
-    def __init__(self, concr_ast):
+    def __init__(self, decoded):
         # Dimension of embedding
         self.D = 3
 
         # Shared representation
-        self.concr_ast = concr_ast
+        self.decoded = decoded
 
         # Global embeddings
         self.sort_embed = {}
@@ -298,7 +298,7 @@ class EmbedCoqExp(object):
 class EmbedCoqTacTr(object):
     def __init__(self, tactr):
         self.tactr = tactr
-        self.ece = EmbedCoqExp(tactr.decoder.concr_ast)
+        self.ece = EmbedCoqExp(tactr.decoder.decoded)
 
         # Sharing
         self.ctxid_embeds = {}
