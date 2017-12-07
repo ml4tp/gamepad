@@ -1,3 +1,4 @@
+from enum import Enum
 import json
 import networkx as nx
 import numpy as np
@@ -8,8 +9,9 @@ from coq.util import ChkCoqExp, SizeCoqExp, HistCoqExp, COQEXP_HIST
 from lib.myenv import MyEnv
 from lib.myhist import MyHist
 from lib.myutil import dict_ls_app
-from recon.parse_tacst import TacKind
-import recon.build_tactr
+# from recon.parse_tacst import TacKind
+from recon.parse_tacst2 import TacKind
+# import recon.build_tactr
 
 """
 [Note]
@@ -30,6 +32,7 @@ TACTICS = ["<coretactics::intro@0>",
            "<coretactics::exact@0>",
            "<coretactics::exists@1>",
            "<coretactics::left@0>",
+           "<coretactics::reflexivity@0>",
            "<coretactics::right@0>",
            "<coretactics::right_with@0>",
            "<coretactics::split@0>",
@@ -72,6 +75,91 @@ TACTICS = ["<coretactics::intro@0>",
 
 
 TACTIC_HIST = MyHist(TACTICS)
+
+
+# -------------------------------------------------
+# Data structures
+
+class TacStKind(Enum):
+    LIVE = 0
+    TERM = 1
+    DEAD = 2
+
+
+class TacTrNode(object):
+    def __init__(self, gid, kind, order=None):
+        assert isinstance(kind, TacStKind)
+        self.gid = gid        # Goal identifier
+        self.kind = kind      # live/dead/terminal
+        self.order = order    # TODO(deh): use to disambiguate self-edges?
+        self._uid()           # Tactic state identifier
+
+    def _uid(self):
+        if self.order != None:
+            x = "{}-{}".format(self.gid, self.order)
+        else:
+            x = str(self.gid)
+
+        if self.kind == TacStKind.TERM:
+            self.uid = "T{}".format(x)
+        elif self.kind == TacStKind.DEAD:
+            self.uid = "E{}".format(x)
+        else:
+            self.uid = "L{}".format(x)
+
+    def __eq__(self, other):
+        return (isinstance(other, TacTrNode) and self.gid == other.gid and
+                self.kind == other.kind and self.order == other.order)
+
+    def __hash__(self):
+        return hash(self.uid)
+
+    def __str__(self):
+        return self.uid
+
+
+def is_err(gid):
+    return isinstance(gid, str) and gid.startswith("e")
+
+
+def is_term(gid):
+    return isinstance(gid, str) and gid.startswith("t")
+
+
+class TacEdge(object):
+    def __init__(self, eid, tid, name, tkind, ftac, src, tgt, isbod=False):
+        """
+        An edge identifier uniquely identifies the edge. A single tactic
+        invocation can emit multiple tactic edges, which corresponds to
+        creating multiple sub-goals.
+        """
+        assert isinstance(src, TacTrNode)
+        assert isinstance(tgt, TacTrNode)
+
+        # Internal
+        self.eid = eid         # Edge identifier
+        self.tid = tid         # Tactic identifier
+
+        # Information
+        self.name = name       # Name of tactic
+        self.tkind = tkind     # Kind of tactic
+        self.ftac = ftac       # Full tactic (contains arguments)
+        self.src = src         # Source tactic state
+        self.tgt = tgt         # Target tactic state
+        self.isbod = isbod     # Is the connection to a body?
+
+    def conn_to_dead(self):
+        return self.tgt.kind == TacStKind.DEAD
+
+    def conn_to_live(self):
+        return self.tgt.kind == TacStKind.LIVE
+
+    def conn_to_term(self):
+        return self.tgt.kind == TacStKind.TERM
+
+    def __str__(self):
+        x = str(self.src), str(self.tgt), self.eid, self.tid, self.name, self.isbod
+        return "({} -> {}, eid={}, tid={}, name={}, isbod={})".format(*x)
 
 
 # -------------------------------------------------
@@ -120,13 +208,13 @@ class TacTree(object):
     def _err_goals(self):
         self.err_goals = []
         for edge in self.edges:
-            if edge.conn2err():
+            if edge.conn_to_dead():
                 self.err_goals += [edge.tgt]
 
     def _term_goals(self):
         self.term_goals = []
         for edge in self.edges:
-            if edge.conn2term():
+            if edge.conn_to_term():
                 self.term_goals += [edge.tgt]
 
     def _tactics(self):
@@ -147,7 +235,7 @@ class TacTree(object):
                     if edge.tgt.gid in self.tacst_info:
                         ctx, goal, ctx_e, goal_e = self.tacst_info[edge.tgt.gid]
                         self.flatview += [(depth, edge.tgt, ctx, goal, ctx_e, goal_e, edge)]
-                    elif edge.conn2err() or edge.conn2term():
+                    elif edge.conn_to_dead() or edge.conn_to_term():
                         # print("DOING", edge.src, self.tacst_info)
                         ctx, goal, ctx_e, goal_e = self.tacst_info[edge.src.gid]
                         self.flatview += [(depth, edge.tgt, ctx, goal, ctx_e, goal_e, edge)]
@@ -187,8 +275,7 @@ class TacTree(object):
                 pp_ctx, pp_goal, ctx_ids, goal_idx = self.tacst_info[src_gid]
                 acc += [('OPEN', src_gid, pp_ctx, pp_goal, ctx_ids,
                          goal_idx, self.gid_tactic[src_gid])]
-            elif (recon.build_tactr.is_err(tgt_gid) or
-                  recon.build_tactr.is_term(tgt_gid)):
+            elif is_err(tgt_gid) or is_term(tgt_gid):
                 acc += [('STOP', tgt_gid, self.gid_tactic[tgt_gid])]
         return acc
 
@@ -381,7 +468,7 @@ class TacTree(object):
 
     def log_stats(self, h_file):
         info = self.stats()
-        msg = json.dumps({"lemma": self.name, "info": info}, cls=recon.build_tactr.TacStIdEncoder)
+        msg = json.dumps({"lemma": self.name, "info": info})
         h_file.write(msg)
         h_file.write("\n")
         return info

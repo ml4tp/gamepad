@@ -17,6 +17,8 @@ class Type(Enum):
 # connection mode?
 # 1-1, 1-many, many-many?
 
+# NOTE(deh): str s.mltac_plugin ++ str "::" ++
+#            str s.mltac_tactic ++ str "@" ++ int i
 # NOTE(deh): wtf, ssrapply@0 different from ssrapply@1?
 # NOTE(deh): wtf, ssrcase@0 different from ssrcase@1?
 # NOTE(deh): wtf, ssrmove@0/ssrmove@2 different from ssrmove@1?

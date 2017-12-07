@@ -169,10 +169,21 @@ class DecodeCoqExp(object):
             self.rawasts[key] = ("CO", mutind, pos, conid, ui)
         elif kind == "CS":
             # CS [%s] %d %d [%s]
+            # toks = self._split_entry(entry)
+            idx = entry.find(']]')
+            hd = entry[2:idx]
+            tl = entry[idx+2:]
+            toks = self._split_entry(tl)
+            case_info = self._parse_rawcase_info(hd.strip())
+            c1_idx = int(toks[0].strip())
+            c2_idx = int(toks[1].strip())
+            cs_idxs = self._santize_keys(toks[2].strip())
+            """
             case_info = self._parse_rawcase_info(toks[1].strip())
             c1_idx = int(toks[2].strip())
             c2_idx = int(toks[3].strip())
             cs_idxs = self._santize_keys(toks[4].strip())
+            """
 
             self.rawasts[key] = ("CS", case_info, c1_idx, c2_idx, cs_idxs)
             self._add_edges(key, [c1_idx, c2_idx] + cs_idxs)
@@ -226,11 +237,11 @@ class DecodeCoqExp(object):
         pos = int(toks[1])
         npar = int(toks[2].strip())
         # TODO(deh): check latest coq format
-        # cstr_ndecls = self._parse_rawiarr(toks[3].strip())
-        cstr_ndecls = toks[3].strip()
+        cstr_ndecls = self._parse_rawiarr(toks[3].strip())
+        # cstr_ndecls = toks[3].strip()
         # TODO(deh): check latest coq format
-        # cstr_nargs = self._parse_rawiarr(toks[4].strip())
-        cstr_nargs = toks[4].strip()
+        cstr_nargs = self._parse_rawiarr(toks[4].strip())
+        # cstr_nargs = toks[4].strip()
         return CaseInfo(Inductive(mutind, pos), npar, cstr_ndecls, cstr_nargs)
 
     # -------------------------------------------------

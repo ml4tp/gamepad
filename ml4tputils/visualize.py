@@ -3,8 +3,10 @@ import os.path as op
 
 from ml.embed import EmbedCoqTacTr
 from recon.lex_raw import TacStParser
-from recon.parse_tacst import TacTreeParser
-from recon.build_tactr import TacTreeBuilder
+# from recon.parse_tacst import TacTreeParser
+from recon.parse_tacst2 import TacTreeParser
+# from recon.build_tactr import TacTreeBuilder
+from recon.build_tactr2 import TacTreeBuilder
 
 
 class Visualize(object):
