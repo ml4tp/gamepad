@@ -3,6 +3,7 @@ from enum import Enum
 from lib.myfile import MyFile
 from lib.myutil import pp_tab
 from coq.decode import *
+from recon.tokens import *
 
 """
 [Note]
@@ -23,42 +24,7 @@ Epilogue ::=
 
 
 # -------------------------------------------------
-# Tokens
-
-TOK_SEP = "{!}"
-TOK_DIV = "============================"
-TOK_BEFORE = "bf"
-TOK_AFTER = "af"
-TOK_AFTER_ERR = "dead"
-TOK_BEG_TAC_ST = "bg(ts)"
-TOK_END_TAC_ST = "en(ts)"
-TOK_BEG_SUB_PF = "bg(spf)"
-TOK_END_SUB_PF = "en(spf)"
-TOK_BEG_PF = "bg(pf)"
-TOK_END_PF = "en(pf)"
-TOK_TYPS = "Typs"
-TOK_BODS = "Bods"
-TOK_CONSTRS = "Constrs"
-TOK_PRTYPS = "PrTyps"
-TOK_PRBODS = "PrBods"
-TOK_PRGLS = "PrGls"
-
-TOK_ATOM = "Atom"
-TOK_ML = "ML"
-TOK_NAME = "Name"
-TOK_NOTE = "Not"
-
-
-def is_after(mode):
-    return mode.startswith(TOK_AFTER) or mode.startswith(TOK_AFTER_ERR)
-
-
-# -------------------------------------------------
 # Data structures
-
-GID_SOLVED = -1
-GID_FAILED = -2
-
 
 class DeclMode(Enum):
     BEFORE = 0
@@ -78,8 +44,8 @@ class TacStHdr(object):
     """
     Contains the header for a tactic state declaration.
     """
-    def __init__(self, uid, mode, tac, kind, ftac, gid, ngs, loc):
-        self.uid = uid               # declaration identifier (almost unique)
+    def __init__(self, callid, mode, tac, kind, ftac, gid, ngs, loc):
+        self.callid = callid         # tactic call identifier (almost unique)
         toks = mode.split()
         self.mode = toks[0].strip()  # before/after/error
         if len(toks) == 1:
@@ -94,15 +60,15 @@ class TacStHdr(object):
         self.loc = loc               # location in file
 
     def pp(self, tab=0):
-        info = (self.mode, self.uid, self.gid, self.ngs,
+        info = (self.mode, self.callid, self.gid, self.ngs,
                 self.tac, self.kind, self.loc, self.ftac)
         s = "{}(id={}, gid={}, ngs={}, tac={}, kind={}, loc={}, ftac={})".format(*info)
         return pp_tab(tab, s)
 
     def __str__(self):
-        info = (self.uid, self.mode, self.tac, self.kind,
+        info = (self.callid, self.mode, self.tac, self.kind,
                 self.ftac, self.gid, self.ngs, self.loc)
-        return "(uid: {}, mode: {}, tac: {}, kind: {},\
+        return "(callid: {}, mode: {}, tac: {}, kind: {},\
                 ftac: {}, gid: {}, ngs: {}, loc: {})".format(*info)
 
 
@@ -137,10 +103,10 @@ class TacStDecl(object):
             s_mode = "B"
         elif self.hdr.mode == TOK_AFTER:
             s_mode = "A"
-        elif self.hdr.mode == TOK_AFTER_ERR:
+        elif self.hdr.mode == TOK_DEAD:
             s_mode = "E"
-        info = s_mode, self.hdr.uid, self.hdr.gid, self.hdr.tac, self.hdr.loc
-        return "{}(uid={}, gid={}, tac={}, loc={})".format(*info)
+        info = s_mode, self.hdr.callid, self.hdr.gid, self.hdr.tac, self.hdr.loc
+        return "{}(callid={}, gid={}, tac={}, loc={})".format(*info)
 
 
 class LemTacSt(object):

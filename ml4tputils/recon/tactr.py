@@ -433,6 +433,7 @@ class TacTree(object):
     def stats(self):
         term_path_lens = [len(path) for path in self.view_term_paths()]
         err_path_lens = [len(path) for path in self.view_err_paths()]
+        """
         avg_depth_ctx_items = [(k, np.mean(v)) for k, v in
                                self.view_depth_ctx_items().items()]
         avg_depth_ctx_size = [(k, np.mean(v)) for k, v in
@@ -444,6 +445,7 @@ class TacTree(object):
         avg_depth_astgoal_size = [(k, np.mean(tysz)) for k, tysz in
                                   self.view_depth_astgoal_size().items()]
         static_full_comp, static_sh_comp, cbname_comp = self.view_comp()
+        """
         info = {'hist': self.view_tactic_hist(f_compress=True),
                 'num_tacs': len(self.tactics),
                 'num_goals': len(self.goals),
@@ -451,16 +453,16 @@ class TacTree(object):
                 'num_err': len(self.err_goals),
                 'term_path_lens': term_path_lens,
                 'err_path_lens': err_path_lens,
-                'have_info': self.view_have_info(),
-                'avg_depth_ctx_items': avg_depth_ctx_items,
-                'avg_depth_ctx_size': avg_depth_ctx_size,
-                'avg_depth_goal_size': avg_depth_goal_size,
-                'avg_depth_astctx_size': avg_depth_astctx_size,
-                'avg_depth_astgoal_size': avg_depth_astgoal_size,
-                'hist_coqexp': self.hist_coqexp(),
-                'static_full_comp': [v for _, v in static_full_comp.items()],
-                'static_sh_comp': [v for _, v in static_sh_comp.items()],
-                'cbname_comp': [v for _, v in cbname_comp.items()],
+                #'have_info': self.view_have_info(),
+                #'avg_depth_ctx_items': avg_depth_ctx_items,
+                #'avg_depth_ctx_size': avg_depth_ctx_size,
+                #'avg_depth_goal_size': avg_depth_goal_size,
+                #'avg_depth_astctx_size': avg_depth_astctx_size,
+                #'avg_depth_astgoal_size': avg_depth_astgoal_size,
+                #'hist_coqexp': self.hist_coqexp(),
+                #'static_full_comp': [v for _, v in static_full_comp.items()],
+                #'static_sh_comp': [v for _, v in static_sh_comp.items()],
+                #'cbname_comp': [v for _, v in cbname_comp.items()],
                 'notok': self.notok}
         return info
 

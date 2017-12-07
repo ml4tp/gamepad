@@ -4,6 +4,7 @@ import networkx as nx
 import plotly
 from plotly.graph_objs import *
 
+from coq.decode import DecodeCoqExp
 from recon.parse_tacst2 import *
 from recon.tactr import TacStKind, TacTrNode, TacEdge, TacTree
 from recon.tactics import TACTICS, Conn, Type
@@ -120,7 +121,7 @@ class TacTreeBuilder(object):
             bf_tid = self._live_tacst_id(bf_decl)
             edge = TacEdge(self._fresh_edgeid(), tac.tid, tac.name, tac.tkind,
                            ftac, bf_tid, self._fresh_termid())
-        elif af_decl.hdr.mode == TOK_AFTER_ERR:
+        elif af_decl.hdr.mode == TOK_DEAD:
             bf_tid = self._live_tacst_id(bf_decl)
             edge = TacEdge(self._fresh_edgeid(), tac.tid, tac.name, tac.tkind,
                            ftac, bf_tid, self._fresh_errid())

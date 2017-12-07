@@ -4,7 +4,7 @@ import os.path as op
 from ml.embed import EmbedCoqTacTr
 from recon.lex_raw import TacStParser
 # from recon.parse_tacst import TacTreeParser
-from recon.parse_tacst2 import TacTreeParser
+from recon.parse_tacst2 import RawTacParser
 # from recon.build_tactr import TacTreeBuilder
 from recon.build_tactr2 import TacTreeBuilder
 
@@ -91,8 +91,8 @@ class Visualize(object):
         self.num_lemmas += 1
 
         # [TacStDecl] tokens to [RawTac]
-        tr_parser = TacTreeParser(lemma, f_log=False)
-        tacs = tr_parser.parse_tactree()
+        tr_parser = RawTacParser(lemma, f_log=False)
+        tacs = tr_parser.parse_rawtacs()
         if self.f_verbose and self.tgtlem:
             print(">>>>>>>>>>>>>>>>>>>>")
             for tac in tacs:
@@ -119,11 +119,13 @@ class Visualize(object):
 
         # TODO(deh): Move me
         # Test embedding
+        """
         embedder = EmbedCoqTacTr(tactr)
         embedder.embed()
         if len(embedder.ece.bad_idents) > 0:
             self.bad_idents[lemma] = embedder.ece.bad_idents
             print("BAD IDENTS: {}/{}".format(len(self.bad_idents), self.num_lemmas))
+        """
 
         if self.f_display:
             if self.f_jupyter:
