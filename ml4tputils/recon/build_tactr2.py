@@ -5,7 +5,7 @@ import plotly
 from plotly.graph_objs import *
 
 from coq.decode import DecodeCoqExp
-from recon.parse_tacst2 import *
+from recon.parse_rawtac import *
 from recon.tactr import TacStKind, TacTrNode, TacEdge, TacTree
 from recon.tactics import TACTICS, Conn, Type
 
