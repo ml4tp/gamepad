@@ -1,7 +1,6 @@
 import numpy as np
 
 from coq.ast import *
-# from lib.gensym import GenSym
 from lib.myenv import MyEnv
 from lib.myutil import NotFound
 
@@ -9,8 +8,6 @@ from lib.myutil import NotFound
 [Note]
 
 Create embedding of Coq Tactic Trees into R^D vectors.
-
-
 """
 
 
@@ -322,8 +319,6 @@ class EmbedCoqTacTr(object):
         evs = []
         env = MyEnv()
         for ident in ctx_idents:
-            #if gid == 1128:
-            #    print("EMBEDDING ident: {}".format(ident))
             ev = self.embed_ctx_ident(gid, env, ident)
             env = env.extend(Name(ident), ev)
             evs += [ev]

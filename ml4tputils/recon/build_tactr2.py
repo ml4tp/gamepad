@@ -7,7 +7,6 @@ from plotly.graph_objs import *
 from coq.decode import DecodeCoqExp
 from recon.parse_rawtac import *
 from recon.tactr import TacStKind, TacTrNode, TacEdge, TacTree
-# from recon.tactics import TACTICS, Conn, Type
 
 """
 [Note]
@@ -190,10 +189,10 @@ class TacTreeBuilder(object):
         # Skip Name
         tac = next(it_rawtacs)
 
-    def build_foo(self):
+    def build_nested(self):
         # Internal
         it_rawtacs = self.it_rawtacs
-        self._mylog("@build_foo:before<{}>".format(it_rawtacs.peek()))
+        self._mylog("@build_nested:before<{}>".format(it_rawtacs.peek()))
         self.numtacs += 1
 
         tac = next(it_rawtacs)
@@ -235,7 +234,7 @@ class TacTreeBuilder(object):
             if tac.tkind == TacKind.NAME:
                 self.build_name()
             else:
-                self.build_foo()
+                self.build_nested()
 
     def check_success(self, f_verbose=False):
         ug = nx.Graph(self.graph)
