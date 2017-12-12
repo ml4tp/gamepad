@@ -14,6 +14,7 @@ from lib.myutil import NotFound
 [Note]
 
 Create embedding of Coq Tactic Trees into R^D vectors.
+Where to put model and training code?
 """
 
 

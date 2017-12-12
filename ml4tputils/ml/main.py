@@ -5,7 +5,16 @@ from recon.recon import Recon, FILES
 from ml.embed import EmbedCoqTacTr, MyModel, MyTrainer
 
 
+"""
+[Note]
+
+Top-level entry-point for machine learning.
+"""
+
 class Preprocess(object):
+    """
+    Reconstruct tactic trees and collect all tokens in the data-set.
+    """
     def __init__(self, files):
         self.recon = Recon()
         self._preprocess_embed_all(files)
@@ -17,12 +26,6 @@ class Preprocess(object):
         conid_to_idx = self._tokens_to_idx(self.recon.unique_conid)
         evar_to_idx = self._tokens_to_idx(self.recon.unique_evar)
         fix_to_idx = self._tokens_to_idx(self.recon.unique_fix)
-
-        #print("SORT", sort_to_idx)
-        #print("CONST", const_to_idx)
-        print("IND----------------------------")
-        for k, v in ind_to_idx.items():
-            print(k, v)
 
         return (sort_to_idx, const_to_idx, ind_to_idx,
                 conid_to_idx, evar_to_idx, fix_to_idx)
@@ -60,8 +63,6 @@ if __name__ == "__main__":
                FILES if file.startswith("PF")]
 
     files = [op.join(args.path, file) for file in FILES]
-
-    print("WTF", args.file)
 
     # Read in files
     if args.file == "all":

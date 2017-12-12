@@ -129,9 +129,11 @@ class Visualize(object):
 
         if self.f_display:
             if self.f_jupyter:
-                tr_builder.show_jupyter()
+                # tr_builder.show_jupyter()
+                tactr.show_jupyter()
             else:
-                tr_builder.show()
+                # tr_builder.show()
+                tactr.show()
 
         return tactr
 

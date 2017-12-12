@@ -8,6 +8,7 @@ from lib.myhist import MyHist
 Python representation of Coq ASTs
 
 TODO(deh): check hashes
+TODO(deh): what to do with names?
 """
 
 

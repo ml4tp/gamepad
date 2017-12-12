@@ -2,6 +2,8 @@ from enum import Enum
 import json
 import networkx as nx
 import numpy as np
+import plotly
+from plotly.graph_objs import *
 
 from coq.ast import Name
 from coq.interp import InterpCBName, SizeCoqVal
@@ -9,8 +11,7 @@ from coq.tactics import TacKind, TACTIC_HIST
 from coq.util import ChkCoqExp, SizeCoqExp, HistCoqExp, COQEXP_HIST
 from lib.myenv import MyEnv
 from lib.myutil import dict_ls_app
-# from recon.parse_tacst import TacKind
-# import recon.build_tactr
+
 
 """
 [Note]
@@ -47,7 +48,6 @@ class TacTrNode(object):
         elif self.kind == TacStKind.DEAD:
             self.uid = "E{}".format(x)
         else:
-            # self.uid = self.gid
             self.uid = x
 
     def __eq__(self, other):
@@ -55,31 +55,11 @@ class TacTrNode(object):
                 self.kind == other.kind and self.order == other.order)
 
     def __hash__(self):
-        # return self.gid
-        return hash(self.uid)
-        """
-        if self.kind == TacStKind.LIVE:
-            return self.uid
-        else:
-            return hash(self.uid)
-        """
+        return self.gid
+        # return hash(self.uid)
 
     def __str__(self):
         return self.uid
-        """
-        if self.kind == TacStKind.LIVE:
-            return str(self.uid)
-        else:
-            return self.uid
-        """
-
-
-def is_err(gid):
-    return isinstance(gid, str) and gid.startswith("e")
-
-
-def is_term(gid):
-    return isinstance(gid, str) and gid.startswith("t")
 
 
 class TacEdge(object):
@@ -460,3 +440,79 @@ class TacTree(object):
         print("Terminal path lengths:", self.view_term_paths())
         print("Error path lengths:", self.view_err_paths())
         print("<<<<<<<<<<<<<<<<<<<<")
+
+    def show(self):
+        if self.graph.edges:
+            nx.drawing.nx_pylab.draw_kamada_kawai(self.graph, with_labels=True)
+            plt.show()
+
+    def show_jupyter(self):
+        G = self.graph
+        pos = nx.drawing.layout.kamada_kawai_layout(G)
+
+        # Edges
+        edge_trace = Scatter(x=[], y=[], line=Line(width=0.5, color='#888'),
+                             hoverinfo=None, mode='lines')
+        for edge in G.edges():
+            x0, y0 = pos[edge[0]]
+            x1, y1 = pos[edge[1]]
+            edge_trace['x'] += [x0, x1, None]
+            edge_trace['y'] += [y0, y1, None]
+
+        # Edge info
+        marker = Marker(showscale=True, colorscale='YIGnBu', reversescale=True,
+                        color=[], size=5, line=dict(width=2))
+        einfo_trace = Scatter(x=[], y=[], text=[], mode='markers',
+                              hoverinfo='text', marker=marker)
+        for edge in self.edges:
+            x0, y0 = pos[edge.src]
+            x1, y1 = pos[edge.tgt]
+            einfo_trace['x'].append((x0 + x1) / 2)
+            einfo_trace['y'].append((y0 + y1) / 2)
+            einfo = "ftac: {}".format(edge.ftac)
+            einfo_trace['text'].append(einfo)
+
+        # Nodes
+        marker = Marker(showscale=True, colorscale='YIGnBu', reversescale=True,
+                        color=[], size=10, line=dict(width=2))
+        node_trace = Scatter(x=[], y=[], text=[], mode='markers',
+                             hoverinfo='text', marker=marker)
+        for node in G.nodes():
+            x, y = pos[node]
+            node_trace['x'].append(x)
+            node_trace['y'].append(y)
+
+        # Node info
+        for node in pos.keys():
+            if node.gid in self.tacst_info:
+                ctx, goal, ctx_e, goal_e = self.tacst_info[node.gid]
+                s_ctx = "<br>".join([z + ": " + t for z, t in ctx.items()])
+                node_info = "gid: {}<br>{}<br>=====================<br>{}".format(node, s_ctx, goal)
+            else:
+                node_info = "gid: {}".format(node)
+            node_trace['text'].append(node_info)
+
+        # Display
+        layout = Layout(title="<br>Reconstruction of {}".format(self.name),
+                        titlefont=dict(size=16),
+                        showlegend=False,
+                        hovermode='closest',
+                        margin=dict(b=20, l=5, r=5, t=40),
+                        xaxis=XAxis(showgrid=False, zeroline=False,
+                                    showticklabels=False),
+                        yaxis=YAxis(showgrid=False, zeroline=False,
+                                    showticklabels=False))
+        fig = Figure(data=Data([edge_trace, node_trace, einfo_trace]),
+                     layout=layout)
+        plotly.offline.init_notebook_mode(connected=True)
+        plotly.offline.iplot(fig, filename='networkx')
+
+
+"""
+def is_err(gid):
+    return isinstance(gid, str) and gid.startswith("e")
+
+
+def is_term(gid):
+    return isinstance(gid, str) and gid.startswith("t")
+"""
