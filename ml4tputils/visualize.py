@@ -6,7 +6,7 @@ from recon.parse_raw import TacStParser
 # from recon.parse_tacst import TacTreeParser
 from recon.parse_rawtac import RawTacParser
 # from recon.build_tactr import TacTreeBuilder
-from recon.build_tactr2 import TacTreeBuilder
+from recon.build_tactr import TacTreeBuilder
 
 
 class Visualize(object):
