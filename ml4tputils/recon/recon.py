@@ -1,12 +1,12 @@
 import os.path as op
 
-from recon.lex_raw import TacStParser
+from recon.parse_raw import TacStParser
 from recon.parse_rawtac import RawTacParser
 from recon.build_tactr import TacTreeBuilder
 
 
 # -------------------------------------------------
-# Model
+# Files in dataset
 
 FILES = ["BGsection1.v.dump",
          "BGsection2.v.dump",
@@ -67,7 +67,7 @@ class Recon(object):
         tactrs = []
         while not ts_parser.exhausted:
             lemma = ts_parser.parse_lemma()
-            tactr = self._recon_lemma(lemma)
+            tactr = self._recon_lemma(file, lemma)
             tactrs += [tactr]
 
         self.tactrs += tactrs
@@ -80,10 +80,12 @@ class Recon(object):
 
         ts_parser = TacStParser(file, f_log=False)
         ts_parser.seek_lemma(lemma)
-        tactr = self._recon_lemma(ts_parser.filename, lemma)
+        lemma = ts_parser.parse_lemma()
+        tactr = self._recon_lemma(file, lemma)
         self.tactrs += [tactr]
+        return tactr
 
-    def _recon_lemma(self, lemma):
+    def _recon_lemma(self, file, lemma):
         # [TacStDecl] tokens to [RawTac]
         tr_parser = RawTacParser(lemma, f_log=False)
         tacs = tr_parser.parse_rawtacs()
