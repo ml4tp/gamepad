@@ -351,15 +351,6 @@ class TacTree(object):
                 seen.add(goal_e)
         return COQEXP_HIST.merges(hists + acc)
 
-    """
-    def hist_coqexp(self):
-        bfs = self.bfs_traverse()
-        for tacst in bfs:
-            if tacst.gid in self.tacst_info:
-                ctx, goal, ctx_e, goal_e = self.tacst_info[tacst.gid]
-                self.hce.decode_hist(ctx_typs)
-    """
-
     def view_comp(self):
         vals = {}
         static_full_comp = {}
@@ -441,6 +432,15 @@ class TacTree(object):
         print("Error path lengths:", self.view_err_paths())
         print("<<<<<<<<<<<<<<<<<<<<")
 
+    def check_success(self, f_verbose=False):
+        ug = nx.Graph(self.graph)
+        ccs = list(nx.algorithms.components.connected.connected_components(ug))
+        n = len(ccs)
+        if f_verbose:
+            print("notok: {}, total: {}".format(len(self.notok), self.numtacs))
+            print("# connected components: {}".format(n))
+        return n == 1, n
+
     def show(self):
         if self.graph.edges:
             nx.drawing.nx_pylab.draw_kamada_kawai(self.graph, with_labels=True)
@@ -506,13 +506,3 @@ class TacTree(object):
                      layout=layout)
         plotly.offline.init_notebook_mode(connected=True)
         plotly.offline.iplot(fig, filename='networkx')
-
-
-"""
-def is_err(gid):
-    return isinstance(gid, str) and gid.startswith("e")
-
-
-def is_term(gid):
-    return isinstance(gid, str) and gid.startswith("t")
-"""

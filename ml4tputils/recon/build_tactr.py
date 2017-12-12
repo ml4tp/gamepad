@@ -223,15 +223,6 @@ class TacTreeBuilder(object):
             else:
                 self.build_nested()
 
-    def check_success(self, f_verbose=False):
-        ug = nx.Graph(self.graph)
-        ccs = list(nx.algorithms.components.connected.connected_components(ug))
-        n = len(ccs)
-        if f_verbose:
-            print("notok: {}, total: {}".format(len(self.notok), self.numtacs))
-            print("# connected components: {}".format(n))
-        return n == 1, n
-
     def get_tactree(self, f_verbose=False):
         tactr = TacTree(self.name, self.edges, self.graph,
                         self.tacst_info, self.gid_tactic, self.decoder)

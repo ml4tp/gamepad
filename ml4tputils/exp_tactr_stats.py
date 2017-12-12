@@ -20,15 +20,24 @@ def load_tactr_stats(filename):
                 pass
             elif line.startswith("TOTAL"):
                 pass
-            elif line.startswith("UNIQUECONST"):
+            elif line.startswith("UNIQUE-SORT"):
+                toks = line.split()
+                unique['sort'] = int(toks[1].strip())
+            elif line.startswith("UNIQUE-CONST"):
                 toks = line.split()
                 unique['const'] = int(toks[1].strip())
-            elif line.startswith("UNIQUEIND"):
+            elif line.startswith("UNIQUE-IND"):
                 toks = line.split()
                 unique['ind'] = int(toks[1].strip())
-            elif line.startswith("UNIQUECONID"):
+            elif line.startswith("UNIQUE-CONID"):
                 toks = line.split()
                 unique['conid'] = int(toks[1].strip())
+            elif line.startswith("UNIQUE-EVAR"):
+                toks = line.split()
+                unique['evar'] = int(toks[1].strip())
+            elif line.startswith("UNIQUE-FIX"):
+                toks = line.split()
+                unique['fix'] = int(toks[1].strip())
             else:
                 line = line.strip()
                 x = json.loads(line)
