@@ -1,5 +1,6 @@
 import argparse
 import os.path as op
+import pickle
 
 from recon.build_tactr import TacTreeBuilder
 from recon.parse_raw import TacStParser
@@ -42,6 +43,14 @@ class Visualize(object):
         self.h_tactr_file.write("UNIQUE-FIX: {}\n".format(
                                 len(self.recon.unique_fix)))
         self.h_tactr_file.close()
+
+    def save_tactrs(self):
+        with open("tactr.pickle", 'wb') as f:
+            pickle.dump(self.tactrs, f)
+
+    def load_tactrs(self):
+        with open("tactr.pickle", 'rb') as f:
+            self.tactrs = pickle.load(f)
 
     def visualize_file(self, file):
         tactrs = self.recon.recon_file(file, not(self.f_jupyter))
@@ -105,3 +114,4 @@ if __name__ == "__main__":
         else:
             vis.visualize_file(args.file)
         vis.finalize()
+        vis.save_tactrs()
