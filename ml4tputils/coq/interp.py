@@ -283,7 +283,6 @@ class SizeCoqVal(object):
             return 1 + self.size(v.v_ty1) + self.size(v.v_ty2)
         elif isinstance(v, CloVal):
             return self.sce.size(v.c)
-            # raise NameError("WTF {}".format(v))
         elif isinstance(v, AppVal):
             return 1 + self.size(v.v_c) + self.sizes(v.v_cs)
         elif isinstance(v, CaseVal):
