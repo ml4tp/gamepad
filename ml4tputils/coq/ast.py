@@ -133,12 +133,12 @@ class Exp(object):
 
 class RelExp(Exp):
     """R %d
-    A DeBruijn index.
-    fun x -> x        =  fun 0
-    fun x -> fun -> y y x  =  fun fun 0 1
+    A DeBruijn index. (Starts at 1 ...)
+    fun x -> x        =  fun 1
+    fun x -> fun -> y y x  =  fun fun 1 2
     """
     def __init__(self, idx):
-        assert isinstance(idx, int)
+        assert isinstance(idx, int) and idx >= 1
         super().__init__()
         self.idx = idx
 

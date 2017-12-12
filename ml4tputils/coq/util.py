@@ -289,6 +289,7 @@ class HistCoqExp(object):
             self.unique_ind.add(c.ind.mutind)
             return self._histcon(key, COQEXP_HIST.delta('IndExp'))
         elif isinstance(c, ConstructExp):
+            self.unique_ind.add(c.ind.mutind)
             self.unique_conid.add((c.ind.mutind, c.conid))
             return self._histcon(key, COQEXP_HIST.delta('ConstructExp'))
         elif isinstance(c, CaseExp):

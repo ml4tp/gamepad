@@ -76,6 +76,9 @@ class EmbedCoqExp(object):
             return self.embeddings[key]
 
         if isinstance(c, RelExp):
+            # NOTE(deh): DeBruinj indicides start at 1 ...
+            ev_idx = env.lookup_rel(c.idx - 1)
+            """
             try:
                 ev_idx = env.lookup_rel(c.idx)
             except NotFound:
@@ -83,8 +86,11 @@ class EmbedCoqExp(object):
                 ev_idx = self.embed_local_var(None)
                 self.bad_idents.add(c.idx)
                 print("FAILED TO LOOKUP {} in gid {}".format(c.idx, self.GID))
+            """
             return self._embedcon(key, self.embed_rel(ev_idx))
         elif isinstance(c, VarExp):
+            ev_x = env.lookup_id(Name(c.x))
+            """
             try:
                 ev_x = env.lookup_id(Name(c.x))
             except NotFound:
@@ -92,6 +98,7 @@ class EmbedCoqExp(object):
                 ev_x = self.embed_local_var(None)
                 self.bad_idents.add(c.x)
                 print("FAILED TO LOOKUP {} in gid {}".format(c.x, self.GID))
+            """
             return self._embedcon(key, self.embed_var(ev_x))
         elif isinstance(c, MetaExp):
             assert False, "NOTE(deh): MetaExp should never be in dataset"
@@ -169,7 +176,7 @@ class EmbedCoqExp(object):
             # NOTE(deh): CoFixExp not in dataset
             raise NameError("NOTE(deh): CoFixExp not in dataset")
         elif isinstance(c, ProjExp):
-            # NOTE(deh): MetaExp not in dataset
+            # NOTE(deh): ProjExp not in dataset
             ev = self._embed_ast(env, Kind.TERM, c.c)
             return self._embedcon(key, self.combine_proj(c.proj, ev))
         else:
@@ -204,7 +211,7 @@ class EmbedCoqExp(object):
     def embed_conid_name(self, ind_and_conid):
         """Override Me"""
         ind, conid = ind_and_conid
-        lookup_tensor = torch.LongTensor([self.conid_to_idx[conid]])
+        lookup_tensor = torch.LongTensor([self.conid_to_idx[(ind.mutind, conid)]])
         return self.conid_embed(autograd.Variable(lookup_tensor))
 
     def embed_fix_name(self, name):
@@ -289,6 +296,7 @@ class EmbedCoqExp(object):
 
     # -------------------------------------------
     # Embed universes
+
     def embed_ui(self, ui):
         """Override Me"""
         # NOTE(deh): Punting on this for now
@@ -325,7 +333,6 @@ class EmbedCoqTacTr(object):
 
     def embed(self):
         bfs = self.tactr.bfs_traverse()
-        print("HERE", bfs)
         acc = []
         for node in bfs:
             if node[0] == 'OPEN':
@@ -408,7 +415,7 @@ class MyModel(nn.Module):
         evs = embedder.embed()
         print(evs)
         # TODO(prafulla): put LSTM model here
-        raise NotImplementedError
+        # raise NotImplementedError
 
 
 # -------------------------------------------------
@@ -437,29 +444,3 @@ class MyTrainer(object):
                 # total_loss += loss.data
             losses.append(total_loss)
         print("Losses", losses)
-
-
-"""
-def _global_embed(self, key, table, embed_fn):
-    if key in table:
-        ev = table[key]
-    else:
-        ev = embed_fn(key)
-        table[key] = ev
-    return ev
-
-def _extend_sort(self, key, embed_fn):
-    self._global_embed(key, self.sort_embed, embed_fn)
-
-def _extend_const(self, key, embed_fn):
-    self._global_embed(key, self.const_embed, embed_fn)
-
-def _extend_ind(self, key, embed_fn):
-    self._global_embed(key, self.ind_embed, embed_fn)
-
-def _extend_conid(self, key, embed_fn):
-    self._global_embed(key, self.conid_embed, embed_fn)
-
-def _extend_evar(self, key, embed_fn):
-    self._global_embed(key, self.evar_embed, embed_fn)
-"""

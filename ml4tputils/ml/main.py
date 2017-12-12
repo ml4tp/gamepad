@@ -18,14 +18,16 @@ class Preprocess(object):
         evar_to_idx = self._tokens_to_idx(self.recon.unique_evar)
         fix_to_idx = self._tokens_to_idx(self.recon.unique_fix)
 
-        print("SORT", sort_to_idx)
-        print("CONST", const_to_idx)
+        #print("SORT", sort_to_idx)
+        #print("CONST", const_to_idx)
+        print("IND----------------------------")
+        for k, v in ind_to_idx.items():
+            print(k, v)
 
         return (sort_to_idx, const_to_idx, ind_to_idx,
                 conid_to_idx, evar_to_idx, fix_to_idx)
 
     def _tokens_to_idx(self, unique):
-        print("UNIQUE", unique)
         ls = list(unique)
         tok_to_idx = {}
         for idx, tok in enumerate(ls):

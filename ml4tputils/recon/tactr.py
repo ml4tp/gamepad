@@ -371,6 +371,15 @@ class TacTree(object):
                 seen.add(goal_e)
         return COQEXP_HIST.merges(hists + acc)
 
+    """
+    def hist_coqexp(self):
+        bfs = self.bfs_traverse()
+        for tacst in bfs:
+            if tacst.gid in self.tacst_info:
+                ctx, goal, ctx_e, goal_e = self.tacst_info[tacst.gid]
+                self.hce.decode_hist(ctx_typs)
+    """
+
     def view_comp(self):
         vals = {}
         static_full_comp = {}
