@@ -13,25 +13,13 @@ from recon.tactr import TacStKind, TacTrNode, TacEdge, TacTree
 
 Goal: [TacStDecl] -> [Tac]
 
-NOTE(deh): is this still true?
-Pop from empty list:
-BGsection 3, 4
-PFsection 5
-
-BGsection 4:
-rank2_coprime_comm_cprod
-
-NOTE(deh):
+Observations/Issues: 
 1. open problem actually ... how to scope done
    (in coq, more generally LTAC name calls)
 2. If the before state is solved, then we ignore the tactic.
 3. What about self-edges?
-4. If tcldo is dead, then don't do body?
-5. why are we duplicating some edges?
-
-name calls have no body, bf/af is 1-1
-for atom/ml/notation, should be able to connect bf/af using goal id
-
+4. If tcldo is dead, then don't do body? (solved)
+5. why are we duplicating some edges? (Is this still true?)
 """
 
 
@@ -111,8 +99,7 @@ class TacTreeBuilder(object):
         if self.ftac_inscope:
             ftac = self.ftac_inscope
         else:
-            # TODO(deh): investigate why this is happening in Coq dump
-            # ftac = bf_decl.hdr.ftac
+            # TODO(deh): fix Coq dump to handle old printing of full-tactic
             ftac = bf_decl.hdr.tac
 
         if af_decl.hdr.gid == GID_SOLVED:
@@ -125,6 +112,7 @@ class TacTreeBuilder(object):
             edge = TacEdge(self._fresh_edgeid(),
                            rawtac.uid, rawtac.name, rawtac.tkind,
                            ftac, bf_node, self._mk_dead_node())
+        # TODO(deh): how do we handle self-edges?
         # elif bf_decl.hdr.gid == af_decl.hdr.gid:
         #     # Take care of self-loops
         #     bf_tid = self._mk_live_node(bf_decl)
@@ -157,8 +145,7 @@ class TacTreeBuilder(object):
         if self.ftac_inscope:
             ftac = self.ftac_inscope
         else:
-            # TODO(deh): investigate why this is happening in Coq dump
-            # ftac = bf_decl.hdr.ftac
+            # TODO(deh): fix Coq dump to handle old printing of full-tactic
             ftac = bf_decl.hdr.tac
 
         edge = TacEdge(self._fresh_edgeid(),

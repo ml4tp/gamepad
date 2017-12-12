@@ -5,7 +5,7 @@ from lib.gensym import GenSym
 from lib.myiter import MyIter
 from lib.myutil import pp_tab, inc_update
 from recon.tokens import *
-from recon.lex_raw import TacStDecl, LemTacSt
+from recon.parse_raw import TacStDecl, LemTacSt
 
 """
 [Note]
@@ -142,7 +142,7 @@ class RawTacParser(object):
         """
         # Internal
         it = self.it
-        # self._mylog("@parse_rawtac:before<{}>".format(it.peek()))
+        self._mylog("@parse_rawtac:before<{}>".format(it.peek()))
 
         # Reconstruct tactic tree
         acc = []
@@ -155,19 +155,16 @@ class RawTacParser(object):
 
             # Nested cases
             elif decl.hdr.mode == TOK_BEFORE and decl.hdr.kind == TOK_NOTATION:
-                # acc += self.parse_notation_call()
                 acc += self.parse_nested(TacKind.NOTATION)
             elif is_after(decl.hdr.mode) and decl.hdr.kind == TOK_NOTATION:
                 return acc
 
             elif decl.hdr.mode == TOK_BEFORE and decl.hdr.kind == TOK_ATOMIC:
-                # acc += self.parse_atom_call()
                 acc += self.parse_nested(TacKind.ATOMIC)
             elif is_after(decl.hdr.mode) and decl.hdr.kind == TOK_ATOMIC:
                 return acc
 
             elif decl.hdr.mode == TOK_BEFORE and decl.hdr.kind == TOK_ML:
-                # acc += self.parse_ml_call()
                 acc += self.parse_nested(TacKind.ML)
             elif is_after(decl.hdr.mode) and decl.hdr.kind == TOK_ML:
                 return acc
