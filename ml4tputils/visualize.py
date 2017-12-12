@@ -1,7 +1,7 @@
 import argparse
 import os.path as op
 
-from ml.embed import EmbedCoqTacTr
+# from ml.embed import EmbedCoqTacTr
 from recon.lex_raw import TacStParser
 # from recon.parse_tacst import TacTreeParser
 from recon.parse_rawtac import RawTacParser
@@ -119,11 +119,13 @@ class Visualize(object):
 
         # TODO(deh): Move me
         # Test embedding
+        """
         embedder = EmbedCoqTacTr(tactr)
         embedder.embed()
         if len(embedder.ece.bad_idents) > 0:
             self.bad_idents[lemma] = embedder.ece.bad_idents
             print("BAD IDENTS: {}/{}".format(len(self.bad_idents), self.num_lemmas))
+        """
 
         if self.f_display:
             if self.f_jupyter:

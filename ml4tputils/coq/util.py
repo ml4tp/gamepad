@@ -222,9 +222,12 @@ class HistCoqExp(object):
         self.hist_ast = {}
 
         # Unique
+        self.unique_sort = set()
         self.unique_const = set()
         self.unique_ind = set()
         self.unique_conid = set()
+        self.unique_evar = set()
+        self.unique_fix = set()
 
     def _histcon(self, key, hist):
         self.hist_ast[key] = hist
@@ -246,10 +249,12 @@ class HistCoqExp(object):
         elif isinstance(c, MetaExp):
             return self._histcon(key, COQEXP_HIST.delta('MetaExp'))
         elif isinstance(c, EvarExp):
+            self.unique_evar.add(c.exk)
             hist = COQEXP_HIST.merge(self.hists(c.cs),
                                      COQEXP_HIST.delta('EvarExp'))
             return self._histcon(key, hist)
         elif isinstance(c, SortExp):
+            self.unique_sort.add(c.sort)
             return self._histcon(key, COQEXP_HIST.delta('SortExp'))
         elif isinstance(c, CastExp):
             hist = COQEXP_HIST.merges([self.hist(c.c),
@@ -293,11 +298,14 @@ class HistCoqExp(object):
                                        COQEXP_HIST.delta('CaseExp')])
             return self._histcon(key, hist)
         elif isinstance(c, FixExp):
+            for name in c.names:
+                self.unique_fix.add(name)
             hist = COQEXP_HIST.merges([self.hists(c.tys),
                                        self.hists(c.cs),
                                        COQEXP_HIST.delta('FixExp')])
             return self._histcon(key, hist)
         elif isinstance(c, CoFixExp):
+            # TODO(deh): do cofix?
             hist = COQEXP_HIST.merges([self.hists(c.tys),
                                        self.hists(c.cs),
                                        COQEXP_HIST.delta('CoFixExp')])

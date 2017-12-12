@@ -1,6 +1,12 @@
 import numpy as np
+import torch
+import torch.autograd as autograd
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
 
 from coq.ast import *
+from coq.decode import DecodeCoqExp
 from lib.myenv import MyEnv
 from lib.myutil import NotFound
 
@@ -12,30 +18,48 @@ Create embedding of Coq Tactic Trees into R^D vectors.
 
 
 # -------------------------------------------------
-# Embedding class
+# Embed Expressions
 
 class EmbedCoqExp(object):
-    def __init__(self, decoded):
+    def __init__(self,
+                 sort_to_idx, sort_embed,
+                 const_to_idx, const_embed,
+                 ind_to_idx, ind_embed,
+                 conid_to_idx, conid_embed,
+                 evar_to_idx, evar_embed,
+                 fix_to_idx, fix_embed, fixbody_embed,
+                 decoded, D=5):
+        # assert isinstance(decoded, DecodeCoqExp)
         # Dimension of embedding
-        self.D = 3
+        self.D = D
 
         # Shared representation
         self.decoded = decoded
 
         # Global embeddings
-        self.sort_embed = {}
-        self.const_embed = {}
-        self.ind_embed = {}
-        self.conid_embed = {}
-        self.evar_embed = {}
+        self.sort_to_idx = sort_to_idx
+        self.sort_embed = sort_embed
 
-        self.fixbody_embed = {}   # For use in the body
-        self.fix_embed = {}       # For use everywhere else
+        self.const_to_idx = const_to_idx
+        self.const_embed = const_embed
+
+        self.ind_to_idx = ind_to_idx
+        self.ind_embed = ind_embed
+
+        self.conid_to_idx = conid_to_idx
+        self.conid_embed = conid_embed
+
+        self.evar_to_idx = evar_to_idx
+        self.evar_embed = evar_embed
+
+        self.fix_to_idx = fix_to_idx
+        self.fix_embed = fix_embed           # For use everywhere else
+        self.fixbody_embed = fixbody_embed   # For use in the body
 
         # Keep track of shared embeddings
         self.embeddings = {}
 
-        # TODO(deh): deprecate me once debugged?
+        # Internal debugging
         self.bad_idents = set()
         self.GID = 0
 
@@ -45,29 +69,6 @@ class EmbedCoqExp(object):
     def _embedcon(self, key, embed_vec):
         self.embeddings[key] = embed_vec
         return embed_vec
-
-    def _global_embed(self, key, table, embed_fn):
-        if key in table:
-            ev = table[key]
-        else:
-            ev = embed_fn(key)
-            table[key] = ev
-        return ev
-
-    def _extend_sort(self, key, embed_fn):
-        self._global_embed(key, self.sort_embed, embed_fn)
-
-    def _extend_const(self, key, embed_fn):
-        self._global_embed(key, self.const_embed, embed_fn)
-
-    def _extend_ind(self, key, embed_fn):
-        self._global_embed(key, self.ind_embed, embed_fn)
-
-    def _extend_conid(self, key, embed_fn):
-        self._global_embed(key, self.conid_embed, embed_fn)
-
-    def _extend_evar(self, key, embed_fn):
-        self._global_embed(key, self.evar_embed, embed_fn)
 
     def _embed_ast(self, env, kind, c):
         key = c.tag
@@ -95,11 +96,11 @@ class EmbedCoqExp(object):
         elif isinstance(c, MetaExp):
             assert False, "NOTE(deh): MetaExp should never be in dataset"
         elif isinstance(c, EvarExp):
-            ev_exk = self._extend_evar(c.exk, self.embed_evar_name)
+            ev_exk = self.embed_evar_name(c.exk)
             ev_cs = self._embed_asts(env, Kind.TYPE, c.cs)
             return self._embedcon(key, self.embed_evar(ev_exk, ev_cs))
         elif isinstance(c, SortExp):
-            ev_sort = self._extend_sort(c.sort, self.embed_sort_name)
+            ev_sort = self.embed_sort_name(c.sort)
             return self._embedcon(key, self.embed_sort(ev_sort))
         elif isinstance(c, CastExp):
             ev_c = self._embed_ast(env, Kind.TERM, c.c)
@@ -127,17 +128,16 @@ class EmbedCoqExp(object):
             ev_cs = self._embed_asts(env, Kind.TERM, c.cs)
             return self._embedcon(key, self.embed_app(ev_c, ev_cs))
         elif isinstance(c, ConstExp):
-            ev_const = self._extend_const(c.const, self.embed_const_name)
+            ev_const = self.embed_const_name(c.const)
             ev_ui = self.embed_ui(c.ui)
             return self._embedcon(key, self.embed_const(ev_const, ev_ui))
         elif isinstance(c, IndExp):
-            ev_ind = self._extend_ind(c.ind, self.embed_ind_name)
+            ev_ind = self.embed_ind_name(c.ind)
             ev_ui = self.embed_ui(c.ui)
             return self._embedcon(key, self.embed_ind(ev_ind, ev_ui))
         elif isinstance(c, ConstructExp):
-            ev_ind = self._extend_ind(c.ind, self.embed_ind_name)
-            ev_conid = self._extend_conid((c.ind, c.conid),
-                                          self.embed_conid_name)
+            ev_ind = self.embed_ind_name(c.ind)
+            ev_conid = self.embed_conid_name((c.ind, c.conid))
             ev_ui = self.embed_ui(c.ui)
             return self._embedcon(key, self.embed_construct(ev_ind, ev_conid,
                                                             ev_ui))
@@ -150,7 +150,7 @@ class EmbedCoqExp(object):
         elif isinstance(c, FixExp):
             # 1. Create initial embeddings
             for name in c.names:
-                ev = self.embed_rec_name(name)
+                ev = self.embed_fix_name(name)
                 self.fixbody_embed[name] = ev
                 env = env.extend(name, ev)
 
@@ -183,35 +183,42 @@ class EmbedCoqExp(object):
 
     def embed_evar_name(self, exk):
         """Override Me"""
-        return np.random.multivariate_normal(np.zeros(self.D), np.eye(self.D))
+        lookup_tensor = torch.LongTensor([self.evar_to_idx[exk]])
+        return self.evar_embed(autograd.Variable(lookup_tensor))
 
     def embed_const_name(self, const):
         """Override Me"""
-        return np.random.multivariate_normal(np.zeros(self.D), np.eye(self.D))
+        lookup_tensor = torch.LongTensor([self.const_to_idx[const]])
+        return self.const_embed(autograd.Variable(lookup_tensor))
 
     def embed_sort_name(self, sort):
         """Override Me"""
-        return np.random.multivariate_normal(np.zeros(self.D), np.eye(self.D))
+        lookup_tensor = torch.LongTensor([self.sort_to_idx[sort]])
+        return self.sort_embed(autograd.Variable(lookup_tensor))
 
     def embed_ind_name(self, ind):
         """Override Me"""
-        return np.random.multivariate_normal(np.zeros(self.D), np.eye(self.D))
+        lookup_tensor = torch.LongTensor([self.ind_to_idx[ind.mutind]])
+        return self.ind_embed(autograd.Variable(lookup_tensor))
 
     def embed_conid_name(self, ind_and_conid):
         """Override Me"""
         ind, conid = ind_and_conid
-        return np.random.multivariate_normal(np.zeros(self.D), np.eye(self.D))
+        lookup_tensor = torch.LongTensor([self.conid_to_idx[conid]])
+        return self.conid_embed(autograd.Variable(lookup_tensor))
 
-    def embed_rec_name(self, name):
+    def embed_fix_name(self, name):
         """Override Me"""
-        return np.random.multivariate_normal(np.zeros(self.D), np.eye(self.D))
+        lookup_tensor = torch.LongTensor([self.fix_to_idx[exk]])
+        return self.fix_embed(autograd.Variable(lookup_tensor))
 
     # -------------------------------------------
     # Local embedding initialization
 
     def embed_local_var(self, ty):
         """Override Me"""
-        return np.random.multivariate_normal(np.zeros(self.D), np.eye(self.D))
+        return autograd.Variable(torch.randn(self.D), requires_grad=False)
+        # return np.random.multivariate_normal(np.zeros(self.D), np.eye(self.D))
 
     # -------------------------------------------
     # Combining embeddings
@@ -292,10 +299,25 @@ class EmbedCoqExp(object):
         return [self.embed_ui(ui) for ui in uis]
 
 
+# -------------------------------------------------
+# Embed Tactic Tree
+
 class EmbedCoqTacTr(object):
-    def __init__(self, tactr):
+    def __init__(self, sort_to_idx, sort_embed,
+                 const_to_idx, const_embed,
+                 ind_to_idx, ind_embed,
+                 conid_to_idx, conid_embed,
+                 evar_to_idx, evar_embed,
+                 fix_to_idx, fix_embed, fixbody_embed,
+                 tactr):
         self.tactr = tactr
-        self.ece = EmbedCoqExp(tactr.decoder.decoded)
+        self.ece = EmbedCoqExp(sort_to_idx, sort_embed,
+                               const_to_idx, const_embed,
+                               ind_to_idx, ind_embed,
+                               conid_to_idx, conid_embed,
+                               evar_to_idx, evar_embed,
+                               fix_to_idx, fix_embed, fixbody_embed,
+                               tactr.decoder.decoded)
 
         # Sharing
         self.ctxid_embeds = {}
@@ -303,6 +325,7 @@ class EmbedCoqTacTr(object):
 
     def embed(self):
         bfs = self.tactr.bfs_traverse()
+        print("HERE", bfs)
         acc = []
         for node in bfs:
             if node[0] == 'OPEN':
@@ -345,53 +368,98 @@ class EmbedCoqTacTr(object):
             return ev
 
 
+# -------------------------------------------------
+# Model
+
+class MyModel(nn.Module):
+    def __init__(self, sort_to_idx, const_to_idx, ind_to_idx,
+                 conid_to_idx, evar_to_idx, fix_to_idx,
+                 D=5):
+        super().__init__()
+
+        # Dimension
+        self.D = D
+
+        # Embeddings
+        self.sort_to_idx = sort_to_idx
+        self.sort_embed = nn.Embedding(len(sort_to_idx), D)
+        self.const_to_idx = const_to_idx
+        self.const_embed = nn.Embedding(len(const_to_idx), D)
+        self.ind_to_idx = ind_to_idx
+        self.ind_embed = nn.Embedding(len(ind_to_idx), D)
+        self.conid_to_idx = conid_to_idx
+        self.conid_embed = nn.Embedding(len(conid_to_idx), D)
+        self.evar_to_idx = evar_to_idx
+        self.evar_embed = nn.Embedding(len(evar_to_idx), D)
+        self.fix_to_idx = fix_to_idx
+        self.fix_embed = nn.Embedding(len(fix_to_idx), D)
+        self.fixbody_embed = nn.Embedding(len(fix_to_idx), D)
+
+        # TODO(prafulla): put LSTM variables here
+
+    def forward(self, tactr):
+        embedder = EmbedCoqTacTr(self.sort_to_idx, self.sort_embed,
+                                 self.const_to_idx, self.const_embed,
+                                 self.ind_to_idx, self.ind_embed,
+                                 self.conid_to_idx, self.conid_embed,
+                                 self.evar_to_idx, self.evar_embed,
+                                 self.fix_to_idx, self.fix_embed,
+                                 self.fixbody_embed, tactr)
+        evs = embedder.embed()
+        print(evs)
+        # TODO(prafulla): put LSTM model here
+        raise NotImplementedError
+
+
+# -------------------------------------------------
+# Training
+
+class MyTrainer(object):
+    def __init__(self, model, tactrs):
+        self.model = model       # PyTorch model
+        self.tactrs = tactrs     # Tactic trees
+
+    def train(self, epochs=100):
+        losses = []
+        loss_function = nn.NLLLoss()
+        optimizer = optim.SGD(self.model.parameters(), lr=0.001)
+        for epoch in range(epochs):
+            total_loss = torch.Tensor([0])
+            for e_input in self.tactrs:
+                self.model.zero_grad()
+                log_probs = self.model(e_input)
+
+                # TODO(prafulla): loss here?
+                # output = autograd.Variable(torch.LongTensor([foobar(const_to_idx, e_output)]))
+                # loss = loss_function(log_probs, output)
+                # loss.backward()
+                # optimizer.step()
+                # total_loss += loss.data
+            losses.append(total_loss)
+        print("Losses", losses)
+
+
 """
-class EmbedEnv(object):
-    def __init__(self, rel_embed, var_embed, mv_embed,
-                 ev_embed, fix_embed, cofix_embed):
-        # Local embeddings
-        self.rel_embed = rel_embed
-        self.var_embed = var_embed
-        self.mv_embed = mv_embed
-        self.ev_embed = ev_embed
-        self.fix_embed = fix_embed
-        self.cofix_embed = cofix_embed
+def _global_embed(self, key, table, embed_fn):
+    if key in table:
+        ev = table[key]
+    else:
+        ev = embed_fn(key)
+        table[key] = ev
+    return ev
 
-    def extend_rel(self, key, value):
-        rel_embed = dict([(k, v) for k, v in self.rel_embed.items()])
-        rel_embed[key] = value
-        return EmbedEnv(rel_embed, self.var_embed, self.mv_embed,
-                        self.ev_embed, self.fix_embed, self.cofix_embed)
+def _extend_sort(self, key, embed_fn):
+    self._global_embed(key, self.sort_embed, embed_fn)
 
-    def extend_var(self, key, value):
-        var_embed = dict([(k, v) for k, v in self.var_embed.items()])
-        var_embed[key] = value
-        return EmbedEnv(self.rel_embed, var_embed, self.mv_embed,
-                        self.ev_embed, self.fix_embed, self.cofix_embed)
+def _extend_const(self, key, embed_fn):
+    self._global_embed(key, self.const_embed, embed_fn)
 
-    def extend_mv(self, key, value):
-        mv_embed = dict([(k, v) for k, v in self.mv_embed.items()])
-        mv_embed[key] = value
-        return EmbedEnv(self.rel_embed, self.var_embed, mv_embed,
-                        self.ev_embed, self.fix_embed, self.cofix_embed)
+def _extend_ind(self, key, embed_fn):
+    self._global_embed(key, self.ind_embed, embed_fn)
 
-    def extend_ev(self, key, value):
-        ev_embed = dict([(k, v) for k, v in self.ev_embed.items()])
-        ev_embed[key] = value
-        return EmbedEnv(self.rel_embed, self.var_embed, self.mv_embed,
-                        ev_embed, self.fix_embed, self.cofix_embed)
+def _extend_conid(self, key, embed_fn):
+    self._global_embed(key, self.conid_embed, embed_fn)
 
-    def extend_fix(self, key, value):
-        # TODO(deh): tie the knot?
-        fix_embed = dict([(k, v) for k, v in self.fix_embed.items()])
-        fix_embed[key] = value
-        return EmbedEnv(self.rel_embed, self.var_embed, self.mv_embed,
-                        self.ev_embed, fix_embed, self.cofix_embed)
-
-    def extend_cofix(self, key, value):
-        # TODO(deh): tie the knot?
-        cofix_embed = dict([(k, v) for k, v in self.cofix_embed.items()])
-        cofix_embed[key] = value
-        return EmbedEnv(self.rel_embed, self.var_embed, self.mv_embed,
-                        self.ev_embed, self.fix_embed, cofix_embed)
+def _extend_evar(self, key, embed_fn):
+    self._global_embed(key, self.evar_embed, embed_fn)
 """

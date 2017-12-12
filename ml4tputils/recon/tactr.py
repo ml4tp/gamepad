@@ -214,6 +214,9 @@ class TacTree(object):
                 acc += [edge]
         return acc
 
+    def unique_sort(self):
+        return self.hce.unique_sort
+
     def unique_const(self):
         return self.hce.unique_const
 
@@ -223,12 +226,18 @@ class TacTree(object):
     def unique_conid(self):
         return self.hce.unique_conid
 
+    def unique_evar(self):
+        return self.hce.unique_evar
+
+    def unique_fix(self):
+        return self.hce.unique_fix
+
     def _traverse_info(self, ordered_gids):
         acc = []
         for src_gid, tgt_gid in ordered_gids:
-            if src_gid in self.tacst_info:
-                pp_ctx, pp_goal, ctx_ids, goal_idx = self.tacst_info[src_gid]
-                acc += [('OPEN', src_gid, pp_ctx, pp_goal, ctx_ids,
+            if src_gid.gid in self.tacst_info:
+                pp_ctx, pp_goal, ctx_ids, goal_idx = self.tacst_info[src_gid.gid]
+                acc += [('OPEN', src_gid.gid, pp_ctx, pp_goal, ctx_ids,
                          goal_idx, self.gid_tactic[src_gid])]
             # elif (tgt_gid.kind == TacStKind.DEAD or
             #       tgt_gid.kind == TacStKind.TERM):
