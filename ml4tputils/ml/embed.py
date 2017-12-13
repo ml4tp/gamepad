@@ -87,8 +87,6 @@ class EmbedCoqExp(object):
                 print("FAILED TO LOOKUP {} in gid {}".format(c.idx, self.GID))
             return self._embedcon(key, self.embed_rel(ev_idx))
         elif isinstance(c, VarExp):
-            ev_x = env.lookup_id(Name(c.x))
-            """
             try:
                 ev_x = env.lookup_id(Name(c.x))
             except NotFound:
@@ -96,7 +94,6 @@ class EmbedCoqExp(object):
                 ev_x = self.embed_local_var(None)
                 self.bad_idents.add(c.x)
                 print("FAILED TO LOOKUP {} in gid {}".format(c.x, self.GID))
-            """
             return self._embedcon(key, self.embed_var(ev_x))
         elif isinstance(c, MetaExp):
             assert False, "NOTE(deh): MetaExp should never be in dataset"
@@ -156,7 +153,7 @@ class EmbedCoqExp(object):
             # 1. Create initial embeddings
             for name in c.names:
                 ev = self.embed_fix_name(name)
-                self.fixbody_embed[name] = ev
+                # self.fixbody_embed[name] = ev
                 env = env.extend(name, ev)
 
             # 2. Use initial embeddings
@@ -165,8 +162,9 @@ class EmbedCoqExp(object):
             for ty, body in zip(c.tys, c.cs):
                 ev_tys += [self._embed_ast(env, Kind.TYPE, ty)]
                 ev_c = self._embed_ast(env, Kind.TERM, body)
+                # TODO(deh): wtf?
                 # Tie the knot appropriately
-                self.fix_embed[name] = ev_c
+                # self.fix_embed[name] = ev_c
                 ev_cs += [ev_c]
             return self._embedcon(key, self.embed_fix(c.iarr, c.idx, c.names,
                                                       ev_tys, ev_cs))
@@ -214,7 +212,7 @@ class EmbedCoqExp(object):
 
     def embed_fix_name(self, name):
         """Override Me"""
-        lookup_tensor = torch.LongTensor([self.fix_to_idx[exk]])
+        lookup_tensor = torch.LongTensor([self.fix_to_idx[name]])
         return self.fix_embed(autograd.Variable(lookup_tensor))
 
     # -------------------------------------------
@@ -382,6 +380,8 @@ class MyModel(nn.Module):
                  D=5):
         super().__init__()
 
+        self.bad_idents = 0
+
         # Dimension
         self.D = D
 
@@ -411,6 +411,8 @@ class MyModel(nn.Module):
                                  self.fix_to_idx, self.fix_embed,
                                  self.fixbody_embed, tactr)
         evs = embedder.embed()
+        self.bad_idents += len(embedder.ece.bad_idents)
+        print("BAD IDENTS", len(embedder.ece.bad_idents))
         print(evs)
         # TODO(prafulla): put LSTM model here
         # raise NotImplementedError
@@ -424,7 +426,7 @@ class MyTrainer(object):
         self.model = model       # PyTorch model
         self.tactrs = tactrs     # Tactic trees
 
-    def train(self, epochs=100):
+    def train(self, epochs=1):
         losses = []
         loss_function = nn.NLLLoss()
         optimizer = optim.SGD(self.model.parameters(), lr=0.001)
@@ -433,6 +435,7 @@ class MyTrainer(object):
             for e_input in self.tactrs:
                 self.model.zero_grad()
                 log_probs = self.model(e_input)
+                print("BAD IDENTS", self.model.bad_idents)
 
                 # TODO(prafulla): loss here?
                 # output = autograd.Variable(torch.LongTensor([foobar(const_to_idx, e_output)]))
