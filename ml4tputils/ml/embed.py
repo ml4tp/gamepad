@@ -78,16 +78,13 @@ class EmbedCoqExp(object):
 
         if isinstance(c, RelExp):
             # NOTE(deh): DeBruinj indicides start at 1 ...
-            ev_idx = env.lookup_rel(c.idx - 1)
-            """
             try:
-                ev_idx = env.lookup_rel(c.idx)
+                ev_idx = env.lookup_rel(c.idx - 1)
             except NotFound:
                 # TODO(deh): some weird shit going on in Coq printing
                 ev_idx = self.embed_local_var(None)
                 self.bad_idents.add(c.idx)
                 print("FAILED TO LOOKUP {} in gid {}".format(c.idx, self.GID))
-            """
             return self._embedcon(key, self.embed_rel(ev_idx))
         elif isinstance(c, VarExp):
             ev_x = env.lookup_id(Name(c.x))

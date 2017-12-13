@@ -31,17 +31,17 @@ class Visualize(object):
         self.h_tactr_file.write("TOTAL: {} WERID: {}\n".format(
                                 self.num_lemmas, len(self.failed)))
         self.h_tactr_file.write("UNIQUE-SORT: {}\n".format(
-                                len(self.recon.unique_sort)))
+                                len(self.recon.embed_tokens.unique_sort)))
         self.h_tactr_file.write("UNIQUE-CONST: {}\n".format(
-                                len(self.recon.unique_const)))
+                                len(self.recon.embed_tokens.unique_const)))
         self.h_tactr_file.write("UNIQUE-IND: {}\n".format(
-                                len(self.recon.unique_ind)))
+                                len(self.recon.embed_tokens.unique_ind)))
         self.h_tactr_file.write("UNIQUE-CONID: {}\n".format(
-                                len(self.recon.unique_conid)))
+                                len(self.recon.embed_tokens.unique_conid)))
         self.h_tactr_file.write("UNIQUE-EVAR: {}\n".format(
-                                len(self.recon.unique_evar)))
+                                len(self.recon.embed_tokens.unique_evar)))
         self.h_tactr_file.write("UNIQUE-FIX: {}\n".format(
-                                len(self.recon.unique_fix)))
+                                len(self.recon.embed_tokens.unique_fix)))
         self.h_tactr_file.close()
 
     def save_tactrs(self):

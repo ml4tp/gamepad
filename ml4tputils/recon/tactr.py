@@ -17,6 +17,12 @@ from lib.myutil import dict_ls_app
 [Note]
 
 A reconstructed tactic tree. Contains methods for computing statistics.
+
+Right now, we do not distinguish the same goal identifier that has
+multiple tactics applied to it. For example,
+14 -[tac1] -> 14 -[tac2] -> 14
+is represented as
+14 [tac1, tac2]
 """
 
 

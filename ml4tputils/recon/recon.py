@@ -1,8 +1,9 @@
 import os.path as op
 
+from recon.build_tactr import TacTreeBuilder
+from recon.embed_tokens import EmbedTokens
 from recon.parse_raw import TacStParser
 from recon.parse_rawtac import RawTacParser
-from recon.build_tactr import TacTreeBuilder
 
 
 # -------------------------------------------------
@@ -48,14 +49,9 @@ FILES = ["BGsection1.v.dump",
 # Reconstructing
 
 class Recon(object):
-    def __init__(self):
-        self.unique_sort = set()
-        self.unique_const = set()
-        self.unique_ind = set()
-        self.unique_conid = set()
-        self.unique_evar = set()
-        self.unique_fix = set()
-
+    def __init__(self, f_token=True):
+        self.f_token = f_token
+        self.embed_tokens = EmbedTokens()
         self.tactrs = []
 
     def recon_file(self, file, f_verbose=False):
@@ -66,6 +62,7 @@ class Recon(object):
         ts_parser = TacStParser(file, f_log=False)
         tactrs = []
         while not ts_parser.exhausted:
+            # Coq output file to [TacStDecl] tokens
             lemma = ts_parser.parse_lemma()
             tactr = self._recon_lemma(file, lemma)
             tactrs += [tactr]
@@ -80,6 +77,7 @@ class Recon(object):
 
         ts_parser = TacStParser(file, f_log=False)
         ts_parser.seek_lemma(lemma)
+        # Coq output file to [TacStDecl] tokens
         lemma = ts_parser.parse_lemma()
         if f_verbose:
             print(">>>>>>>>>>>>>>>>>>>>>")
@@ -102,12 +100,7 @@ class Recon(object):
         tactr = tr_builder.get_tactree()
 
         # Get unique "tokens"
-        tactr.hist_coqexp()
-        self.unique_sort = self.unique_sort.union(tactr.unique_sort())
-        self.unique_const = self.unique_const.union(tactr.unique_const())
-        self.unique_ind = self.unique_ind.union(tactr.unique_ind())
-        self.unique_conid = self.unique_conid.union(tactr.unique_conid())
-        self.unique_evar = self.unique_evar.union(tactr.unique_evar())
-        self.unique_fix = self.unique_fix.union(tactr.unique_fix())
+        if self.f_token:
+            self.embed_tokens.tokenize_tactr(tactr)
 
         return tactr
