@@ -15,6 +15,10 @@ from lib.myutil import NotFound
 
 Create embedding of Coq Tactic Trees into R^D vectors.
 Where to put model and training code?
+
+NOTE(deh):
+We are still missing some idents.
+Why is this happening??
 """
 
 
@@ -63,6 +67,7 @@ class EmbedCoqExp(object):
         # Internal debugging
         self.bad_idents = set()
         self.GID = 0
+        self.ctx_idents = []
 
     def embed_ast(self, env, c):
         return self._embed_ast(env, Kind.TERM, c)
@@ -84,7 +89,7 @@ class EmbedCoqExp(object):
                 # TODO(deh): some weird shit going on in Coq printing
                 ev_idx = self.embed_local_var(None)
                 self.bad_idents.add(c.idx)
-                print("FAILED TO LOOKUP {} in gid {}".format(c.idx, self.GID))
+                print("FAILED TO LOOKUP REL {} in gid {} in ctx {}".format(c.idx, self.GID, self.ctx_idents))
             return self._embedcon(key, self.embed_rel(ev_idx))
         elif isinstance(c, VarExp):
             try:
@@ -93,7 +98,7 @@ class EmbedCoqExp(object):
                 # TODO(deh): some weird shit going on in Coq printing
                 ev_x = self.embed_local_var(None)
                 self.bad_idents.add(c.x)
-                print("FAILED TO LOOKUP {} in gid {}".format(c.x, self.GID))
+                print("FAILED TO LOOKUP VAR {} in gid {} in ctx {}".format(c.x, self.GID, self.ctx_idents))
             return self._embedcon(key, self.embed_var(ev_x))
         elif isinstance(c, MetaExp):
             assert False, "NOTE(deh): MetaExp should never be in dataset"
@@ -346,6 +351,7 @@ class EmbedCoqTacTr(object):
         env = MyEnv()
         for ident in ctx_idents:
             ev = self.embed_ctx_ident(gid, env, ident)
+            self.ece.ctx_idents = ctx_idents
             env = env.extend(Name(ident), ev)
             evs += [ev]
         return env, evs
@@ -412,8 +418,9 @@ class MyModel(nn.Module):
                                  self.fixbody_embed, tactr)
         evs = embedder.embed()
         self.bad_idents += len(embedder.ece.bad_idents)
-        print("BAD IDENTS", len(embedder.ece.bad_idents))
-        print(evs)
+        if len(embedder.ece.bad_idents) > 0:
+            print("BAD IDENTS", tactr.name, embedder.ece.bad_idents)
+        # print(evs)
         # TODO(prafulla): put LSTM model here
         # raise NotImplementedError
 
@@ -435,7 +442,6 @@ class MyTrainer(object):
             for e_input in self.tactrs:
                 self.model.zero_grad()
                 log_probs = self.model(e_input)
-                print("BAD IDENTS", self.model.bad_idents)
 
                 # TODO(prafulla): loss here?
                 # output = autograd.Variable(torch.LongTensor([foobar(const_to_idx, e_output)]))
