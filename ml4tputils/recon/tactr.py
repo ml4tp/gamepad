@@ -318,8 +318,8 @@ class TacTree(object):
             if ctx_e:
                 ls = []
                 for ident in ctx_e:
-                    # print(ctx_e, self.decoder.ctx_typs)
-                    key = self.decoder.ctx_typs[ident]
+                    # key = self.decoder.ctx_typs[ident[0]]
+                    key = ident[1]
                     size = self.sce_full.decode_size(key)
                     ls += [size]
                 v = np.sum(ls)
@@ -346,6 +346,19 @@ class TacTree(object):
         return hist
 
     def hist_coqexp(self):
+        acc = []
+        seen = set()
+        for depth, gid, pp_typs, pp_concls, ctx, concl_idx, tac in self.flatview:
+            for ldecl in ctx:
+                typ_idx = ldecl[1]
+                if typ_idx not in seen:
+                    acc += [self.hce.decode_hist(typ_idx)]
+                    seen.add(typ_idx)
+            if concl_idx not in seen:
+                acc += [self.hce.decode_hist(concl_idx)]
+                seen.add(concl_idx)
+        return COQEXP_HIST.merges(acc)
+        """
         hists = [self.hce.decode_hist(edx) for ident, edx in
                  self.decoder.ctx_typs.items()]
 
@@ -356,6 +369,7 @@ class TacTree(object):
                 acc += [self.hce.decode_hist(goal_e)]
                 seen.add(goal_e)
         return COQEXP_HIST.merges(hists + acc)
+        """
 
     def view_comp(self):
         vals = {}
@@ -365,16 +379,18 @@ class TacTree(object):
         scv = SizeCoqVal(self.decoder.decoded)
         for depth, gid, ctx, goal, ctx_e, goal_e, tac in self.flatview:
             env = MyEnv()
-            for ident in ctx_e:
+            for ldecl in ctx_e:
+                ident = ldecl[0]
                 if ident in vals:
                     v = vals[ident]
                 else:
-                    edx = self.decoder.ctx_typs[ident]
+                    # edx = self.decoder.ctx_typs[ident]
+                    edx = ldecl[1]
                     c = self.decoder.decode_exp_by_key(edx)
                     cbname = InterpCBName()
                     v = cbname.interp(env, c)
                     vals[ident] = v
-                    edx = self.decoder.ctx_typs[ident]
+                    # edx = self.decoder.ctx_typs[ident]
                     static_full_comp[ident] = self.sce_full.decode_size(edx)
                     static_sh_comp[ident] = self.sce_sh.decode_size(edx)
                     cbname_comp[ident] = scv.size(v)

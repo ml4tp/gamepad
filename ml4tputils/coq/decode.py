@@ -49,8 +49,14 @@ class DecodeCoqExp(object):
             nx.drawing.nx_pylab.draw_kamada_kawai(G, with_labels=True)
             plt.show()
 
+        cycles = list(nx.simple_cycles(G))
+        if len(cycles) > 0:
+            print("CYCLES", cycles)
+            raise NameError("WTF")
+
         # Use topological sort of dependencies to decode ast
         keys = list(nx.algorithms.dag.topological_sort(G))
+        # keys = list(G.nodes)
         for key in keys:
             c = self._decode_ast(key)
             self._mkcon(key, c)

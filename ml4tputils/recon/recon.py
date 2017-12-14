@@ -81,7 +81,8 @@ class Recon(object):
         lemma = ts_parser.parse_lemma()
         if f_verbose:
             print(">>>>>>>>>>>>>>>>>>>>>")
-            print(lemma.pp())
+            # TODO(deh): some bug with pretty printing ...
+            # print(lemma.pp())
             print("<<<<<<<<<<<<<<<<<<<<<")
 
         tactr = self._recon_lemma(file, lemma)

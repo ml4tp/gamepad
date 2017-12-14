@@ -18,7 +18,9 @@ Where to put model and training code?
 
 NOTE(deh):
 We are still missing some idents.
-Why is this happening??
+Why is this happening?? Because we aren't alpha-converting the rest of the
+context. Fixing this with new version of proof format.
+Rel is because Prod is Dependent Product so its a binding form.
 """
 
 
@@ -196,6 +198,7 @@ class EmbedCoqExp(object):
 
     def embed_const_name(self, const):
         """Override Me"""
+        print("Looking up", const)
         lookup_tensor = torch.LongTensor([self.const_to_idx[const]])
         return self.const_embed(autograd.Variable(lookup_tensor))
 
@@ -330,50 +333,51 @@ class EmbedCoqTacTr(object):
 
         # Sharing
         self.ctxid_embeds = {}
-        self.goal_embeds = {}
+        self.concl_embeds = {}
 
     def embed(self):
         bfs = self.tactr.bfs_traverse()
         acc = []
         for node in bfs:
             if node[0] == 'OPEN':
-                _, gid, _, _, ctx_ids, goal_idx, edge = node
-                env, evs = self.embed_ctx(gid, ctx_ids)
-                ev = self.embed_goal(gid, env, goal_idx)
+                _, gid, _, _, ctx, concl_idx, edge = node
+                env, evs = self.embed_ctx(gid, ctx)
+                ev = self.embed_concl(gid, env, concl_idx)
                 acc += [(evs, ev)]
             else:
                 # TODO(deh): what to do on terminal nodes?
                 _, gid, edge = node
         return acc
 
-    def embed_ctx(self, gid, ctx_idents):
+    def embed_ctx(self, gid, ctx):
         evs = []
         env = MyEnv()
-        for ident in ctx_idents:
-            ev = self.embed_ctx_ident(gid, env, ident)
-            self.ece.ctx_idents = ctx_idents
+        for ldecl in ctx:
+            ident = ldecl[0]
+            ev = self.embed_ctx_ident(gid, env, ident, ldecl[1])
+            self.ece.ctx = ctx
             env = env.extend(Name(ident), ev)
             evs += [ev]
         return env, evs
 
-    def embed_ctx_ident(self, gid, env, ident):
-        if ident in self.ctxid_embeds:
-            return self.ctxid_embeds[ident]
+    def embed_ctx_ident(self, gid, env, ident, typ_idx):
+        if typ_idx in self.ctxid_embeds:
+            return self.ctxid_embeds[typ_idx]
         else:
-            c = self.tactr.decoder.decode_exp_by_ctxid(ident)
+            c = self.tactr.decoder.decode_exp_by_key(typ_idx)
             self.ece.GID = gid
             ev = self.ece.embed_ast(env, c)
-            self.ctxid_embeds[ident] = ev
+            self.ctxid_embeds[typ_idx] = ev
             return ev
 
-    def embed_goal(self, gid, env, goal_idx):
-        if goal_idx in self.goal_embeds:
-            return self.goal_embeds[goal_idx]
+    def embed_concl(self, gid, env, concl_idx):
+        if concl_idx in self.concl_embeds:
+            return self.concl_embeds[concl_idx]
         else:
-            c = self.tactr.decoder.decode_exp_by_key(goal_idx)
+            c = self.tactr.decoder.decode_exp_by_key(concl_idx)
             self.ece.GID = gid
             ev = self.ece.embed_ast(env, c)
-            self.goal_embeds[goal_idx] = ev
+            self.concl_embeds[concl_idx] = ev
             return ev
 
 

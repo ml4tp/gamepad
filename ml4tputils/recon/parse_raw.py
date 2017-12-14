@@ -73,19 +73,19 @@ class TacStHdr(object):
 
 
 class TacStDecl(object):
-    def __init__(self, hdr, ctx_idents, concl_idx):
+    def __init__(self, hdr, ldecls, concl_idx):
         assert isinstance(hdr, TacStHdr)
-        assert isinstance(ctx_idents, list)
+        assert isinstance(ldecls, list)
         assert isinstance(concl_idx, int)
 
         # Data
         self.hdr = hdr                # tactic state header
-        self.ctx_idents = ctx_idents  # ctx as [id]
+        self.ldecls = ldecls          # ctx as [(id, typ idx, body idx)]
         self.concl_idx = concl_idx    # conclusion expression as index
 
     def pp(self, ctx_prtyps, ctx_prgls, tab=0):
         s1 = self.hdr.pp(tab) + "\n"
-        s2 = "\n".join([pp_tab(tab + 2, "{}: {}".format(x, ctx_prtyps[x])) for x in self.ctx_idents]) + "\n"
+        s2 = "\n".join([pp_tab(tab + 2, "{}: {}".format(x, ctx_prtyps[x[0]])) for x in self.ldecls]) + "\n"
         s3 = pp_tab(tab + 2, "=====================\n")
         if self.concl_idx == -1:
             s4 = pp_tab(tab + 2, "SOLVED")
@@ -130,13 +130,15 @@ class LemTacSt(object):
             if gid not in tacst_info:
                 # TODO(deh): can be optimized
                 ctx = {}
-                for ident in decl.ctx_idents:
-                    ctx[ident] = self.ctx_prtyps[ident]
+                for ldecl in decl.ldecls:
+                    ident = ldecl[0]
+                    typ_idx = ldecl[1]
+                    ctx[ident] = self.ctx_prtyps[typ_idx]
                 if decl.concl_idx == -1:
                     goal = "SOLVED"
                 else:
                     goal = self.ctx_prgls[decl.concl_idx]
-                tacst_info[gid] = (ctx, goal, decl.ctx_idents, decl.concl_idx)
+                tacst_info[gid] = (ctx, goal, [(x[0], x[1]) for x in decl.ldecls], decl.concl_idx)
         return tacst_info
 
     def pp(self, tab=0):
@@ -208,6 +210,33 @@ class TacStParser(object):
         idents.reverse()
         return idents, cid
 
+    def parse_decl_body2(self):
+        # Internal
+        h_head = self.h_head
+        self._mylog("@parse_decl_body2:before<{}>".format(h_head.peek_line()))
+
+        line = h_head.consume_line()
+        toks = line.split(TOK_SEP)
+        ctx = toks[0].strip()
+        concl_idx = int(toks[1].strip())
+
+        if ctx == "":
+            ldecls = []
+        else:
+            ldecls = []
+            for ldecl in ctx.split(","):
+                toks_p = ldecl.strip().split()
+                ident = toks_p[0].strip()
+                typ_idx = int(toks_p[1].strip())
+                if len(toks_p) == 3:
+                    body_idx = int(toks_p[2].strip())
+                    ldecls += [(ident, typ_idx, body_idx)]
+                else:
+                    ldecls += [(ident, typ_idx)]
+        # TODO(deh): Fix coq dump to print in reverse order?
+        ldecls.reverse()
+        return ldecls, concl_idx
+
     def parse_decl(self, callid, mode, tac, kind, loc):
         # Internal
         h_head = self.h_head
@@ -222,7 +251,7 @@ class TacStParser(object):
 
             # Unpack
             hdr = TacStHdr(callid, mode, tac, kind, "", GID_SOLVED, 0, loc)
-            ctx_idents = []
+            ldecls = []
             concl_idx = -1
         elif TOK_SEP in h_head.peek_line():
             # Parse *live* or *dead* goal state
@@ -239,11 +268,12 @@ class TacStParser(object):
 
             # Unpack (note that we handle error and success here)
             hdr = TacStHdr(callid, mode, tac, kind, ftac, gid, ngs, loc)
-            ctx_idents, concl_idx = self.parse_decl_body()
+            # ctx_idents, concl_idx = self.parse_decl_body()
+            ldecls, concl_idx = self.parse_decl_body2()
         else:
             raise NameError("Parsing error @line{}: {}".format(
                             h_head.line, h_head.peek_line()))
-        return TacStDecl(hdr, ctx_idents, concl_idx)
+        return TacStDecl(hdr, ldecls, concl_idx)
 
     def parse_begin_pf(self):
         # Internal
@@ -364,7 +394,7 @@ class TacStParser(object):
         h_head.consume_line()
         while not h_head.peek_line().startswith(TOK_PRBODS):
             k, v = self._parse_table_entry()
-            self.ctx_prtyps[k] = v
+            self.ctx_prtyps[int(k)] = v
 
     def parse_ctx_prbods(self):
         # Internal
@@ -376,7 +406,7 @@ class TacStParser(object):
         h_head.consume_line()
         while not h_head.peek_line().startswith(TOK_PRGLS):
             k, v = self._parse_table_entry()
-            self.ctx_prbods[k] = v
+            self.ctx_prbods[int(k)] = v
 
     def parse_ctx_prgls(self):
         # Internal
@@ -394,8 +424,8 @@ class TacStParser(object):
         h_head = self.h_head
         self._mylog("@parse_epilogue:before<{}>".format(h_head.peek_line()))
 
-        self.parse_ctx_typs()
-        self.parse_ctx_bods()
+        # self.parse_ctx_typs()
+        # self.parse_ctx_bods()
         self.parse_constr_share()
         self.parse_ctx_prtyps()
         self.parse_ctx_prbods()
@@ -467,7 +497,8 @@ class TacStParser(object):
                 self.decls += [decl]
             elif line.startswith(TOK_END_TAC_ST):
                 self.parse_endtacst()
-            elif line.startswith(TOK_TYPS):
+            # elif line.startswith(TOK_TYPS):
+            elif line.startswith(TOK_CONSTRS):
                 self.parse_epilogue()
             else:
                 raise NameError("Parsing error at line {}: {}".format(
