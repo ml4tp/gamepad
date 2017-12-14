@@ -245,7 +245,7 @@ class CastExp(Exp):
 
 class ProdExp(Exp):
     """P %s %d %d
-    A product type of <ty1> and <ty2>.
+    A dependent product type of Pi <name>: <ty1>. <ty2>.
     """
     def __init__(self, name, ty1, ty2):
         assert isinstance(name, Name)
@@ -416,7 +416,7 @@ class CaseExp(Exp):
 
 
 class FixExp(Exp):
-    """"F [%s] %d [%s] [%s] [%s]
+    """F [%s] %d [%s] [%s] [%s]
     For example,
       Fix even n :=
         match n with

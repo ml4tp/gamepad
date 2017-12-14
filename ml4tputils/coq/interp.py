@@ -111,20 +111,6 @@ class CastVal(Val):
         return "CAV({}, {}, {})".format(str(self.v_c), self.ck, str(self.v_ty))
 
 
-class ProdVal(Val):
-    def __init__(self, name, v_ty1, v_ty2):
-        assert isinstance(name, Name)
-        assert isinstance(v_ty1, Val)
-        assert isinstance(v_ty2, Val)
-        self.name = name
-        self.v_ty1 = v_ty1
-        self.v_ty2 = v_ty2
-
-    def __str__(self):
-        return "PV({}, {}, {})".format(self.name, str(self.v_ty1),
-                                       str(self.v_ty2))
-
-
 class CloVal(Val):
     def __init__(self, env, c):
         assert isinstance(env, MyEnv)
@@ -196,11 +182,6 @@ class InterpCBName(object):
             except NotFound:
                 return BaseVal(c)
         elif isinstance(c, VarExp):
-            # TODO(deh): wtf?
-            # file: BGsection1.v
-            # lemma: chief_stab_sub_Fitting
-            # ident: chiefKs
-            # sometimes unfolded and sometimes not
             try:
                 v = env.lookup_id(Name(c.x))
                 return v
@@ -218,9 +199,7 @@ class InterpCBName(object):
             v_ty = self.interp(env, c.ty)
             return CastVal(v_c, c.ck, v_ty)
         elif isinstance(c, ProdExp):
-            v_ty1 = self.interp(env, c.ty1)
-            v_ty2 = self.interp(env, c.ty2)
-            return ProdVal(c.name, v_ty1, v_ty2)
+            return CloVal(env, c)
         elif isinstance(c, LambdaExp):
             return CloVal(env, c)
         elif isinstance(c, LetInExp):
@@ -231,7 +210,7 @@ class InterpCBName(object):
         elif isinstance(c, AppExp):
             v_c = self.interp(env, c.c)
             v_cs = self.interps(env, c.cs)
-            if isinstance(v_c, CloVal) and isinstance(v_c.c, LambdaExp):
+            if isinstance(v_c, CloVal) and (isinstance(v_c.c, LambdaExp) or isinstance(v_c.c, LambdaExp)):
                 for v in v_cs:
                     env_p = v_c.env
                     env_p = env_p.extend(v_c.c.name, v)
@@ -279,8 +258,6 @@ class SizeCoqVal(object):
             return 1 + self.sizes(v.v_cs)
         elif isinstance(v, CastVal):
             return 1 + self.size(v.v_c) + self.size(v.v_ty)
-        elif isinstance(v, ProdVal):
-            return 1 + self.size(v.v_ty1) + self.size(v.v_ty2)
         elif isinstance(v, CloVal):
             return self.sce.size(v.c)
         elif isinstance(v, AppVal):

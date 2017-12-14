@@ -4,21 +4,7 @@ from lib.myhist import MyHist
 """
 [Note]
 
-Utility functions on Coq expressions
-
-1: Base
-2: A 1 1
-3: A 2 2
-4: A 3 1
-
-2: (1, 2x)
-3: (2, 2x)
-4: (1, 1x), (3, 1x)
-
-2: (1, 2x)
-3: (1, 4x), (2, 2x)
-4: (1, 5x), (2, 2x), (3, 1x)
-
+Utility functions on Coq expressions.
 """
 
 
@@ -221,14 +207,6 @@ class HistCoqExp(object):
         # Histogram
         self.hist_ast = {}
 
-        # Unique
-        self.unique_sort = set()
-        self.unique_const = set()
-        self.unique_ind = set()
-        self.unique_conid = set()
-        self.unique_evar = set()
-        self.unique_fix = set()
-
     def _histcon(self, key, hist):
         self.hist_ast[key] = hist
         return hist
@@ -249,12 +227,10 @@ class HistCoqExp(object):
         elif isinstance(c, MetaExp):
             return self._histcon(key, COQEXP_HIST.delta('MetaExp'))
         elif isinstance(c, EvarExp):
-            self.unique_evar.add(c.exk)
             hist = COQEXP_HIST.merge(self.hists(c.cs),
                                      COQEXP_HIST.delta('EvarExp'))
             return self._histcon(key, hist)
         elif isinstance(c, SortExp):
-            self.unique_sort.add(c.sort)
             return self._histcon(key, COQEXP_HIST.delta('SortExp'))
         elif isinstance(c, CastExp):
             hist = COQEXP_HIST.merges([self.hist(c.c),
@@ -283,14 +259,10 @@ class HistCoqExp(object):
                                        COQEXP_HIST.delta('AppExp')])
             return self._histcon(key, hist)
         elif isinstance(c, ConstExp):
-            self.unique_const.add(c.const)
             return self._histcon(key, COQEXP_HIST.delta('ConstExp'))
         elif isinstance(c, IndExp):
-            self.unique_ind.add(c.ind.mutind)
             return self._histcon(key, COQEXP_HIST.delta('IndExp'))
         elif isinstance(c, ConstructExp):
-            self.unique_ind.add(c.ind.mutind)
-            self.unique_conid.add((c.ind.mutind, c.conid))
             return self._histcon(key, COQEXP_HIST.delta('ConstructExp'))
         elif isinstance(c, CaseExp):
             hist = COQEXP_HIST.merges([self.hist(c.ret),
@@ -299,14 +271,11 @@ class HistCoqExp(object):
                                        COQEXP_HIST.delta('CaseExp')])
             return self._histcon(key, hist)
         elif isinstance(c, FixExp):
-            for name in c.names:
-                self.unique_fix.add(name)
             hist = COQEXP_HIST.merges([self.hists(c.tys),
                                        self.hists(c.cs),
                                        COQEXP_HIST.delta('FixExp')])
             return self._histcon(key, hist)
         elif isinstance(c, CoFixExp):
-            # TODO(deh): do cofix?
             hist = COQEXP_HIST.merges([self.hists(c.tys),
                                        self.hists(c.cs),
                                        COQEXP_HIST.delta('CoFixExp')])
@@ -320,3 +289,106 @@ class HistCoqExp(object):
 
     def hists(self, cs):
         return COQEXP_HIST.merges([self.hist(c) for c in cs])
+
+
+# -------------------------------------------------
+# Computing tokens in Coq Expressions
+
+class TokenCoqExp(object):
+    def __init__(self, decoded):
+        # Dict[int, Exp]
+        self.decoded = decoded
+        ChkCoqExp(decoded).chk_decoded()
+
+        self.seen = set()
+
+        # Unique
+        self.unique_sort = set()
+        self.unique_const = set()
+        self.unique_ind = set()
+        self.unique_conid = set()
+        self.unique_evar = set()
+        self.unique_fix = set()
+
+    def tokenize(self):
+        for idx, c in self.decoded.items():
+            self.token(c)
+        return (self.unique_sort, self.unique_const, self.unique_ind,
+                self.unique_conid, self.unique_evar, self.unique_fix)
+
+    def _seen(self, c):
+        self.seen.add(c.tag)
+
+    def token(self, c):
+        if c.tag in self.seen:
+            return
+
+        if isinstance(c, RelExp):
+            return self._seen(c)
+        elif isinstance(c, VarExp):
+            return self._seen(c)
+        elif isinstance(c, MetaExp):
+            return self._seen(c)
+        elif isinstance(c, EvarExp):
+            self.unique_evar.add(c.exk)
+            self.tokens(c.cs)
+            return self._seen(c)
+        elif isinstance(c, SortExp):
+            self.unique_sort.add(c.sort)
+            return self._seen(c)
+        elif isinstance(c, CastExp):
+            self.token(c.c)
+            self.token(c.ty)
+            return self._seen(c)
+        elif isinstance(c, ProdExp):
+            self.token(c.ty1)
+            self.token(c.ty2)
+            return self._seen(c)
+        elif isinstance(c, LambdaExp):
+            self.token(c.ty)
+            self.token(c.c)
+            return self._seen(c)
+        elif isinstance(c, LetInExp):
+            self.token(c.c1)
+            self.token(c.ty)
+            self.token(c.c2)
+            return self._seen(c)
+        elif isinstance(c, AppExp):
+            self.token(c.c)
+            self.tokens(c.cs)
+            return self._seen(c)
+        elif isinstance(c, ConstExp):
+            self.unique_const.add(c.const)
+            return self._seen(c)
+        elif isinstance(c, IndExp):
+            self.unique_ind.add(c.ind.mutind)
+            return self._seen(c)
+        elif isinstance(c, ConstructExp):
+            self.unique_ind.add(c.ind.mutind)
+            self.unique_conid.add((c.ind.mutind, c.conid))
+            return self._seen(c)
+        elif isinstance(c, CaseExp):
+            self.token(c.ret)
+            self.token(c.match)
+            self.tokens(c.cases)
+            return self._seen(c)
+        elif isinstance(c, FixExp):
+            for name in c.names:
+                self.unique_fix.add(name)
+            self.tokens(c.tys)
+            self.tokens(c.cs)
+            return self._seen(c)
+        elif isinstance(c, CoFixExp):
+            # TODO(deh): do cofix?
+            self.tokens(c.tys)
+            self.tokens(c.cs)
+            return self._seen(c)
+        elif isinstance(c, ProjExp):
+            self.token(c.c)
+            return self._seen(c)
+        else:
+            raise NameError("Kind {} not supported".format(c))
+
+    def tokens(self, cs):
+        for c in cs:
+            self.token(c)

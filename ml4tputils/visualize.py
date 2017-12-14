@@ -8,19 +8,28 @@ from recon.parse_rawtac import RawTacParser
 from recon.recon import FILES, Recon
 
 
+"""
+[Note]
+
+1. Visualize all files
+    python ml4tp/visualize.py all
+2. Visualize a lemma in a specific file
+    python ml4tp/visualize.py <file> -l <lemma>
+"""
+
+
 class Visualize(object):
     def __init__(self, f_display=False, f_jupyter=False, f_verbose=False,
                  tactr_file="tactr.log"):
         # Internal book-keeping
-        self.num_lemmas = 0
-        self.failed = []
-        self.recon = Recon()           # tactic-tree reconstructor
-        self.tactrs = []               # tactic trees
+        self.recon = Recon()         # tactic tree reconstructor
+        self.tactrs = []             # reconstructed tactic trees
+        self.failed = []             # failed reconstructions
 
         # Flags
-        self.f_display = f_display     # draw graph?
-        self.f_jupyter = f_jupyter     # using jupyter?
-        self.f_verbose = f_verbose     # verbose?
+        self.f_display = f_display   # draw graph?
+        self.f_jupyter = f_jupyter   # using jupyter?
+        self.f_verbose = f_verbose   # verbose?
 
         # Tactic tree statistics
         self.tactr_file = tactr_file
@@ -29,7 +38,7 @@ class Visualize(object):
 
     def finalize(self):
         self.h_tactr_file.write("TOTAL: {} WERID: {}\n".format(
-                                self.num_lemmas, len(self.failed)))
+                                len(self.tactrs), len(self.failed)))
         self.h_tactr_file.write("UNIQUE-SORT: {}\n".format(
                                 len(self.recon.embed_tokens.unique_sort)))
         self.h_tactr_file.write("UNIQUE-CONST: {}\n".format(

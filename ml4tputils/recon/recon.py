@@ -6,6 +6,17 @@ from recon.parse_raw import TacStParser
 from recon.parse_rawtac import RawTacParser
 
 
+"""
+[Note]
+
+Reconstruct tactic trees from tcoq dump files.
+
+parse_raw     : Dump -> [TacStDecl]
+parse_rawtac  : [TacStDecl] -> [RawTac]
+build_tactr   : [RawTac] -> TacTree
+"""
+
+
 # -------------------------------------------------
 # Files in dataset
 

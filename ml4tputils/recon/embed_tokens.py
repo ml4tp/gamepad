@@ -35,13 +35,13 @@ class EmbedTokens(object):
                 conid_to_idx, evar_to_idx, fix_to_idx)
 
     def tokenize_tactr(self, tactr):
-        tactr.hist_coqexp()
-        self.unique_sort = self.unique_sort.union(tactr.unique_sort())
-        self.unique_const = self.unique_const.union(tactr.unique_const())
-        self.unique_ind = self.unique_ind.union(tactr.unique_ind())
-        self.unique_conid = self.unique_conid.union(tactr.unique_conid())
-        self.unique_evar = self.unique_evar.union(tactr.unique_evar())
-        self.unique_fix = self.unique_fix.union(tactr.unique_fix())
+        tokens = tactr.tokenize()
+        self.unique_sort = self.unique_sort.union(tokens[0])
+        self.unique_const = self.unique_const.union(tokens[1])
+        self.unique_ind = self.unique_ind.union(tokens[2])
+        self.unique_conid = self.unique_conid.union(tokens[3])
+        self.unique_evar = self.unique_evar.union(tokens[4])
+        self.unique_fix = self.unique_fix.union(tokens[5])
 
     def tokenize_tactrs(self, tactrs):
         for tactr in tactrs:

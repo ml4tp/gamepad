@@ -6,12 +6,12 @@ import plotly
 from plotly.graph_objs import *
 
 from coq.ast import Name
+from coq.decode import DecodeCoqExp
 from coq.interp import InterpCBName, SizeCoqVal
 from coq.tactics import TacKind, TACTIC_HIST
-from coq.util import ChkCoqExp, SizeCoqExp, HistCoqExp, COQEXP_HIST
+from coq.util import ChkCoqExp, SizeCoqExp, HistCoqExp, TokenCoqExp, COQEXP_HIST
 from lib.myenv import MyEnv
 from lib.myutil import dict_ls_app
-
 
 """
 [Note]
@@ -109,6 +109,9 @@ class TacEdge(object):
 
 class TacTree(object):
     def __init__(self, name, edges, graph, tacst_info, gid_tactic, decoder):
+        assert isinstance(decoder, DecodeCoqExp)
+        ChkCoqExp(decoder.decoded).chk_decoded()
+
         # Input
         self.name = name               # Lemma name
         self.edges = edges             # [TacEdge]
@@ -116,21 +119,12 @@ class TacTree(object):
         self.tacst_info = tacst_info   # Dict[gid, (ctx, goal, ctx_e, goal_e)]
         self.gid_tactic = gid_tactic   # Dict[int, TacEdge]
         self.decoder = decoder         # Decode asts
-        self.chk = ChkCoqExp(decoder.decoded)
-        self.chk.chk_decoded()
-        self.sce_full = SizeCoqExp(decoder.decoded, f_shared=False)
-        self.sce_sh = SizeCoqExp(decoder.decoded, f_shared=True)
-        self.hce = HistCoqExp(decoder.decoded)
 
         self.notok = []
 
-        # Root, error/terminal states, and create flattened view
+        # Root and create flattened view
         self._root()
         assert self.root
-        self._goals()
-        self._term_goals()
-        self._err_goals()
-        self._tactics()
         self._flatten_view()
 
     def _root(self):
@@ -144,29 +138,6 @@ class TacTree(object):
                 self.root = node
                 break
 
-    def _goals(self):
-        self.goals = self.graph.nodes()
-
-    def _err_goals(self):
-        self.err_goals = []
-        for edge in self.edges:
-            if edge.conn_to_dead():
-                self.err_goals += [edge.tgt]
-
-    def _term_goals(self):
-        self.term_goals = []
-        for edge in self.edges:
-            if edge.conn_to_term():
-                self.term_goals += [edge.tgt]
-
-    def _tactics(self):
-        self.tactics = {}
-        for edge in self.edges:
-            if edge.tid in self.tactics:
-                self.tactics[edge.tid] += [edge]
-            else:
-                self.tactics[edge.tid] = [edge]
-
     def _flatten_view(self):
         self.flatview = []
         seen = set()
@@ -175,14 +146,40 @@ class TacTree(object):
                 depth = len(nx.algorithms.shortest_path(self.graph, self.root, edge.tgt))
                 if edge.tid not in seen:
                     if edge.tgt.gid in self.tacst_info:
-                        ctx, goal, ctx_e, goal_e = self.tacst_info[edge.tgt.gid]
-                        self.flatview += [(depth, edge.tgt, ctx, goal, ctx_e, goal_e, edge)]
+                        pp_ctx, pp_concl, ctx, concl_idx = self.tacst_info[edge.tgt.gid]
+                        self.flatview += [(depth, edge.tgt, pp_ctx, pp_concl, ctx, concl_idx, edge)]
                     elif edge.conn_to_dead() or edge.conn_to_term():
-                        ctx, goal, ctx_e, goal_e = self.tacst_info[edge.src.gid]
-                        self.flatview += [(depth, edge.tgt, ctx, goal, ctx_e, goal_e, edge)]
+                        pp_ctx, pp_concl, ctx, concl_idx = self.tacst_info[edge.src.gid]
+                        self.flatview += [(depth, edge.tgt, pp_ctx, pp_concl, ctx, concl_idx, edge)]
             except nx.exception.NetworkXNoPath:
                 pass
             seen.add(edge.tid)
+
+    def goals(self):
+        return self.graph.nodes()
+
+    def dead_goals(self):
+        acc = []
+        for edge in self.edges:
+            if edge.conn_to_dead():
+                acc += [edge.tgt]
+        return acc
+
+    def term_goals(self):
+        acc = []
+        for edge in self.edges:
+            if edge.conn_to_term():
+                acc += [edge.tgt]
+        return acc
+
+    def tactics(self):
+        acc = {}
+        for edge in self.edges:
+            if edge.tid in acc:
+                acc[edge.tid] += [edge]
+            else:
+                acc[edge.tid] = [edge]
+        return acc
 
     def in_edge(self, gid):
         gids = list(self.graph.predecessors(gid))
@@ -199,24 +196,6 @@ class TacTree(object):
             if edge.tgt in gids and edge.src == gid:
                 acc += [edge]
         return acc
-
-    def unique_sort(self):
-        return self.hce.unique_sort
-
-    def unique_const(self):
-        return self.hce.unique_const
-
-    def unique_ind(self):
-        return self.hce.unique_ind
-
-    def unique_conid(self):
-        return self.hce.unique_conid
-
-    def unique_evar(self):
-        return self.hce.unique_evar
-
-    def unique_fix(self):
-        return self.hce.unique_fix
 
     def _traverse_info(self, ordered_gids):
         acc = []
@@ -240,7 +219,7 @@ class TacTree(object):
 
     def view_err_paths(self):
         acc = []
-        for egid in self.err_goals:
+        for egid in self.dead_goals():
             try:
                 acc += [nx.algorithms.shortest_path(self.graph, self.root, egid)]
             except nx.exception.NetworkXNoPath:
@@ -249,7 +228,7 @@ class TacTree(object):
 
     def view_term_paths(self):
         acc = []
-        for tgid in self.term_goals:
+        for tgid in self.term_goals():
             try:
                 acc += [nx.algorithms.shortest_path(self.graph, self.root, tgid)]
             except nx.exception.NetworkXNoPath:
@@ -262,7 +241,7 @@ class TacTree(object):
             if edge.name.startswith("<ssreflect_plugin::ssrhave@0>") and \
                edge.isbod:
                 path = []
-                for tgid in self.term_goals:
+                for tgid in self.term_goals():
                     try:
                         path = nx.algorithms.shortest_path(self.graph, edge.src, tgid)
                         break
@@ -273,7 +252,7 @@ class TacTree(object):
 
     def view_tactic_hist(self, f_compress=False):
         hist = TACTIC_HIST.empty()
-        for k, tacs in self.tactics.items():
+        for k, tacs in self.tactics().items():
             tac = tacs[0]
             if tac.tkind == TacKind.ML:
                 tac_name = tac.name.split()[0]
@@ -311,16 +290,15 @@ class TacTree(object):
             dict_ls_app(hist, depth, len(goal))
         return hist
 
-    def view_depth_astctx_size(self):
+    def view_depth_astctx_size(self, sce_full):
         """Returns Dict[depth, [total ast typ size]]"""
         hist = {}
         for depth, gid, ctx, goal, ctx_e, goal_e, tac in self.flatview:
             if ctx_e:
                 ls = []
                 for ident in ctx_e:
-                    # key = self.decoder.ctx_typs[ident[0]]
                     key = ident[1]
-                    size = self.sce_full.decode_size(key)
+                    size = sce_full.decode_size(key)
                     ls += [size]
                 v = np.sum(ls)
             else:
@@ -328,11 +306,11 @@ class TacTree(object):
             dict_ls_app(hist, depth, v)
         return hist
 
-    def view_depth_astgoal_size(self):
+    def view_depth_astgoal_size(self, sce_full):
         """Returns Dict[depth, [total ast typ size]]"""
         hist = {}
         for depth, gid, ctx, goal, ctx_e, goal_e, tac in self.flatview:
-            dict_ls_app(hist, depth, self.sce_full.decode_size(goal_e))
+            dict_ls_app(hist, depth, sce_full.decode_size(goal_e))
         return hist
 
     def view_depth_tactic_hist(self):
@@ -346,32 +324,26 @@ class TacTree(object):
         return hist
 
     def hist_coqexp(self):
+        hce = HistCoqExp(self.decoder.decoded)
         acc = []
         seen = set()
         for depth, gid, pp_typs, pp_concls, ctx, concl_idx, tac in self.flatview:
             for ldecl in ctx:
                 typ_idx = ldecl[1]
                 if typ_idx not in seen:
-                    acc += [self.hce.decode_hist(typ_idx)]
+                    acc += [hce.decode_hist(typ_idx)]
                     seen.add(typ_idx)
             if concl_idx not in seen:
-                acc += [self.hce.decode_hist(concl_idx)]
+                acc += [hce.decode_hist(concl_idx)]
                 seen.add(concl_idx)
+
         return COQEXP_HIST.merges(acc)
-        """
-        hists = [self.hce.decode_hist(edx) for ident, edx in
-                 self.decoder.ctx_typs.items()]
 
-        acc = []
-        seen = set()
-        for depth, gid, ctx, goal, ctx_e, goal_e, tac in self.flatview:
-            if goal_e not in seen:
-                acc += [self.hce.decode_hist(goal_e)]
-                seen.add(goal_e)
-        return COQEXP_HIST.merges(hists + acc)
-        """
+    def tokenize(self):
+        tce = TokenCoqExp(self.decoder.decoded)
+        return tce.tokenize()
 
-    def view_comp(self):
+    def view_comp(self, sce_full, sce_sh):
         vals = {}
         static_full_comp = {}
         static_sh_comp = {}
@@ -391,13 +363,14 @@ class TacTree(object):
                     v = cbname.interp(env, c)
                     vals[ident] = v
                     # edx = self.decoder.ctx_typs[ident]
-                    static_full_comp[ident] = self.sce_full.decode_size(edx)
-                    static_sh_comp[ident] = self.sce_sh.decode_size(edx)
+                    static_full_comp[ident] = sce_full.decode_size(edx)
+                    static_sh_comp[ident] = sce_sh.decode_size(edx)
                     cbname_comp[ident] = scv.size(v)
                 env = env.extend(Name(ident), v)
         return static_full_comp, static_sh_comp, cbname_comp
 
     def stats(self):
+        hce = HistCoqExp(self.decoder.decoded)
         term_path_lens = [len(path) for path in self.view_term_paths()]
         err_path_lens = [len(path) for path in self.view_err_paths()]
         avg_depth_ctx_items = [(k, np.mean(v)) for k, v in
@@ -406,16 +379,18 @@ class TacTree(object):
                               self.view_depth_ctx_size().items()]
         avg_depth_goal_size = [(k, np.mean(tysz)) for k, tysz in
                                self.view_depth_goal_size().items()]
+        sce_full = SizeCoqExp(self.decoder.decoded, f_shared=False)
+        sce_sh = SizeCoqExp(self.decoder.decoded, f_shared=True)
         avg_depth_astctx_size = [(k, np.mean(v)) for k, v in
-                                 self.view_depth_astctx_size().items()]
+                                 self.view_depth_astctx_size(sce_full).items()]
         avg_depth_astgoal_size = [(k, np.mean(tysz)) for k, tysz in
-                                  self.view_depth_astgoal_size().items()]
-        static_full_comp, static_sh_comp, cbname_comp = self.view_comp()
+                                  self.view_depth_astgoal_size(sce_full).items()]
+        static_full_comp, static_sh_comp, cbname_comp = self.view_comp(sce_full, sce_sh)
         info = {'hist': self.view_tactic_hist(f_compress=True),
-                'num_tacs': len(self.tactics),
-                'num_goals': len(self.goals),
-                'num_term': len(self.term_goals),
-                'num_err': len(self.err_goals),
+                'num_tacs': len(self.tactics()),
+                'num_goals': len(self.goals()),
+                'num_term': len(self.term_goals()),
+                'num_err': len(self.dead_goals()),
                 'term_path_lens': term_path_lens,
                 'err_path_lens': err_path_lens,
                 'have_info': self.view_have_info(),
@@ -442,14 +417,14 @@ class TacTree(object):
         print(">>>>>>>>>>>>>>>>>>>>")
         print("Root:", self.root)
         print("Goals: ", "[{}]".format(",".join([str(g) for g in self.goals])))
-        print("Tactics:", self.tactics)
+        print("Tactics:", self.tactics())
         for gid in self.goals:
             s1 = ", ".join([str(x) for x in self.in_edge(gid)])
             print("In edge for {}:".format(gid), s1)
             s2 = ", ".join([str(x) for x in self.out_edges(gid)])
             print("Out edges for {}:".format(gid), s2)
-        print("Terminal states:", "[{}]".format(",".join([str(g) for g in self.term_goals])))
-        print("Error states:", "[{}]".format(",".join([str(g) for g in self.err_goals])))
+        print("Terminal states:", "[{}]".format(",".join([str(g) for g in self.term_goals()])))
+        print("Error states:", "[{}]".format(",".join([str(g) for g in self.err_goals()])))
         print("Terminal path lengths:", self.view_term_paths())
         print("Error path lengths:", self.view_err_paths())
         print("<<<<<<<<<<<<<<<<<<<<")

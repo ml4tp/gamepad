@@ -89,6 +89,7 @@ class EmbedCoqExp(object):
                 ev_idx = env.lookup_rel(c.idx - 1)
             except NotFound:
                 # TODO(deh): some weird shit going on in Coq printing
+                # Ok, this is because ProdExp is a binding form =)
                 ev_idx = self.embed_local_var(None)
                 self.bad_idents.add(c.idx)
                 print("FAILED TO LOOKUP REL {} in gid {} in ctx {}".format(c.idx, self.GID, self.ctx_idents))
@@ -98,6 +99,8 @@ class EmbedCoqExp(object):
                 ev_x = env.lookup_id(Name(c.x))
             except NotFound:
                 # TODO(deh): some weird shit going on in Coq printing
+                # Ok, this is because of shadowing issues and not alpha
+                # renaming ast's
                 ev_x = self.embed_local_var(None)
                 self.bad_idents.add(c.x)
                 print("FAILED TO LOOKUP VAR {} in gid {} in ctx {}".format(c.x, self.GID, self.ctx_idents))
@@ -116,8 +119,10 @@ class EmbedCoqExp(object):
             ev_ty = self._embed_ast(env, Kind.TYPE, c.ty)
             return self._embedcon(key, self.embed_cast(ev_c, c.ck, ev_ty))
         elif isinstance(c, ProdExp):
+            ev_x = self.embed_local_var(c.ty1)
             ev_ty1 = self._embed_ast(env, Kind.TYPE, c.ty1)
-            ev_ty2 = self._embed_ast(env, Kind.TYPE, c.ty2)
+            ev_ty2 = self._embed_ast(env.extend(c.name, ev_x),
+                                     Kind.TYPE, c.ty2)
             return self._embedcon(key, self.embed_prod(c.name, ev_ty1, ev_ty2))
         elif isinstance(c, LambdaExp):
             ev_x = self.embed_local_var(c.ty)

@@ -8,7 +8,18 @@ from coq.util import ChkCoqExp
 """
 [Note]
 
-Decode shared representation of Coq in .dump into table.
+Decode shared representation of Coq in .dump into Python representation
+of Coq ASTs. For example, suppose <constr_share> has
+1: CO nat zero
+2: CO nat succ
+3: A 2 1
+4: A 2 3
+Then,
+decode(1) = ConstructExp(zero)
+decode(2) = ConstructExp(succ)
+decode(3) = AppExp(decode(2), [decode(1)])
+decode(4) = AppExp(decode(2), [decode(3)])
+Note that we share the ASTs.
 """
 
 
@@ -16,28 +27,23 @@ Decode shared representation of Coq in .dump into table.
 # Decoding low-level expressions
 
 class DecodeCoqExp(object):
-    def __init__(self, ctx_typs, ctx_bods, constr_share):
+    def __init__(self, constr_share):
         # Internal state
-        self.ctx_typs = ctx_typs           # Dict[id, int]
-        self.ctx_bods = ctx_bods           # Dict[id, int]
         self.constr_share = constr_share   # Dict[int, string]
 
         # Shared representation
-        self.decoded = {}
-        self.f_decoded = False
+        self.decoded = {}                  # Dict[int, Exp]
         self._decode_constrs()
         ChkCoqExp(self.decoded).chk_decoded()
 
     def decode_exp_by_key(self, key):
         return self.decoded[key]
 
-    def decode_exp_by_ctxid(self, ident):
-        return self.decode_exp_by_key(self.ctx_typs[ident])
-
     def _decode_constrs(self, f_display=False):
         # Initialize state
         self.edges = []
         self.rawasts = {}
+        self.names = {}
 
         # Lex raw-ast and build dependency graph
         G = nx.DiGraph()
@@ -49,14 +55,11 @@ class DecodeCoqExp(object):
             nx.drawing.nx_pylab.draw_kamada_kawai(G, with_labels=True)
             plt.show()
 
+        # Use topological sort of dependencies to decode ast
         cycles = list(nx.simple_cycles(G))
         if len(cycles) > 0:
-            print("CYCLES", cycles)
-            raise NameError("WTF")
-
-        # Use topological sort of dependencies to decode ast
+            raise NameError("Cycles detected in shared representation", cycles)
         keys = list(nx.algorithms.dag.topological_sort(G))
-        # keys = list(G.nodes)
         for key in keys:
             c = self._decode_ast(key)
             self._mkcon(key, c)
@@ -64,8 +67,7 @@ class DecodeCoqExp(object):
         # Clear state
         self.edges = []
         self.rawasts = {}
-
-        self.f_decoded = True
+        self.names = {}
 
     # -------------------------------------------------
     # First pass decoding
@@ -183,12 +185,6 @@ class DecodeCoqExp(object):
             c1_idx = int(toks[0].strip())
             c2_idx = int(toks[1].strip())
             cs_idxs = self._santize_keys(toks[2].strip())
-            """
-            case_info = self._parse_rawcase_info(toks[1].strip())
-            c1_idx = int(toks[2].strip())
-            c2_idx = int(toks[3].strip())
-            cs_idxs = self._santize_keys(toks[4].strip())
-            """
 
             self.rawasts[key] = ("CS", case_info, c1_idx, c2_idx, cs_idxs)
             self._add_edges(key, [c1_idx, c2_idx] + cs_idxs)
@@ -220,8 +216,14 @@ class DecodeCoqExp(object):
             raise NameError("Kind {} not supported.".format(kind))
 
     def _parse_rawname(self, name):
-        # TODO(deh): Hierarchical parsing?
-        return Name(name.strip())
+        name = name.strip()
+        if name in self.names:
+            return self.names[name]
+        else:
+            # TODO(deh): Hierarchical parsing?
+            name_p = Name(name)
+            self.names[name] = name_p
+            return name_p
 
     def _parse_rawnames(self, names):
         names = names[1:-1]
@@ -241,12 +243,8 @@ class DecodeCoqExp(object):
         mutind = self._parse_rawname(toks[0])
         pos = int(toks[1])
         npar = int(toks[2].strip())
-        # TODO(deh): check latest coq format
         cstr_ndecls = self._parse_rawiarr(toks[3].strip())
-        # cstr_ndecls = toks[3].strip()
-        # TODO(deh): check latest coq format
         cstr_nargs = self._parse_rawiarr(toks[4].strip())
-        # cstr_nargs = toks[4].strip()
         return CaseInfo(Inductive(mutind, pos), npar, cstr_ndecls, cstr_nargs)
 
     # -------------------------------------------------
@@ -363,7 +361,3 @@ class DecodeCoqExp(object):
 
     def _decode_asts(self, keys):
         return [self._decode_ast(key) for key in keys]
-
-    def pp(self, tab=0):
-        s = "\n".join(["{}: {}".format(ident, self.decode_ctx_typ(ident)) for ident, ty in self.ctx_typs.items()])
-        return s
