@@ -356,9 +356,8 @@ class EmbedCoqTacTr(object):
     def embed_ctx(self, gid, ctx):
         evs = []
         env = MyEnv()
-        for ldecl in ctx:
-            ident = ldecl[0]
-            ev = self.embed_ctx_ident(gid, env, ident, ldecl[1])
+        for ident, typ_idx in ctx:
+            ev = self.embed_ctx_ident(gid, env, ident, typ_idx)
             self.ece.ctx = ctx
             env = env.extend(Name(ident), ev)
             evs += [ev]
@@ -447,7 +446,8 @@ class MyTrainer(object):
         optimizer = optim.SGD(self.model.parameters(), lr=0.001)
         for epoch in range(epochs):
             total_loss = torch.Tensor([0])
-            for e_input in self.tactrs:
+            for idx, e_input in enumerate(self.tactrs):
+                print("TRAINING {} ({}/{})".format(e_input.name, idx, len(self.tactrs)))
                 self.model.zero_grad()
                 log_probs = self.model(e_input)
 
