@@ -68,9 +68,6 @@ if __name__ == "__main__":
     embed_tokens = EmbedTokens()
     embed_tokens.tokenize_tactrs(tactrs)
     tokens_to_idx = embed_tokens.tokens_to_idx()
-    print("Token embeddings...")
-    for k, v in tokens_to_idx[1].items():
-        print(k, v)
 
     # Run model
     model = MyModel(*tokens_to_idx)

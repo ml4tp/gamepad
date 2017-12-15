@@ -203,7 +203,6 @@ class EmbedCoqExp(object):
 
     def embed_const_name(self, const):
         """Override Me"""
-        print("Looking up", const)
         lookup_tensor = torch.LongTensor([self.const_to_idx[const]])
         return self.const_embed(autograd.Variable(lookup_tensor))
 

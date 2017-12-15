@@ -124,7 +124,7 @@ class ChkCoqExp(object):
 class SizeCoqExp(object):
     def __init__(self, decoded, f_shared=False):
         self.decoded = decoded
-        ChkCoqExp(decoded).chk_decoded()
+        # ChkCoqExp(decoded).chk_decoded()
         self.size_ast = {}
         self.f_shared = f_shared
 
@@ -202,7 +202,7 @@ class HistCoqExp(object):
     def __init__(self, decoded):
         # Dict[int, Exp]
         self.decoded = decoded
-        ChkCoqExp(decoded).chk_decoded()
+        # ChkCoqExp(decoded).chk_decoded()
 
         # Histogram
         self.hist_ast = {}
@@ -298,7 +298,7 @@ class TokenCoqExp(object):
     def __init__(self, decoded):
         # Dict[int, Exp]
         self.decoded = decoded
-        ChkCoqExp(decoded).chk_decoded()
+        # ChkCoqExp(decoded).chk_decoded()
 
         self.seen = set()
 

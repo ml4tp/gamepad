@@ -28,7 +28,7 @@ Observations/Issues:
 
 class TacTreeBuilder(object):
     def __init__(self, name, rawtacs, tacst_info, gid_tactic, decoder,
-                 ftac_inscope=None,
+                 ftac_inscope=None, gs_nodeid=GenSym(),
                  gs_edgeid=GenSym(), gs_deadid=GenSym(), gs_termid=GenSym(),
                  gid2node={}, tid_gensyms={},
                  f_log=False):
@@ -56,6 +56,7 @@ class TacTreeBuilder(object):
         self.gid_tactic = gid_tactic        # Dict[int, TacEdge]
 
         # Internal symbol generation for reconstruction
+        self.gs_nodeid = gs_nodeid
         self.gs_edgeid = gs_edgeid
         self.gs_deadid = gs_deadid
         self.gs_termid = gs_termid
@@ -68,6 +69,9 @@ class TacTreeBuilder(object):
         if f_log or self.f_log:
             print(msg)
 
+    def _fresh_nodeid(self):
+        return self.gs_nodeid.gensym()
+
     def _fresh_edgeid(self):
         return self.gs_edgeid.gensym()
 
@@ -77,17 +81,19 @@ class TacTreeBuilder(object):
             self.graph.add_edge(edge.src, edge.tgt, key=edge.eid)
 
     def _mk_dead_node(self):
-        return TacTrNode(self.gs_deadid.gensym(), TacStKind.DEAD)
+        return TacTrNode(self._fresh_nodeid(), self.gs_deadid.gensym(),
+                         TacStKind.DEAD)
 
     def _mk_term_node(self):
-        return TacTrNode(self.gs_termid.gensym(), TacStKind.TERM)
+        return TacTrNode(self._fresh_nodeid(), self.gs_termid.gensym(),
+                         TacStKind.TERM)
 
     def _mk_live_node(self, decl):
         gid = decl.hdr.gid
         if gid in self.gid2node:
             return self.gid2node[gid]
         else:
-            tid = TacTrNode(gid, TacStKind.LIVE)
+            tid = TacTrNode(self._fresh_nodeid(), gid, TacStKind.LIVE)
             self.gid2node[gid] = tid
             return tid
 
@@ -157,6 +163,7 @@ class TacTreeBuilder(object):
         tr_builder = TacTreeBuilder(self.name, rawtacs, self.tacst_info,
                                     self.gid_tactic, self.decoder,
                                     ftac_inscope=ftac_inscope,
+                                    gs_nodeid=self.gs_nodeid,
                                     gs_edgeid=self.gs_edgeid,
                                     gs_deadid=self.gs_deadid,
                                     gs_termid=self.gs_termid,

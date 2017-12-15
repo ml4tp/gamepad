@@ -9,7 +9,7 @@ from coq.ast import Name
 from coq.decode import DecodeCoqExp
 from coq.interp import InterpCBName, SizeCoqVal
 from coq.tactics import TacKind, TACTIC_HIST
-from coq.util import ChkCoqExp, SizeCoqExp, HistCoqExp, TokenCoqExp, COQEXP_HIST
+from coq.util import SizeCoqExp, HistCoqExp, TokenCoqExp, COQEXP_HIST
 from lib.myenv import MyEnv
 from lib.myutil import dict_ls_app
 
@@ -36,12 +36,13 @@ class TacStKind(Enum):
 
 
 class TacTrNode(object):
-    def __init__(self, gid, kind, order=None):
+    def __init__(self, uid, gid, kind, order=None):
         assert isinstance(kind, TacStKind)
+        self.uid = uid        # Unique identifier
         self.gid = gid        # Goal identifier
         self.kind = kind      # live/dead/terminal
         self.order = order    # TODO(deh): use to disambiguate self-edges?
-        self._uid()           # Tactic state identifier
+        # self._uid()           # Tactic state identifier
 
     def _uid(self):
         if self.order != None:
@@ -57,15 +58,30 @@ class TacTrNode(object):
             self.uid = x
 
     def __eq__(self, other):
+        return isinstance(other, TacTrNode) and self.uid == other.uid
+        """
         return (isinstance(other, TacTrNode) and self.gid == other.gid and
                 self.kind == other.kind and self.order == other.order)
+        """
 
     def __hash__(self):
-        return self.gid
+        return self.uid
+        # return self.gid
         # return hash(self.uid)
 
     def __str__(self):
-        return self.uid
+        if self.order != None:
+            x = "{}-{}".format(self.gid, self.order)
+        else:
+            x = str(self.gid)
+
+        if self.kind == TacStKind.TERM:
+            s = "T{}".format(x)
+        elif self.kind == TacStKind.DEAD:
+            s = "E{}".format(x)
+        else:
+            s = x
+        return s
 
 
 class TacEdge(object):
@@ -110,7 +126,6 @@ class TacEdge(object):
 class TacTree(object):
     def __init__(self, name, edges, graph, tacst_info, gid_tactic, decoder):
         assert isinstance(decoder, DecodeCoqExp)
-        ChkCoqExp(decoder.decoded).chk_decoded()
 
         # Input
         self.name = name               # Lemma name
@@ -201,9 +216,9 @@ class TacTree(object):
         acc = []
         for src_gid, tgt_gid in ordered_gids:
             if src_gid.gid in self.tacst_info:
-                pp_ctx, pp_goal, ctx_ids, goal_idx = self.tacst_info[src_gid.gid]
-                acc += [('OPEN', src_gid.gid, pp_ctx, pp_goal, ctx_ids,
-                         goal_idx, self.gid_tactic[src_gid])]
+                pp_ctx, pp_goal, ctx, concl_idx = self.tacst_info[src_gid.gid]
+                acc += [('OPEN', src_gid.gid, pp_ctx, pp_goal, ctx,
+                         concl_idx, self.gid_tactic[src_gid])]
             # elif (tgt_gid.kind == TacStKind.DEAD or
             #       tgt_gid.kind == TacStKind.TERM):
             #     acc += [('STOP', tgt_gid, self.gid_tactic[src_gid.gid])]
@@ -264,9 +279,9 @@ class TacTree(object):
 
     def view_depth_ctx_items(self):
         hist = {}
-        for depth, gid, ctx, goal, ctx_e, goal_e, tac in self.flatview:
+        for depth, _, _, _, ctx, _, _ in self.flatview:
             if ctx:
-                v = len(ctx_e)
+                v = len(ctx)
             else:
                 v = 0
             dict_ls_app(hist, depth, v)
@@ -275,9 +290,9 @@ class TacTree(object):
     def view_depth_ctx_size(self):
         """Returns Dict[depth, [total string typ size]]"""
         hist = {}
-        for depth, gid, ctx, goal, ctx_e, goal_e, tac in self.flatview:
-            if ctx:
-                v = np.sum([len(ty) for _, ty in ctx.items()])
+        for depth, _, pp_ctx, _, _, _, _ in self.flatview:
+            if pp_ctx:
+                v = np.sum([len(ty) for _, ty in pp_ctx.items()])
             else:
                 v = 0
             dict_ls_app(hist, depth, v)
@@ -286,19 +301,18 @@ class TacTree(object):
     def view_depth_goal_size(self):
         """Returns Dict[depth, [string typ size]]"""
         hist = {}
-        for depth, gid, ctx, goal, ctx_e, goal_e, tac in self.flatview:
-            dict_ls_app(hist, depth, len(goal))
+        for depth, _, _, pp_goal, _, _, _ in self.flatview:
+            dict_ls_app(hist, depth, len(pp_goal))
         return hist
 
     def view_depth_astctx_size(self, sce_full):
         """Returns Dict[depth, [total ast typ size]]"""
         hist = {}
-        for depth, gid, ctx, goal, ctx_e, goal_e, tac in self.flatview:
-            if ctx_e:
+        for depth, _, _, _, ctx, _, _ in self.flatview:
+            if ctx:
                 ls = []
-                for ident in ctx_e:
-                    key = ident[1]
-                    size = sce_full.decode_size(key)
+                for ident, typ_idx in ctx:
+                    size = sce_full.decode_size(typ_idx)
                     ls += [size]
                 v = np.sum(ls)
             else:
@@ -309,8 +323,8 @@ class TacTree(object):
     def view_depth_astgoal_size(self, sce_full):
         """Returns Dict[depth, [total ast typ size]]"""
         hist = {}
-        for depth, gid, ctx, goal, ctx_e, goal_e, tac in self.flatview:
-            dict_ls_app(hist, depth, sce_full.decode_size(goal_e))
+        for depth, _, _, _, _, concl_idx, _ in self.flatview:
+            dict_ls_app(hist, depth, sce_full.decode_size(concl_idx))
         return hist
 
     def view_depth_tactic_hist(self):
@@ -327,7 +341,7 @@ class TacTree(object):
         hce = HistCoqExp(self.decoder.decoded)
         acc = []
         seen = set()
-        for depth, gid, pp_typs, pp_concls, ctx, concl_idx, tac in self.flatview:
+        for _, _, _, _, ctx, concl_idx, _ in self.flatview:
             for ldecl in ctx:
                 typ_idx = ldecl[1]
                 if typ_idx not in seen:
@@ -349,22 +363,18 @@ class TacTree(object):
         static_sh_comp = {}
         cbname_comp = {}
         scv = SizeCoqVal(self.decoder.decoded)
-        for depth, gid, ctx, goal, ctx_e, goal_e, tac in self.flatview:
+        for _, _, _, _, ctx, concl_idx, _ in self.flatview:
             env = MyEnv()
-            for ldecl in ctx_e:
-                ident = ldecl[0]
+            for ident, typ_idx in ctx:
                 if ident in vals:
                     v = vals[ident]
                 else:
-                    # edx = self.decoder.ctx_typs[ident]
-                    edx = ldecl[1]
-                    c = self.decoder.decode_exp_by_key(edx)
+                    c = self.decoder.decode_exp_by_key(typ_idx)
                     cbname = InterpCBName()
                     v = cbname.interp(env, c)
                     vals[ident] = v
-                    # edx = self.decoder.ctx_typs[ident]
-                    static_full_comp[ident] = sce_full.decode_size(edx)
-                    static_sh_comp[ident] = sce_sh.decode_size(edx)
+                    static_full_comp[ident] = sce_full.decode_size(typ_idx)
+                    static_sh_comp[ident] = sce_sh.decode_size(typ_idx)
                     cbname_comp[ident] = scv.size(v)
                 env = env.extend(Name(ident), v)
         return static_full_comp, static_sh_comp, cbname_comp
