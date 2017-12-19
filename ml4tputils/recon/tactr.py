@@ -214,11 +214,13 @@ class TacTree(object):
 
     def _traverse_info(self, ordered_gids):
         acc = []
+        seen = set()
         for src_gid, tgt_gid in ordered_gids:
-            if src_gid.gid in self.tacst_info:
+            if src_gid.gid in self.tacst_info and src_gid.gid not in seen:
                 pp_ctx, pp_goal, ctx, concl_idx = self.tacst_info[src_gid.gid]
                 acc += [('OPEN', src_gid.gid, pp_ctx, pp_goal, ctx,
                          concl_idx, self.gid_tactic[src_gid])]
+                seen.add(src_gid.gid)
             # elif (tgt_gid.kind == TacStKind.DEAD or
             #       tgt_gid.kind == TacStKind.TERM):
             #     acc += [('STOP', tgt_gid, self.gid_tactic[src_gid.gid])]

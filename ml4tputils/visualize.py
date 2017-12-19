@@ -80,6 +80,7 @@ class Visualize(object):
                 tactr.show_jupyter()
             else:
                 tactr.show()
+        return tactr
 
 
 if __name__ == "__main__":
