@@ -211,7 +211,9 @@ class TacTreeBuilder(object):
                     seen.add(edge.src)
             self._add_edges(edges)
 
-        if not tac.name.startswith("<ssreflect_plugin::ssrtclseq@0>"):
+        if not (tac.tkind == TacKind.NOTATION or
+                tac.name.startswith("<ssreflect_plugin::ssrtclseq@0>") or
+                tac.name.startswith("<ssreflect_plugin::ssrtclby@0>")):
             # TODO(deh): what other ones to avoid?
             # 3. Connect me up
             edges = []
