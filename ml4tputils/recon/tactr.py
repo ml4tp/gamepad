@@ -9,7 +9,7 @@ from coq.ast import Name
 from coq.decode import DecodeCoqExp
 from coq.interp import InterpCBName, SizeCoqVal
 from coq.tactics import TacKind, TACTIC_HIST
-from coq.util import SizeCoqExp, HistCoqExp, TokenCoqExp, COQEXP_HIST
+from coq.util import SizeCoqExp, HistCoqExp, TokenCoqExp, VisualizeCoqExp, COQEXP_HIST
 from lib.myenv import MyEnv
 from lib.myutil import dict_ls_app
 
@@ -515,3 +515,7 @@ class TacTree(object):
                      layout=layout)
         plotly.offline.init_notebook_mode(connected=True)
         plotly.offline.iplot(fig, filename='networkx')
+
+    def visualize_exp_by_key(self, key):
+        vis = VisualizeCoqExp(self.decoder.decoded)
+        vis.visualize_by_key(key)

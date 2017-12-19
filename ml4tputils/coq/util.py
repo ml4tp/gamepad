@@ -1,4 +1,9 @@
+import networkx as nx
+import plotly
+from plotly.graph_objs import *
+
 from coq.ast import *
+from lib.gensym import GenSym
 from lib.myhist import MyHist
 
 """
@@ -392,3 +397,177 @@ class TokenCoqExp(object):
     def tokens(self, cs):
         for c in cs:
             self.token(c)
+
+
+# -------------------------------------------------
+# Visualize Coq expression
+
+class VisAstNode(object):
+    def __init__(self, uid, msg):
+        self.uid = uid
+        self.msg = msg
+
+    def __hash__(self):
+        return self.uid
+
+    def __str__(self):
+        return self.msg
+
+
+class VisualizeCoqExp(object):
+    def __init__(self, decoded):
+        # Dict[int, Exp]
+        self.decoded = decoded
+
+    def visualize_by_key(self, key):
+        return self.visualize(self.decoded[key])
+
+    def visualize(self, c):
+        self.graph = nx.DiGraph()
+        self.gs = GenSym()
+        self.mkgraph(c)
+        G = self.graph
+        pos = nx.drawing.layout.kamada_kawai_layout(G)
+
+        # Edges
+        edge_trace = Scatter(x=[], y=[], line=Line(width=0.5, color='#888'),
+                             hoverinfo=None, mode='lines')
+        for edge in G.edges():
+            x0, y0 = pos[edge[0]]
+            x1, y1 = pos[edge[1]]
+            edge_trace['x'] += [x0, x1, None]
+            edge_trace['y'] += [y0, y1, None]
+
+        # Nodes
+        marker = Marker(showscale=True, colorscale='YIGnBu', reversescale=True,
+                        color=[], size=10, line=dict(width=2))
+        node_trace = Scatter(x=[], y=[], text=[], mode='markers',
+                             hoverinfo='text', marker=marker)
+        for node in G.nodes():
+            x, y = pos[node]
+            node_trace['x'].append(x)
+            node_trace['y'].append(y)
+
+        # Node info
+        for node in pos.keys():
+            node_trace['text'].append(str(node))
+
+        # Display
+        s = str(c)
+        s = s[:min(50, len(s))]
+        layout = Layout(title="<br>Reconstruction of AST {} ...".format(s),
+                        titlefont=dict(size=16),
+                        showlegend=False,
+                        hovermode='closest',
+                        margin=dict(b=20, l=5, r=5, t=40),
+                        xaxis=XAxis(showgrid=False, zeroline=False,
+                                    showticklabels=False),
+                        yaxis=YAxis(showgrid=False, zeroline=False,
+                                    showticklabels=False))
+        fig = Figure(data=Data([edge_trace, node_trace]),
+                     layout=layout)
+        plotly.offline.init_notebook_mode(connected=True)
+        plotly.offline.iplot(fig, filename='coq-ast')
+
+    def _add_node(self, node):
+        node = VisAstNode(self.gs.gensym(), node)
+        self.graph.add_node(node)
+        return node
+
+    def _add_edge(self, src, tgt):
+        self.graph.add_edge(src, tgt)
+
+    def _add_edges(self, src, tgts):
+        for tgt in tgts:
+            self.graph.add_edge(src, tgt)
+
+    def mkgraph(self, c):
+        if isinstance(c, RelExp):
+            return self._add_node("Rel({})".format(c.idx))
+        elif isinstance(c, VarExp):
+            return self._add_node("Var({})".format(c.x))
+        elif isinstance(c, MetaExp):
+            return self._add_node("Meta({})".format(c.mv))
+        elif isinstance(c, EvarExp):
+            node = self._add_node("Evar({})".format(c.exk))
+            node_cs = self.visualizes(c.cs)
+            self._add_edges(node_cs)
+            return node
+        elif isinstance(c, SortExp):
+            node = self._add_node("Sort({})".format(c.sort))
+            return self._add_node(node)
+        elif isinstance(c, CastExp):
+            node = self._add_node("Cast({})".format(c.tag))
+            node_c = self.mkgraph(c.c)
+            node_ty = self.mkgraph(c.ty)
+            self._add_edge(node, node_c)
+            self._add_edge(node, node_ty)
+            return node
+        elif isinstance(c, ProdExp):
+            node = self._add_node("Prod({})".format(c.tag))
+            node_ty1 = self.mkgraph(c.ty1)
+            node_ty2 = self.mkgraph(c.ty2)
+            self._add_edge(node, node_ty1)
+            self._add_edge(node, node_ty2)
+            return node
+        elif isinstance(c, LambdaExp):
+            node = self._add_node("Lam({})".format(c.tag))
+            node_ty = self.mkgraph(c.ty)
+            node_c = self.mkgraph(c.c)
+            self._add_edge(node, node_ty)
+            self._add_edge(node, node_c)
+            return node
+        elif isinstance(c, LetInExp):
+            node = self._add_node("Let({})".format(c.tag))
+            node_c1 = self.mkgraph(c.c1)
+            node_ty = self.mkgraph(c.ty)
+            node_c2 = self.mkgraph(c.c2)
+            self._add_edge(node, node_c1)
+            self._add_edge(node, node_ty)
+            self._add_edge(node, node_c2)
+            return node
+        elif isinstance(c, AppExp):
+            node = self._add_node("App({})".format(c.tag))
+            node_c = self.mkgraph(c.c)
+            node_cs = self.mkgraphs(c.cs)
+            self._add_edge(node, node_c)
+            self._add_edges(node, node_cs)
+            return node
+        elif isinstance(c, ConstExp):
+            return self._add_node("Const({})".format(c.const))
+        elif isinstance(c, IndExp):
+            return self._add_node("Ind({})".format(c.ind.mutind))
+        elif isinstance(c, ConstructExp):
+            return self._add_node("Ctor({}, {})".format(c.conid, c.ind.mutind))
+        elif isinstance(c, CaseExp):
+            node = self._add_node("Case({})".format(c.tag))
+            node_ret = self.mkgraph(c.ret)
+            node_match = self.mkgraph(c.match)
+            node_cases = self.mkgraphs(c.cases)
+            self._add_edge(node, node_ret)
+            self._add_edge(node, node_match)
+            self._add_edge(node, node_cases)
+            return node
+        elif isinstance(c, FixExp):
+            node = self._add_node("Fix({})".format(c.tag))
+            for name, node_ty, node_c in zip(names, node_tys, node_cs):
+                node_nm = str(name)
+                self.add_edge(node, node_nm)
+                self.add_edge(node_nm, node_ty)
+                self.add_edge(node_nm, node_c)
+            return node
+        elif isinstance(c, CoFixExp):
+            # TODO(deh)
+            node = self._add_node("CoFix({})".format(c.tag))
+            return node
+        elif isinstance(c, ProjExp):
+            node = self._add_node("Proj({})".format(c.tag))
+            node_c = self.mkgraph(c.c)
+            self.add_edge(node, str(self.proj))
+            self._add_edge(node, node_c)
+            return node
+        else:
+            raise NameError("Kind {} not supported".format(c))
+
+    def mkgraphs(self, cs):
+        return [self.mkgraph(c) for c in cs]
