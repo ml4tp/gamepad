@@ -3,6 +3,7 @@ import os.path as op
 import pickle
 
 from recon.embed_tokens import EmbedTokens
+from coq.util import SizeCoqExp
 
 """
 [Note]
@@ -17,8 +18,9 @@ Prepare data for:
 # Position Evaluation Dataset
 
 class PosEvalPt(object):
-    def __init__(self, gid, ctx, concl_idx, tac, subtr_size):
+    def __init__(self, gid, ctx, concl_idx, tac, tacst_size, subtr_size):
         self.tacst = (gid, ctx, concl_idx, tac)
+        self.tacst_size = tacst_size
         self.subtr_size = subtr_size
         if subtr_size < 5:
             self.subtr_bin = 0
@@ -60,8 +62,13 @@ class PosEvalDataset(object):
         size_subtr = SizeSubTr(tactr)
         for node in tactr.graph.nodes():
             subtr_size[node.gid] = size_subtr.size(node)
+        sce = SizeCoqExp(tactr.decoder.decoded)
+        tacst_size = 0
         for _, gid, _, _, ctx, concl_idx, tac in tactr.bfs_traverse():
-            self.data += [(tactr_id, PosEvalPt(gid, ctx, concl_idx, tac, subtr_size[gid]))]
+            tacst_size += sce.decode_size(concl_idx)
+            for ident, idx in ctx:
+                tacst_size += sce.decode_size(idx)
+            self.data += [(tactr_id, PosEvalPt(gid, ctx, concl_idx, tac, tacst_size, subtr_size[gid]))]
         return self.data
 
     def split_by_lemma(self, train=80, valid=10, test=10):
