@@ -4,11 +4,14 @@ import torch.autograd as autograd
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+torch.manual_seed(0)
 
 from coq.ast import *
 from coq.decode import DecodeCoqExp
 from lib.myenv import MyEnv
 from lib.myutil import NotFound
+
+from coq.util import SizeCoqExp
 
 """
 [Note]
@@ -26,7 +29,7 @@ context. Fixing this with new version of proof format.
 def gru_embed(xs, cell, init):
     hidden = init
     for i,x in enumerate(xs):
-        print("GRU Embed ",i, x.shape)
+        #print("GRU Embed ",i, x.shape)
         out, hidden = cell(x.view(1, 1, -1), hidden)
     return hidden
 
@@ -62,8 +65,8 @@ class EmbedCoqExp(object):
 
     def _embed_ast(self, env, kind, c):
         key = c.tag
-        if key in self.embeddings:
-            return self.embeddings[key]
+        # if key in self.embeddings:
+        #     return self.embeddings[key]
 
         if isinstance(c, RelExp):
             # NOTE(deh): DeBruinj indicides start at 1 ...
@@ -298,6 +301,7 @@ class EmbedCoqExp(object):
 
 class EmbedCoqTacTr(object):
     def __init__(self, model, tactr):
+        self.model = model
         self.tactr = tactr
         self.ece = EmbedCoqExp(model, tactr.decoder.decoded)
 
@@ -320,6 +324,7 @@ class EmbedCoqTacTr(object):
         return acc
 
     def embed_tacst(self, tacst):
+        self.ece = EmbedCoqExp(self.model, self.tactr.decoder.decoded)
         gid, ctx, concl_idx, tac = tacst
         env, evs = self.embed_ctx(gid, ctx)
         ev = self.embed_concl(gid, env, concl_idx)
@@ -336,24 +341,24 @@ class EmbedCoqTacTr(object):
         return env, evs
 
     def embed_ctx_ident(self, gid, env, typ_idx):
-        if typ_idx in self.ctxid_embeds:
-            return self.ctxid_embeds[typ_idx]
-        else:
-            c = self.tactr.decoder.decode_exp_by_key(typ_idx)
-            self.ece.GID = gid
-            ev = self.ece.embed_ast(env, c)
-            self.ctxid_embeds[typ_idx] = ev
-            return ev
+        # if typ_idx in self.ctxid_embeds:
+        #     return self.ctxid_embeds[typ_idx]
+        # else:
+        c = self.tactr.decoder.decode_exp_by_key(typ_idx)
+        self.ece.GID = gid
+        ev = self.ece.embed_ast(env, c)
+        self.ctxid_embeds[typ_idx] = ev
+        return ev
 
     def embed_concl(self, gid, env, concl_idx):
-        if concl_idx in self.concl_embeds:
-            return self.concl_embeds[concl_idx]
-        else:
-            c = self.tactr.decoder.decode_exp_by_key(concl_idx)
-            self.ece.GID = gid
-            ev = self.ece.embed_ast(env, c)
-            self.concl_embeds[concl_idx] = ev
-            return ev
+        # if concl_idx in self.concl_embeds:
+        #     return self.concl_embeds[concl_idx]
+        # else:
+        c = self.tactr.decoder.decode_exp_by_key(concl_idx)
+        self.ece.GID = gid
+        ev = self.ece.embed_ast(env, c)
+        self.concl_embeds[concl_idx] = ev
+        return ev
 
 
 # -------------------------------------------------
