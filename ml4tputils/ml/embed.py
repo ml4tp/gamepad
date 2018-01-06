@@ -25,8 +25,9 @@ context. Fixing this with new version of proof format.
 
 def gru_embed(xs, cell, init):
     hidden = init
-    for x in xs:
-        out, hidden = cell(x, hidden)
+    for i,x in enumerate(xs):
+        print("GRU Embed ",i, x.shape)
+        out, hidden = cell(x.view(1, 1, -1), hidden)
     return hidden
 
 # -------------------------------------------------
@@ -35,10 +36,8 @@ def gru_embed(xs, cell, init):
 class EmbedCoqExp(object):
     def __init__(self,
                  model,
-                 decoded, D=5):
+                 decoded):
         # assert isinstance(decoded, DecodeCoqExp)
-        # Dimension of embedding
-        self.D = D
 
         # Shared representation
         self.decoded = decoded
@@ -210,7 +209,7 @@ class EmbedCoqExp(object):
 
     def embed_local_var(self, ty):
         """Override Me"""
-        return autograd.Variable(torch.randn(self.D), requires_grad=False)
+        return autograd.Variable(torch.randn(self.model.D), requires_grad=False)
 
     # -------------------------------------------
     # Combining embeddings
@@ -233,7 +232,7 @@ class EmbedCoqExp(object):
 
     def embed_cast(self, ev_c, ck, ev_ty):
         """Override Me"""
-        return self.model.emb_func([self.model.cast, ev_c, ck, ev_ty])
+        return self.model.emb_func([self.model.cast, ev_c, ev_ty])
 
     def embed_prod(self, name, ev_ty1, ev_ty2):
         """Override Me"""
@@ -249,23 +248,23 @@ class EmbedCoqExp(object):
 
     def embed_app(self, ev_c, ev_cs):
         """Override Me"""
-        return self.model.emb_func([self.model.app, ev_c, ev_cs])
+        return self.model.emb_func([self.model.app, ev_c] + ev_cs)
 
     def embed_const(self, ev_const, ev_ui):
         """Override Me"""
-        return self.model.emb_func([self.model.const, ev_const, ev_ui])
+        return self.model.emb_func([self.model.const, ev_const])
 
     def embed_ind(self, ev_ind, ev_ui):
         """Override Me"""
-        return self.model.emb_func([self.model.ind, ev_ind, ev_ui])
+        return self.model.emb_func([self.model.ind, ev_ind])
 
     def embed_construct(self, ev_ind, ev_conid, ev_ui):
         """Override Me"""
-        return self.model.emb_func([self.model.construct, ev_ind, ev_conid, ev_ui])
+        return self.model.emb_func([self.model.construct, ev_ind, ev_conid])
 
     def embed_case(self, ci, ev_ret, ev_match, ev_cases):
         """Override Me"""
-        return self.model.emb_func([self.model.case, ci, ev_ret, ev_match, ev_cases])
+        return self.model.emb_func([self.model.case, ev_ret, ev_match] + ev_cases)
 
     def embed_fix(self, iarr, idx, names, ev_tys, ev_cs):
         """Override Me"""
@@ -363,7 +362,7 @@ class EmbedCoqTacTr(object):
 class MyModel(nn.Module):
     def __init__(self, sort_to_idx, const_to_idx, ind_to_idx,
                  conid_to_idx, evar_to_idx, fix_to_idx,
-                 D=32, state=128):
+                 D=128, state=128, outsize = 3):
         super().__init__()
 
         # Dimension
@@ -386,7 +385,7 @@ class MyModel(nn.Module):
         self.fixbody_embed = nn.Embedding(len(fix_to_idx), D)
 
         # Embed AST
-        self.cell_init_state = autograd.Variable(torch.randn(self.state)) #TODO: Change this
+        self.cell_init_state = autograd.Variable(torch.randn((1, 1, self.state))) #TODO: Change this
         self.cell = nn.GRU(state, state)
         self.emb_func = lambda xs: gru_embed(xs, self.cell, self.cell_init_state)
         for attr in ["rel", "var", "evar", "sort", "cast", "prod",
@@ -395,20 +394,30 @@ class MyModel(nn.Module):
             self.__setattr__(attr, autograd.Variable(torch.randn(self.state)))
 
         # Embed Ctx / TacticState
-        self.ctx_cell_init_state = autograd.Variable(torch.randn(self.state))
+        self.ctx_cell_init_state = autograd.Variable(torch.randn((1, 1,self.state)))
         self.ctx_cell = nn.GRU(state, state)
         self.proj = nn.Linear(state, state - 1)
+        self.final = nn.Linear(state, outsize)
         self.ctx_emb_func = lambda xs: gru_embed(xs, self.ctx_cell, self.ctx_cell_init_state)
 
     def forward(self, embedder, tacst):
         evs = embedder.embed_tacst(tacst)
 
         # Adding 1 to conclusion and 0 to expressions
-        ctx_mask = torch.zeros(len(evs), 1)
-        ctx_mask[0][0] = 1.0
-        evs = torch.split(torch.cat([self.proj(torch.stack(evs, 0)), ctx_mask], dim=1))
+        ctx_mask = torch.zeros(len(evs), 1, 1)
+        ctx_mask[0][0][0] = 1.0
+        x = torch.cat(evs, 0)
+        x = self.proj(x)
+        x = torch.cat([x, autograd.Variable(ctx_mask, requires_grad = False)], dim=-1)
+        xs = torch.split(x, 1)
 
-        return self.ctx_emb_func(evs)
+        # Run GRU on tacst
+        x = self.ctx_emb_func(xs)
+
+        # Final layer for logits
+        x = self.final(x)
+        print("Output shape", x.shape)
+        return x.view(1, -1)
         # raise NotImplementedError
 
 
@@ -435,12 +444,11 @@ class PosEvalTrainer(object):
                 print("TRAINING ({}/{})".format(idx, len(self.tactrs)))
                 self.model.zero_grad()
                 log_probs = self.model(self.tactr_embedder[tactr_id], poseval_pt.tacst)
-
-                # TODO(prafulla): loss here?
-                # output = autograd.Variable(torch.LongTensor([foobar(const_to_idx, e_output)]))
-                # loss = loss_function(log_probs, output)
-                # loss.backward()
-                # optimizer.step()
-                # total_loss += loss.data
+                target = autograd.Variable(torch.LongTensor([poseval_pt.subtr_bin]))
+                loss = loss_function(log_probs, target)
+                loss.backward()
+                optimizer.step()
+                total_loss += loss.data
+                print("Loss %.4f" % loss.data)
             losses.append(total_loss)
         print("Losses", losses)

@@ -27,7 +27,6 @@ class PosEvalPt(object):
         else:
             self.subtr_bin = 2
 
-
 class SizeSubTr(object):
     def __init__(self, tactr):
         self.tactr = tactr
