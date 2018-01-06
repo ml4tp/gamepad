@@ -23,6 +23,11 @@ context. Fixing this with new version of proof format.
 Rel is because Prod is Dependent Product so its a binding form.
 """
 
+def gru_embed(xs, cell, init):
+    hidden = init
+    for x in xs:
+        out, hidden = cell(x, hidden)
+    return hidden
 
 # -------------------------------------------------
 # Embed Expressions
@@ -216,67 +221,67 @@ class EmbedCoqExp(object):
 
     def embed_rel(self, ev_idx):
         """Override Me"""
-        return ev_idx
+        return self.model.emb_func([self.model.rel, ev_idx])
 
     def embed_var(self, ev_x):
         """Override Me"""
-        return ev_x
+        return self.model.emb_func([self.model.var, ev_x])
 
     def embed_evar(self, ev_evar, ev_cs):
         """Override Me"""
-        return ev_evar
+        return self.model.emb_func([self.model.evar, ev_evar])
 
     def embed_sort(self, ev_sort):
         """Override Me"""
-        return ev_sort
+        return self.model.emb_func([self.model.sort, ev_sort])
 
     def embed_cast(self, ev_c, ck, ev_ty):
         """Override Me"""
-        return ev_c
+        return self.model.emb_func([self.model.cast, ev_c, ck, ev_ty])
 
     def embed_prod(self, name, ev_ty1, ev_ty2):
         """Override Me"""
-        return ev_ty1
+        return self.model.emb_func([self.model.prod, ev_ty1, ev_ty2])
 
     def embed_lambda(self, name, ev_ty, ev_body):
         """Override Me"""
-        return ev_body
+        return self.model.emb_func([self.model.lamb, ev_ty, ev_body])
 
     def embed_letin(self, name, ev_c1, ev_ty, ev_c2):
         """Override Me"""
-        return ev_c2
+        return self.model.emb_func([self.model.letin, ev_c1, ev_ty, ev_c2])
 
     def embed_app(self, ev_c, ev_cs):
         """Override Me"""
-        return ev_c
+        return self.model.emb_func([self.model.app, ev_c, ev_cs])
 
     def embed_const(self, ev_const, ev_ui):
         """Override Me"""
-        return ev_const
+        return self.model.emb_func([self.model.const, ev_const, ev_ui])
 
     def embed_ind(self, ev_ind, ev_ui):
         """Override Me"""
-        return ev_ind
+        return self.model.emb_func([self.model.ind, ev_ind, ev_ui])
 
     def embed_construct(self, ev_ind, ev_conid, ev_ui):
         """Override Me"""
-        return ev_conid
+        return self.model.emb_func([self.model.construct, ev_ind, ev_conid, ev_ui])
 
     def embed_case(self, ci, ev_ret, ev_match, ev_cases):
         """Override Me"""
-        return ev_ret
+        return self.model.emb_func([self.model.case, ci, ev_ret, ev_match, ev_cases])
 
     def embed_fix(self, iarr, idx, names, ev_tys, ev_cs):
         """Override Me"""
-        return ev_cs[0]
+        return self.model.emb_func([self.model.fix] + ev_cs)
 
     def embed_cofix(self, idx, names, ev_tys, ev_cs):
         """Override Me"""
-        return ev_cs[0]
+        return None
 
     def embed_proj(self, proj, ev_c):
         """Override Me"""
-        return ev_c
+        return None
 
     # -------------------------------------------
     # Embed universes
@@ -317,6 +322,12 @@ class EmbedCoqTacTr(object):
                 _, gid, edge = node
         return acc
 
+    def embed_node(self, node):
+        _, gid, _, _, ctx, concl_idx, _ = node
+        env, evs = self.embed_ctx(gid, ctx)
+        ev = self.embed_concl(gid, env, concl_idx)
+        return [ev] + evs
+
     def embed_ctx(self, gid, ctx):
         evs = []
         env = MyEnv()
@@ -354,13 +365,14 @@ class EmbedCoqTacTr(object):
 class MyModel(nn.Module):
     def __init__(self, sort_to_idx, const_to_idx, ind_to_idx,
                  conid_to_idx, evar_to_idx, fix_to_idx,
-                 D=5):
+                 D=32, state=128):
         super().__init__()
 
         self.bad_idents = 0
 
         # Dimension
         self.D = D
+        self.state = state
 
         # Embeddings
         self.sort_to_idx = sort_to_idx
@@ -377,18 +389,33 @@ class MyModel(nn.Module):
         self.fix_embed = nn.Embedding(len(fix_to_idx), D)
         self.fixbody_embed = nn.Embedding(len(fix_to_idx), D)
 
-        # TODO(prafulla): put LSTM variables here
+        # Embed AST
+        self.cell_init_state = autograd.Variable(torch.randn(self.state))
+        self.cell = nn.GRU(state, state)
+        self.emb_func = lambda xs: gru_embed(xs, self.cell, self.cell_init_state)
 
-    def forward(self, tactr):
-        embedder = EmbedCoqTacTr(self, tactr)
-        evs = embedder.embed()
+        # Embed Ctx / TacticState
+        self.ctx_cell_init_state = autograd.Variable(torch.randn(self.state))
+        self.ctx_cell = nn.GRU(state, state)
+        self.proj = nn.Linear(state, state - 1)
+        self.ctx_emb_func = lambda xs: gru_embed(xs, self.ctx_cell, self.ctx_cell_init_state)
+        for attr in ["rel", "var", "evar", "sort", "cast", "prod",
+                     "lamb", "letin", "app", "const", "ind", "construct",
+                     "case", "fix", "proj"]:
+            self.__setattr__(attr, autograd.Variable(torch.randn(self.state)))
+
+    def forward(self, embedder, node):
+        evs = embedder.embed_node(node)
         self.bad_idents += len(embedder.ece.bad_idents)
-        if len(embedder.ece.bad_idents) > 0:
-            print("BAD IDENTS", tactr.name, embedder.ece.bad_idents)
-        # print(evs)
-        # TODO(prafulla): put LSTM model here
-        # raise NotImplementedError
+        # if len(embedder.ece.bad_idents) > 0:
+        #     print("BAD IDENTS", tactr.name, embedder.ece.bad_idents)
 
+        # Adding 1 to conclusion and 0 to expressions
+        ctx_mask = torch.zeros(len(evs), 1)
+        ctx_mask[0][0] = 1.0
+        evs = torch.split(torch.cat([self.proj(torch.stack(evs, 0)), ctx_mask], dim=1))
+
+        return self.ctx_emb_func(evs)
 
 # -------------------------------------------------
 # Training
