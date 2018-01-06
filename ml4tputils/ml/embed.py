@@ -17,10 +17,10 @@ Create embedding of Coq Tactic Trees into R^D vectors.
 Where to put model and training code?
 
 NOTE(deh):
-We are still missing some idents.
-Why is this happening?? Because we aren't alpha-converting the rest of the
+We are still missing some idents. 
+[FIXED] 1. Why is this happening?? Because we aren't alpha-converting the rest of the
 context. Fixing this with new version of proof format.
-Rel is because Prod is Dependent Product so its a binding form.
+[FIXED] 2. Rel is because Prod is Dependent Product so its a binding form.
 """
 
 
@@ -88,8 +88,6 @@ class EmbedCoqExp(object):
             try:
                 ev_idx = env.lookup_rel(c.idx - 1)
             except NotFound:
-                # TODO(deh): some weird shit going on in Coq printing
-                # Ok, this is because ProdExp is a binding form =)
                 ev_idx = self.embed_local_var(None)
                 self.bad_idents.add(c.idx)
                 print("FAILED TO LOOKUP REL {} in gid {} in ctx {}".format(c.idx, self.GID, self.ctx_idents))
@@ -98,9 +96,6 @@ class EmbedCoqExp(object):
             try:
                 ev_x = env.lookup_id(Name(c.x))
             except NotFound:
-                # TODO(deh): some weird shit going on in Coq printing
-                # Ok, this is because of shadowing issues and not alpha
-                # renaming ast's
                 ev_x = self.embed_local_var(None)
                 self.bad_idents.add(c.x)
                 print("FAILED TO LOOKUP VAR {} in gid {} in ctx {}".format(c.x, self.GID, self.ctx_idents))
@@ -233,7 +228,6 @@ class EmbedCoqExp(object):
     def embed_local_var(self, ty):
         """Override Me"""
         return autograd.Variable(torch.randn(self.D), requires_grad=False)
-        # return np.random.multivariate_normal(np.zeros(self.D), np.eye(self.D))
 
     # -------------------------------------------
     # Combining embeddings
@@ -393,8 +387,6 @@ class MyModel(nn.Module):
                  D=5):
         super().__init__()
 
-        self.bad_idents = 0
-
         # Dimension
         self.D = D
 
@@ -414,6 +406,7 @@ class MyModel(nn.Module):
         self.fixbody_embed = nn.Embedding(len(fix_to_idx), D)
 
         # TODO(prafulla): put LSTM variables here
+        # TODO(prafulla): put predictor stuff here
 
     def forward(self, tactr):
         embedder = EmbedCoqTacTr(self.sort_to_idx, self.sort_embed,
@@ -424,9 +417,7 @@ class MyModel(nn.Module):
                                  self.fix_to_idx, self.fix_embed,
                                  self.fixbody_embed, tactr)
         evs = embedder.embed()
-        self.bad_idents += len(embedder.ece.bad_idents)
-        if len(embedder.ece.bad_idents) > 0:
-            print("BAD IDENTS", tactr.name, embedder.ece.bad_idents)
+
         # print(evs)
         # TODO(prafulla): put LSTM model here
         # raise NotImplementedError
