@@ -2,6 +2,8 @@ import argparse
 import os.path as op
 import pickle
 
+from recon.embed_tokens import EmbedTokens
+
 """
 [Note]
 
@@ -16,10 +18,7 @@ Prepare data for:
 
 class PosEvalPt(object):
     def __init__(self, gid, ctx, concl_idx, tac, subtr_size):
-        self.gid = gid
-        self.ctx = ctx
-        self.concl_idx = concl_idx
-        self.tac = tac
+        self.tacst = (gid, ctx, concl_idx, tac)
         self.subtr_size = subtr_size
 
 
@@ -70,17 +69,15 @@ class PosEvalDataset(object):
 # Tactic Prediction
 
 class TacPredPt(object):
-    def __init__(self, gid, ctx, concl_idx, tac):
-        self.gid = gid
-        self.ctx = ctx
-        self.concl_idx = concl_idx
-        self.tac = tac
+    def __init__(self, tacst):
+        # (gid, ctx, concl_idx, tac)
+        self.tacst = tacst
 
 
 def poseval_to_tacpred(dataset):
     acc = []
     for tactrid, pt in dataset:
-        acc += [(tactrid, TacPredPt(pt.gid, pt.ctx, pt.concl_idx, pt.tac))]
+        acc += [(tactrid, TacPredPt(pt.tacst))]
     return acc
 
 
@@ -103,8 +100,12 @@ if __name__ == "__main__":
     poseval = PosEvalDataset(tactrs)
     poseval_dataset = poseval.mk_tactrs()
 
+    embed_tokens = EmbedTokens()
+    embed_tokens.tokenize_tactrs(tactrs)
+    tokens_to_idx = embed_tokens.tokens_to_idx()
+
     with open(args.poseval, 'wb') as f:
-        pickle.dump(poseval_dataset, f)
+        pickle.dump((poseval_dataset, tokens_to_idx), f)
 
     tacpred_dataset = poseval_to_tacpred(poseval_dataset)
     with open(args.tacpred, 'wb') as f:
@@ -112,11 +113,11 @@ if __name__ == "__main__":
 
     if args.verbose:
         with open(args.poseval, 'rb') as f:
-            dataset = pickle.load(f)
+            dataset, _ = pickle.load(f)
             for tactr_id, pt in dataset:
                 print(tactr_id, pt)
 
         with open(args.tacpred, 'rb') as f:
-            dataset = pickle.load(f)
+            dataset, _ = pickle.load(f)
             for tactr_id, pt in dataset:
                 print(tactr_id, pt)

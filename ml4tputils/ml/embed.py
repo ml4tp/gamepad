@@ -273,11 +273,13 @@ class EmbedCoqExp(object):
 
     def embed_cofix(self, idx, names, ev_tys, ev_cs):
         """Override Me"""
-        return None
+        raise NameError("TODO(prafulla, deh): No cofix in feit-thompson")
+        # return self.model.emb_func([self.model.cofix] + ev_cs)
 
     def embed_proj(self, proj, ev_c):
         """Override Me"""
-        return None
+        raise NameError("TODO(prafulla, deh): No proj in feit-thompson")
+        # return self.model.emb_func([self.model.proj1, ev_c])
 
     # -------------------------------------------
     # Embed universes
@@ -318,8 +320,8 @@ class EmbedCoqTacTr(object):
                 _, gid, edge = node
         return acc
 
-    def embed_node(self, node):
-        _, gid, _, _, ctx, concl_idx, _ = node
+    def embed_tacst(self, tacst):
+        gid, ctx, concl_idx, tac = tacst
         env, evs = self.embed_ctx(gid, ctx)
         ev = self.embed_concl(gid, env, concl_idx)
         return [ev] + evs
@@ -395,14 +397,11 @@ class MyModel(nn.Module):
         self.ctx_emb_func = lambda xs: gru_embed(xs, self.ctx_cell, self.ctx_cell_init_state)
         for attr in ["rel", "var", "evar", "sort", "cast", "prod",
                      "lamb", "letin", "app", "const", "ind", "construct",
-                     "case", "fix", "proj"]:
+                     "case", "fix", "cofix", "proj1"]:
             self.__setattr__(attr, autograd.Variable(torch.randn(self.state)))
 
-    def forward(self, embedder, node):
-        evs = embedder.embed_node(node)
-        self.bad_idents += len(embedder.ece.bad_idents)
-        # if len(embedder.ece.bad_idents) > 0:
-        #     print("BAD IDENTS", tactr.name, embedder.ece.bad_idents)
+    def forward(self, embedder, tacst):
+        evs = embedder.embed_tacst(tacst)
 
         # Adding 1 to conclusion and 0 to expressions
         ctx_mask = torch.zeros(len(evs), 1)
@@ -416,10 +415,15 @@ class MyModel(nn.Module):
 # -------------------------------------------------
 # Training
 
-class MyTrainer(object):
-    def __init__(self, model, tactrs):
+class PosEvalTrainer(object):
+    def __init__(self, model, tactrs, poseval_dataset):
         self.model = model       # PyTorch model
-        self.tactrs = tactrs     # Tactic trees
+        self.tactrs = tactrs
+        self.poseval_dataset = poseval_dataset  
+
+        self.tactr_embedder = {}
+        for tactr_id, tactr in enumerate(self.tactrs):
+            self.tactr_embedder[tactr_id] = EmbedCoqTacTr(model, tactr)
 
     def train(self, epochs=1):
         losses = []
@@ -427,10 +431,10 @@ class MyTrainer(object):
         optimizer = optim.SGD(self.model.parameters(), lr=0.001)
         for epoch in range(epochs):
             total_loss = torch.Tensor([0])
-            for idx, e_input in enumerate(self.tactrs):
-                print("TRAINING {} ({}/{})".format(e_input.name, idx, len(self.tactrs)))
+            for idx, (tactr_id, poseval_pt) in enumerate(self.poseval_dataset):
+                print("TRAINING ({}/{})".format(idx, len(self.tactrs)))
                 self.model.zero_grad()
-                log_probs = self.model(e_input)
+                log_probs = self.model(self.tactr_embedder[tactr_id], poseval_pt.tacst)
 
                 # TODO(prafulla): loss here?
                 # output = autograd.Variable(torch.LongTensor([foobar(const_to_idx, e_output)]))

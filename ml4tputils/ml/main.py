@@ -4,8 +4,9 @@ import pickle
 
 from recon.embed_tokens import EmbedTokens
 from recon.recon import Recon, FILES
-from ml.embed import EmbedCoqTacTr, MyModel, MyTrainer
+from ml.embed import EmbedCoqTacTr, MyModel, PosEvalTrainer
 import tacst_prep
+from tacst_prep import PosEvalPt
 
 """
 [Note]
@@ -31,6 +32,26 @@ class Preprocess(object):
 
 
 if __name__ == "__main__":
+    argparser = argparse.ArgumentParser()
+    argparser.add_argument("-l", "--load", default="tactr.pickle",
+                           type=str, help="Pickle file to load")
+    argparser.add_argument("-p", "--poseval", default="poseval.pickle",
+                           type=str, help="Pickle file to save to")
+    args = argparser.parse_args()
+
+    print("Loading tactrs ...")
+    with open(args.load, 'rb') as f:
+        tactrs = pickle.load(f)
+
+    print("Loading poseval dataset ...")
+    with open(args.poseval, 'rb') as f:
+        poseval_dataset, tokens_to_idx = pickle.load(f)
+
+    model = MyModel(*tokens_to_idx)
+    trainer = PosEvalTrainer(model, tactrs, poseval_dataset)
+    trainer.train()
+
+    """
     # Set up command line
     argparser = argparse.ArgumentParser()
     argparser.add_argument("-r", "--recon", default=None,
@@ -75,3 +96,4 @@ if __name__ == "__main__":
     model = MyModel(*tokens_to_idx)
     trainer = MyTrainer(model, tactrs)
     trainer.train()
+    """
