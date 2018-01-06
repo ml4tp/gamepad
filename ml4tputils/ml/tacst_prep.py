@@ -20,6 +20,12 @@ class PosEvalPt(object):
     def __init__(self, gid, ctx, concl_idx, tac, subtr_size):
         self.tacst = (gid, ctx, concl_idx, tac)
         self.subtr_size = subtr_size
+        if subtr_size < 5:
+            self.subtr_bin = 0
+        elif subtr_size < 20:
+            self.subtr_bin = 1
+        else:
+            self.subtr_bin = 2
 
 
 class SizeSubTr(object):
