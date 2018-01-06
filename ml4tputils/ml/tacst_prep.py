@@ -5,10 +5,22 @@ import pickle
 """
 [Note]
 
-Create data of the form
-
-LemId -> (TacSt, Int)
+Prepare data for:
+1. Position evaluation
+2. Tactic prediction (can just truncate)
 """
+
+
+# -------------------------------------------------
+# Position Evaluation Dataset
+
+class PosEvalPt(object):
+    def __init__(self, gid, ctx, concl_idx, tac, subtr_size):
+        self.gid = gid
+        self.ctx = ctx
+        self.concl_idx = concl_idx
+        self.tac = tac
+        self.subtr_size = subtr_size
 
 
 class SizeSubTr(object):
@@ -28,16 +40,7 @@ class SizeSubTr(object):
             return 1
 
 
-class TacStInfo(object):
-    def __init__(self, gid, ctx, concl_idx, tac, subtr_size):
-        self.gid = gid
-        self.ctx = ctx
-        self.concl_idx = concl_idx
-        self.tac = tac
-        self.subtr_size = subtr_size
-
-
-class TacStDistDataset(object):
+class PosEvalDataset(object):
     def __init__(self, tactrs):
         self.tactrs = tactrs
         self.data = []
@@ -54,7 +57,7 @@ class TacStDistDataset(object):
         for node in tactr.graph.nodes():
             subtr_size[node.gid] = size_subtr.size(node)
         for _, gid, _, _, ctx, concl_idx, tac in tactr.bfs_traverse():
-            self.data += [(tactr_id, TacStInfo(gid, ctx, concl_idx, tac, subtr_size[gid]))]
+            self.data += [(tactr_id, PosEvalPt(gid, ctx, concl_idx, tac, subtr_size[gid]))]
         return self.data
 
     def split_by_lemma(self, train=80, valid=10, test=10):
@@ -63,11 +66,31 @@ class TacStDistDataset(object):
             raise NameError("Train={}, Valid={}, Test={} must sum to 100".format(train, valid, test))
 
 
+# -------------------------------------------------
+# Tactic Prediction
+
+class TacPredPt(object):
+    def __init__(self, gid, ctx, concl_idx, tac):
+        self.gid = gid
+        self.ctx = ctx
+        self.concl_idx = concl_idx
+        self.tac = tac
+
+
+def poseval_to_tacpred(dataset):
+    acc = []
+    for tactrid, pt in dataset:
+        acc += [(tactrid, TacPredPt(pt.gid, pt.ctx, pt.concl_idx, pt.tac))]
+    return acc
+
+
 if __name__ == "__main__":
     argparser = argparse.ArgumentParser()
     argparser.add_argument("-l", "--load", default="tactr.pickle",
                            type=str, help="Pickle file to load")
-    argparser.add_argument("-o", "--out", default="tacstdist.pickle",
+    argparser.add_argument("-p", "--poseval", default="poseval.pickle",
+                           type=str, help="Pickle file to save to")
+    argparser.add_argument("-t", "--tacpred", default="tacpred.pickle",
                            type=str, help="Pickle file to save to")
     argparser.add_argument("-v", "--verbose", action="store_true")
     args = argparser.parse_args()
@@ -77,14 +100,23 @@ if __name__ == "__main__":
         tactrs = pickle.load(f)
 
     print("Creating dataset {}...".format(args.load))
-    foobar = TacStDistDataset(tactrs)
-    dataset = foobar.mk_tactrs()
+    poseval = PosEvalDataset(tactrs)
+    poseval_dataset = poseval.mk_tactrs()
 
-    with open(args.out, 'wb') as f:
-        pickle.dump(dataset, f)
+    with open(args.poseval, 'wb') as f:
+        pickle.dump(poseval_dataset, f)
+
+    tacpred_dataset = poseval_to_tacpred(poseval_dataset)
+    with open(args.tacpred, 'wb') as f:
+        pickle.dump(tacpred_dataset, f)
 
     if args.verbose:
-        with open(args.out, 'rb') as f:
+        with open(args.poseval, 'rb') as f:
             dataset = pickle.load(f)
-            for tactr_id, info in dataset:
-                print(tactr_id, info)
+            for tactr_id, pt in dataset:
+                print(tactr_id, pt)
+
+        with open(args.tacpred, 'rb') as f:
+            dataset = pickle.load(f)
+            for tactr_id, pt in dataset:
+                print(tactr_id, pt)
