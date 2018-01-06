@@ -361,7 +361,7 @@ class EmbedCoqTacTr(object):
 class MyModel(nn.Module):
     def __init__(self, sort_to_idx, const_to_idx, ind_to_idx,
                  conid_to_idx, evar_to_idx, fix_to_idx,
-                 D=5, state=128):
+                 D=32, state=128):
         super().__init__()
 
         # Dimension
@@ -384,19 +384,20 @@ class MyModel(nn.Module):
         self.fixbody_embed = nn.Embedding(len(fix_to_idx), D)
 
         # Embed AST
-        self.cell_init_state = autograd.Variable(torch.randn(self.state))
+        self.cell_init_state = autograd.Variable(torch.randn(self.state)) #TODO: Change this
         self.cell = nn.GRU(state, state)
         self.emb_func = lambda xs: gru_embed(xs, self.cell, self.cell_init_state)
+        for attr in ["rel", "var", "evar", "sort", "cast", "prod",
+                     "lamb", "letin", "app", "const", "ind", "construct",
+                     "case", "fix", "proj"]:
+            self.__setattr__(attr, autograd.Variable(torch.randn(self.state)))
 
         # Embed Ctx / TacticState
         self.ctx_cell_init_state = autograd.Variable(torch.randn(self.state))
         self.ctx_cell = nn.GRU(state, state)
         self.proj = nn.Linear(state, state - 1)
         self.ctx_emb_func = lambda xs: gru_embed(xs, self.ctx_cell, self.ctx_cell_init_state)
-        for attr in ["rel", "var", "evar", "sort", "cast", "prod",
-                     "lamb", "letin", "app", "const", "ind", "construct",
-                     "case", "fix", "proj"]:
-            self.__setattr__(attr, autograd.Variable(torch.randn(self.state)))
+
 
     def forward(self, embedder, node):
         evs = embedder.embed_node(node)
