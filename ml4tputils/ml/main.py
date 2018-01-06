@@ -5,6 +5,7 @@ import pickle
 from recon.embed_tokens import EmbedTokens
 from recon.recon import Recon, FILES
 from ml.embed import EmbedCoqTacTr, MyModel, MyTrainer
+import tacst_prep
 
 """
 [Note]
@@ -37,7 +38,7 @@ if __name__ == "__main__":
     argparser.add_argument("-p", "--path", default="data/odd-order",
                            type=str, help="Path to files")
     argparser.add_argument("-l", "--load", default="tactr.pickle",
-                           type=str, help="Path to files")
+                           type=str, help="Pickle file to load")
     args = argparser.parse_args()
 
     bgfiles = [op.join(args.path, file) for file in
@@ -49,7 +50,8 @@ if __name__ == "__main__":
 
     # Read in files
     if not args.recon:
-        with open("tactr.pickle", 'rb') as f:
+        with open(args.load, 'rb') as f:
+        # with open("tactr.pickle", 'rb') as f:
             print("Loading {}...".format(args.load))
             tactrs = pickle.load(f)
             print("Done loading...")
