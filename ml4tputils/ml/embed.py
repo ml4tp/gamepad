@@ -23,18 +23,18 @@ context. Fixing this with new version of proof format.
 [FIXED] 2. Rel is because Prod is Dependent Product so its a binding form.
 """
 
+def gru_embed(xs, cell, init):
+    hidden = init
+    for x in xs:
+        out, hidden = cell(x, hidden)
+    return hidden
 
 # -------------------------------------------------
 # Embed Expressions
 
 class EmbedCoqExp(object):
     def __init__(self,
-                 sort_to_idx, sort_embed,
-                 const_to_idx, const_embed,
-                 ind_to_idx, ind_embed,
-                 conid_to_idx, conid_embed,
-                 evar_to_idx, evar_embed,
-                 fix_to_idx, fix_embed, fixbody_embed,
+                 model,
                  decoded, D=5):
         # assert isinstance(decoded, DecodeCoqExp)
         # Dimension of embedding
@@ -43,25 +43,8 @@ class EmbedCoqExp(object):
         # Shared representation
         self.decoded = decoded
 
-        # Global embeddings
-        self.sort_to_idx = sort_to_idx
-        self.sort_embed = sort_embed
-
-        self.const_to_idx = const_to_idx
-        self.const_embed = const_embed
-
-        self.ind_to_idx = ind_to_idx
-        self.ind_embed = ind_embed
-
-        self.conid_to_idx = conid_to_idx
-        self.conid_embed = conid_embed
-
-        self.evar_to_idx = evar_to_idx
-        self.evar_embed = evar_embed
-
-        self.fix_to_idx = fix_to_idx
-        self.fix_embed = fix_embed           # For use everywhere else
-        self.fixbody_embed = fixbody_embed   # For use in the body
+        # Model
+        self.model = model
 
         # Keep track of shared embeddings
         self.embeddings = {}
@@ -193,34 +176,34 @@ class EmbedCoqExp(object):
 
     def embed_evar_name(self, exk):
         """Override Me"""
-        lookup_tensor = torch.LongTensor([self.evar_to_idx[exk]])
-        return self.evar_embed(autograd.Variable(lookup_tensor))
+        lookup_tensor = torch.LongTensor([self.model.evar_to_idx[exk]])
+        return self.model.evar_embed(autograd.Variable(lookup_tensor))
 
     def embed_const_name(self, const):
         """Override Me"""
-        lookup_tensor = torch.LongTensor([self.const_to_idx[const]])
-        return self.const_embed(autograd.Variable(lookup_tensor))
+        lookup_tensor = torch.LongTensor([self.model.const_to_idx[const]])
+        return self.model.const_embed(autograd.Variable(lookup_tensor))
 
     def embed_sort_name(self, sort):
         """Override Me"""
-        lookup_tensor = torch.LongTensor([self.sort_to_idx[sort]])
-        return self.sort_embed(autograd.Variable(lookup_tensor))
+        lookup_tensor = torch.LongTensor([self.model.sort_to_idx[sort]])
+        return self.model.sort_embed(autograd.Variable(lookup_tensor))
 
     def embed_ind_name(self, ind):
         """Override Me"""
-        lookup_tensor = torch.LongTensor([self.ind_to_idx[ind.mutind]])
-        return self.ind_embed(autograd.Variable(lookup_tensor))
+        lookup_tensor = torch.LongTensor([self.model.ind_to_idx[ind.mutind]])
+        return self.model.ind_embed(autograd.Variable(lookup_tensor))
 
     def embed_conid_name(self, ind_and_conid):
         """Override Me"""
         ind, conid = ind_and_conid
-        lookup_tensor = torch.LongTensor([self.conid_to_idx[(ind.mutind, conid)]])
-        return self.conid_embed(autograd.Variable(lookup_tensor))
+        lookup_tensor = torch.LongTensor([self.model.conid_to_idx[(ind.mutind, conid)]])
+        return self.model.conid_embed(autograd.Variable(lookup_tensor))
 
     def embed_fix_name(self, name):
         """Override Me"""
-        lookup_tensor = torch.LongTensor([self.fix_to_idx[name]])
-        return self.fix_embed(autograd.Variable(lookup_tensor))
+        lookup_tensor = torch.LongTensor([self.model.fix_to_idx[name]])
+        return self.model.fix_embed(autograd.Variable(lookup_tensor))
 
     # -------------------------------------------
     # Local embedding initialization
@@ -234,67 +217,67 @@ class EmbedCoqExp(object):
 
     def embed_rel(self, ev_idx):
         """Override Me"""
-        return ev_idx
+        return self.model.emb_func([self.model.rel, ev_idx])
 
     def embed_var(self, ev_x):
         """Override Me"""
-        return ev_x
+        return self.model.emb_func([self.model.var, ev_x])
 
     def embed_evar(self, ev_evar, ev_cs):
         """Override Me"""
-        return ev_evar
+        return self.model.emb_func([self.model.evar, ev_evar])
 
     def embed_sort(self, ev_sort):
         """Override Me"""
-        return ev_sort
+        return self.model.emb_func([self.model.sort, ev_sort])
 
     def embed_cast(self, ev_c, ck, ev_ty):
         """Override Me"""
-        return ev_c
+        return self.model.emb_func([self.model.cast, ev_c, ck, ev_ty])
 
     def embed_prod(self, name, ev_ty1, ev_ty2):
         """Override Me"""
-        return ev_ty1
+        return self.model.emb_func([self.model.prod, ev_ty1, ev_ty2])
 
     def embed_lambda(self, name, ev_ty, ev_body):
         """Override Me"""
-        return ev_body
+        return self.model.emb_func([self.model.lamb, ev_ty, ev_body])
 
     def embed_letin(self, name, ev_c1, ev_ty, ev_c2):
         """Override Me"""
-        return ev_c2
+        return self.model.emb_func([self.model.letin, ev_c1, ev_ty, ev_c2])
 
     def embed_app(self, ev_c, ev_cs):
         """Override Me"""
-        return ev_c
+        return self.model.emb_func([self.model.app, ev_c, ev_cs])
 
     def embed_const(self, ev_const, ev_ui):
         """Override Me"""
-        return ev_const
+        return self.model.emb_func([self.model.const, ev_const, ev_ui])
 
     def embed_ind(self, ev_ind, ev_ui):
         """Override Me"""
-        return ev_ind
+        return self.model.emb_func([self.model.ind, ev_ind, ev_ui])
 
     def embed_construct(self, ev_ind, ev_conid, ev_ui):
         """Override Me"""
-        return ev_conid
+        return self.model.emb_func([self.model.construct, ev_ind, ev_conid, ev_ui])
 
     def embed_case(self, ci, ev_ret, ev_match, ev_cases):
         """Override Me"""
-        return ev_ret
+        return self.model.emb_func([self.model.case, ci, ev_ret, ev_match, ev_cases])
 
     def embed_fix(self, iarr, idx, names, ev_tys, ev_cs):
         """Override Me"""
-        return ev_cs[0]
+        return self.model.emb_func([self.model.fix] + ev_cs)
 
     def embed_cofix(self, idx, names, ev_tys, ev_cs):
         """Override Me"""
-        return ev_cs[0]
+        return None
 
     def embed_proj(self, proj, ev_c):
         """Override Me"""
-        return ev_c
+        return None
 
     # -------------------------------------------
     # Embed universes
@@ -313,21 +296,9 @@ class EmbedCoqExp(object):
 # Embed Tactic Tree
 
 class EmbedCoqTacTr(object):
-    def __init__(self, sort_to_idx, sort_embed,
-                 const_to_idx, const_embed,
-                 ind_to_idx, ind_embed,
-                 conid_to_idx, conid_embed,
-                 evar_to_idx, evar_embed,
-                 fix_to_idx, fix_embed, fixbody_embed,
-                 tactr):
+    def __init__(self, model, tactr):
         self.tactr = tactr
-        self.ece = EmbedCoqExp(sort_to_idx, sort_embed,
-                               const_to_idx, const_embed,
-                               ind_to_idx, ind_embed,
-                               conid_to_idx, conid_embed,
-                               evar_to_idx, evar_embed,
-                               fix_to_idx, fix_embed, fixbody_embed,
-                               tactr.decoder.decoded)
+        self.ece = EmbedCoqExp(model, tactr.decoder.decoded)
 
         # Sharing
         self.ctxid_embeds = {}
@@ -338,7 +309,7 @@ class EmbedCoqTacTr(object):
         acc = []
         for node in bfs:
             if node[0] == 'OPEN':
-                _, gid, _, _, ctx, concl_idx, edge = node
+                _, gid, _, _, ctx, concl_idx, _ = node
                 env, evs = self.embed_ctx(gid, ctx)
                 ev = self.embed_concl(gid, env, concl_idx)
                 acc += [(evs, ev)]
@@ -347,17 +318,23 @@ class EmbedCoqTacTr(object):
                 _, gid, edge = node
         return acc
 
+    def embed_node(self, node):
+        _, gid, _, _, ctx, concl_idx, _ = node
+        env, evs = self.embed_ctx(gid, ctx)
+        ev = self.embed_concl(gid, env, concl_idx)
+        return [ev] + evs
+
     def embed_ctx(self, gid, ctx):
         evs = []
         env = MyEnv()
         for ident, typ_idx in ctx:
-            ev = self.embed_ctx_ident(gid, env, ident, typ_idx)
+            ev = self.embed_ctx_ident(gid, env, typ_idx)
             self.ece.ctx = ctx
             env = env.extend(Name(ident), ev)
             evs += [ev]
         return env, evs
 
-    def embed_ctx_ident(self, gid, env, ident, typ_idx):
+    def embed_ctx_ident(self, gid, env, typ_idx):
         if typ_idx in self.ctxid_embeds:
             return self.ctxid_embeds[typ_idx]
         else:
@@ -384,11 +361,12 @@ class EmbedCoqTacTr(object):
 class MyModel(nn.Module):
     def __init__(self, sort_to_idx, const_to_idx, ind_to_idx,
                  conid_to_idx, evar_to_idx, fix_to_idx,
-                 D=5):
+                 D=5, state=128):
         super().__init__()
 
         # Dimension
         self.D = D
+        self.state = state
 
         # Embeddings
         self.sort_to_idx = sort_to_idx
@@ -405,21 +383,33 @@ class MyModel(nn.Module):
         self.fix_embed = nn.Embedding(len(fix_to_idx), D)
         self.fixbody_embed = nn.Embedding(len(fix_to_idx), D)
 
-        # TODO(prafulla): put LSTM variables here
-        # TODO(prafulla): put predictor stuff here
+        # Embed AST
+        self.cell_init_state = autograd.Variable(torch.randn(self.state))
+        self.cell = nn.GRU(state, state)
+        self.emb_func = lambda xs: gru_embed(xs, self.cell, self.cell_init_state)
 
-    def forward(self, tactr):
-        embedder = EmbedCoqTacTr(self.sort_to_idx, self.sort_embed,
-                                 self.const_to_idx, self.const_embed,
-                                 self.ind_to_idx, self.ind_embed,
-                                 self.conid_to_idx, self.conid_embed,
-                                 self.evar_to_idx, self.evar_embed,
-                                 self.fix_to_idx, self.fix_embed,
-                                 self.fixbody_embed, tactr)
-        evs = embedder.embed()
+        # Embed Ctx / TacticState
+        self.ctx_cell_init_state = autograd.Variable(torch.randn(self.state))
+        self.ctx_cell = nn.GRU(state, state)
+        self.proj = nn.Linear(state, state - 1)
+        self.ctx_emb_func = lambda xs: gru_embed(xs, self.ctx_cell, self.ctx_cell_init_state)
+        for attr in ["rel", "var", "evar", "sort", "cast", "prod",
+                     "lamb", "letin", "app", "const", "ind", "construct",
+                     "case", "fix", "proj"]:
+            self.__setattr__(attr, autograd.Variable(torch.randn(self.state)))
 
-        # print(evs)
-        # TODO(prafulla): put LSTM model here
+    def forward(self, embedder, node):
+        evs = embedder.embed_node(node)
+        self.bad_idents += len(embedder.ece.bad_idents)
+        # if len(embedder.ece.bad_idents) > 0:
+        #     print("BAD IDENTS", tactr.name, embedder.ece.bad_idents)
+
+        # Adding 1 to conclusion and 0 to expressions
+        ctx_mask = torch.zeros(len(evs), 1)
+        ctx_mask[0][0] = 1.0
+        evs = torch.split(torch.cat([self.proj(torch.stack(evs, 0)), ctx_mask], dim=1))
+
+        return self.ctx_emb_func(evs)
         # raise NotImplementedError
 
 
