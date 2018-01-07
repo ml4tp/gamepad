@@ -1,3 +1,8 @@
+import sys
+import gc
+import psutil
+import os
+
 import numpy as np
 import torch
 import torch.autograd as autograd
@@ -16,7 +21,7 @@ from time import time
 
 from ml.utils import ResultLogger
 
-logger = ResultLogger('mllogs/embedv0.5.jsonl')
+logger = ResultLogger('mllogs/embedv1.0.jsonl')
 
 """
 [Note]
@@ -329,7 +334,7 @@ class EmbedCoqTacTr(object):
         return acc
 
     def embed_tacst(self, tacst):
-        self.ece = EmbedCoqExp(self.model, self.tactr.decoder.decoded)
+        #self.ece = EmbedCoqExp(self.model, self.tactr.decoder.decoded) # Uncomment if you want to remove sharing of idx across states
         gid, ctx, concl_idx, tac = tacst
         env, evs = self.embed_ctx(gid, ctx)
         ev = self.embed_concl(gid, env, concl_idx)
@@ -346,9 +351,8 @@ class EmbedCoqTacTr(object):
         return env, evs
 
     def embed_ctx_ident(self, gid, env, typ_idx):
-        # if typ_idx in self.ctxid_embeds:
-        #     return self.ctxid_embeds[typ_idx]
-        # else:
+        if typ_idx in self.ctxid_embeds:
+            return self.ctxid_embeds[typ_idx] #TODO(prafulla) we might not need this given ast sharing
         c = self.tactr.decoder.decode_exp_by_key(typ_idx)
         self.ece.GID = gid
         ev = self.ece.embed_ast(env, c)
@@ -356,9 +360,8 @@ class EmbedCoqTacTr(object):
         return ev
 
     def embed_concl(self, gid, env, concl_idx):
-        # if concl_idx in self.concl_embeds:
-        #     return self.concl_embeds[concl_idx]
-        # else:
+        if concl_idx in self.concl_embeds:
+            return self.concl_embeds[concl_idx] #TODO(prafulla) we might not need this given ast sharing
         c = self.tactr.decoder.decode_exp_by_key(concl_idx)
         self.ece.GID = gid
         ev = self.ece.embed_ast(env, c)
@@ -431,6 +434,22 @@ class MyModel(nn.Module):
         # raise NotImplementedError
 
 
+# def memReport():
+#     for obj in gc.get_objects():
+#         if torch.is_tensor(obj) or (hasattr(obj, 'data') and torch.is_tensor(obj.data)):
+#             print(type(obj), obj.size())
+
+
+def cpuStats():
+    print(sys.version)
+    print(psutil.cpu_percent())
+    print(psutil.virtual_memory())  # physical memory usage
+    pid = os.getpid()
+    py = psutil.Process(pid)
+    memoryUse = py.memory_info()[0] / 2. ** 30  # memory use in GB...I think
+    print('memory GB:', memoryUse)
+
+
 # -------------------------------------------------
 # Training
 
@@ -458,12 +477,18 @@ class PosEvalTrainer(object):
                 log_probs = self.model(self.tactr_embedder[tactr_id], poseval_pt.tacst)
                 target = autograd.Variable(torch.LongTensor([poseval_pt.subtr_bin]))
                 loss = loss_function(log_probs, target)
-                loss.backward()
+                loss.backward(retain_graph = True)
                 optimizer.step()
                 total_loss += loss.data
                 tend = time()
                 print("Loss %.4f %.4f" % (loss.data, tend - tstart))
                 logger.log(n_epochs = epoch, niters = idx, loss = "%0.4f" % loss.data)
+                # if idx % 10 == 0:
+                #     cpuStats()
+                    # memReport()
+                # if tactr_id == 6:
+                #     print("Epoch Time with sh2 %.4f Loss %.4f" % (time() - testart, total_loss))
+                #     assert False
             print("Epoch Time %.4f Loss %.4f" % (time() - testart, total_loss))
             losses.append(total_loss)
         logger.close()
