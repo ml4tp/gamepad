@@ -12,6 +12,11 @@ from lib.myenv import MyEnv
 from lib.myutil import NotFound
 
 from coq.util import SizeCoqExp
+from time import time
+
+from ml.utils import ResultLogger
+
+logger = ResultLogger('mllogs/embedv0.5.jsonl')
 
 """
 [Note]
@@ -65,8 +70,8 @@ class EmbedCoqExp(object):
 
     def _embed_ast(self, env, kind, c):
         key = c.tag
-        # if key in self.embeddings:
-        #     return self.embeddings[key]
+        if key in self.embeddings:
+            return self.embeddings[key]
 
         if isinstance(c, RelExp):
             # NOTE(deh): DeBruinj indicides start at 1 ...
@@ -439,14 +444,16 @@ class PosEvalTrainer(object):
         for tactr_id, tactr in enumerate(self.tactrs):
             self.tactr_embedder[tactr_id] = EmbedCoqTacTr(model, tactr)
 
-    def train(self, epochs=1):
+    def train(self, epochs=20):
         losses = []
-        loss_function = nn.NLLLoss()
-        optimizer = optim.SGD(self.model.parameters(), lr=0.001)
+        loss_function = nn.CrossEntropyLoss()
+        optimizer = optim.Adam(self.model.parameters(), lr = 0.001) #optim.SGD(self.model.parameters(), lr=0.001)
         for epoch in range(epochs):
+            testart = time()
             total_loss = torch.Tensor([0])
             for idx, (tactr_id, poseval_pt) in enumerate(self.poseval_dataset):
-                print("TRAINING ({}/{})".format(idx, len(self.tactrs)))
+                tstart = time()
+                print("TRAINING ({}/{}) TacSt={}, AstSize={}".format(tactr_id, len(self.tactrs), idx, poseval_pt.tacst_size))
                 self.model.zero_grad()
                 log_probs = self.model(self.tactr_embedder[tactr_id], poseval_pt.tacst)
                 target = autograd.Variable(torch.LongTensor([poseval_pt.subtr_bin]))
@@ -454,6 +461,10 @@ class PosEvalTrainer(object):
                 loss.backward()
                 optimizer.step()
                 total_loss += loss.data
-                print("Loss %.4f" % loss.data)
+                tend = time()
+                print("Loss %.4f %.4f" % (loss.data, tend - tstart))
+                logger.log(n_epochs = epoch, niters = idx, loss = "%0.4f" % loss.data)
+            print("Epoch Time %.4f Loss %.4f" % (time() - testart, total_loss))
             losses.append(total_loss)
+        logger.close()
         print("Losses", losses)
