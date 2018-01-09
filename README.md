@@ -16,9 +16,9 @@ coq, mathcomp-1.6.1, and mathcomp-odd-order-1.6.1 come from different repos.
 
 # Initial Setup
 
-1. Run the setup script.
+1. Get the data script.
    ```
-   ./setup.sh
+   ./get_data.sh
    ```
    This gets tcoq, math-comp, and odd-order.
 
