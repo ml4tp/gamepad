@@ -8,6 +8,9 @@ from ml.embed import EmbedCoqTacTr, MyModel, PosEvalTrainer
 import tacst_prep
 from tacst_prep import PosEvalPt
 
+# from ml.poseval.fold_model import PosEvalModel
+# from ml.poseval.fold_train import PosEvalTrainer
+
 """
 [Note]
 
@@ -50,6 +53,10 @@ if __name__ == "__main__":
     model = MyModel(*tokens_to_idx)
     trainer = PosEvalTrainer(model, tactrs, poseval_dataset)
     trainer.train()
+
+    # model = PosEvalModel(*tokens_to_idx)
+    # trainer = PosEvalTrainer(model, tactrs, poseval_dataset)
+    # trainer.train()
 
     """
     # Set up command line

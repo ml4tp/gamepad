@@ -1,4 +1,11 @@
+import gc
 import json
+import os
+import psutil
+import sys
+# from time import time
+import time
+
 
 class ResultLogger(object):
     def __init__(self, path, *args, **kwargs):
@@ -11,3 +18,23 @@ class ResultLogger(object):
 
     def close(self):
         self.f_log.close()
+
+
+def cpuStats():
+    print(sys.version)
+    print(psutil.cpu_percent())
+    print(psutil.virtual_memory())  # physical memory usage
+    pid = os.getpid()
+    py = psutil.Process(pid)
+    memoryUse = py.memory_info()[0] / 2. ** 30  # memory use in GB...I think
+    print('memory GB:', memoryUse)
+
+
+class Timer(object):
+    def __enter__(self):
+        self.start = time.clock()
+        return self
+
+    def __exit__(self, *args):
+        self.end = time.clock()
+        self.interval = self.end - self.start
