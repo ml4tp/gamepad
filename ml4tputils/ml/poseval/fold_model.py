@@ -35,13 +35,21 @@ Version that uses torchfold
 # -------------------------------------------------
 # Helper
 
-def gru_embed(xs, cell, init):
+def ast_embed(folder, xs, init):
     hidden = init
     for i, x in enumerate(xs):
         #print("GRU Embed ",i, x.shape)
-        out, hidden = cell(x.view(1, 1, -1), hidden)
+        hidden = folder.add('ast_cell_f', x, hidden) #cell(x.view(1, -1, 128), hidden)
+    #print("hidden shape", hidden.shape)
     return hidden
 
+def ctx_embed(xs, cell, init):
+    hidden = init
+    for i, x in enumerate(xs):
+        print("GRU Embed ",i, x.shape)
+        hidden = cell(x.view(-1,128), hidden) #cell(x.view(1, -1, 128), hidden)
+    print("hidden shape", hidden.shape)
+    return hidden
 
 # -------------------------------------------------
 # Fold over tactic state
@@ -100,7 +108,10 @@ class TacStFolder(object):
         return self._fold_ast(env, Kind.TERM, c)
 
     def _fold(self, key, args):
-        folder = self.folder.add('coq_exp', *args)
+        # for i,arg in enumerate(args):
+        #     print(i, arg.shape)
+
+        folder = self.model.ast_emb_func(self.folder, args) #self.folder.add('coq_exp', *args)
         self.folded[key] = folder
         return folder
 
@@ -205,44 +216,46 @@ class TacStFolder(object):
 
     # -------------------------------------------
     # Global constant folding
+    def lookup(self, lt):
+        return self.folder.add('embed_lookup_f', autograd.Variable(torch.LongTensor([lt])))
 
     def fold_evar_name(self, exk):
         """Override Me"""
-        lookup_tensor = torch.LongTensor([self.model.evar_to_idx[exk]])
-        return self.model.evar_embed(autograd.Variable(lookup_tensor))
+        id = self.model.fix_id('evar', self.model.evar_to_idx[exk])
+        return self.lookup(id)
 
     def fold_const_name(self, const):
         """Override Me"""
-        lookup_tensor = torch.LongTensor([self.model.const_to_idx[const]])
-        return self.model.const_embed(autograd.Variable(lookup_tensor))
+        id = self.model.fix_id('const', self.model.const_to_idx[const])
+        return self.lookup(id)
 
     def fold_sort_name(self, sort):
         """Override Me"""
-        lookup_tensor = torch.LongTensor([self.model.sort_to_idx[sort]])
-        return self.model.sort_embed(autograd.Variable(lookup_tensor))
+        id = self.model.fix_id('sort', self.model.sort_to_idx[sort])
+        return self.lookup(id)
 
     def fold_ind_name(self, ind):
         """Override Me"""
-        lookup_tensor = torch.LongTensor([self.model.ind_to_idx[ind.mutind]])
-        return self.model.ind_embed(autograd.Variable(lookup_tensor))
+        id = self.model.fix_id('ind', self.model.ind_to_idx[ind.mutind])
+        return self.lookup(id)
 
     def fold_conid_name(self, ind_and_conid):
         """Override Me"""
         ind, conid = ind_and_conid
-        lookup_tensor = torch.LongTensor([self.model.conid_to_idx[(ind.mutind, conid)]])
-        return self.model.conid_embed(autograd.Variable(lookup_tensor))
+        id = self.model.fix_id('conid', self.model.conid_to_idx[(ind.mutind, conid)])
+        return self.lookup(id)
 
     def fold_fix_name(self, name):
         """Override Me"""
-        lookup_tensor = torch.LongTensor([self.model.fix_to_idx[name]])
-        return self.model.fix_embed(autograd.Variable(lookup_tensor))
+        id = self.model.fix_id('fix', self.model.fix_to_idx[name])
+        return self.lookup(id)
 
     # -------------------------------------------
     # Local variable folding
 
     def fold_local_var(self, ty):
         """Override Me"""
-        return autograd.Variable(torch.randn(self.model.D), requires_grad=False)
+        return self.folder.add('var_identity', autograd.Variable(torch.randn(1,self.model.D), requires_grad=False))
 
 
 # -------------------------------------------------
@@ -258,49 +271,74 @@ class PosEvalModel(nn.Module):
         self.D = D            # Dimension of embeddings
         self.state = state    # Dimension of GRU state
 
+        table_names = ['sort', 'const', 'ind', 'conid', 'evar', 'fix', 'fixbody']
+        tables = [sort_to_idx, const_to_idx, ind_to_idx, conid_to_idx, evar_to_idx, fix_to_idx, fix_to_idx]
+        shift = 0
+        self.shifts = {}
+        for table_name, table in zip(table_names, tables):
+            self.shifts[table_name] = shift
+            shift += len(table)
+        print(self.shifts, shift)
+        self.embed_table = nn.Embedding(shift, D)
+
         # Embeddings for constants
         self.sort_to_idx = sort_to_idx
-        self.sort_embed = nn.Embedding(len(sort_to_idx), D)
+        # self.sort_embed = nn.Embedding(len(sort_to_idx), D)
         self.const_to_idx = const_to_idx
-        self.const_embed = nn.Embedding(len(const_to_idx), D)
+        # self.const_embed = nn.Embedding(len(const_to_idx), D)
         self.ind_to_idx = ind_to_idx
-        self.ind_embed = nn.Embedding(len(ind_to_idx), D)
+        # self.ind_embed = nn.Embedding(len(ind_to_idx), D)
         self.conid_to_idx = conid_to_idx
-        self.conid_embed = nn.Embedding(len(conid_to_idx), D)
+        # self.conid_embed = nn.Embedding(len(conid_to_idx), D)
         self.evar_to_idx = evar_to_idx
-        self.evar_embed = nn.Embedding(len(evar_to_idx), D)
+        # self.evar_embed = nn.Embedding(len(evar_to_idx), D)
         self.fix_to_idx = fix_to_idx
-        self.fix_embed = nn.Embedding(len(fix_to_idx), D)
-        self.fixbody_embed = nn.Embedding(len(fix_to_idx), D)
+        # self.fix_embed = nn.Embedding(len(fix_to_idx), D)
+        # self.fixbody_embed = nn.Embedding(len(fix_to_idx), D)
 
         # Embeddings for Gallina AST
-        self.ast_cell_init_state = autograd.Variable(torch.randn((1, 1, self.state))) #TODO(prafulla): Change this?
-        self.ast_cell = nn.GRU(state, state)
-        self.emb_func = lambda xs: gru_embed(xs, self.ast_cell, self.ast_cell_init_state)
+        self.ast_cell_init_state = autograd.Variable(torch.randn((1, self.state))) #TODO(prafulla): Change this?
+        self.ast_cell = nn.GRUCell(state, state)
+        self.ast_emb_func = lambda folder, xs: ast_embed(folder, xs, self.ast_cell_init_state)
         for attr in ["rel", "var", "evar", "sort", "cast", "prod",
                      "lam", "letin", "app", "const", "ind", "construct",
                      "case", "fix", "cofix", "proj1"]:
-            self.__setattr__(attr, autograd.Variable(torch.randn(self.state)))
+            self.__setattr__(attr, autograd.Variable(torch.randn(1, self.state)))
 
         # Embeddings for Tactic State (ctx, goal)
-        self.ctx_cell_init_state = autograd.Variable(torch.randn((1, 1,self.state))) #TODO(prafulla): Change this?
-        self.ctx_cell = nn.GRU(state, state)
+        self.ctx_cell_init_state = autograd.Variable(torch.randn((1, self.state))) #TODO(prafulla): Change this?
+        self.ctx_cell = nn.GRUCell(state, state)
         self.proj = nn.Linear(state, state - 1)
         self.final = nn.Linear(state, outsize)
-        self.ctx_emb_func = lambda xs: gru_embed(xs, self.ctx_cell, self.ctx_cell_init_state)
+        self.ctx_emb_func = lambda xs: ctx_embed(xs, self.ctx_cell, self.ctx_cell_init_state)
+
+    def var_identity(self, x):
+        return x
+
+    def fix_id(self, table_name, id):
+        # print(table_name, id, )
+        # print(self.embed_table(autograd.Variable(torch.LongTensor([self.shifts[table_name] + id]))))
+        return self.shifts[table_name] + id
+
+    def embed_lookup_f(self, id):
+        return self.embed_table(id)
+
+    def ast_cell_f(self, x, hidden):
+        hidden = self.ast_cell(x, hidden)
+        return hidden
 
     def coq_exp(self, *args):
         return self.emb_func(args)
 
     def logits(self, *tacst_evs):
         # Adding 1 to conclusion and 0 to expressions
-        ctx_mask = torch.zeros(len(tacst_evs), 1, 1)
-        ctx_mask[0][0][0] = 1.0
-        x = torch.cat(list(tacst_evs), 0)
-        x = self.proj(x)
-        x = torch.cat([x, autograd.Variable(ctx_mask, requires_grad=False)], dim=-1)
-        xs = torch.split(x, 1)
-
+        # ctx_mask = torch.zeros(len(tacst_evs), 1, 1)
+        # ctx_mask[0][0][0] = 1.0
+        # x = torch.cat(list(tacst_evs), 0)
+        # x = self.proj(x)
+        # x = torch.cat([x, autograd.Variable(ctx_mask, requires_grad=False)], dim=-1)
+        # xs = torch.split(x, 1)
+        xs = tacst_evs
         # Run GRU on tacst
         x = self.ctx_emb_func(xs)
 

@@ -6,7 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
-from ml.poseval.model import TacStFolder
+from ml.poseval.fold_model import TacStFolder
 from ml.utils import ResultLogger, cpuStats, Timer
 
 # -------------------------------------------------
@@ -52,6 +52,7 @@ class PosEvalTrainer(object):
                     all_logits, all_targets = [], []
                     all_logits += [folder.fold_tacst(poseval_pt.tacst)]
                     all_targets += [poseval_pt.subtr_bin]
+                    print(folder.folder)
                     res = folder.apply(all_logits, all_targets)
 
                     # Backprop
@@ -64,9 +65,9 @@ class PosEvalTrainer(object):
                 # if idx % 10 == 0:
                 #     cpuStats()
                     # memReport()
-                # if tactr_id == 6:
-                #     print("Epoch Time with sh2 %.4f Loss %.4f" % (time() - testart, total_loss))
-                #     assert False
+                if tactr_id == 60:
+                    print("Epoch Time with sh2 %.4f Loss %.4f" % (time() - testart, total_loss))
+                    assert False
             print("Epoch Time %.4f Loss %.4f" % (time() - testart, total_loss))
             losses.append(total_loss)
         logger.close()

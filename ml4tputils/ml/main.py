@@ -4,12 +4,12 @@ import pickle
 
 from recon.embed_tokens import EmbedTokens
 from recon.recon import Recon, FILES
-from ml.embed import EmbedCoqTacTr, MyModel, PosEvalTrainer
+from ml.embed import EmbedCoqTacTr#, MyModel, PosEvalTrainer
 import tacst_prep
 from tacst_prep import PosEvalPt
 
-# from ml.poseval.fold_model import PosEvalModel
-# from ml.poseval.fold_train import PosEvalTrainer
+from ml.poseval.fold_model import PosEvalModel
+from ml.poseval.fold_train import PosEvalTrainer
 
 """
 [Note]
@@ -50,7 +50,7 @@ if __name__ == "__main__":
     with open(args.poseval, 'rb') as f:
         poseval_dataset, tokens_to_idx = pickle.load(f)
 
-    model = MyModel(*tokens_to_idx)
+    model = PosEvalModel(*tokens_to_idx)
     trainer = PosEvalTrainer(model, tactrs, poseval_dataset)
     trainer.train()
 
