@@ -52,6 +52,7 @@ class PosEvalTrainer(object):
                     all_logits, all_targets = [], []
                     all_logits += [folder.fold_tacst(poseval_pt.tacst)]
                     all_targets += [poseval_pt.subtr_bin]
+                    print(folder.folder)
                     res = folder.apply(all_logits, all_targets)
 
                     # Backprop

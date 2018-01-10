@@ -216,44 +216,46 @@ class TacStFolder(object):
 
     # -------------------------------------------
     # Global constant folding
+    def lookup(self, lt):
+        return self.folder.add('embed_lookup_f', autograd.Variable(torch.LongTensor([lt])))
 
     def fold_evar_name(self, exk):
         """Override Me"""
-        lookup_tensor = torch.LongTensor([self.model.evar_to_idx[exk]])
-        return self.folder.add('evar_embed_f', (autograd.Variable(lookup_tensor)))
+        id = self.model.fix_id('evar', self.model.evar_to_idx[exk])
+        return self.lookup(id)
 
     def fold_const_name(self, const):
         """Override Me"""
-        lookup_tensor = torch.LongTensor([self.model.const_to_idx[const]])
-        return self.folder.add('const_embed_f', (autograd.Variable(lookup_tensor)))
+        id = self.model.fix_id('const', self.model.const_to_idx[const])
+        return self.lookup(id)
 
     def fold_sort_name(self, sort):
         """Override Me"""
-        lookup_tensor = torch.LongTensor([self.model.sort_to_idx[sort]])
-        return self.folder.add('sort_embed_f', (autograd.Variable(lookup_tensor)))
+        id = self.model.fix_id('sort', self.model.sort_to_idx[sort])
+        return self.lookup(id)
 
     def fold_ind_name(self, ind):
         """Override Me"""
-        lookup_tensor = torch.LongTensor([self.model.ind_to_idx[ind.mutind]])
-        return self.folder.add('ind_embed_f', (autograd.Variable(lookup_tensor)))
+        id = self.model.fix_id('ind', self.model.ind_to_idx[ind.mutind])
+        return self.lookup(id)
 
     def fold_conid_name(self, ind_and_conid):
         """Override Me"""
         ind, conid = ind_and_conid
-        lookup_tensor = torch.LongTensor([self.model.conid_to_idx[(ind.mutind, conid)]])
-        return self.folder.add('conid_embed_f', (autograd.Variable(lookup_tensor)))
+        id = self.model.fix_id('conid', self.model.conid_to_idx[(ind.mutind, conid)])
+        return self.lookup(id)
 
     def fold_fix_name(self, name):
         """Override Me"""
-        lookup_tensor = torch.LongTensor([self.model.fix_to_idx[name]])
-        return self.folder.add('fix_embed_f', (autograd.Variable(lookup_tensor)))
+        id = self.model.fix_id('fix', self.model.fix_to_idx[name])
+        return self.lookup(id)
 
     # -------------------------------------------
     # Local variable folding
 
     def fold_local_var(self, ty):
         """Override Me"""
-        return self.folder.add('identity', autograd.Variable(torch.randn(1,self.model.D), requires_grad=False))
+        return self.folder.add('var_identity', autograd.Variable(torch.randn(1,self.model.D), requires_grad=False))
 
 
 # -------------------------------------------------
@@ -269,30 +271,30 @@ class PosEvalModel(nn.Module):
         self.D = D            # Dimension of embeddings
         self.state = state    # Dimension of GRU state
 
-        # tabs = [sort_to_idx, const_to_idx, ind_to_idx, conid_to_idx, evar_to_idx, fix_to_idx, fix_to_idx]
-        # embed_size = sum([len(tab) for tab in tabs])
-        # shift = 0
-        # self.shifts = {}
-        # for tab in tabs:
-        #     shift += len(tab)
-        #     self.shifts[tab]
-
-        #self.embed_table = nn.Embedding(embed_size, D)
+        table_names = ['sort', 'const', 'ind', 'conid', 'evar', 'fix', 'fixbody']
+        tables = [sort_to_idx, const_to_idx, ind_to_idx, conid_to_idx, evar_to_idx, fix_to_idx, fix_to_idx]
+        shift = 0
+        self.shifts = {}
+        for table_name, table in zip(table_names, tables):
+            self.shifts[table_name] = shift
+            shift += len(table)
+        print(self.shifts, shift)
+        self.embed_table = nn.Embedding(shift, D)
 
         # Embeddings for constants
         self.sort_to_idx = sort_to_idx
-        self.sort_embed = nn.Embedding(len(sort_to_idx), D)
+        # self.sort_embed = nn.Embedding(len(sort_to_idx), D)
         self.const_to_idx = const_to_idx
-        self.const_embed = nn.Embedding(len(const_to_idx), D)
+        # self.const_embed = nn.Embedding(len(const_to_idx), D)
         self.ind_to_idx = ind_to_idx
-        self.ind_embed = nn.Embedding(len(ind_to_idx), D)
+        # self.ind_embed = nn.Embedding(len(ind_to_idx), D)
         self.conid_to_idx = conid_to_idx
-        self.conid_embed = nn.Embedding(len(conid_to_idx), D)
+        # self.conid_embed = nn.Embedding(len(conid_to_idx), D)
         self.evar_to_idx = evar_to_idx
-        self.evar_embed = nn.Embedding(len(evar_to_idx), D)
+        # self.evar_embed = nn.Embedding(len(evar_to_idx), D)
         self.fix_to_idx = fix_to_idx
-        self.fix_embed = nn.Embedding(len(fix_to_idx), D)
-        self.fixbody_embed = nn.Embedding(len(fix_to_idx), D)
+        # self.fix_embed = nn.Embedding(len(fix_to_idx), D)
+        # self.fixbody_embed = nn.Embedding(len(fix_to_idx), D)
 
         # Embeddings for Gallina AST
         self.ast_cell_init_state = autograd.Variable(torch.randn((1, self.state))) #TODO(prafulla): Change this?
@@ -310,29 +312,16 @@ class PosEvalModel(nn.Module):
         self.final = nn.Linear(state, outsize)
         self.ctx_emb_func = lambda xs: ctx_embed(xs, self.ctx_cell, self.ctx_cell_init_state)
 
-    def identity(self, x):
+    def var_identity(self, x):
         return x
 
-    def sort_embed_f(self, id):
-        return self.sort_embed(id)
+    def fix_id(self, table_name, id):
+        # print(table_name, id, )
+        # print(self.embed_table(autograd.Variable(torch.LongTensor([self.shifts[table_name] + id]))))
+        return self.shifts[table_name] + id
 
-    def const_embed_f(self, id):
-        return self.const_embed(id)
-
-    def ind_embed_f(self, id):
-        return self.ind_embed(id)
-
-    def conid_embed_f(self, id):
-        return self.conid_embed(id)
-
-    def evar_embed_f(self, id):
-        return self.evar_embed(id)
-
-    def fix_embed_f(self, id):
-        return self.fix_embed(id)
-
-    def fixbody_embed_f(self, id):
-        return self.fixbody_embed(id)
+    def embed_lookup_f(self, id):
+        return self.embed_table(id)
 
     def ast_cell_f(self, x, hidden):
         hidden = self.ast_cell(x, hidden)
