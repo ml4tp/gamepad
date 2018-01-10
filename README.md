@@ -25,6 +25,8 @@ coq, mathcomp-1.6.1, and mathcomp-odd-order-1.6.1 come from different repos.
 
 # Build
 
+Note: In order to build tcoq, make sure you use OCaml 4.05.0.
+
 Build dataset:
 1. Configure coq first.
    ```
