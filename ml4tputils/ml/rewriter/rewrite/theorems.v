@@ -46,19 +46,20 @@ Qed.
 
 
 Theorem rewrite_eq_1:
-forall b, ( ( e <+> ( e <+> ( ( ( ( ( e <+> ( b ) ) <+> m ) <+> m ) <+> m ) <+> m ) ) ) <+> m ) <+> m = b.
-intros.
-autorewrite with ids in *.
-reflexivity.
+  forall b, ( ( e <+> ( e <+> ( ( ( ( ( e <+> ( b ) ) <+> m ) <+> m ) <+> m ) <+> m ) ) ) <+> m ) <+> m = b.
+Proof.
+  intros.
+  repeat my_rewrite.
+  reflexivity.
 Qed.
 
 
 
 Theorem rewrite_eq_2:
 forall b, ( ( b ) <+> m ) <+> m = b.
-intros.
-autorewrite with ids in *.
-reflexivity.
+  intros.
+  repeat my_rewrite.
+  reflexivity.
 Qed.
 
 
