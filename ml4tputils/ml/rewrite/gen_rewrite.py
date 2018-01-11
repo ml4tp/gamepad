@@ -28,10 +28,16 @@ Variable id_r : forall a, a <+> m = a.
 Variable id_l : forall a, e <+> a = a.
 
 Hint Rewrite id_r id_l : ids.
+
+Ltac my_rewrite :=
+  match goal with
+  | [ |- ?X <+> m = ?Y ] => rewrite id_r
+  | [ |- e <+> ?X = ?Y ] => rewrite id_l
+  end.
 """
 
 proof = """intros.
-autorewrite with ids in *.
+repeat my_rewrite.
 reflexivity.
 Qed.
 """
