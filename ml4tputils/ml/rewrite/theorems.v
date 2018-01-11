@@ -32,42 +32,37 @@ Ltac my_rewrite :=
   | [ |- e <+> ?X = ?Y ] => rewrite id_l
   end.
 
-
-
-
-
-Theorem rewrite_eq_0: forall b, ( ( ( b ) <+> m ) <+> m ) <+> m = b.
-Proof.
-  intros.
-  repeat my_rewrite.  
-  reflexivity.
+Theorem rewrite_eq_0:
+forall b, e <+> ( e <+> ( b ) ) = b.
+intros.
+repeat my_rewrite.
+reflexivity.
 Qed.
 
 
 
 Theorem rewrite_eq_1:
-  forall b, ( ( e <+> ( e <+> ( ( ( ( ( e <+> ( b ) ) <+> m ) <+> m ) <+> m ) <+> m ) ) ) <+> m ) <+> m = b.
-Proof.
-  intros.
-  repeat my_rewrite.
-  reflexivity.
+forall b, ( ( b ) <+> m ) <+> m = b.
+intros.
+repeat my_rewrite.
+reflexivity.
 Qed.
 
 
 
 Theorem rewrite_eq_2:
-forall b, ( ( b ) <+> m ) <+> m = b.
-  intros.
-  repeat my_rewrite.
-  reflexivity.
+forall b, e <+> ( e <+> ( e <+> ( e <+> ( b ) ) ) ) = b.
+intros.
+repeat my_rewrite.
+reflexivity.
 Qed.
 
 
 
 Theorem rewrite_eq_3:
-forall b, e <+> ( ( b ) <+> m ) = b.
+forall b, e <+> ( b ) = b.
 intros.
-autorewrite with ids in *.
+repeat my_rewrite.
 reflexivity.
 Qed.
 
@@ -76,28 +71,9 @@ Qed.
 Theorem rewrite_eq_4:
 forall b, e <+> ( b ) = b.
 intros.
-autorewrite with ids in *.
+repeat my_rewrite.
 reflexivity.
 Qed.
 
 
 
-Theorem rewrite_eq_5:
-forall b, ( e <+> ( b ) ) <+> m = b.
-intros.
-autorewrite with ids in *.
-reflexivity.
-Qed.
-
-
-
-Theorem rewrite_eq_6:
-forall b, e <+> ( b ) = b.
-intros.
-autorewrite with ids in *.
-reflexivity.
-Qed.
-
-
-
-End Group.
