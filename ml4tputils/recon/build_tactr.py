@@ -102,10 +102,11 @@ class TacTreeBuilder(object):
         if bf_decl.hdr.gid == GID_SOLVED:
             return []
 
-        if self.ftac_inscope:
+        if rawtac.tkind == TacKind.ATOMIC:
+            ftac = rawtac.ftac
+        elif self.ftac_inscope:
             ftac = self.ftac_inscope
         else:
-            # TODO(deh): fix Coq dump to handle old printing of full-tactic
             ftac = bf_decl.hdr.tac
 
         if af_decl.hdr.gid == GID_SOLVED:
@@ -148,10 +149,11 @@ class TacTreeBuilder(object):
         return [edge]
 
     def _mk_body_edge(self, rawtac, bf_decl, af_node):
-        if self.ftac_inscope:
+        if rawtac.tkind == TacKind.ATOMIC:
+            ftac = rawtac.tac
+        elif self.ftac_inscope:
             ftac = self.ftac_inscope
         else:
-            # TODO(deh): fix Coq dump to handle old printing of full-tactic
             ftac = bf_decl.hdr.tac
 
         edge = TacEdge(self._fresh_edgeid(),
@@ -212,6 +214,7 @@ class TacTreeBuilder(object):
             self._add_edges(edges)
 
         if not (tac.tkind == TacKind.NOTATION or
+                tac.tkind == TacKind.NAME or
                 tac.name.startswith("<ssreflect_plugin::ssrtclseq@0>") or
                 tac.name.startswith("<ssreflect_plugin::ssrtclby@0>")):
             # TODO(deh): what other ones to avoid?
@@ -227,10 +230,11 @@ class TacTreeBuilder(object):
 
         while it_rawtacs.has_next():
             tac = it_rawtacs.peek()
-            if tac.tkind == TacKind.NAME:
-                self.build_name()
-            else:
-                self.build_nested()
+            self.build_nested()
+            # if tac.tkind == TacKind.NAME:
+            #     self.build_name()
+            # else:
+            #     self.build_nested()
 
     def get_tactree(self, f_verbose=False):
         tactr = TacTree(self.name, self.edges, self.graph,
