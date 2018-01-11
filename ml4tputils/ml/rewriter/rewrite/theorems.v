@@ -26,11 +26,21 @@ Variable id_l : forall a, e <+> a = a.
 
 Hint Rewrite id_r id_l : ids.
 
-Theorem rewrite_eq_0:
-forall b, ( ( ( b ) <+> m ) <+> m ) <+> m = b.
-intros.
-autorewrite with ids in *.
-reflexivity.
+Ltac my_rewrite :=
+  match goal with
+  | [ |- ?X <+> m = ?Y ] => rewrite id_r
+  | [ |- e <+> ?X = ?Y ] => rewrite id_l
+  end.
+
+
+
+
+
+Theorem rewrite_eq_0: forall b, ( ( ( b ) <+> m ) <+> m ) <+> m = b.
+Proof.
+  intros.
+  repeat my_rewrite.  
+  reflexivity.
 Qed.
 
 
@@ -89,3 +99,4 @@ Qed.
 
 
 
+End Group.
