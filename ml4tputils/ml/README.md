@@ -14,7 +14,7 @@ Run `python3 setup.py develop` inside `ml4tputils/`.
    ```
    python ml4tputils/ml/tacst_prep.py
    ```
-   Creates `tacpred.pickle` and `poseval.pickle`
+   This produces `tacpred.pickle` and `poseval.pickle` in current working directory.
 3. Run ML
    ```
    python ml4tputils/ml/main.py

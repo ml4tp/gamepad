@@ -1,0 +1,4 @@
+matplotlib
+networkx
+torch
+torchvision
