@@ -5,5 +5,7 @@ odd-order
 *.pyc
 *.zip
 *.log
+*.jsonl
+*.pickle
 .ipynb_checkpoints/
 .DS_store
