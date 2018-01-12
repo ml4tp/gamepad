@@ -40,6 +40,8 @@ if __name__ == "__main__":
                            type=str, help="Pickle file to load")
     argparser.add_argument("-p", "--poseval", default="poseval.pickle",
                            type=str, help="Pickle file to save to")
+    argparser.add_argument("-f", "--fold", action="store_true",
+                           help="Set to use folding library for batching")
     args = argparser.parse_args()
 
     print("Loading tactrs ...")
@@ -51,7 +53,7 @@ if __name__ == "__main__":
         poseval_dataset, tokens_to_idx = pickle.load(f)
 
     model = PosEvalModel(*tokens_to_idx)
-    trainer = PosEvalTrainer(model, tactrs, poseval_dataset)
+    trainer = PosEvalTrainer(model, tactrs, poseval_dataset, args.fold)
     trainer.train()
 
     # model = PosEvalModel(*tokens_to_idx)
