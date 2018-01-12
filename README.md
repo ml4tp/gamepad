@@ -90,6 +90,6 @@ TODO(deh): reconstruct tactics. The number of connected components should be 1 i
 
 TODO(deh): missing requirements.txt
 
-For training, you need the pytorch-tools, which is located here: https://github.com/nearai/pytorch-tools. 
+For training, you need `pytorch-tools`, which is located here: https://github.com/nearai/pytorch-tools. 
 
 Run `python3 setup.py develop` inside this repository.
