@@ -46,7 +46,7 @@ def ast_embed(folder, xs, init):
 def ctx_embed(xs, cell, init):
     hidden = init
     for i, x in enumerate(xs):
-        print("GRU Embed ",i, x.shape)
+        #print("GRU Embed ",i, x.shape)
         hidden = cell(x.view(-1,128), hidden) #cell(x.view(1, -1, 128), hidden)
     print("hidden shape", hidden.shape)
     return hidden
@@ -55,12 +55,16 @@ def ctx_embed(xs, cell, init):
 # Fold over tactic state
 
 class TacStFolder(object):
-    def __init__(self, model, tactr):
+    def __init__(self, model, tactr, foldy):
         self.model = model    # Only used to access embeddings
         self.tactr = tactr    # Corresponding tactic tree
 
         # Folding state
-        self.folder = ptf.Fold()
+        self.foldy = foldy
+        if self.foldy:
+            self.folder = ptf.Fold()
+        else:
+            self.folder = ptf.Unfold(self.model)
         self.folded = {}
 
     def apply(self, all_logits, all_targets):
@@ -69,7 +73,12 @@ class TacStFolder(object):
 
     def reset(self):
         """Reset folding state"""
-        self.folder = ptf.Fold()
+        if self.foldy:
+            print("Folding")
+            self.folder = ptf.Fold()
+        else:
+            print("Not folding")
+            self.folder = ptf.Unfold(self.model)
         self.folded = {}
 
     # -------------------------------------------

@@ -20,7 +20,7 @@ torch.manual_seed(0)
 logger = ResultLogger('mllogs/embedv1.0.jsonl')
 
 class PosEvalTrainer(object):
-    def __init__(self, model, tactrs, poseval_dataset):
+    def __init__(self, model, tactrs, poseval_dataset, foldy):
         # Other state
         self.tactrs = tactrs
         self.poseval_dataset = poseval_dataset  
@@ -29,7 +29,7 @@ class PosEvalTrainer(object):
         self.model = model       # PyTorch model
         self.tacst_folder = {}   # Folder to embed
         for tactr_id, tactr in enumerate(self.tactrs):
-            self.tacst_folder[tactr_id] = TacStFolder(model, tactr)
+            self.tacst_folder[tactr_id] = TacStFolder(model, tactr, foldy)
 
     def train(self, epochs=20):
         losses = []
@@ -46,13 +46,13 @@ class PosEvalTrainer(object):
                     # Prepare to compute gradients
                     self.model.zero_grad()
                     folder = self.tacst_folder[tactr_id]
-                    folder.reset()  # TODO(deh): reset this when?
+                    folder.reset()  # Uncomment to enable sh2. TODO(deh): reset this when?
 
                     # Apply forward pass
                     all_logits, all_targets = [], []
                     all_logits += [folder.fold_tacst(poseval_pt.tacst)]
                     all_targets += [poseval_pt.subtr_bin]
-                    print(folder.folder)
+                    #print(folder.folder)
                     res = folder.apply(all_logits, all_targets)
 
                     # Backprop
@@ -65,7 +65,7 @@ class PosEvalTrainer(object):
                 # if idx % 10 == 0:
                 #     cpuStats()
                     # memReport()
-                if tactr_id == 60:
+                if idx == 6:
                     print("Epoch Time with sh2 %.4f Loss %.4f" % (time() - testart, total_loss))
                     assert False
             print("Epoch Time %.4f Loss %.4f" % (time() - testart, total_loss))

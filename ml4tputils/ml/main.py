@@ -40,8 +40,11 @@ if __name__ == "__main__":
                            type=str, help="Pickle file to load")
     argparser.add_argument("-p", "--poseval", default="poseval.pickle",
                            type=str, help="Pickle file to save to")
-    args = argparser.parse_args()
+    argparser.add_argument("-f", "--fold", action = 'store_true', help="To fold or not to fold")
+    argparser.add_argument("--orig", action = 'store_true', help="Old is gold")
 
+    args = argparser.parse_args()
+    print(args.fold)
     print("Loading tactrs ...")
     with open(args.load, 'rb') as f:
         tactrs = pickle.load(f)
@@ -50,9 +53,16 @@ if __name__ == "__main__":
     with open(args.poseval, 'rb') as f:
         poseval_dataset, tokens_to_idx = pickle.load(f)
 
-    model = PosEvalModel(*tokens_to_idx)
-    trainer = PosEvalTrainer(model, tactrs, poseval_dataset)
-    trainer.train()
+    if not args.orig:
+        model = PosEvalModel(*tokens_to_idx)
+        trainer = PosEvalTrainer(model, tactrs, poseval_dataset, args.fold)
+        trainer.train()
+    else:
+        from ml.embed import MyModel, PosEvalTrainer
+        print("Original")
+        model = MyModel(*tokens_to_idx)
+        trainer = PosEvalTrainer(model, tactrs, poseval_dataset)
+        trainer.train()
 
     # model = PosEvalModel(*tokens_to_idx)
     # trainer = PosEvalTrainer(model, tactrs, poseval_dataset)
