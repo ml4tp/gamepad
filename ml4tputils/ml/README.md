@@ -1,5 +1,9 @@
 # Steps
 
+Use Python 3.
+
+Run `python3 setup.py develop` inside `ml4tputils/`.
+
 1. Produce tactic tree pickle file
    ```
    coqc <path-to-coq-files> thm.dump
