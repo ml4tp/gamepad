@@ -42,6 +42,8 @@ reflexivity.
 Qed.
 """
 
+end = """End Group."""
+
 def weighted_choice(weights):
     rnd = random.random() * sum(weights)
     for i, w in enumerate(weights):
@@ -188,3 +190,6 @@ while(True):
     print(proof)
     if(counter == numTheorems):
         break
+
+print(end)
+
