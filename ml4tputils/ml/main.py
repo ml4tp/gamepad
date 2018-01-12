@@ -58,6 +58,7 @@ if __name__ == "__main__":
     trainer.train()
     trainer.finalize()
 
+    # TODO(deh): Uncomment me to test with checker
     # model = PosEvalModel(*tokens_to_idx)
     # trainer1 = PosEvalTrainer(model, tactrs, poseval_dataset,
     #                           "mllogs/embedv1.0.jsonl", f_fold=False)
