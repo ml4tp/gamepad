@@ -1,8 +1,7 @@
 from collections import defaultdict
 import random
 
-prefix = """  
-(*Set Printing All.*)
+prefix = """(*Set Printing All.*)
 Require Import Omega.
 
 Section Group.
@@ -167,6 +166,5 @@ while(True):
     writeStr = "forall b, " + genStr + "= b."
     print(writeStr)
     print(proof)
-    print("\n")
     if(counter == numTheorems):
         break
