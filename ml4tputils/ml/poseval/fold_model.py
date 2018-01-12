@@ -46,21 +46,25 @@ def ast_embed(folder, xs, init):
 def ctx_embed(xs, cell, init):
     hidden = init
     for i, x in enumerate(xs):
-        print("GRU Embed ",i, x.shape)
+        #print("GRU Embed ",i, x.shape)
         hidden = cell(x.view(-1,128), hidden) #cell(x.view(1, -1, 128), hidden)
-    print("hidden shape", hidden.shape)
+    #print("hidden shape", hidden.shape)
     return hidden
 
 # -------------------------------------------------
 # Fold over tactic state
 
 class TacStFolder(object):
-    def __init__(self, model, tactr):
+    def __init__(self, model, tactr, f_fold=True):
         self.model = model    # Only used to access embeddings
         self.tactr = tactr    # Corresponding tactic tree
+        self.f_fold = f_fold  # Whether to use fold or not
 
         # Folding state
-        self.folder = ptf.Fold()
+        if self.f_fold:
+            self.folder = ptf.Fold()
+        else:
+            self.folder = ptf.Unfold(self.model)
         self.folded = {}
 
     def apply(self, all_logits, all_targets):
@@ -69,8 +73,9 @@ class TacStFolder(object):
 
     def reset(self):
         """Reset folding state"""
-        self.folder = ptf.Fold()
-        self.folded = {}
+        if self.f_fold:
+            self.folder = ptf.Fold()
+            self.folded = {}
 
     # -------------------------------------------
     # Tactic state folding
@@ -278,7 +283,7 @@ class PosEvalModel(nn.Module):
         for table_name, table in zip(table_names, tables):
             self.shifts[table_name] = shift
             shift += len(table)
-        print(self.shifts, shift)
+        # print(self.shifts, shift)
         self.embed_table = nn.Embedding(shift, D)
 
         # Embeddings for constants
@@ -344,5 +349,5 @@ class PosEvalModel(nn.Module):
 
         # Final layer for logits
         x = self.final(x)
-        print("Output shape", x.shape)
+        # print("Output shape", x.shape)
         return x.view(1, -1)

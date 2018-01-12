@@ -20,7 +20,7 @@ torch.manual_seed(0)
 logger = ResultLogger('mllogs/embedv1.0.jsonl')
 
 class PosEvalTrainer(object):
-    def __init__(self, model, tactrs, poseval_dataset):
+    def __init__(self, model, tactrs, poseval_dataset, f_fold=True):
         # Other state
         self.tactrs = tactrs
         self.poseval_dataset = poseval_dataset  
@@ -29,7 +29,7 @@ class PosEvalTrainer(object):
         self.model = model       # PyTorch model
         self.tacst_folder = {}   # Folder to embed
         for tactr_id, tactr in enumerate(self.tactrs):
-            self.tacst_folder[tactr_id] = TacStFolder(model, tactr)
+            self.tacst_folder[tactr_id] = TacStFolder(model, tactr, f_fold)
 
     def train(self, epochs=20):
         losses = []
@@ -52,7 +52,7 @@ class PosEvalTrainer(object):
                     all_logits, all_targets = [], []
                     all_logits += [folder.fold_tacst(poseval_pt.tacst)]
                     all_targets += [poseval_pt.subtr_bin]
-                    print(folder.folder)
+                    # print(folder.folder)
                     res = folder.apply(all_logits, all_targets)
 
                     # Backprop
