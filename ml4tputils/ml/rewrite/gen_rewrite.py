@@ -7,25 +7,25 @@ Require Import Omega.
 
 Section Group.
 (* The set of the group. *)
-Variable G : Set.
+Axiom G : Set.
 
 (* The left identity for +. *)
-Variable e : G.
+Axiom e : G.
 
 (* The right identity for +. *)
-Variable m : G.
+Axiom m : G.
 
 (* + binary operator. *)
-Variable f : G -> G -> G.
+Axiom f : G -> G -> G.
 
 (* For readability, we use infix <+> to stand for the binary operator. *)
 Infix "<+>" := f (at level 50).
 
 (* [m] is the right-identity for all elements [a] *)
-Variable id_r : forall a, a <+> m = a.
+Axiom id_r : forall a, a <+> m = a.
 
-(* [e] is the right-identity for all elements [a] *)
-Variable id_l : forall a, e <+> a = a.
+(* [e] is the left-identity for all elements [a] *)
+Axiom id_l : forall a, e <+> a = a.
 
 Hint Rewrite id_r id_l : ids.
 
@@ -153,11 +153,12 @@ cfg.add_prod('EXPR', '( EXPR ) ADD m')
 cfg.add_prod('EXPR', 'b')
 cfg.add_prod('ADD', '<+>')
 
+print(prefix)
+
+counter = 0
 numTheorems = 10
 
-print(prefix)
-counter = 0
-for i in xrange(numTheorems):
+while(True):
     genStr = cfg.gen_random('EXPR')
     if (genStr == "b "): 
         continue
@@ -167,3 +168,5 @@ for i in xrange(numTheorems):
     print(writeStr)
     print(proof)
     print("\n")
+    if(counter == numTheorems):
+        break
