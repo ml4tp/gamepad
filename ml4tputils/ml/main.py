@@ -52,15 +52,18 @@ if __name__ == "__main__":
     with open(args.poseval, 'rb') as f:
         poseval_dataset, tokens_to_idx = pickle.load(f)
 
-    # model = PosEvalModel(*tokens_to_idx)
-    # trainer = PosEvalTrainer(model, tactrs, poseval_dataset,
-    #                          "mllogs/embedv1.0.jsonl", args.fold)
-    # trainer.train()
-
     model = PosEvalModel(*tokens_to_idx)
-    trainer1 = PosEvalTrainer(model, tactrs, poseval_dataset,
-                              "mllogs/embedv1.0.jsonl", f_fold=False)
-    trainer2 = PosEvalTrainer(model, tactrs, poseval_dataset,
-                              "mllogs/embedv2.0.jsonl", f_fold=True)
-    checker = ChkPosEvalTrainer(trainer1, trainer2)
-    checker.check()
+    trainer = PosEvalTrainer(model, tactrs, poseval_dataset,
+                             "mllogs/embedv1.0.jsonl", args.fold)
+    trainer.train()
+    trainer.finalize()
+
+    # model = PosEvalModel(*tokens_to_idx)
+    # trainer1 = PosEvalTrainer(model, tactrs, poseval_dataset,
+    #                           "mllogs/embedv1.0.jsonl", f_fold=False)
+    # trainer2 = PosEvalTrainer(model, tactrs, poseval_dataset,
+    #                           "mllogs/embedv2.0.jsonl", f_fold=True)
+    # checker = ChkPosEvalTrainer(trainer1, trainer2)
+    # checker.check()
+    # trainer1.finalize() 
+    # trainer2.finalize()
