@@ -9,27 +9,36 @@ import torch.optim as optim
 from ml.poseval.fold_model import TacStFolder
 from ml.utils import ResultLogger, cpuStats, Timer
 
-# -------------------------------------------------
-# Helper
-
 
 # -------------------------------------------------
 # Training
 
-torch.manual_seed(0)
-logger = ResultLogger('mllogs/embedv1.0.jsonl')
+# torch.manual_seed(0)
+# logger = ResultLogger('mllogs/embedv1.0.jsonl')
 
 class PosEvalTrainer(object):
-    def __init__(self, model, tactrs, poseval_dataset, f_fold=True):
+    def __init__(self, model, tactrs, poseval_dataset, log_file,
+                 f_dbg=False, f_fold=True):
         # Other state
         self.tactrs = tactrs
-        self.poseval_dataset = poseval_dataset  
+        self.poseval_dataset = poseval_dataset
+        self.logger = ResultLogger(log_file)
+        
+        # Flags
+        self.f_dbg = f_dbg       # Running for debug purposes?
+        self.f_fold = f_fold     # Fold for batching?
 
         # Model
         self.model = model       # PyTorch model
         self.tacst_folder = {}   # Folder to embed
         for tactr_id, tactr in enumerate(self.tactrs):
             self.tacst_folder[tactr_id] = TacStFolder(model, tactr, f_fold)
+
+        # TODO(deh): Reset!
+        torch.manual_seed(0)
+
+    def finalize(self):
+        self.logger.close()
 
     def train(self, epochs=20):
         losses = []
@@ -61,14 +70,39 @@ class PosEvalTrainer(object):
                     opt.step()
                     total_loss += loss.data
                 print("Loss %.4f %.4f" % (loss.data, t.interval))
-                logger.log(n_epochs=epoch, niters=idx, loss="%0.4f" % loss.data)
+                self.logger.log(n_epochs=epoch, niters=idx, loss="%0.4f" % loss.data)
                 # if idx % 10 == 0:
                 #     cpuStats()
                     # memReport()
-                if tactr_id == 60:
+                if self.f_dbg and tactr_id == 5:
                     print("Epoch Time with sh2 %.4f Loss %.4f" % (time() - testart, total_loss))
-                    assert False
+                    losses.append(total_loss)
+                    print("Losses", losses)
+                    return losses
             print("Epoch Time %.4f Loss %.4f" % (time() - testart, total_loss))
             losses.append(total_loss)
-        logger.close()
         print("Losses", losses)
+        return losses
+
+
+# -------------------------------------------------
+# Debugging helper
+
+class ChkPosEvalTrainer(object):
+    def __init__(self, trainer1, trainer2):
+        assert isinstance(trainer1, PosEvalTrainer)
+        assert isinstance(trainer2, PosEvalTrainer)
+
+        self.trainer1 = trainer1
+        self.trainer1.f_dbg = True
+        self.trainer2 = trainer2
+        self.trainer2.f_dbg = True
+
+    def check(self):
+        losses1 = self.trainer1.train(epochs=1)
+        losses2 = self.trainer2.train(epochs=1)
+        print("Losses1: ", losses1)
+        print("Losses2: ", losses2)
+        diff = [l1 - l2 for l1, l2 in zip(losses1, losses2)]
+        print("Diff: ", diff)
+        # print(all(map(lambda x: x < 0.001, diff)))

@@ -9,7 +9,7 @@ import tacst_prep
 from tacst_prep import PosEvalPt
 
 from ml.poseval.fold_model import PosEvalModel
-from ml.poseval.fold_train import PosEvalTrainer
+from ml.poseval.fold_train import PosEvalTrainer, ChkPosEvalTrainer
 
 """
 [Note]
@@ -52,57 +52,15 @@ if __name__ == "__main__":
     with open(args.poseval, 'rb') as f:
         poseval_dataset, tokens_to_idx = pickle.load(f)
 
-    model = PosEvalModel(*tokens_to_idx)
-    trainer = PosEvalTrainer(model, tactrs, poseval_dataset, args.fold)
-    trainer.train()
-
     # model = PosEvalModel(*tokens_to_idx)
-    # trainer = PosEvalTrainer(model, tactrs, poseval_dataset)
+    # trainer = PosEvalTrainer(model, tactrs, poseval_dataset,
+    #                          "mllogs/embedv1.0.jsonl", args.fold)
     # trainer.train()
 
-    """
-    # Set up command line
-    argparser = argparse.ArgumentParser()
-    argparser.add_argument("-r", "--recon", default=None,
-                           help="Enter the file you want to reconstruct.")
-    argparser.add_argument("-p", "--path", default="data/odd-order",
-                           type=str, help="Path to files")
-    argparser.add_argument("-l", "--load", default="tactr.pickle",
-                           type=str, help="Pickle file to load")
-    args = argparser.parse_args()
-
-    bgfiles = [op.join(args.path, file) for file in
-               FILES if file.startswith("BG")]
-    pffiles = [op.join(args.path, file) for file in
-               FILES if file.startswith("PF")]
-
-    files = [op.join(args.path, file) for file in FILES]
-
-    # Read in files
-    if not args.recon:
-        with open(args.load, 'rb') as f:
-        # with open("tactr.pickle", 'rb') as f:
-            print("Loading {}...".format(args.load))
-            tactrs = pickle.load(f)
-            print("Done loading...")
-    else:
-        if args.recon == "all":
-            preprocess = Preprocess(files)
-        elif args.recon == "bg":
-            preprocess = Preprocess(bgfiles)
-        elif args.recon == "pf":
-            preprocess = Preprocess(pffiles)
-        else:
-            preprocess = Preprocess([args.recon])
-        tactrs = preprocess.get_tactrees()
-
-    # Tokenize embeddings
-    embed_tokens = EmbedTokens()
-    embed_tokens.tokenize_tactrs(tactrs)
-    tokens_to_idx = embed_tokens.tokens_to_idx()
-
-    # Run model
-    model = MyModel(*tokens_to_idx)
-    trainer = MyTrainer(model, tactrs)
-    trainer.train()
-    """
+    model = PosEvalModel(*tokens_to_idx)
+    trainer1 = PosEvalTrainer(model, tactrs, poseval_dataset,
+                              "mllogs/embedv1.0.jsonl", f_fold=False)
+    trainer2 = PosEvalTrainer(model, tactrs, poseval_dataset,
+                              "mllogs/embedv2.0.jsonl", f_fold=True)
+    checker = ChkPosEvalTrainer(trainer1, trainer2)
+    checker.check()
