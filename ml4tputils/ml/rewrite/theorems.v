@@ -1,4 +1,3 @@
-  
 (*Set Printing All.*)
 Require Import Omega.
 
@@ -33,92 +32,72 @@ Ltac my_rewrite :=
   end.
 
 Theorem rewrite_eq_0:
-forall b, ( b ) <+> m = b.
+forall b, ( ( ( ( ( b ) <+> m ) <+> m ) <+> m ) <+> m ) <+> m = b.
 intros.
 repeat my_rewrite.
 reflexivity.
 Qed.
-
-
 
 Theorem rewrite_eq_1:
-forall b, ( b ) <+> m = b.
+forall b, e <+> ( ( ( e <+> ( ( b ) <+> m ) ) <+> m ) <+> m ) = b.
 intros.
 repeat my_rewrite.
 reflexivity.
 Qed.
-
-
 
 Theorem rewrite_eq_2:
-forall b, e <+> ( e <+> ( b ) ) = b.
+forall b, ( ( ( ( ( b ) <+> m ) <+> m ) <+> m ) <+> m ) <+> m = b.
 intros.
 repeat my_rewrite.
 reflexivity.
 Qed.
-
-
 
 Theorem rewrite_eq_3:
-forall b, ( b ) <+> m = b.
+forall b, e <+> ( e <+> ( e <+> ( e <+> ( e <+> ( b ) ) ) ) ) = b.
 intros.
 repeat my_rewrite.
 reflexivity.
 Qed.
-
-
 
 Theorem rewrite_eq_4:
-forall b, ( e <+> ( e <+> ( e <+> ( e <+> ( e <+> ( e <+> ( b ) ) ) ) ) ) ) <+> m = b.
+forall b, e <+> ( e <+> ( e <+> ( ( ( b ) <+> m ) <+> m ) ) ) = b.
 intros.
 repeat my_rewrite.
 reflexivity.
 Qed.
-
-
 
 Theorem rewrite_eq_5:
-forall b, e <+> ( e <+> ( ( ( ( ( e <+> ( ( b ) <+> m ) ) <+> m ) <+> m ) <+> m ) <+> m ) ) = b.
+forall b, e <+> ( ( e <+> ( ( e <+> ( b ) ) <+> m ) ) <+> m ) = b.
 intros.
 repeat my_rewrite.
 reflexivity.
 Qed.
-
-
 
 Theorem rewrite_eq_6:
-forall b, ( e <+> ( e <+> ( ( e <+> ( e <+> ( b ) ) ) <+> m ) ) ) <+> m = b.
+forall b, e <+> ( ( e <+> ( e <+> ( e <+> ( b ) ) ) ) <+> m ) = b.
 intros.
 repeat my_rewrite.
 reflexivity.
 Qed.
-
-
 
 Theorem rewrite_eq_7:
-forall b, e <+> ( e <+> ( e <+> ( ( ( ( b ) <+> m ) <+> m ) <+> m ) ) ) = b.
+forall b, e <+> ( ( ( ( ( b ) <+> m ) <+> m ) <+> m ) <+> m ) = b.
 intros.
 repeat my_rewrite.
 reflexivity.
 Qed.
-
-
 
 Theorem rewrite_eq_8:
-forall b, ( ( b ) <+> m ) <+> m = b.
+forall b, ( ( e <+> ( e <+> ( e <+> ( b ) ) ) ) <+> m ) <+> m = b.
 intros.
 repeat my_rewrite.
 reflexivity.
 Qed.
-
-
 
 Theorem rewrite_eq_9:
-forall b, ( b ) <+> m = b.
+forall b, ( e <+> ( ( ( e <+> ( b ) ) <+> m ) <+> m ) ) <+> m = b.
 intros.
 repeat my_rewrite.
 reflexivity.
 Qed.
-
-
 
