@@ -1,6 +1,7 @@
 tcoq
 math-comp
 odd-order
+pytorch-tools
 *.*~
 *.pyc
 *.zip
