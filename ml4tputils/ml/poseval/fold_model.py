@@ -288,7 +288,7 @@ class TacStFolder(object):
 
     def fold_local_var(self, ty):
         """Override Me"""
-        return self.folder.add('var_identity', autograd.Variable(self.torch.FloatTensor(1,self.model.D), requires_grad=False))
+        return self.folder.add('var_normal', autograd.Variable(self.torch.FloatTensor(1,self.model.D), requires_grad=False))
 
 # -------------------------------------------------
 # Model
