@@ -6,7 +6,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
-from ml.poseval.fold_model import TacStFolder
+import numpy as np
+from ml.poseval.fold_model import TacStFolder, Folder
 from ml.utils import ResultLogger, cpuStats, Timer
 
 # -------------------------------------------------
@@ -16,6 +17,7 @@ from ml.utils import ResultLogger, cpuStats, Timer
 # -------------------------------------------------
 # Training
 
+np.random.seed(0)
 torch.manual_seed(0)
 logger = ResultLogger('mllogs/embedv1.0.jsonl')
 
@@ -27,19 +29,22 @@ class PosEvalTrainer(object):
 
         # Model
         self.model = model       # PyTorch model
+        self.folder = Folder(model, foldy)
         self.tacst_folder = {}   # Folder to embed
         for tactr_id, tactr in enumerate(self.tactrs):
-            self.tacst_folder[tactr_id] = TacStFolder(model, tactr, foldy)
+            self.tacst_folder[tactr_id] = TacStFolder(model, tactr, self.folder)
 
-    def train(self, epochs=20):
+    def train(self, epochs=20, lemmabatch = 64):
         losses = []
         loss_fn = nn.CrossEntropyLoss()
         opt = optim.Adam(self.model.parameters(), lr=0.001)
+        lemmas = len(self.poseval_dataset)
         for epoch in range(epochs):
             testart = time()
             total_loss = torch.Tensor([0])
-            
-            # Outer loop? Should be looping over all minibatches
+            perm = np.random.permutation(lemmas)
+            index = lemmabatch
+            currbatch = perm[:index]
             for idx, (tactr_id, poseval_pt) in enumerate(self.poseval_dataset):
                 print("Training ({}/{}) TacSt={}, AstSize={}".format(tactr_id, len(self.tactrs), idx, poseval_pt.tacst_size))
                 with Timer() as t:                    

@@ -49,7 +49,7 @@ class SizeSubTr(object):
 class PosEvalDataset(object):
     def __init__(self, tactrs):
         self.tactrs = tactrs
-        self.data = []
+        self.data = [None]*len(tactrs)
 
     def mk_tactrs(self):
         for tactr_id, tactr in enumerate(self.tactrs):
@@ -58,6 +58,8 @@ class PosEvalDataset(object):
 
     def mk_tactr(self, tactr_id, tactr):
         print("Working on ({}/{}) {}".format(tactr_id, len(self.tactrs), tactr.name))
+        assert self.tactrs[tactr_id] == tactr
+        self.data[tactr_id] = []
         subtr_size = {}
         size_subtr = SizeSubTr(tactr)
         for node in tactr.graph.nodes():
@@ -68,7 +70,7 @@ class PosEvalDataset(object):
             tacst_size += sce.decode_size(concl_idx)
             for ident, idx in ctx:
                 tacst_size += sce.decode_size(idx)
-            self.data += [(tactr_id, PosEvalPt(gid, ctx, concl_idx, tac, tacst_size, subtr_size[gid]))]
+            self.data[tactr_id].append(PosEvalPt(gid, ctx, concl_idx, tac, tacst_size, subtr_size[gid]))
         return self.data
 
     def split_by_lemma(self, train=80, valid=10, test=10):

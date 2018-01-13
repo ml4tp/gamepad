@@ -52,13 +52,9 @@ def ctx_embed(xs, cell, init):
     return hidden
 
 # -------------------------------------------------
-# Fold over tactic state
-
-class TacStFolder(object):
-    def __init__(self, model, tactr, foldy):
-        self.model = model    # Only used to access embeddings
-        self.tactr = tactr    # Corresponding tactic tree
-
+# Fold over anything
+class Folder(object):
+    def __init__(self, model, foldy):
         # Folding state
         self.foldy = foldy
         if self.foldy:
@@ -66,10 +62,6 @@ class TacStFolder(object):
         else:
             self.folder = ptf.Unfold(self.model)
         self.folded = {}
-
-    def apply(self, all_logits, all_targets):
-        """Call after folding entire tactic state to force computation"""
-        return self.folder.apply(self.model, [all_logits, all_targets])
 
     def reset(self):
         """Reset folding state"""
@@ -80,6 +72,20 @@ class TacStFolder(object):
             print("Not folding")
             self.folder = ptf.Unfold(self.model)
         self.folded = {}
+
+# Fold over tactic state
+
+class TacStFolder(object):
+    def __init__(self, model, tactr, folder):
+        self.model = model    # Only used to access embeddings
+        self.tactr = tactr    # Corresponding tactic tree
+
+        # Folding state
+        self.folder = folder
+
+    def apply(self, all_logits, all_targets):
+        """Call after folding entire tactic state to force computation"""
+        return self.folder.apply(self.model, [all_logits, all_targets])
 
     # -------------------------------------------
     # Tactic state folding
