@@ -288,7 +288,7 @@ class TacStFolder(object):
 
     def fold_local_var(self, ty):
         """Override Me"""
-        return self.folder.add('var_normal', autograd.Variable(self.torch.FloatTensor(1,self.model.D), requires_grad=False))
+        return self.folder.add('var_normal', self.torch.FloatTensor(1,self.model.D))
 
 # -------------------------------------------------
 # Model
@@ -355,7 +355,7 @@ class PosEvalModel(nn.Module):
         self.register_buffer('state_id', torch.zeros([1,1]))
 
     def var_normal(self, x):
-        return x.normal_()
+        return autograd.Variable(x.normal_(), requires_grad = False)
 
     def ctx_identity(self, x):
         return x
