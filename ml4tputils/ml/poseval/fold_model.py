@@ -347,8 +347,8 @@ class PosEvalModel(nn.Module):
         self.eps = eps
 
         # Extra vars
-        self.concl_id = nn.Parameter(torch.ones([1,1]), requires_grad = False)
-        self.state_id = nn.Parameter(torch.zeros([1,1]), requires_grad = False)
+        self.register_buffer('concl_id', torch.ones([1,1]))
+        self.register_buffer('state_id', torch.zeros([1,1]))
 
     def var_identity(self, x):
         return x
@@ -413,7 +413,7 @@ class PosEvalModel(nn.Module):
                 id = self.concl_id
             else:
                 id = self.state_id
-            projs.append(self.proj_func(folder, self.cat_func(folder, [x, id])))
+            projs.append(self.proj_func(folder, self.cat_func(folder, [x, autograd.Variable(id)])))
         return projs
 
         # ctx_mask = torch.zeros(len(xs), 1, 1)
