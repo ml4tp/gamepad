@@ -58,18 +58,23 @@ class Folder(object):
         # Folding state
         self.model = model
         self.foldy = foldy
+        self.max_batch_ops = {}
+        self.max_batch_ops['embed_lookup_f'] = 128
+        self.max_batch_ops['ast_cell_f'] = 32
+        self.max_batch_ops['ctx_cell_f'] = 32
+        self.max_batch_ops['final_f'] = 32
         if self.foldy:
-            self._folder = ptf.Fold()
+            self._folder = ptf.Fold(max_batch_ops = self.max_batch_ops)
         else:
             self._folder = ptf.Unfold(self.model)
 
     def reset(self):
         """Reset folding state"""
         if self.foldy:
-            print("Folding")
-            self._folder = ptf.Fold()
+            #print("Folding")
+            self._folder = ptf.Fold(max_batch_ops = self.max_batch_ops)
         else:
-            print("Not folding")
+            #print("Not folding")
             self._folder = ptf.Unfold(self.model)
 
     def apply(self, *args):
@@ -330,7 +335,7 @@ class PosEvalModel(nn.Module):
         # Embeddings for Tactic State (ctx, goal)
         self.ctx_cell_init_state = autograd.Variable(torch.randn((1, self.state))) #TODO(prafulla): Change this?
         self.ctx_cell = nn.GRUCell(state, state)
-        self.proj = nn.Linear(state, state - 1)
+        self.proj = nn.Linear(state + 1, state)
         self.final = nn.Linear(state, outsize)
         self.ctx_emb_func = lambda folder, xs: ctx_embed(folder, xs, self.ctx_cell_init_state)
         self.loss_fn = nn.CrossEntropyLoss()
@@ -363,6 +368,12 @@ class PosEvalModel(nn.Module):
     def final_f(self, x):
         return self.final(x)
 
+    def proj_f(self, x):
+        return self.proj(x)
+
+    def cat_f(self, *xs):
+        return torch.cat(xs, dim = -1)
+
     # def loss_f(self, logits, target):
     #     return self.loss_fn(logits, target)
     #
@@ -372,8 +383,35 @@ class PosEvalModel(nn.Module):
     def final_func(self, folder, x):
         return folder.add('final_f', x)
 
+    def proj_func(self, folder, x):
+        return folder.add('proj_f', x)
+
+    def cat_func(self, folder, xs):
+        return folder.add('cat_f', *xs)
+
+    def mask(self, folder, xs):
+        # First element is conclu, rest is state
+        concl_id = autograd.Variable(torch.ones([1,1]))
+        state_id = autograd.Variable(torch.zeros([1,1]))
+        projs = []
+
+        for i,x in enumerate(xs):
+            if i == 0:
+                id = concl_id
+            else:
+                id = state_id
+            projs.append(self.proj_func(folder, self.cat_func(folder, [x, id])))
+        return projs
+
+        # ctx_mask = torch.zeros(len(xs), 1, 1)
+        # ctx_mask[0][0][0] = 1.0
+        # x = self.cat_func(xs, 0)
+        # x = self.proj(x)
+        # x = torch.cat([x, autograd.Variable(ctx_mask, requires_grad=False)], dim=-1)
+        # xs = torch.split(x, 1)
+
     def pred(self, folder, *tacst_evs):
-        xs = tacst_evs
+        xs = self.mask(folder, tacst_evs)
         x = self.ctx_emb_func(folder, xs)
         # Final layer for logits
         x = self.final_func(folder, x)
@@ -386,12 +424,12 @@ class PosEvalModel(nn.Module):
 
     # def logits(self, *tacst_evs):
     #     # Adding 1 to conclusion and 0 to expressions
-    #     # ctx_mask = torch.zeros(len(tacst_evs), 1, 1)
-    #     # ctx_mask[0][0][0] = 1.0
-    #     # x = torch.cat(list(tacst_evs), 0)
-    #     # x = self.proj(x)
-    #     # x = torch.cat([x, autograd.Variable(ctx_mask, requires_grad=False)], dim=-1)
-    #     # xs = torch.split(x, 1)
+        # ctx_mask = torch.zeros(len(tacst_evs), 1, 1)
+        # ctx_mask[0][0][0] = 1.0
+        # x = torch.cat(list(tacst_evs), 0)
+        # x = self.proj(x)
+        # x = torch.cat([x, autograd.Variable(ctx_mask, requires_grad=False)], dim=-1)
+        # xs = torch.split(x, 1)
     #     xs = tacst_evs
     #     # Run GRU on tacst
     #     x = self.ctx_emb_func(xs)

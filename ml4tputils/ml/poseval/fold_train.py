@@ -52,7 +52,7 @@ class PosEvalTrainer(object):
         for epoch in range(n_epochs):
             testart = time()
             total_loss = torch.Tensor([0])
-            for minibatch in iter_data(self.poseval_dataset, shuffle = True, size = n_batch):#, total = n_train // n_batch, ncols = 80, leave = False):
+            for minibatch in tqdm(iter_data(self.poseval_dataset, shuffle = True, size = n_batch), total = n_train // n_batch, ncols = 80, leave = False):
                 with Timer() as t:
                     # Prepare to compute gradients
                     self.model.zero_grad()
@@ -65,7 +65,7 @@ class PosEvalTrainer(object):
 
                     for tactr_id, poseval_pt in minibatch:
                         tacst_folder = self.tacst_folder[tactr_id]
-                        print("Training ({}/{}) AstSize={}".format(tactr_id, len(self.tactrs), poseval_pt.tacst_size))
+                        #print("Training ({}/{}) AstSize={}".format(tactr_id, len(self.tactrs), poseval_pt.tacst_size))
                         astsizes += poseval_pt.tacst_size
                         # Apply forward pass
 
@@ -81,7 +81,7 @@ class PosEvalTrainer(object):
                     opt.step()
                 updates += 1
                 total_loss += loss.data
-                print("Update %d Loss %.4f Interval %.4f AstSizes %d TpN %0.4f TpE %0.4f" % (updates, loss.data, t.interval, astsizes, t.interval / astsizes, t.interval / n_batch))
+                tqdm.write("Update %d Loss %.4f Interval %.4f AstSizes %d TpN %0.4f TpE %0.4f" % (updates, loss.data, t.interval, astsizes, t.interval / astsizes, t.interval / n_batch))
                 logger.log(epoch=epoch, updates=updates, loss="%0.4f" % loss.data)
                     # if idx % 10 == 0:
                     #     cpuStats()
