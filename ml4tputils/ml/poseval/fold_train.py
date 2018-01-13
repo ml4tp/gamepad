@@ -61,11 +61,15 @@ class PosEvalTrainer(object):
                     astsizes = 0
                     # Forward and Backward graph
                     for tactr_id, poseval_pt in minibatch:
+                        self.tacst_folder[tactr_id].reset()
+
+                    for tactr_id, poseval_pt in minibatch:
+                        tacst_folder = self.tacst_folder[tactr_id]
                         print("Training ({}/{}) AstSize={}".format(tactr_id, len(self.tactrs), poseval_pt.tacst_size))
                         astsizes += poseval_pt.tacst_size
                         # Apply forward pass
 
-                        logits += [self.tacst_folder[tactr_id].fold_tacst(poseval_pt.tacst)]
+                        logits += [tacst_folder.fold_tacst(poseval_pt.tacst)]
                         targets += [poseval_pt.subtr_bin]
 
                     #print(self.folder)

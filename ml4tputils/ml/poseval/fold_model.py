@@ -92,6 +92,8 @@ class TacStFolder(object):
         self.folder = folder
         self.folded = {}
 
+    def reset(self):
+        self.folded = {}
     # -------------------------------------------
     # Tactic state folding
 
