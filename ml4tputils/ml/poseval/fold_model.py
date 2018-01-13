@@ -19,7 +19,7 @@ from coq.util import SizeCoqExp
 
 from ml.utils import ResultLogger
 
-import pytorch_tools.torchfold as ptf
+import ml.torchfold as ptf
 
 
 """
