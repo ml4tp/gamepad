@@ -4,11 +4,7 @@ import psutil
 import sys
 from time import time
 
-import torch.cuda
-if torch.cuda.is_available():
-    import torch.cuda as t
-else:
-    import torch as t
+import torch
 import torch.autograd as autograd
 import torch.nn as nn
 import torch.nn.functional as F
@@ -250,7 +246,7 @@ class TacStFolder(object):
     # -------------------------------------------
     # Global constant folding
     def lookup(self, lt):
-        return self.folder.add('embed_lookup_f', autograd.Variable(t.LongTensor([lt])))
+        return self.folder.add('embed_lookup_f', autograd.Variable(torch.LongTensor([lt])))
 
     def fold_evar_name(self, exk):
         """Override Me"""
@@ -288,17 +284,8 @@ class TacStFolder(object):
 
     def fold_local_var(self, ty):
         """Override Me"""
-        return self.folder.add('var_identity', autograd.Variable(randn(1,self.model.D), requires_grad=False))
+        return self.folder.add('var_identity', autograd.Variable(torch.randn(1,self.model.D), requires_grad=False))
 
-
-def randn(*shape):
-    return t.FloatTensor(torch.randn(*shape))
-
-def ones(*shape):
-    return t.FloatTensor(torch.ones(*shape))
-
-def zeros(*shape):
-    return t.FloatTensor(torch.zeros(*shape))
 # -------------------------------------------------
 # Model
 
@@ -355,9 +342,13 @@ class PosEvalModel(nn.Module):
         self.loss_fn = nn.CrossEntropyLoss()
 
         # Layer Norm
-        self.gamma = nn.Parameter(ones(state))
-        self.beta = nn.Parameter(zeros(state))
+        self.gamma = nn.Parameter(torch.ones(state))
+        self.beta = nn.Parameter(torch.zeros(state))
         self.eps = eps
+
+        # Extra vars
+        self.concl_id = nn.Parameter(torch.ones([1,1]), requires_grad = False)
+        self.state_id = nn.Parameter(torch.zeros([1,1]), requires_grad = False)
 
     def var_identity(self, x):
         return x
@@ -414,15 +405,14 @@ class PosEvalModel(nn.Module):
 
     def mask(self, folder, xs):
         # First element is conclu, rest is state
-        concl_id = autograd.Variable(ones([1,1]))
-        state_id = autograd.Variable(zeros([1,1]))
+
         projs = []
 
         for i,x in enumerate(xs):
             if i == 0:
-                id = concl_id
+                id = self.concl_id
             else:
-                id = state_id
+                id = self.state_id
             projs.append(self.proj_func(folder, self.cat_func(folder, [x, id])))
         return projs
 
