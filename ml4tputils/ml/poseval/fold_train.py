@@ -38,8 +38,10 @@ class PosEvalTrainer(object):
 
         # Model
         self.model = model       # PyTorch model
+        self.torch = torch
         if cuda:
             self.model.cuda()
+            self.torch = torch.cuda
         self.folder = Folder(model, foldy, cuda)
         self.tacst_folder = {}   # Folder to embed
         for tactr_id, tactr in enumerate(self.tactrs):
@@ -80,7 +82,7 @@ class PosEvalTrainer(object):
                     folded_logits = self.folder.apply(logits)
                     assert folded_logits[0].shape == torch.Size([n_batch, 3]) #, folded_logits[0].shape
                     # Backprop
-                    loss = loss_fn(folded_logits[0], autograd.Variable(torch.LongTensor(targets), requires_grad = False))
+                    loss = loss_fn(folded_logits[0], autograd.Variable(self.torch.LongTensor(targets), requires_grad = False))
                     loss.backward()
                     opt.step()
                 updates += 1
