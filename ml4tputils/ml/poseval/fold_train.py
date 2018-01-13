@@ -57,7 +57,7 @@ class PosEvalTrainer(object):
         updates = 0
         for epoch in range(n_epochs):
             testart = time()
-            total_loss = torch.Tensor([0])
+            total_loss = self.torch.Tensor([0])
             for minibatch in tqdm(iter_data(self.poseval_dataset, shuffle = True, size = n_batch), total = n_train // n_batch, ncols = 80, leave = False):
                 with Timer() as t:
                     # Prepare to compute gradients
