@@ -288,11 +288,17 @@ class TacStFolder(object):
 
     def fold_local_var(self, ty):
         """Override Me"""
-        return self.folder.add('var_identity', autograd.Variable(torch.randn(1,self.model.D), requires_grad=False))
+        return self.folder.add('var_identity', autograd.Variable(randn(1,self.model.D), requires_grad=False))
 
 
 def randn(*shape):
-    return t.FloatTensor(*shape).normal_()
+    return t.FloatTensor(torch.randn(*shape))
+
+def ones(*shape):
+    return t.FloatTensor(torch.ones(*shape))
+
+def zeros(*shape):
+    return t.FloatTensor(torch.zeros(*shape))
 # -------------------------------------------------
 # Model
 
@@ -349,8 +355,8 @@ class PosEvalModel(nn.Module):
         self.loss_fn = nn.CrossEntropyLoss()
 
         # Layer Norm
-        self.gamma = nn.Parameter(torch.ones(state))
-        self.beta = nn.Parameter(torch.zeros(state))
+        self.gamma = nn.Parameter(ones(state))
+        self.beta = nn.Parameter(zeros(state))
         self.eps = eps
 
     def var_identity(self, x):
@@ -385,7 +391,7 @@ class PosEvalModel(nn.Module):
         return self.proj(x)
 
     def cat_f(self, *xs):
-        return t.cat(xs, dim = -1)
+        return torch.cat(xs, dim = -1)
 
     def ln_f(self, x):
         mean = x.mean(-1, keepdim=True)
@@ -408,8 +414,8 @@ class PosEvalModel(nn.Module):
 
     def mask(self, folder, xs):
         # First element is conclu, rest is state
-        concl_id = autograd.Variable(t.ones([1,1]))
-        state_id = autograd.Variable(t.zeros([1,1]))
+        concl_id = autograd.Variable(ones([1,1]))
+        state_id = autograd.Variable(zeros([1,1]))
         projs = []
 
         for i,x in enumerate(xs):
