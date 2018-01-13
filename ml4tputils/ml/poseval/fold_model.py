@@ -288,9 +288,11 @@ class TacStFolder(object):
 
     def fold_local_var(self, ty):
         """Override Me"""
-        return self.folder.add('var_identity', autograd.Variable(t.randn(1,self.model.D), requires_grad=False))
+        return self.folder.add('var_identity', autograd.Variable(torch.randn(1,self.model.D), requires_grad=False))
 
 
+def randn(*shape):
+    return t.FloatTensor(*shape).normal_()
 # -------------------------------------------------
 # Model
 
@@ -330,16 +332,16 @@ class PosEvalModel(nn.Module):
         # self.fixbody_embed = nn.Embedding(len(fix_to_idx), D)
 
         # Embeddings for Gallina AST
-        self.ast_cell_init_state = nn.Parameter(t.randn(1, self.state)) #TODO(prafulla): Change this?
+        self.ast_cell_init_state = nn.Parameter(torch.randn(1, self.state)) #TODO(prafulla): Change this?
         self.ast_cell = nn.GRUCell(state, state)
         self.ast_emb_func = lambda folder, xs: ast_embed(folder, xs, self.ast_cell_init_state, ln)
         for attr in ["rel", "var", "evar", "sort", "cast", "prod",
                      "lam", "letin", "app", "const", "ind", "construct",
                      "case", "fix", "cofix", "proj1"]:
-            self.__setattr__(attr, nn.Parameter(t.randn(1, self.state)))
+            self.__setattr__(attr, nn.Parameter(torch.randn(1, self.state)))
 
         # Embeddings for Tactic State (ctx, goal)
-        self.ctx_cell_init_state = nn.Parameter(t.randn(1, self.state)) #TODO(prafulla): Change this?
+        self.ctx_cell_init_state = nn.Parameter(torch.randn(1, self.state)) #TODO(prafulla): Change this?
         self.ctx_cell = nn.GRUCell(state, state)
         self.proj = nn.Linear(state + 1, state)
         self.final = nn.Linear(state, outsize)
@@ -347,8 +349,8 @@ class PosEvalModel(nn.Module):
         self.loss_fn = nn.CrossEntropyLoss()
 
         # Layer Norm
-        self.gamma = nn.Parameter(t.ones(state))
-        self.beta = nn.Parameter(t.zeros(state))
+        self.gamma = nn.Parameter(torch.ones(state))
+        self.beta = nn.Parameter(torch.zeros(state))
         self.eps = eps
 
     def var_identity(self, x):
