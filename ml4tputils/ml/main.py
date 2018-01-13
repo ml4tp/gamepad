@@ -46,6 +46,8 @@ if __name__ == "__main__":
     argparser.add_argument("--orig", action = 'store_true', help="Old is gold")
     argparser.add_argument('--no-cuda', action='store_true', default=False,
                         help='disables CUDA training')
+    argparser.add_argument('--nbatch', type = int, default = 32, help = 'minibatch size')
+    argparser.add_argument('--lr', type = float, default=0.0001, help = 'learning rate')
 
     args = argparser.parse_args()
     args.cuda = not args.no_cuda and torch.cuda.is_available()
@@ -54,7 +56,7 @@ if __name__ == "__main__":
     if args.cuda:
         torch.cuda.manual_seed(0)
 
-    print(args.fold, args.ln, args.cuda)
+    print(args)
     print("Loading tactrs ...")
     with open(args.load, 'rb') as f:
         tactrs = pickle.load(f)
@@ -66,7 +68,7 @@ if __name__ == "__main__":
     if not args.orig:
         model = PosEvalModel(*tokens_to_idx, ln=args.ln)
         trainer = PosEvalTrainer(model, tactrs, poseval_dataset, args.fold, args.cuda)
-        trainer.train()
+        trainer.train(args)
     else:
         from ml.embed import MyModel, PosEvalTrainer
         print("Original")

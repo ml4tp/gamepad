@@ -19,7 +19,6 @@ from ml.utils import ResultLogger, cpuStats, Timer
 
 np.random.seed(0)
 torch.manual_seed(0)
-logger = ResultLogger('mllogs/mbfoldembedv1.0.jsonl')
 
 def iter_data(data, size, shuffle = False):
     n = len(data)
@@ -47,11 +46,16 @@ class PosEvalTrainer(object):
         for tactr_id, tactr in enumerate(self.tactrs):
             self.tacst_folder[tactr_id] = TacStFolder(model, tactr, self.folder)
 
-    def train(self, n_epochs=20, n_batch=32):
+    def train(self, args):
+        logloc = 'mllogs/gv_nb_{}_lr_{}_ln_{}.jsonl'.format(args.nbatch, args.lr, args.ln)
+        print("Logging to ", logloc)
+        logger = ResultLogger(logloc)
+        n_epochs = 10000
+        n_batch = args.nbatch
         losses = []
         for param in self.model.parameters():
             print(param.shape)
-        opt = optim.Adam(self.model.parameters(), lr=0.001)
+        opt = optim.Adam(self.model.parameters(), lr=args.lr)
         n_train = len(self.poseval_dataset)
         loss_fn = nn.CrossEntropyLoss()
         updates = 0
