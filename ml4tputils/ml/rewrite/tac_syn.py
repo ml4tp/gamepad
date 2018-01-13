@@ -10,6 +10,8 @@ from pycoqtop.coqtop import CoqTop
 # 2. [DONE] interface with coqtop
 # 3. [DONE] sample from policy, send to coqtop, parse result
 # 4. Extension is to write which part of goal the model is attending
+# 5. Load pretrained model. Use it to do inference. Feed in next state.
+# 6. Generate dataset without myrewrite from dataset with myrewrite
 
 
 PREFIX = """(* The set of the group. *)
