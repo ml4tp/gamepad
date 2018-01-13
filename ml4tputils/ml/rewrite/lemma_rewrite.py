@@ -2,10 +2,13 @@ from collections import defaultdict
 import random
 import numpy as np
 
+"""
+Generate lemma statements, parameterized by length.
+"""
+
 prefix = """(*Set Printing All.*)
 Require Import Omega.
 
-Section Group.
 (* The set of the group. *)
 Axiom G : Set.
 
@@ -41,8 +44,6 @@ repeat my_rewrite.
 reflexivity.
 Qed.
 """
-
-end = """End Group."""
 
 def weighted_choice(weights):
     rnd = random.random() * sum(weights)
@@ -130,5 +131,3 @@ while(True):
 #    print(proof)
     if(counter == numTheorems):
         break
-
-# print(end)
