@@ -47,6 +47,8 @@ class PosEvalTrainer(object):
 
     def train(self, n_epochs=20, n_batch=32):
         losses = []
+        for param in self.model.parameters():
+            print(param.shape)
         opt = optim.Adam(self.model.parameters(), lr=0.001)
         n_train = len(self.poseval_dataset)
         loss_fn = nn.CrossEntropyLoss()
