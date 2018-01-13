@@ -47,7 +47,7 @@ if __name__ == "__main__":
     argparser.add_argument('--no-cuda', action='store_true', default=False,
                         help='disables CUDA training')
     argparser.add_argument('--nbatch', type = int, default = 32, help = 'minibatch size')
-    argparser.add_argument('--lr', type = float, default=0.0001, help = 'learning rate')
+    argparser.add_argument('--lr', type = float, default=0.001, help = 'learning rate')
 
     args = argparser.parse_args()
     args.cuda = not args.no_cuda and torch.cuda.is_available()
