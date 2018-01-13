@@ -52,7 +52,7 @@ if __name__ == "__main__":
     print("Loading poseval dataset ...")
     with open(args.poseval, 'rb') as f:
         poseval_dataset, tokens_to_idx = pickle.load(f)
-
+    print("Points ", len(poseval_dataset))
     if not args.orig:
         model = PosEvalModel(*tokens_to_idx)
         trainer = PosEvalTrainer(model, tactrs, poseval_dataset, args.fold)
