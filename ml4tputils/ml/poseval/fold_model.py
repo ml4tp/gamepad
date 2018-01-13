@@ -31,16 +31,18 @@ Version that uses torchfold
     close, medium, far
 """
 
-
 # -------------------------------------------------
 # Helper
 
-def ast_embed(folder, xs, init):
+def ast_embed(folder, xs, init, ln):
     hidden = init
     for i, x in enumerate(xs):
         #print("GRU Embed ",i, x.shape)
         hidden = folder.add('ast_cell_f', x, hidden) #cell(x.view(1, -1, 128), hidden)
     #print("hidden shape", hidden.shape)
+    if ln:
+        #print("using ln")
+        hidden = folder.add('ln_f', hidden)
     return hidden
 
 def ctx_embed(folder, xs, init):
@@ -54,19 +56,17 @@ def ctx_embed(folder, xs, init):
 # -------------------------------------------------
 # Fold over anything
 class Folder(object):
-    def __init__(self, model, foldy):
+    def __init__(self, model, foldy, cuda):
         # Folding state
         self.model = model
         self.foldy = foldy
+        self.cuda = cuda
         self.max_batch_ops = {}
         self.max_batch_ops['embed_lookup_f'] = 128
         self.max_batch_ops['ast_cell_f'] = 32
         self.max_batch_ops['ctx_cell_f'] = 32
         self.max_batch_ops['final_f'] = 32
-        if self.foldy:
-            self._folder = ptf.Fold(max_batch_ops = self.max_batch_ops)
-        else:
-            self._folder = ptf.Unfold(self.model)
+        self.reset()
 
     def reset(self):
         """Reset folding state"""
@@ -76,6 +76,8 @@ class Folder(object):
         else:
             #print("Not folding")
             self._folder = ptf.Unfold(self.model)
+        if self.cuda:
+            self._folder.cuda()
 
     def apply(self, *args):
         """Call after folding entire tactic state to force computation"""
@@ -291,7 +293,7 @@ class TacStFolder(object):
 class PosEvalModel(nn.Module):
     def __init__(self, sort_to_idx, const_to_idx, ind_to_idx,
                  conid_to_idx, evar_to_idx, fix_to_idx,
-                 D=128, state=128, outsize=3):
+                 D=128, state=128, outsize=3, eps=1e-6, ln = False):
         super().__init__()
 
         # Dimensions
@@ -326,7 +328,7 @@ class PosEvalModel(nn.Module):
         # Embeddings for Gallina AST
         self.ast_cell_init_state = autograd.Variable(torch.randn((1, self.state))) #TODO(prafulla): Change this?
         self.ast_cell = nn.GRUCell(state, state)
-        self.ast_emb_func = lambda folder, xs: ast_embed(folder, xs, self.ast_cell_init_state)
+        self.ast_emb_func = lambda folder, xs: ast_embed(folder, xs, self.ast_cell_init_state, ln)
         for attr in ["rel", "var", "evar", "sort", "cast", "prod",
                      "lam", "letin", "app", "const", "ind", "construct",
                      "case", "fix", "cofix", "proj1"]:
@@ -339,6 +341,11 @@ class PosEvalModel(nn.Module):
         self.final = nn.Linear(state, outsize)
         self.ctx_emb_func = lambda folder, xs: ctx_embed(folder, xs, self.ctx_cell_init_state)
         self.loss_fn = nn.CrossEntropyLoss()
+
+        # Layer Norm
+        self.gamma = nn.Parameter(torch.ones(state))
+        self.beta = nn.Parameter(torch.zeros(state))
+        self.eps = eps
 
     def var_identity(self, x):
         return x
@@ -374,6 +381,10 @@ class PosEvalModel(nn.Module):
     def cat_f(self, *xs):
         return torch.cat(xs, dim = -1)
 
+    def ln_f(self, x):
+        mean = x.mean(-1, keepdim=True)
+        std = x.std(-1, keepdim=True)
+        return self.gamma * (x - mean) / (std + self.eps) + self.beta
     # def loss_f(self, logits, target):
     #     return self.loss_fn(logits, target)
     #
@@ -417,6 +428,8 @@ class PosEvalModel(nn.Module):
         x = self.final_func(folder, x)
         return x
 
+    def pred_attention(self, folder, *tacst_evs):
+        self.attn_proj_func(folder, *tacst_evs)
     # def loss(self, folder, tactst_folder, tactst, target):
     #     logits = tactst_folder.fold_tacst(tactst)
     #     loss = self.loss_func(folder, logits, target)

@@ -31,14 +31,16 @@ def iter_data(data, size, shuffle = False):
         yield data[start : start + size]
 
 class PosEvalTrainer(object):
-    def __init__(self, model, tactrs, poseval_dataset, foldy):
+    def __init__(self, model, tactrs, poseval_dataset, foldy, cuda):
         # Other state
         self.tactrs = tactrs
         self.poseval_dataset = poseval_dataset  
 
         # Model
         self.model = model       # PyTorch model
-        self.folder = Folder(model, foldy)
+        if cuda:
+            self.model.cuda()
+        self.folder = Folder(model, foldy, cuda)
         self.tacst_folder = {}   # Folder to embed
         for tactr_id, tactr in enumerate(self.tactrs):
             self.tacst_folder[tactr_id] = TacStFolder(model, tactr, self.folder)
