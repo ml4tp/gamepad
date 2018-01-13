@@ -98,6 +98,10 @@ class TacStFolder(object):
 
         self.folder = folder
         self.folded = {}
+        if folder.cuda:
+            self.torch = torch.cuda
+        else:
+            self.torch = torch
 
     def reset(self):
         self.folded = {}
@@ -246,7 +250,7 @@ class TacStFolder(object):
     # -------------------------------------------
     # Global constant folding
     def lookup(self, lt):
-        return self.folder.add('embed_lookup_f', autograd.Variable(torch.LongTensor([lt])))
+        return self.folder.add('embed_lookup_f', autograd.Variable(self.torch.LongTensor([lt])))
 
     def fold_evar_name(self, exk):
         """Override Me"""
@@ -284,7 +288,7 @@ class TacStFolder(object):
 
     def fold_local_var(self, ty):
         """Override Me"""
-        return self.folder.add('var_identity', autograd.Variable(torch.randn(1,self.model.D), requires_grad=False))
+        return self.folder.add('var_identity', autograd.Variable(self.torch.FloatTensor(1,self.model.D), requires_grad=False))
 
 # -------------------------------------------------
 # Model
@@ -350,8 +354,8 @@ class PosEvalModel(nn.Module):
         self.register_buffer('concl_id', torch.ones([1,1]))
         self.register_buffer('state_id', torch.zeros([1,1]))
 
-    def var_identity(self, x):
-        return x
+    def var_normal(self, x):
+        return x.normal_()
 
     def ctx_identity(self, x):
         return x
