@@ -169,7 +169,7 @@ if __name__ == "__main__":
     # opt = optim.Adam(model.parameters(), lr=0.0)
 
     # Outer training loop
-    for epoch in range(10):
+    for epoch in range(2):
         start = time.time()
         iteration = 0
         
