@@ -63,6 +63,7 @@ class MyAlgRewriter(object):
         self.top.sendone(lemma)
         self.top.sendone("Proof.")
         self.top.sendone("intros.")
+        self.load_tcoq_result()
 
         self.good_choices = 0
         self.num_steps = 0
@@ -82,9 +83,11 @@ class MyAlgRewriter(object):
         ts_parser = TacStParser("/tmp/tcoq.log")
         lemma = ts_parser.parse_partial_lemma()
         
-        # Return decoder, contex, and conclusion
+        # Set decoder, contex, and conclusion
         decl = lemma.decls[-1]
-        return lemma.decoder, decl.ctx, decl.concl_idx
+        self.decoder = lemma.decoder
+        self.ctx = decl.ctx
+        self.concl_idx = decl.concl_idx
 
     def proof_complete(self):
         # NOTE(deh): only works for straight-line proofs
@@ -95,11 +98,11 @@ class MyAlgRewriter(object):
         else:
             return False
 
-    def _dump_ctx(self, decoder, ctx, concl_idx):
-        self._log("CTX")
-        for ident, typ_idx in ctx.traverse():
-            self._log(ident, typ_idx, decoder.decode_exp_by_key(typ_idx))
-        self._log("CONCL", concl_idx, decoder.decode_exp_by_key(concl_idx))
+    def _dump_ctx(self):
+        print("CTX")
+        for ident, typ_idx in self.ctx.traverse():
+            print(ident, typ_idx, self.decoder.decode_exp_by_key(typ_idx))
+        print("CONCL", self.concl_idx, self.decoder.decode_exp_by_key(self.concl_idx))
 
     def attempt_proof_step(self):
         self.num_steps += 1
@@ -112,10 +115,10 @@ class MyAlgRewriter(object):
             res = self.top.sendone("rewrite id_l.")
         self._log(res)
 
-        decoder, ctx, concl_idx = self.load_tcoq_result()
-        self._dump_ctx(decoder, ctx, concl_idx)
+        self.load_tcoq_result()
+        self._dump_ctx()
         
-        return self.is_success(res), decoder, ctx, concl_idx
+        return self.is_success(res)
 
     def attempt_proof(self):
         while not self.proof_complete():
