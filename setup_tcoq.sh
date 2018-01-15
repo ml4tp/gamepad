@@ -5,5 +5,4 @@ pushd tcoq
   make clean
   mkdir build
   ./configure -prefix build
-  sh myconfig.sh
 popd
