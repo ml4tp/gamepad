@@ -7,7 +7,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 
 from ml.poseval.fold_model import TacStFolder
-from ml.utils import ResultLogger, cpuStats, Timer
+from ml.utils import ResultLogger, cpuStats, Timer, currTS
 
 
 # -------------------------------------------------
@@ -38,7 +38,13 @@ class PosEvalTrainer(object):
         torch.manual_seed(0)
 
     def finalize(self):
+        # Save the model (parameters only)
+        timestamp = currTS()
+        filename = "./model-{}.params".format(timestamp)
+        print("Saving model to {}...".format(filename))
+        torch.save(model.state_dict(), filename)
         self.logger.close()
+        return filename
 
     def train(self, epochs=20):
         losses = []
@@ -83,6 +89,28 @@ class PosEvalTrainer(object):
             losses.append(total_loss)
         print("Losses", losses)
         return losses
+
+
+class PosEvalInfer(object):
+    def __init__(self, tactrs, model, f_fold=True):
+        self.tactrs = tactrs
+        self.model = model
+
+        self.tacst_folder = {}   # Folder to embed
+        for tactr_id, tactr in enumerate(self.tactrs):
+            self.tacst_folder[tactr_id] = TacStFolder(model, tactr, f_fold)
+
+    def inference(self, poseval_test):
+        all_logits = []
+        for idx, (tactr_id, poseval_pt) in enumerate(poseval_test):
+            folder = self.tacst_folder[tactr_id]
+            folder.reset()
+            torun_logits += [folder.fold_tacst(poseval_pt.tacst)]
+            res = folder.folder.apply(model, [torun_logits])
+            for idx, poseval_pt in enumerate(poseval_test):
+                logits = res[0][idx].data.numpy()
+                # label = res[1][idx].data.numpy()
+                print("Logits", logits, "Predicted", np.argmax(logits), "Actual", poseval_pt.subtr_bin)
 
 
 # -------------------------------------------------

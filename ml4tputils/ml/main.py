@@ -52,11 +52,19 @@ if __name__ == "__main__":
     with open(args.poseval, 'rb') as f:
         poseval_dataset, tokens_to_idx = pickle.load(f)
 
+    # Training
     model = PosEvalModel(*tokens_to_idx)
     trainer = PosEvalTrainer(model, tactrs, poseval_dataset,
                              "mllogs/embedv1.0.jsonl", args.fold)
     trainer.train()
-    trainer.finalize()
+    filename = trainer.finalize()
+
+    # Inference
+    model_infer = PosEvalModel(*tokens_to_idx)
+    model_infer.load_state_dict(torch.load(filename))
+    infer = PosEvalInfer(model_infer)
+    infer.infer(poseval_dataset)
+
 
     # TODO(deh): Uncomment me to test with checker
     # model = PosEvalModel(*tokens_to_idx)

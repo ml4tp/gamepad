@@ -106,8 +106,8 @@ cfg.add_prod_term('EXPR', 'b')
 print(prefix)
 
 counter = 0
-numTheorems = 10
-lengthSentence = 5 
+numTheorems = 50
+lengthSentence = 10 
 
 while(True):
     genStr = cfg.gen_random_wrapper('EXPR', lengthSentence)

@@ -56,9 +56,9 @@ def policy():
 class MyAlgRewriter(object):
     def __init__(self, lemma):
         self.ts_parser = TacStParser("/tmp/tcoq.log")
+
         self.top = CoqTop()
         self.top.__enter__()
-
         self.top.sendone(PREFIX)
         self.top.sendone(lemma)
         self.top.sendone("Proof.")
