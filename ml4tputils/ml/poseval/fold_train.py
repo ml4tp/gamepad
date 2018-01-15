@@ -110,11 +110,8 @@ class PosEvalInfer(object):
             torun_logits += [folder.fold_tacst(poseval_pt.tacst)]
             torun_labels += [0]
             res = folder.apply(torun_logits, torun_labels)
-            for idx, (tactr_id, poseval_pt) in enumerate(poseval_test):
-                print("HERE", res[0])
-                logits = res[0].data.numpy()
-                # label = res[1][idx].data.numpy()
-                # print("Logits", logits, "Predicted", np.argmax(logits), "Actual", poseval_pt.subtr_bin)
+            logits = res[0].data.numpy()
+            print("Logits", logits, "Predicted", np.argmax(logits), "Actual", poseval_pt.subtr_bin)
 
 
 # -------------------------------------------------

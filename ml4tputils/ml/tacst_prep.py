@@ -40,7 +40,7 @@ class SizeSubTr(object):
             for child in children:
                 # TODO(deh): ignore self-edges
                 if child != node:
-                    size += self.size(child)
+                    size += self.size(child) + 1
             return size
         else:
             return 1
