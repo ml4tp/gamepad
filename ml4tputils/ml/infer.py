@@ -16,7 +16,7 @@ with open("poseval.pickle", 'rb') as f:
     poseval_dataset, tokens_to_idx = pickle.load(f)
 
 # Inference
-modelName = "mllogs/model-2018-01-14T181649.869923.params"
+modelName = "mllogs/model-2018-01-14T185643.886047.params"
 model_infer = PosEvalModel(*tokens_to_idx)
 model_infer.load_state_dict(torch.load(modelName))
 infer = PosEvalInfer(tactrs, model_infer)
