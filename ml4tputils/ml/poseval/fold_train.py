@@ -1,3 +1,4 @@
+import numpy as np
 from time import time
 
 import torch
@@ -42,7 +43,7 @@ class PosEvalTrainer(object):
         timestamp = currTS()
         filename = "./model-{}.params".format(timestamp)
         print("Saving model to {}...".format(filename))
-        torch.save(model.state_dict(), filename)
+        torch.save(self.model.state_dict(), filename)
         self.logger.close()
         return filename
 
@@ -100,17 +101,19 @@ class PosEvalInfer(object):
         for tactr_id, tactr in enumerate(self.tactrs):
             self.tacst_folder[tactr_id] = TacStFolder(model, tactr, f_fold)
 
-    def inference(self, poseval_test):
-        all_logits = []
+    def infer(self, poseval_test):
+        torun_logits = []
+        torun_labels = [0 for _ in poseval_test]
         for idx, (tactr_id, poseval_pt) in enumerate(poseval_test):
             folder = self.tacst_folder[tactr_id]
             folder.reset()
             torun_logits += [folder.fold_tacst(poseval_pt.tacst)]
-            res = folder.folder.apply(model, [torun_logits])
-            for idx, poseval_pt in enumerate(poseval_test):
-                logits = res[0][idx].data.numpy()
+            res = folder.apply(torun_logits, torun_labels)
+            for idx, (tactr_id, poseval_pt) in enumerate(poseval_test):
+                print("HERE", res[0])
+                logits = res[0].data.numpy()
                 # label = res[1][idx].data.numpy()
-                print("Logits", logits, "Predicted", np.argmax(logits), "Actual", poseval_pt.subtr_bin)
+                # print("Logits", logits, "Predicted", np.argmax(logits), "Actual", poseval_pt.subtr_bin)
 
 
 # -------------------------------------------------

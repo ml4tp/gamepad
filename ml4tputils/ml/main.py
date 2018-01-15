@@ -2,6 +2,8 @@ import argparse
 import os.path as op
 import pickle
 
+import torch
+
 from recon.embed_tokens import EmbedTokens
 from recon.recon import Recon, FILES
 from ml.embed import EmbedCoqTacTr#, MyModel, PosEvalTrainer
@@ -9,7 +11,7 @@ import tacst_prep
 from tacst_prep import PosEvalPt
 
 from ml.poseval.fold_model import PosEvalModel
-from ml.poseval.fold_train import PosEvalTrainer, ChkPosEvalTrainer
+from ml.poseval.fold_train import PosEvalTrainer, PosEvalInfer
 
 """
 [Note]
@@ -62,7 +64,7 @@ if __name__ == "__main__":
     # Inference
     model_infer = PosEvalModel(*tokens_to_idx)
     model_infer.load_state_dict(torch.load(filename))
-    infer = PosEvalInfer(model_infer)
+    infer = PosEvalInfer(tactrs, model_infer)
     infer.infer(poseval_dataset)
 
 
