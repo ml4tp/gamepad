@@ -103,6 +103,7 @@ class PosEvalInfer(object):
             self.tacst_folder[tactr_id] = TacStFolder(model, tactr, f_fold)
 
     def infer(self, poseval_test):
+        preds = []
         for idx, (tactr_id, poseval_pt) in enumerate(poseval_test):
             torun_logits, torun_labels = [], []
             folder = self.tacst_folder[tactr_id]
@@ -111,7 +112,9 @@ class PosEvalInfer(object):
             torun_labels += [0]
             res = folder.apply(torun_logits, torun_labels)
             logits = res[0].data.numpy()
+            preds += [np.argmax(logits)]
             print("Logits", logits, "Predicted", np.argmax(logits), "Actual", poseval_pt.subtr_bin)
+        return preds
 
 
 # -------------------------------------------------
