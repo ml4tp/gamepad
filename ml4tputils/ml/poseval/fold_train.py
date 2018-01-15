@@ -41,7 +41,8 @@ class PosEvalTrainer(object):
     def finalize(self):
         # Save the model (parameters only)
         timestamp = currTS()
-        filename = "./model-{}.params".format(timestamp)
+        dirname = "mllogs/"
+        filename = "./" + dirname + "model-{}.params".format(timestamp)
         print("Saving model to {}...".format(filename))
         torch.save(self.model.state_dict(), filename)
         self.logger.close()
@@ -102,12 +103,12 @@ class PosEvalInfer(object):
             self.tacst_folder[tactr_id] = TacStFolder(model, tactr, f_fold)
 
     def infer(self, poseval_test):
-        torun_logits = []
-        torun_labels = [0 for _ in poseval_test]
         for idx, (tactr_id, poseval_pt) in enumerate(poseval_test):
+            torun_logits, torun_labels = [], []
             folder = self.tacst_folder[tactr_id]
             folder.reset()
             torun_logits += [folder.fold_tacst(poseval_pt.tacst)]
+            torun_labels += [0]
             res = folder.apply(torun_logits, torun_labels)
             for idx, (tactr_id, poseval_pt) in enumerate(poseval_test):
                 print("HERE", res[0])
