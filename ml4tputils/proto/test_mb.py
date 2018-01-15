@@ -2,6 +2,7 @@ import argparse
 import math
 import time
 
+import numpy as np
 import torch
 import torch.autograd as autograd
 import torch.optim as optim
@@ -20,10 +21,7 @@ Goal is to test out pytorch_tools.torchfold tool
 3. Fold().apply(model, [node, label]) runs the nodes 
 
 Options:
--m=0 gives simple model
--m=1 gives complicated model
-
--b sets batch to true
+-s n    number of minibatches to run before reseting sharing
 """
 
 
@@ -166,10 +164,9 @@ if __name__ == "__main__":
     folder = MyFolderSimp(model, size)
     criterion = nn.CrossEntropyLoss()
     opt = optim.Adam(model.parameters(), lr=0.01)
-    # opt = optim.Adam(model.parameters(), lr=0.0)
 
     # Outer training loop
-    for epoch in range(2):
+    for epoch in range(100):
         start = time.time()
         iteration = 0
         
@@ -181,7 +178,6 @@ if __name__ == "__main__":
                 print("Resetting sharing")
                 folder.reset()
 
-            # folder = MyFolderSimp(model, size, sharer)
             all_logits, all_labels = [], []
             for tree, label in batch:
                 all_logits += [folder.encode(tree)]
@@ -194,3 +190,25 @@ if __name__ == "__main__":
             iteration += 1
             print("Avg. Time: %fs" % ((time.time() - start) / iteration))
         print("Loss: ", loss)
+
+    # Save the model (parameters only)
+    print("Saving model...")
+    torch.save(model.state_dict(), "./model.params")
+
+    # Load the model
+    print("Loading model...")
+    model = MyModelSimp(num_classes, size, num_const)
+    model.load_state_dict(torch.load("./model.params"))
+    folder = MyFolderSimp(model, size)
+
+    # Run inference
+    all_logits, all_labels = [], []
+    for batch_idx, batch in enumerate(batches):
+        for tree, label in batch:
+            all_logits += [folder.encode(tree)]
+            all_labels += [label]
+        res = folder.folder.apply(model, [all_logits, all_labels])
+        for idx in range(res[1].size()[0]):
+            logits = res[0][idx].data.numpy()
+            label = res[1][idx].data.numpy()
+            print("Logits", logits, "Predicted", np.argmax(logits), "Actual", label)
