@@ -5,6 +5,7 @@ import psutil
 import sys
 # from time import time
 import time
+import datetime
 
 
 class ResultLogger(object):
@@ -38,3 +39,9 @@ class Timer(object):
     def __exit__(self, *args):
         self.end = time.clock()
         self.interval = self.end - self.start
+
+# current timestamp
+def currTS():
+	ts = datetime.datetime.now().isoformat()
+	ts = ts.replace(":","")
+	return ts
