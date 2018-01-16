@@ -25,6 +25,14 @@ coq, mathcomp-1.6.1, and mathcomp-odd-order-1.6.1 come from different repos.
 
 # Build
 
+Note: In order to build tcoq, make sure you use OCaml 4.05.0. It does not work with OCaml 4.06.0. You may need to run:
+
+   ```
+   opam switch 4.05.0
+   opam install camlp4
+   opam install ocamlfind
+   ```
+
 Build dataset:
 1. Configure coq first.
    ```
@@ -40,9 +48,9 @@ Step 2 above can be broken down into:
    ```
    ./build_tcoq.sh
    ```
-2. IMPORTANT: set your terminal to point to the built version of coq
+2. IMPORTANT: set your terminal to point to the built version of tcoq (by setting right PATH)
    ```
-   source myconfig.sh
+   source build_config.sh
    ```
 3. Build mathematical components and Feit-Thompson
    ```
@@ -87,3 +95,5 @@ TODO(deh): reconstruct tactics. The number of connected components should be 1 i
 # Other
 
 TODO(deh): missing requirements.txt
+
+For training, you need `pytorch-tools`, which is located here: https://github.com/nearai/pytorch-tools. Run `python3 setup.py develop` inside this repository.

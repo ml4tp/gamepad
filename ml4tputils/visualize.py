@@ -122,6 +122,7 @@ if __name__ == "__main__":
             for file in pffiles:
                 vis.visualize_file(file)
         else:
-            vis.visualize_file(args.file)
+            file = op.join(args.path, args.file)
+            vis.visualize_file(file)
         vis.finalize()
         vis.save_tactrs()

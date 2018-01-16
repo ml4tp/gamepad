@@ -3,6 +3,7 @@ import os.path as op
 import pickle
 
 from recon.embed_tokens import EmbedTokens
+from coq.tactics import TACTIC_INFO
 from coq.util import SizeCoqExp
 
 """
@@ -28,6 +29,10 @@ class PosEvalPt(object):
             self.subtr_bin = 1
         else:
             self.subtr_bin = 2
+        self.tac_bin = 0
+        for idx, (tac_p, _) in enumerate(TACTIC_INFO):
+            if tac[-1].ftac.startswith(tac_p):
+                self.tac_bin = idx
 
 class SizeSubTr(object):
     def __init__(self, tactr):
@@ -35,12 +40,24 @@ class SizeSubTr(object):
 
     def size(self, node):
         children = list(self.tactr.graph.successors(node))
+<<<<<<< HEAD
         size = 1
         for child in children:
             # TODO(deh): ignore self-edges
             if child != node:
                 size += self.size(child)
         return size
+=======
+        if children:
+            size = 0
+            for child in children:
+                # TODO(deh): ignore self-edges
+                if child != node:
+                    size += self.size(child) + 1
+            return size
+        else:
+            return 1
+>>>>>>> master
 
 
 class PosEvalDataset(object):

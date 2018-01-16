@@ -109,6 +109,7 @@ class TacStFolder(object):
 
     def reset(self):
         self.folded = {}
+
     # -------------------------------------------
     # Tactic state folding
 
@@ -314,7 +315,7 @@ class PosEvalModel(nn.Module):
         for table_name, table in zip(table_names, tables):
             self.shifts[table_name] = shift
             shift += len(table)
-        print(self.shifts, shift)
+        # print(self.shifts, shift)
         self.embed_table = nn.Embedding(shift, D)
 
         # Embeddings for constants
@@ -469,3 +470,4 @@ class PosEvalModel(nn.Module):
     #     x = self.final(x)
     #     print("Output shape", x.shape)
     #     return x.view(1, -1)
+

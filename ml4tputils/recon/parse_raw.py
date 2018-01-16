@@ -414,6 +414,17 @@ class TacStParser(object):
             line = h_head.raw_peek_line()
         raise NameError("Lemma {} not found".format(lemma))
 
+    def ignore_constr_inc(self):
+        # Internal
+        h_head = self.h_head
+        self._mylog("ignore_constr_inc<{}>".format(h_head.peek_line()))
+
+        # Ignore for whole dump files
+        h_head.consume_line()
+        while not h_head.peek_line().startswith(TOK_END_INC):
+            h_head.consume_line()
+        h_head.consume_line()
+
     def parse_lemma(self):
         """
         Parse tactic states for an entire lemma.
@@ -460,6 +471,8 @@ class TacStParser(object):
                 self.decls += [decl]
             elif line.startswith(TOK_END_TAC_ST):
                 self.parse_endtacst()
+            elif line.startswith(TOK_BEG_INC):
+                self.ignore_constr_inc()
             elif line.startswith(TOK_CONSTRS):
                 self.parse_epilogue()
             else:
@@ -485,3 +498,77 @@ class TacStParser(object):
             line = h_head.raw_peek_line()
         self.exhausted = True
         return self.lems
+
+    # ------------------------------------
+    # Interactive parsing
+
+    def parse_constr_inc(self):
+        # Internal
+        h_head = self.h_head
+        self._mylog("ignore_constr_inc<{}>".format(h_head.peek_line()))
+
+        h_head.consume_line()
+        while not h_head.peek_line().startswith(TOK_END_INC):
+            k, v = self._parse_table_entry()
+            self.constr_share[int(k)] = v
+        h_head.consume_line()
+
+    def parse_partial_lemma(self):
+        """
+        Parse partial tactic states for an entire lemma.
+        """
+        # Internal
+        h_head = self.h_head
+        self._mylog("parse_lemma<{}>".format(h_head.peek_line()))
+
+        if self.exhausted:
+            raise NameError("Already parsed file {}".format(self.filename))
+
+        # Parse
+        line = h_head.raw_peek_line()
+        lemname_stk = []
+        while line != "":
+            line = line.rstrip()
+            if line.startswith(TOK_BEG_PF):
+                lem_name = self.parse_begin_pf()
+                lemname_stk.append(lem_name)
+            elif line.startswith(TOK_END_PF):
+                self.parse_qed()
+                # Accumulate lemma
+                lem_name = lemname_stk.pop()
+                lemma = LemTacSt(lem_name, self.decls, self.ctx_prtyps,
+                                 self.ctx_prbods, self.ctx_prgls,
+                                 self.constr_share)
+                self.lems.append(lemma)
+                if h_head.raw_peek_line() == "":
+                    self.exhausted = True
+
+                # Reset for new lemma
+                self._reset()
+
+                return lemma
+            elif line.startswith(TOK_BEG_SUB_PF):
+                self.parse_begsubpf()
+                # TODO(deh): keep track of this?
+            elif line.startswith(TOK_END_SUB_PF):
+                self.parse_endsubpf()
+                # TODO(deh): keep track of this?
+            elif line.startswith(TOK_BEG_TAC_ST):
+                callid, mode, tac, kind, loc = self.parse_begtacst()
+                decl = self.parse_decl(callid, mode, tac, kind, loc)
+                self.decls += [decl]
+            elif line.startswith(TOK_END_TAC_ST):
+                self.parse_endtacst()
+            elif line.startswith(TOK_BEG_INC):
+                self.parse_constr_inc()
+            elif line.startswith(TOK_CONSTRS):
+                self.parse_epilogue()
+            else:
+                raise NameError("Parsing error at line {}: {}".format(
+                                h_head.line, h_head.peek_line()))
+            line = h_head.raw_peek_line()
+        # Accumulate lemma
+        lem_name = lemname_stk.pop()
+        return LemTacSt(lem_name, self.decls, self.ctx_prtyps,
+                        self.ctx_prbods, self.ctx_prgls,
+                        self.constr_share)

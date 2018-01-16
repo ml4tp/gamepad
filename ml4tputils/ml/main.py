@@ -2,14 +2,9 @@ import argparse
 import os.path as op
 import pickle
 import torch
-from recon.embed_tokens import EmbedTokens
-from recon.recon import Recon, FILES
-from ml.embed import EmbedCoqTacTr#, MyModel, PosEvalTrainer
-import tacst_prep
-from tacst_prep import PosEvalPt
 
 from ml.poseval.fold_model import PosEvalModel
-from ml.poseval.fold_train import PosEvalTrainer
+from ml.poseval.fold_train import PosEvalTrainer #, PosEvalInfer
 
 """
 [Note]
@@ -47,6 +42,8 @@ if __name__ == "__main__":
     argparser.add_argument('--no-cuda', action='store_true', default=False,
                         help='disables CUDA training')
     argparser.add_argument('--nbatch', type = int, default = 32, help = 'minibatch size')
+    argparser.add_argument('--valbatch', type = int, default = 32, help = 'minibatch size for validation')
+
     argparser.add_argument('--lr', type = float, default=0.001, help = 'learning rate')
     argparser.add_argument('--name', type = str, default = "", help = 'name of experiment')
     argparser.add_argument('--mload', type = str, default = "", help = 'path to load saved model from')
@@ -67,11 +64,12 @@ if __name__ == "__main__":
     print("Loading poseval dataset ...")
     with open(args.poseval, 'rb') as f:
         poseval_dataset, tokens_to_idx = pickle.load(f)
+
     print("Points ", len(poseval_dataset))
     if not args.orig:
         model = PosEvalModel(*tokens_to_idx, ln=args.ln)
-        trainer = PosEvalTrainer(model, tactrs, poseval_dataset, args.fold, args.cuda)
-        trainer.train(args)
+        trainer = PosEvalTrainer(model, tactrs, poseval_dataset, args)
+        trainer.train()
     else:
         from ml.embed import MyModel, PosEvalTrainer
         print("Original")
@@ -79,53 +77,20 @@ if __name__ == "__main__":
         trainer = PosEvalTrainer(model, tactrs, poseval_dataset)
         trainer.train()
 
+    # # Inference
+    # model_infer = PosEvalModel(*tokens_to_idx)
+    # model_infer.load_state_dict(torch.load(filename))
+    # infer = PosEvalInfer(tactrs, model_infer)
+    # infer.infer(poseval_dataset)
+
+
+    # TODO(deh): Uncomment me to test with checker
     # model = PosEvalModel(*tokens_to_idx)
-    # trainer = PosEvalTrainer(model, tactrs, poseval_dataset)
-    # trainer.train()
-
-    """
-    # Set up command line
-    argparser = argparse.ArgumentParser()
-    argparser.add_argument("-r", "--recon", default=None,
-                           help="Enter the file you want to reconstruct.")
-    argparser.add_argument("-p", "--path", default="data/odd-order",
-                           type=str, help="Path to files")
-    argparser.add_argument("-l", "--load", default="tactr.pickle",
-                           type=str, help="Pickle file to load")
-    args = argparser.parse_args()
-
-    bgfiles = [op.join(args.path, file) for file in
-               FILES if file.startswith("BG")]
-    pffiles = [op.join(args.path, file) for file in
-               FILES if file.startswith("PF")]
-
-    files = [op.join(args.path, file) for file in FILES]
-
-    # Read in files
-    if not args.recon:
-        with open(args.load, 'rb') as f:
-        # with open("tactr.pickle", 'rb') as f:
-            print("Loading {}...".format(args.load))
-            tactrs = pickle.load(f)
-            print("Done loading...")
-    else:
-        if args.recon == "all":
-            preprocess = Preprocess(files)
-        elif args.recon == "bg":
-            preprocess = Preprocess(bgfiles)
-        elif args.recon == "pf":
-            preprocess = Preprocess(pffiles)
-        else:
-            preprocess = Preprocess([args.recon])
-        tactrs = preprocess.get_tactrees()
-
-    # Tokenize embeddings
-    embed_tokens = EmbedTokens()
-    embed_tokens.tokenize_tactrs(tactrs)
-    tokens_to_idx = embed_tokens.tokens_to_idx()
-
-    # Run model
-    model = MyModel(*tokens_to_idx)
-    trainer = MyTrainer(model, tactrs)
-    trainer.train()
-    """
+    # trainer1 = PosEvalTrainer(model, tactrs, poseval_dataset,
+    #                           "mllogs/embedv1.0.jsonl", f_fold=False)
+    # trainer2 = PosEvalTrainer(model, tactrs, poseval_dataset,
+    #                           "mllogs/embedv2.0.jsonl", f_fold=True)
+    # checker = ChkPosEvalTrainer(trainer1, trainer2)
+    # checker.check()
+    # trainer1.finalize() 
+    # trainer2.finalize()

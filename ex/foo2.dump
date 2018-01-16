@@ -1,38 +1,38 @@
 bg(pf) {!} Classic {!} foo2
 bg(ts) {!} 0 {!} bf {!} intro {!} Not {!} (./foo2.v,94,99)
 1 {!} intro {!} 2
- {!} 0
+ {!} 7
 en(ts)
 bg(ts) {!} 1 {!} bf {!} <coretactics::intro@0> {!} ML {!} (,0,0)
 1 {!} <coretactics::intro@0> {!} 2
- {!} 0
+ {!} 7
 en(ts)
-bg(ts) {!} 1 {!} af {!} <coretactics::intro@0> {!} ML {!} (,0,0)
+bg(ts) {!} 1 {!} af 2 {!} <coretactics::intro@0> {!} ML {!} (,0,0)
 1 {!}  {!} 3
-n {!} 8
+n 0 {!} 10
 en(ts)
-bg(ts) {!} 0 {!} af {!} intro {!} Not {!} (./foo2.v,94,99)
+bg(ts) {!} 0 {!} af 2 {!} intro {!} Not {!} (./foo2.v,94,99)
 1 {!}  {!} 3
-n {!} 8
+n 0 {!} 10
 en(ts)
 bg(ts) {!} 2 {!} bf {!} induction n {!} Atom {!} (./foo2.v,103,114)
 1 {!} induction n {!} 3
-n {!} 8
+n 0 {!} 10
 en(ts)
-bg(ts) {!} 2 {!} af {!} induction n {!} Atom {!} (./foo2.v,103,114)
+bg(ts) {!} 2 {!} af 3 {!} induction n {!} Atom {!} (./foo2.v,103,114)
 2 {!}  {!} 7
- {!} 11
+ {!} 12
 en(ts)
-bg(ts) {!} 2 {!} af {!} induction n {!} Atom {!} (./foo2.v,103,114)
+bg(ts) {!} 2 {!} af 3 {!} induction n {!} Atom {!} (./foo2.v,103,114)
 2 {!}  {!} 10
-IHn, n {!} 13
+IHn 10, n 0 {!} 16
 en(ts)
 bg(spf)
 bg(ts) {!} 3 {!} bf {!} simpl {!} Atom {!} (./foo2.v,122,127)
 1 {!} simpl {!} 7
- {!} 11
+ {!} 12
 en(ts)
-bg(ts) {!} 3 {!} af {!} simpl {!} Atom {!} (./foo2.v,122,127)
+bg(ts) {!} 3 {!} af 7 {!} simpl {!} Atom {!} (./foo2.v,122,127)
 1 {!}  {!} 12
  {!} 17
 en(ts)
@@ -48,120 +48,115 @@ bg(ts) {!} 5 {!} bf {!} <coretactics::reflexivity@0> {!} ML {!} (,0,0)
 1 {!} <coretactics::reflexivity@0> {!} 12
  {!} 17
 en(ts)
-bg(ts) {!} 5 {!} af {!} <coretactics::reflexivity@0> {!} ML {!} (,0,0)
+bg(ts) {!} 5 {!} af 12 {!} <coretactics::reflexivity@0> {!} ML {!} (,0,0)
 ngs=0
 en(ts)
 en(spf)
 bg(spf)
 bg(ts) {!} 6 {!} bf {!} simpl {!} Atom {!} (./foo2.v,156,161)
 1 {!} simpl {!} 10
-IHn, n {!} 13
+IHn 10, n 0 {!} 16
 en(ts)
-bg(ts) {!} 6 {!} af {!} simpl {!} Atom {!} (./foo2.v,156,161)
+bg(ts) {!} 6 {!} af 10 {!} simpl {!} Atom {!} (./foo2.v,156,161)
 1 {!}  {!} 15
-IHn, n {!} 18
+IHn 10, n 0 {!} 19
 en(ts)
 bg(ts) {!} 7 {!} bf {!} have (ssrhavefwdwbinders) {!} Not {!} (./foo2.v,167,204)
 1 {!} have foo: 0 = 0 by simpl; reflexivity {!} 15
-IHn, n {!} 18
+IHn 10, n 0 {!} 19
 en(ts)
-bg(ts) {!} 8 {!} bf {!} <ssreflect_plugin::ssrhave@0> $fwd {!} ML {!} (,0,0)
+bg(ts) {!} 9 {!} bf {!} <ssreflect_plugin::ssrhave@0> $fwd {!} ML {!} (,0,0)
 1 {!} <ssreflect_plugin::ssrhave@0> $fwd {!} 15
-IHn, n {!} 18
+IHn 10, n 0 {!} 19
 en(ts)
 bg(ts) {!} 11 {!} bf {!} simpl {!} Atom {!} (./foo2.v,186,191)
 1 {!} simpl {!} 17
-IHn, n {!} 17
+IHn 10, n 0 {!} 17
 en(ts)
-bg(ts) {!} 11 {!} af {!} simpl {!} Atom {!} (./foo2.v,186,191)
+bg(ts) {!} 11 {!} af 17 {!} simpl {!} Atom {!} (./foo2.v,186,191)
 1 {!}  {!} 19
-IHn, n {!} 17
+IHn 10, n 0 {!} 17
 en(ts)
 bg(ts) {!} 10 {!} bf {!} reflexivity {!} Name {!} (./foo2.v,193,204)
 1 {!}  {!} 19
-IHn, n {!} 17
+IHn 10, n 0 {!} 17
 en(ts)
 bg(ts) {!} 10 {!} af {!} reflexivity {!} Name {!} (./foo2.v,193,204)
 1 {!}  {!} 19
-IHn, n {!} 17
+IHn 10, n 0 {!} 17
 en(ts)
 bg(ts) {!} 12 {!} bf {!} <coretactics::reflexivity@0> {!} ML {!} (,0,0)
 1 {!} <coretactics::reflexivity@0> {!} 19
-IHn, n {!} 17
+IHn 10, n 0 {!} 17
 en(ts)
-bg(ts) {!} 12 {!} af {!} <coretactics::reflexivity@0> {!} ML {!} (,0,0)
+bg(ts) {!} 12 {!} af 19 {!} <coretactics::reflexivity@0> {!} ML {!} (,0,0)
 ngs=0
 en(ts)
-bg(ts) {!} 8 {!} af {!} <ssreflect_plugin::ssrhave@0> $fwd {!} ML {!} (,0,0)
+bg(ts) {!} 9 {!} af 15 {!} <ssreflect_plugin::ssrhave@0> $fwd {!} ML {!} (,0,0)
 1 {!}  {!} 21
-foo, IHn, n {!} 18
+foo 17, IHn 10, n 0 {!} 19
 en(ts)
-bg(ts) {!} 7 {!} af {!} have (ssrhavefwdwbinders) {!} Not {!} (./foo2.v,167,204)
+bg(ts) {!} 7 {!} af 15 {!} have (ssrhavefwdwbinders) {!} Not {!} (./foo2.v,167,204)
 1 {!}  {!} 21
-foo, IHn, n {!} 18
+foo 17, IHn 10, n 0 {!} 19
 en(ts)
 bg(ts) {!} 13 {!} bf {!} rewrite IHn {!} Atom {!} (./foo2.v,401,415)
 1 {!} rewrite IHn {!} 21
-foo, IHn, n {!} 18
+foo 17, IHn 10, n 0 {!} 19
 en(ts)
-bg(ts) {!} 13 {!} af {!} rewrite IHn {!} Atom {!} (./foo2.v,401,415)
+bg(ts) {!} 13 {!} af 21 {!} rewrite IHn {!} Atom {!} (./foo2.v,401,415)
 1 {!}  {!} 22
-foo, IHn, n {!} 20
+foo 17, IHn 10, n 0 {!} 20
 en(ts)
 bg(ts) {!} 14 {!} bf {!} reflexivity {!} Name {!} (./foo2.v,421,432)
 1 {!}  {!} 22
-foo, IHn, n {!} 20
+foo 17, IHn 10, n 0 {!} 20
 en(ts)
 bg(ts) {!} 14 {!} af {!} reflexivity {!} Name {!} (./foo2.v,421,432)
 1 {!}  {!} 22
-foo, IHn, n {!} 20
+foo 17, IHn 10, n 0 {!} 20
 en(ts)
 bg(ts) {!} 15 {!} bf {!} <coretactics::reflexivity@0> {!} ML {!} (,0,0)
 1 {!} <coretactics::reflexivity@0> {!} 22
-foo, IHn, n {!} 20
+foo 17, IHn 10, n 0 {!} 20
 en(ts)
-bg(ts) {!} 15 {!} af {!} <coretactics::reflexivity@0> {!} ML {!} (,0,0)
+bg(ts) {!} 15 {!} af 22 {!} <coretactics::reflexivity@0> {!} ML {!} (,0,0)
 ngs=0
 en(ts)
 en(spf)
-Typs
-IHn: 8
-foo: 17
-n: 1
-Bods
 Constrs
-0: P n 1 2
-1: I Coq.Init.Datatypes.nat 0 []
-2: A 3 [1 4 6]
-3: I Coq.Init.Logic.eq 0 []
-4: A 5 [6 7]
-5: C Coq.Init.Nat.add []
-6: R 1
-7: CO Coq.Init.Datatypes.nat 0 1 []
-8: A 3 [1 9 10]
-9: A 5 [10 7]
-10: V n
-11: A 3 [1 12 7]
-12: A 5 [7 7]
-13: A 3 [1 14 15]
-14: A 5 [15 7]
-15: A 16 [10]
-16: CO Coq.Init.Datatypes.nat 0 2 []
-17: A 3 [1 7 7]
-18: A 3 [1 19 15]
-19: A 16 [9]
-20: A 3 [1 15 15]
+0: I Coq.Init.Datatypes.nat 0 []
+1: I Coq.Init.Logic.eq 0 []
+2: C Coq.Init.Nat.add []
+3: R 1
+4: CO Coq.Init.Datatypes.nat 0 1 []
+5: A 2 [3 4]
+6: A 1 [0 5 3]
+7: P n 0 6
+8: V n
+9: A 2 [8 4]
+10: A 1 [0 9 8]
+11: A 2 [4 4]
+12: A 1 [0 11 4]
+13: CO Coq.Init.Datatypes.nat 0 2 []
+14: A 13 [8]
+15: A 2 [14 4]
+16: A 1 [0 15 14]
+17: A 1 [0 4 4]
+18: A 13 [9]
+19: A 1 [0 18 14]
+20: A 1 [0 14 14]
 PrTyps
-IHn: n + 0 = n
-foo: 0 = 0
-n: nat
+0: nat
+10: n + 0 = n
+17: 0 = 0
 PrBods
 PrGls
-0: forall n : nat, n + 0 = n
-8: n + 0 = n
-11: 0 + 0 = 0
-13: S n + 0 = S n
+7: forall n : nat, n + 0 = n
+10: n + 0 = n
+12: 0 + 0 = 0
+16: S n + 0 = S n
 17: 0 = 0
-18: S (n + 0) = S n
+19: S (n + 0) = S n
 20: S n = S n
 en(pf)

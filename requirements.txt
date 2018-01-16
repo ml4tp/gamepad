@@ -1,0 +1,5 @@
+matplotlib
+networkx
+torch
+torchvision
+tqdm

@@ -29,6 +29,8 @@ TOK_CONSTRS = "Constrs"
 TOK_PRTYPS = "PrTyps"
 TOK_PRBODS = "PrBods"
 TOK_PRGLS = "PrGls"
+TOK_BEG_INC = "bg(inc)"
+TOK_END_INC = "en(inc)"
 
 
 def is_after(mode):

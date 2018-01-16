@@ -7,11 +7,12 @@ import torch.nn.functional as F
 import torch.optim as optim
 from tqdm import tqdm
 import numpy as np
-from ml.poseval.fold_model import TacStFolder, Folder
-from ml.utils import ResultLogger, cpuStats, Timer
+import os
 
 # -------------------------------------------------
 # Helper
+from ml.poseval.fold_model import TacStFolder, Folder
+from ml.utils import ResultLogger, cpuStats, Timer, currTS
 
 
 # -------------------------------------------------
@@ -29,110 +30,252 @@ def iter_data(data, size, shuffle = False):
     for start in range(0, n_end, size):
         yield data[start : start + size]
 
-def save(model, path):
-    print("Saving model at ", path)
-    state_dict = model.state_dict()
-    for k,v in state_dict.items():
-        print(k, v.size())
-    torch.save(state_dict, path)
-    print("Done saving")
-
-def load(model, path):
-    print("Loading model at ", path)
-    model.load_state_dict(torch.load(path))
-    print("Done loading")
-
 class PosEvalTrainer(object):
-    def __init__(self, model, tactrs, poseval_dataset, foldy, cuda):
+    def __init__(self, model, tactrs, poseval_dataset, args):
         # Other state
+        self.args = args
         self.tactrs = tactrs
-        self.poseval_dataset = poseval_dataset  
+        self.poseval_dataset = poseval_dataset
 
         # Model
         self.model = model       # PyTorch model
         self.torch = torch
-        if cuda:
+        if args.cuda:
             self.model.cuda()
             self.torch = torch.cuda
-        self.folder = Folder(model, foldy, cuda)
+
+        # Optimizer
+        self.loss_fn =  nn.CrossEntropyLoss()
+        self.opt = optim.Adam(self.model.parameters(), lr=args.lr)
+
+        # Training
+        self.max_epochs = 10000
+        self.epochs = 0
+        self.updates = 0
+        self.best_accuracy = 0.0
+        self.best_loss = np.inf
+
+        # Folder
+        self.folder = Folder(model, args.foldy, args.cuda)
         self.tacst_folder = {}   # Folder to embed
         for tactr_id, tactr in enumerate(self.tactrs):
             self.tacst_folder[tactr_id] = TacStFolder(model, tactr, self.folder)
 
-    def train(self, args):
+
+        basepath = 'mllogs/gv_nb_{}_lr_{}_ln_{}_r_{}/'.format(args.nbatch, args.lr, args.ln, args.name)
+        if not os.path.exists(basepath):
+            os.makedirs(basepath)
+
         if args.mload:
-            load(self.model, args.mload)
-        logloc = 'mllogs/gv_nb_{}_lr_{}_ln_{}_r_{}.jsonl'.format(args.nbatch, args.lr, args.ln, args.name)
-        saveloc = logloc[:-5] + 'pth'
-        print("Logging to ", logloc, "and Saving model to ", saveloc)
-        logger = ResultLogger(logloc)
-        n_epochs = 10000
-        n_batch = args.nbatch
-        losses = []
+            self.load(args.mload)
+            basepath += 'load_{}/'.format(self.ts)  # So loaded models saved in subdirectory
+
+        self.savepath = basepath + '{}.pth'
+        self.logpath = basepath + 'log.jsonl'
+        self.vallogpath = basepath + 'log_val.jsonl'
+
+        print("Logging to ", self.logpath, "and Saving models to ", self.savepath)
+        self.logger = ResultLogger(self.logpath)
+        self.vallogger = ResultLogger(self.vallogpath)
+
+
+    def save(self, accuracy = 0.0, loss = np.inf):
+        self.ts = currTS()
+        print("Saving at", self.savepath.format(self.ts))
+        checkpoint = {
+            'model': self.model.state_dict(),
+            'opt': self.opt.state_dict(),
+            'args': self.args,
+            'epochs': self.epochs,
+            'updates': self.updates,
+            'accuracy': accuracy,
+            'loss': loss,
+            'ts': self.ts,
+        }
+        torch.save(checkpoint, self.savepath)
+        print("Done saving")
+
+    def load(self, path):
+        print("Loading from ", path)
+        checkpoint = torch.load(path)
+        self.model.load_state_dict(checkpoint.model)
+        self.opt.load_state_dict(checkpoint.opt)
+        #self.args = checkpoint.args  # Use currently passed arguments
+        self.epochs = checkpoint.epoch
+        self.updates = checkpoint.updates
+        self.best_accuracy = checkpoint.accuracy
+        self.best_loss = checkpoint.loss
+        self.ts = checkpoint.ts
+        print("Done loading")
+
+    def forward(self, minibatch):
+        n_batch = len(minibatch)
+        self.folder.reset()  # Before or after?
+        all_logits, all_targets = [], []
+        astsizes = 0
+        # Forward and Backward graph
+        for tactr_id, poseval_pt in minibatch:
+            self.tacst_folder[tactr_id].reset()
+
+        for tactr_id, poseval_pt in minibatch:
+            tacst_folder = self.tacst_folder[tactr_id]
+            astsizes += poseval_pt.tacst_size
+            # Apply forward pass
+
+            all_logits += [tacst_folder.fold_tacst(poseval_pt.tacst)]
+            all_targets += [poseval_pt.subtr_bin]
+
+        # print(self.folder)
+        res = self.folder.apply(all_logits)
+        logits = res[0]
+        targets = autograd.Variable(self.torch.LongTensor(all_targets), requires_grad=False)
+        assert logits.shape == torch.Size([n_batch, 3])  # , folded_logits[0].shape
+        loss = self.loss_fn(logits, targets)
+        preds = torch.max(logits, dim=-1)[1]  # 0-th is max values, 1-st is max location
+        correct = torch.sum(torch.eq(preds, targets).cpu())
+        accuracy = float(correct.data) / float(np.prod(preds.shape))
+        return loss, accuracy, astsizes
+
+    def train(self):
+        # if args.mload:
+        #     self.load(args.mload)
+
+        # Data info
+        ys = [poseval_pt.subtr_bin for _, poseval_pt in self.poseval_dataset]
+        print("Counts ", dict(zip(*np.unique(ys, return_counts=True))))
+
+        # Training info
+        n_batch = self.args.nbatch
+        n_train = len(self.poseval_dataset)
+
+        # Model Info
         total_params = 0
         for param in self.model.parameters():
             total_params += np.prod(param.shape)
             print(param.shape)
         print("Total Parameters ", total_params)
-        opt = optim.Adam(self.model.parameters(), lr=args.lr)
-        n_train = len(self.poseval_dataset)
-        loss_fn = nn.CrossEntropyLoss()
-        updates = 0
-        ys = [poseval_pt.subtr_bin for _, poseval_pt in self.poseval_dataset]
-        print("Counts ", dict(zip(*np.unique(ys, return_counts=True))))
-        for epoch in range(n_epochs):
-            if epoch % 10 == 0:
-                save(self.model, saveloc)
+
+        # Optmiser info
+        for state in self.opt.state_dict():
+            print(state.shape)
+
+        # Train
+        while self.epochs < self.max_epochs:
+            if self.epochs == 0:
+                self.save()
             testart = time()
             total_loss = 0.0
             smooth_acc = None
+            smooth_loss = None
             for minibatch in tqdm(iter_data(self.poseval_dataset, shuffle = True, size = n_batch), total = n_train // n_batch, ncols = 80, leave = False):
                 with Timer() as t:
                     # Prepare to compute gradients
                     self.model.zero_grad()
-                    self.folder.reset() # Before or after?
-                    all_logits, all_targets = [], []
-                    astsizes = 0
-                    # Forward and Backward graph
-                    for tactr_id, poseval_pt in minibatch:
-                        self.tacst_folder[tactr_id].reset()
 
-                    for tactr_id, poseval_pt in minibatch:
-                        tacst_folder = self.tacst_folder[tactr_id]
-                        #print("Training ({}/{}) AstSize={}".format(tactr_id, len(self.tactrs), poseval_pt.tacst_size))
-                        astsizes += poseval_pt.tacst_size
-                        # Apply forward pass
+                    # Forward pass
+                    loss, accuracy, astsizes = self.forward(minibatch)
 
-                        all_logits += [tacst_folder.fold_tacst(poseval_pt.tacst)]
-                        all_targets += [poseval_pt.subtr_bin]
-
-                    #print(self.folder)
-                    res = self.folder.apply(all_logits)
-                    logits = res[0]
-                    targets = autograd.Variable(self.torch.LongTensor(all_targets), requires_grad=False)
-                    assert logits.shape == torch.Size([n_batch, 3]) #, folded_logits[0].shape
-                    # Backprop
-                    loss = loss_fn(logits, targets)
-                    preds = torch.max(logits, dim = -1)[1] # 0-th is max values, 1-st is max location
-                    correct = torch.sum(torch.eq(preds, targets).cpu())
-                    accuracy = float(correct.data) / float(np.prod(preds.shape))
+                    # Metrics
                     if not smooth_acc:
                         smooth_acc = accuracy
+                        smooth_loss = loss.data
                     else:
                         smooth_acc = 0.01 * accuracy + 0.99 * smooth_acc
+                        smooth_loss = 0.01 * loss.data + 0.99 * smooth_loss
+
+                    # Backward pass
                     loss.backward()
-                    opt.step()
-                updates += 1
-                total_loss += loss.data
-                tqdm.write("Update %d Loss %.4f Accuracy %0.4f SmAccuracy %.4f Interval %.4f AstSizes %d TpN %0.4f TpE %0.4f" % (updates, loss.data, accuracy, smooth_acc, t.interval, astsizes, t.interval / astsizes, t.interval / n_batch))
-                logger.log(epoch=epoch, updates=updates, loss="%0.4f" % loss.data, acc="%0.4f" % accuracy, smooth_acc = "%0.4f" % smooth_acc)
+                    self.opt.step()
+
+                self.updates += 1
+                tqdm.write("Update %d Loss %.4f Accuracy %0.4f SmAccuracy %.4f Interval %.4f AstSizes %d TpN %0.4f TpE %0.4f" % (self.updates, loss.data, accuracy, smooth_acc, t.interval, astsizes, t.interval*1e3 / astsizes, t.interval / n_batch))
+                self.logger.log(epoch=self.epochs, updates=self.updates, loss="%0.4f" % loss.data, acc="%0.4f" % accuracy, smooth_loss = "%0.4f" % smooth_loss, smooth_acc = "%0.4f" % smooth_acc)
                     # if idx % 10 == 0:
                     #     cpuStats()
                         # memReport()
                     # if idx == 6:
                     #     print("Epoch Time with sh2 %.4f Loss %.4f" % (time() - testart, total_loss))
                     #     assert False
-            print("Epoch Time %.4f Loss %.4f" % (time() - testart, total_loss))
-            losses.append(total_loss)
-        logger.close()
-        print("Losses", losses)
+            self.epochs += 1
+            if self.epochs % 10 == 0:
+                self.validate()
+            tqdm.write("Finished Epoch %0.4f Time %.4f" % (self.epochs, time() - testart))
+
+    def validate(self):
+        epochs = self.epochs
+        updates = self.updates
+        data = self.poseval_validate
+        n_batch = self.args.valbatch
+        n_train = len(data)
+        losses = []
+        accuracies = []
+        for minibatch in tqdm(iter_data(data, shuffle = False, size = n_batch), total = n_train // n_batch, ncols = 80, leave = False):
+            with Timer() as t:
+                loss, accuracy, astsizes = self.forward(minibatch)
+            losses.append(loss.data)
+            accuracies.append(accuracy)
+            tqdm.write("Update %d Loss %.4f Accuracy %0.4f Interval %.4f TpE %0.4f" %
+                           (updates, loss.data, accuracy, t.interval, t.interval / len(minibatch)))
+        loss = float(np.mean(losses))
+        accuracy = float(np.mean(accuracies))
+        self.best_loss = min(self.best_loss, loss)
+        self.best_accuracy = max(self.best_accuracy, accuracy)
+        tqdm.write("Epoch %d Updates %d Loss %0.4f Accuracy %0.4f" % (self.epochs, self.updates, loss, accuracy))
+        self.vallogger.log(epoch=epochs, updates=updates, loss="%0.4f" % loss, acc = "%0.4f" % accuracy, best_loss = "%0.4f" % self.best_loss, best_acc = "%0.4f" % self.best_accuracy)
+        self.save(accuracy, loss)
+
+#     def finalize(self):
+#         # Save the model (parameters only)
+#         timestamp = currTS()
+#         dirname = "mllogs/"
+#         filename = "./" + dirname + "model-{}.params".format(timestamp)
+#         print("Saving model to {}...".format(filename))
+#         torch.save(self.model.state_dict(), filename)
+#         self.logger.close()
+#         return filename
+#
+# class PosEvalInfer(object):
+#     def __init__(self, tactrs, model, f_fold=True):
+#         self.tactrs = tactrs
+#         self.model = model
+#
+#         self.tacst_folder = {}   # Folder to embed
+#         for tactr_id, tactr in enumerate(self.tactrs):
+#             self.tacst_folder[tactr_id] = TacStFolder(model, tactr, f_fold)
+#
+#     def infer(self, poseval_test):
+#         preds = []
+#         for idx, (tactr_id, poseval_pt) in enumerate(poseval_test):
+#             torun_logits, torun_labels = [], []
+#             folder = self.tacst_folder[tactr_id]
+#             folder.reset()
+#             torun_logits += [folder.fold_tacst(poseval_pt.tacst)]
+#             torun_labels += [0]
+#             res = folder.apply(torun_logits, torun_labels)
+#             logits = res[0].data.numpy()
+#             preds += [np.argmax(logits)]
+#             print("Logits", logits, "Predicted", np.argmax(logits), "Actual", poseval_pt.subtr_bin)
+#         return preds
+
+
+# -------------------------------------------------
+# Debugging helper
+
+class ChkPosEvalTrainer(object):
+    def __init__(self, trainer1, trainer2):
+        assert isinstance(trainer1, PosEvalTrainer)
+        assert isinstance(trainer2, PosEvalTrainer)
+
+        self.trainer1 = trainer1
+        self.trainer1.f_dbg = True
+        self.trainer2 = trainer2
+        self.trainer2.f_dbg = True
+
+    def check(self):
+        losses1 = self.trainer1.train(epochs=1)
+        losses2 = self.trainer2.train(epochs=1)
+        print("Losses1: ", losses1)
+        print("Losses2: ", losses2)
+        diff = [l1 - l2 for l1, l2 in zip(losses1, losses2)]
+        print("Diff: ", diff)
+        # print(all(map(lambda x: x < 0.001, diff)))

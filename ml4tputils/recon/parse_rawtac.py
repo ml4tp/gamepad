@@ -151,7 +151,10 @@ class RawTacParser(object):
 
             # Simple cases
             if decl.hdr.mode == TOK_BEFORE and decl.hdr.kind == TOK_NAME:
-                acc += self.parse_name_call()
+                acc += self.parse_nested(TacKind.NAME)
+                # acc += self.parse_name_call()
+            elif is_after(decl.hdr.mode) and decl.hdr.kind == TOK_NAME:
+                return acc
 
             # Nested cases
             elif decl.hdr.mode == TOK_BEFORE and decl.hdr.kind == TOK_NOTATION:
