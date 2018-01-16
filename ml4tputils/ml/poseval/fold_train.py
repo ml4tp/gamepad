@@ -56,19 +56,18 @@ class PosEvalTrainer(object):
         self.best_loss = np.inf
 
         # Folder
-        self.folder = Folder(model, args.foldy, args.cuda)
+        self.folder = Folder(model, args.fold, args.cuda)
         self.tacst_folder = {}   # Folder to embed
         for tactr_id, tactr in enumerate(self.tactrs):
             self.tacst_folder[tactr_id] = TacStFolder(model, tactr, self.folder)
 
-
-        basepath = 'mllogs/gv_nb_{}_lr_{}_ln_{}_r_{}/'.format(args.nbatch, args.lr, args.ln, args.name)
-        if not os.path.exists(basepath):
-            os.makedirs(basepath)
-
+        basepath = 'mllogs/sgv_nb_{}_lr_{}_ln_{}_r_{}/'.format(args.nbatch, args.lr, args.ln, args.name)
         if args.mload:
             self.load(args.mload)
-            basepath += 'load_{}/'.format(self.ts)  # So loaded models saved in subdirectory
+            basepath += 'load_{}/'.format(self.ts)  # So reloaded models saved in subdirectory
+
+        if not os.path.exists(basepath):
+            os.makedirs(basepath)
 
         self.savepath = basepath + '{}.pth'
         self.logpath = basepath + 'log.jsonl'
@@ -81,7 +80,8 @@ class PosEvalTrainer(object):
 
     def save(self, accuracy = 0.0, loss = np.inf):
         self.ts = currTS()
-        print("Saving at", self.savepath.format(self.ts))
+        savepath = self.savepath.format(self.ts)
+        print("Saving at", savepath)
         checkpoint = {
             'model': self.model.state_dict(),
             'opt': self.opt.state_dict(),
@@ -92,20 +92,20 @@ class PosEvalTrainer(object):
             'loss': loss,
             'ts': self.ts,
         }
-        torch.save(checkpoint, self.savepath)
+        torch.save(checkpoint, savepath)
         print("Done saving")
 
     def load(self, path):
         print("Loading from ", path)
         checkpoint = torch.load(path)
-        self.model.load_state_dict(checkpoint.model)
-        self.opt.load_state_dict(checkpoint.opt)
+        self.model.load_state_dict(checkpoint['model'])
+        self.opt.load_state_dict(checkpoint['opt'])
         #self.args = checkpoint.args  # Use currently passed arguments
-        self.epochs = checkpoint.epoch
-        self.updates = checkpoint.updates
-        self.best_accuracy = checkpoint.accuracy
-        self.best_loss = checkpoint.loss
-        self.ts = checkpoint.ts
+        self.epochs = checkpoint['epochs']
+        self.updates = checkpoint['updates']
+        self.best_accuracy = checkpoint['accuracy']
+        self.best_loss = checkpoint['loss']
+        self.ts = checkpoint['ts']
         print("Done loading")
 
     def forward(self, minibatch):
@@ -141,12 +141,15 @@ class PosEvalTrainer(object):
         #     self.load(args.mload)
 
         # Data info
-        ys = [poseval_pt.subtr_bin for _, poseval_pt in self.poseval_dataset]
-        print("Counts ", dict(zip(*np.unique(ys, return_counts=True))))
+        for k in ['train', 'val', 'test']:
+            data = getattr(self.poseval_dataset, k)
+            ys = [poseval_pt.subtr_bin for _, poseval_pt in data]
+            print("{} Len={} SubtrSizeBins={}".format(k, len(data), dict(zip(*np.unique(ys, return_counts=True)))))
 
         # Training info
+        data = self.poseval_dataset.train
         n_batch = self.args.nbatch
-        n_train = len(self.poseval_dataset)
+        n_train = len(data)
 
         # Model Info
         total_params = 0
@@ -155,19 +158,18 @@ class PosEvalTrainer(object):
             print(param.shape)
         print("Total Parameters ", total_params)
 
-        # Optmiser info
-        for state in self.opt.state_dict():
-            print(state.shape)
+        # State info
+        for k,v in self.model.state_dict().items():
+            print(k, v.shape)
+        for k,v in self.opt.state_dict().items():
+            print(k)
 
         # Train
         while self.epochs < self.max_epochs:
-            if self.epochs == 0:
-                self.save()
             testart = time()
-            total_loss = 0.0
             smooth_acc = None
             smooth_loss = None
-            for minibatch in tqdm(iter_data(self.poseval_dataset, shuffle = True, size = n_batch), total = n_train // n_batch, ncols = 80, leave = False):
+            for minibatch in tqdm(iter_data(data, shuffle = True, size = n_batch), total = n_train // n_batch, ncols = 80, leave = False):
                 with Timer() as t:
                     # Prepare to compute gradients
                     self.model.zero_grad()
@@ -197,14 +199,15 @@ class PosEvalTrainer(object):
                     #     print("Epoch Time with sh2 %.4f Loss %.4f" % (time() - testart, total_loss))
                     #     assert False
             self.epochs += 1
-            if self.epochs % 10 == 0:
+            if self.epochs % 10 == 1:
                 self.validate()
             tqdm.write("Finished Epoch %0.4f Time %.4f" % (self.epochs, time() - testart))
 
     def validate(self):
+        print("Validating")
         epochs = self.epochs
         updates = self.updates
-        data = self.poseval_validate
+        data = self.poseval_dataset.val
         n_batch = self.args.valbatch
         n_train = len(data)
         losses = []

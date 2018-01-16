@@ -3,6 +3,9 @@ import os.path as op
 import pickle
 import torch
 
+from recon.recon import Recon
+from ml.tacst_prep import Dataset, PosEvalPt
+
 from ml.poseval.fold_model import PosEvalModel
 from ml.poseval.fold_train import PosEvalTrainer #, PosEvalInfer
 
@@ -65,7 +68,7 @@ if __name__ == "__main__":
     with open(args.poseval, 'rb') as f:
         poseval_dataset, tokens_to_idx = pickle.load(f)
 
-    print("Points ", len(poseval_dataset))
+    print("Points Train={} Val={} Test={}".format(len(poseval_dataset.train), len(poseval_dataset.val), len(poseval_dataset.test)))
     if not args.orig:
         model = PosEvalModel(*tokens_to_idx, ln=args.ln)
         trainer = PosEvalTrainer(model, tactrs, poseval_dataset, args)
@@ -74,7 +77,7 @@ if __name__ == "__main__":
         from ml.embed import MyModel, PosEvalTrainer
         print("Original")
         model = MyModel(*tokens_to_idx)
-        trainer = PosEvalTrainer(model, tactrs, poseval_dataset)
+        trainer = PosEvalTrainer(model, tactrs, poseval_dataset.train)
         trainer.train()
 
     # # Inference
