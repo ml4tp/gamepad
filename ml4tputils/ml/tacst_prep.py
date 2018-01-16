@@ -35,15 +35,12 @@ class SizeSubTr(object):
 
     def size(self, node):
         children = list(self.tactr.graph.successors(node))
-        if children:
-            size = 0
-            for child in children:
-                # TODO(deh): ignore self-edges
-                if child != node:
-                    size += self.size(child)
-            return size
-        else:
-            return 1
+        size = 1
+        for child in children:
+            # TODO(deh): ignore self-edges
+            if child != node:
+                size += self.size(child)
+        return size
 
 
 class PosEvalDataset(object):

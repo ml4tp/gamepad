@@ -6,7 +6,6 @@ import sys
 # from time import time
 import time
 
-
 class ResultLogger(object):
     def __init__(self, path, *args, **kwargs):
         self.f_log = open(path, 'w')

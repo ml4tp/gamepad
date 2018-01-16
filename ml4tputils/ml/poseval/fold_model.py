@@ -42,15 +42,19 @@ def ast_embed(folder, xs, init, ln):
     #print("hidden shape", hidden.shape)
     if ln:
         #print("using ln")
-        hidden = folder.add('ln_f', hidden)
+        hidden = folder.add('ast_ln_f', hidden)
     return hidden
 
-def ctx_embed(folder, xs, init):
+def ctx_embed(folder, xs, init, ln):
     hidden = folder.add('ctx_identity', init)
     for i, x in enumerate(xs):
         #print("GRU Embed ",i, x.shape)
         hidden = folder.add('ctx_cell_f', x, hidden) #cell(x.view(1, -1, 128), hidden)
     #print("hidden shape", hidden.shape)
+    if ln:
+        # Weird version of Layernorm
+        #print("using ln")
+        hidden = folder.add('ctx_ln_f', hidden)
     return hidden
 
 # -------------------------------------------------
@@ -342,12 +346,15 @@ class PosEvalModel(nn.Module):
         self.ctx_cell = nn.GRUCell(state, state)
         self.proj = nn.Linear(state + 1, state)
         self.final = nn.Linear(state, outsize)
-        self.ctx_emb_func = lambda folder, xs: ctx_embed(folder, xs, self.ctx_cell_init_state)
+        self.ctx_emb_func = lambda folder, xs: ctx_embed(folder, xs, self.ctx_cell_init_state, ln)
         self.loss_fn = nn.CrossEntropyLoss()
 
         # Layer Norm
-        self.gamma = nn.Parameter(torch.ones(state))
-        self.beta = nn.Parameter(torch.zeros(state))
+        self.ast_gamma = nn.Parameter(torch.ones(state))
+        self.ast_beta = nn.Parameter(torch.zeros(state))
+        self.ctx_gamma = nn.Parameter(torch.ones(state))
+        self.ctx_beta = nn.Parameter(torch.zeros(state))
+
         self.eps = eps
 
         # Extra vars
@@ -388,10 +395,15 @@ class PosEvalModel(nn.Module):
     def cat_f(self, *xs):
         return torch.cat(xs, dim = -1)
 
-    def ln_f(self, x):
+    def ast_ln_f(self, x):
         mean = x.mean(-1, keepdim=True)
         std = x.std(-1, keepdim=True)
-        return self.gamma * (x - mean) / (std + self.eps) + self.beta
+        return self.ast_gamma * (x - mean) / (std + self.eps) + self.ast_beta
+
+    def ctx_ln_f(self, x):
+        mean = x.mean(-1, keepdim=True)
+        std = x.std(-1, keepdim=True)
+        return self.ctx_gamma * (x - mean) / (std + self.eps) + self.ctx_beta
     # def loss_f(self, logits, target):
     #     return self.loss_fn(logits, target)
     #

@@ -16,6 +16,7 @@ class Fold(object):
             self.args = args
             self.split_idx = -1
             self.batch = True
+            self.depth = 0
 
         def split(self, num):
             """Split resulting node, if function returns multiple values."""
@@ -100,6 +101,15 @@ class Fold(object):
                     print("Constructing LongTensor from %s" % str(arg))
                     raise
         return res
+
+    def reshuffle(self):
+        for step in sorted(self.steps.keys(), key=lambda x: -x):
+            for op in self.steps[step]:
+                for args in self.steps[step][op]:
+                    node = self.cached_nodes[op][args]
+                    for arg in args:
+                        if isinstance(arg, Fold.Node):
+                            arg.depth = max(arg.depth, node.depth + 1)
 
     def apply(self, nn, nodes):
         """Apply current fold to given neural module."""
