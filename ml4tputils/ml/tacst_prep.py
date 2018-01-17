@@ -5,6 +5,8 @@ import pickle
 from recon.embed_tokens import EmbedTokens
 from coq.tactics import TACTIC_INFO
 from coq.util import SizeCoqExp
+import numpy as np
+np.random.seed(7)
 
 """
 [Note]
@@ -40,29 +42,32 @@ class SizeSubTr(object):
 
     def size(self, node):
         children = list(self.tactr.graph.successors(node))
-        if children:
-            size = 0
-            for child in children:
-                # TODO(deh): ignore self-edges
-                if child != node:
-                    size += self.size(child) + 1
-            return size
-        else:
-            return 1
+        size = 1
+        for child in children:
+            # TODO(deh): ignore self-edges
+            if child != node:
+                size += self.size(child)
+        return size
 
+class Dataset(object):
+    def __init__(self, train, val, test):
+        self.train = train
+        self.val = val
+        self.test = test
 
 class PosEvalDataset(object):
     def __init__(self, tactrs):
         self.tactrs = tactrs
-        self.data = []
+        self.data = {}
 
     def mk_tactrs(self):
+        self.data = {}
         for tactr_id, tactr in enumerate(self.tactrs):
             self.mk_tactr(tactr_id, tactr)
-        return self.data
 
     def mk_tactr(self, tactr_id, tactr):
         print("Working on ({}/{}) {}".format(tactr_id, len(self.tactrs), tactr.name))
+        self.data[tactr_id] = []
         subtr_size = {}
         size_subtr = SizeSubTr(tactr)
         for node in tactr.graph.nodes():
@@ -73,13 +78,36 @@ class PosEvalDataset(object):
             tacst_size += sce.decode_size(concl_idx)
             for ident, idx in ctx:
                 tacst_size += sce.decode_size(idx)
-            self.data += [(tactr_id, PosEvalPt(gid, ctx, concl_idx, tac, tacst_size, subtr_size[gid]))]
-        return self.data
+            self.data[tactr_id].append(PosEvalPt(gid, ctx, concl_idx, tac, tacst_size, subtr_size[gid]))
 
-    def split_by_lemma(self, train=80, valid=10, test=10):
-        # TODO(deh): Add functionality for Test/Train/Split
-        if train + valid + test != 100:
-            raise NameError("Train={}, Valid={}, Test={} must sum to 100".format(train, valid, test))
+    def split_by_lemma(self):
+        if self.data == {}:
+            self.mk_tactrs()
+        strain, sval, stest = 0.8, 0.1, 0.1
+        tlen = len(self.tactrs)
+        perm = np.random.permutation(tlen)
+        s1 = int(tlen*strain) + 1
+        s2 = s1 + int(tlen*sval)
+        train, val, test = perm[:s1], perm[s1:s2], perm[s2:]
+        if len(train) + len(val) + len(test) != tlen:
+            raise NameError("Train={}, Valid={}, Test={} must sum to {}".format(len(train), len(val), len(test), tlen))
+
+        def f(ids):
+            pts = []
+            for tactr_id in ids:
+                for pt in self.data[tactr_id]:
+                    pts.append((tactr_id, pt))
+            return pts
+
+        data_train, data_val, data_test = f(train), f(val), f(test)
+        print("Split Train={} Valid={} Test={}".format(len(train), len(val), len(test)))
+        print("Split Tactrs Train={} Valid={} Test={}".format(len(data_train), len(data_val), len(data_test)))
+        ps = [len(data_train) / len(train), len(data_val) / len(val), len(data_test) / len(test)]
+        print("ps ", ps)
+        for p in ps:
+            if (p - 64.5)**2 > (66 - 64.5)**2:
+                return self.split_by_lemma()
+        return Dataset(data_train, data_val, data_test)
 
 
 # -------------------------------------------------
@@ -114,8 +142,9 @@ if __name__ == "__main__":
         tactrs = pickle.load(f)
 
     print("Creating dataset {}...".format(args.load))
+
     poseval = PosEvalDataset(tactrs)
-    poseval_dataset = poseval.mk_tactrs()
+    poseval_dataset = poseval.split_by_lemma()
 
     embed_tokens = EmbedTokens()
     embed_tokens.tokenize_tactrs(tactrs)
@@ -124,9 +153,9 @@ if __name__ == "__main__":
     with open(args.poseval, 'wb') as f:
         pickle.dump((poseval_dataset, tokens_to_idx), f)
 
-    tacpred_dataset = poseval_to_tacpred(poseval_dataset)
-    with open(args.tacpred, 'wb') as f:
-        pickle.dump(tacpred_dataset, f)
+    # tacpred_dataset = poseval_to_tacpred(poseval_dataset)
+    # with open(args.tacpred, 'wb') as f:
+    #     pickle.dump(tacpred_dataset, f)
 
     if args.verbose:
         with open(args.poseval, 'rb') as f:

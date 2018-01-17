@@ -1,17 +1,13 @@
 import argparse
 import os.path as op
 import pickle
-
 import torch
 
-from recon.embed_tokens import EmbedTokens
-from recon.recon import Recon, FILES
-from ml.embed import EmbedCoqTacTr#, MyModel, PosEvalTrainer
-import tacst_prep
-from tacst_prep import PosEvalPt
+from recon.recon import Recon
+from ml.tacst_prep import Dataset, PosEvalPt
 
 from ml.poseval.fold_model import PosEvalModel
-from ml.poseval.fold_train import PosEvalTrainer, PosEvalInfer
+from ml.poseval.fold_train import PosEvalTrainer #, PosEvalInfer
 
 """
 [Note]
@@ -42,10 +38,28 @@ if __name__ == "__main__":
                            type=str, help="Pickle file to load")
     argparser.add_argument("-p", "--poseval", default="poseval.pickle",
                            type=str, help="Pickle file to save to")
-    argparser.add_argument("-f", "--fold", action="store_true",
-                           help="Set to use folding library for batching")
-    args = argparser.parse_args()
+    argparser.add_argument("-f", "--fold", action = 'store_true', help="To fold or not to fold")
+    argparser.add_argument("--ln", action = 'store_true', help="To norm or not to norm")
 
+    argparser.add_argument("--orig", action = 'store_true', help="Old is gold")
+    argparser.add_argument('--no-cuda', action='store_true', default=False,
+                        help='disables CUDA training')
+    argparser.add_argument('--nbatch', type = int, default = 32, help = 'minibatch size')
+    argparser.add_argument('--valbatch', type = int, default = 32, help = 'minibatch size for validation')
+
+    argparser.add_argument('--lr', type = float, default=0.001, help = 'learning rate')
+    argparser.add_argument('--name', type = str, default = "", help = 'name of experiment')
+    argparser.add_argument('--mload', type = str, default = "", help = 'path to load saved model from')
+
+
+    args = argparser.parse_args()
+    args.cuda = not args.no_cuda and torch.cuda.is_available()
+
+    torch.manual_seed(0)
+    if args.cuda:
+        torch.cuda.manual_seed(0)
+
+    print(args)
     print("Loading tactrs ...")
     with open(args.load, 'rb') as f:
         tactrs = pickle.load(f)
@@ -54,18 +68,23 @@ if __name__ == "__main__":
     with open(args.poseval, 'rb') as f:
         poseval_dataset, tokens_to_idx = pickle.load(f)
 
-    # Training
-    model = PosEvalModel(*tokens_to_idx)
-    trainer = PosEvalTrainer(model, tactrs, poseval_dataset,
-                             "mllogs/embedv1.0.jsonl", args.fold)
-    trainer.train()
-    filename = trainer.finalize()
+    print("Points Train={} Val={} Test={}".format(len(poseval_dataset.train), len(poseval_dataset.val), len(poseval_dataset.test)))
+    if not args.orig:
+        model = PosEvalModel(*tokens_to_idx, ln=args.ln)
+        trainer = PosEvalTrainer(model, tactrs, poseval_dataset, args)
+        trainer.train()
+    else:
+        from ml.embed import MyModel, PosEvalTrainer
+        print("Original")
+        model = MyModel(*tokens_to_idx)
+        trainer = PosEvalTrainer(model, tactrs, poseval_dataset.train)
+        trainer.train()
 
-    # Inference
-    model_infer = PosEvalModel(*tokens_to_idx)
-    model_infer.load_state_dict(torch.load(filename))
-    infer = PosEvalInfer(tactrs, model_infer)
-    infer.infer(poseval_dataset)
+    # # Inference
+    # model_infer = PosEvalModel(*tokens_to_idx)
+    # model_infer.load_state_dict(torch.load(filename))
+    # infer = PosEvalInfer(tactrs, model_infer)
+    # infer.infer(poseval_dataset)
 
 
     # TODO(deh): Uncomment me to test with checker

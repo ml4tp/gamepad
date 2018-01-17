@@ -69,6 +69,9 @@ class EmbedCoqExp(object):
     def embed_ast(self, env, c):
         return self._embed_ast(env, Kind.TERM, c)
 
+    def reset(self):
+        self.embeddings = {}
+
     def _embedcon(self, key, embed_vec):
         self.embeddings[key] = embed_vec
         return embed_vec
@@ -186,36 +189,40 @@ class EmbedCoqExp(object):
     # -------------------------------------------
     # Global embedding initialization
 
+        # Global constant folding
+    def lookup(self, lt):
+        return self.model.embed_table(autograd.Variable(torch.LongTensor([lt])))
+
     def embed_evar_name(self, exk):
         """Override Me"""
-        lookup_tensor = torch.LongTensor([self.model.evar_to_idx[exk]])
-        return self.model.evar_embed(autograd.Variable(lookup_tensor))
+        id = self.model.fix_id('evar', self.model.evar_to_idx[exk])
+        return self.lookup(id)
 
     def embed_const_name(self, const):
         """Override Me"""
-        lookup_tensor = torch.LongTensor([self.model.const_to_idx[const]])
-        return self.model.const_embed(autograd.Variable(lookup_tensor))
+        id = self.model.fix_id('const', self.model.const_to_idx[const])
+        return self.lookup(id)
 
     def embed_sort_name(self, sort):
         """Override Me"""
-        lookup_tensor = torch.LongTensor([self.model.sort_to_idx[sort]])
-        return self.model.sort_embed(autograd.Variable(lookup_tensor))
+        id = self.model.fix_id('sort', self.model.sort_to_idx[sort])
+        return self.lookup(id)
 
     def embed_ind_name(self, ind):
         """Override Me"""
-        lookup_tensor = torch.LongTensor([self.model.ind_to_idx[ind.mutind]])
-        return self.model.ind_embed(autograd.Variable(lookup_tensor))
+        id = self.model.fix_id('ind', self.model.ind_to_idx[ind.mutind])
+        return self.lookup(id)
 
     def embed_conid_name(self, ind_and_conid):
         """Override Me"""
         ind, conid = ind_and_conid
-        lookup_tensor = torch.LongTensor([self.model.conid_to_idx[(ind.mutind, conid)]])
-        return self.model.conid_embed(autograd.Variable(lookup_tensor))
+        id = self.model.fix_id('conid', self.model.conid_to_idx[(ind.mutind, conid)])
+        return self.lookup(id)
 
     def embed_fix_name(self, name):
         """Override Me"""
-        lookup_tensor = torch.LongTensor([self.model.fix_to_idx[name]])
-        return self.model.fix_embed(autograd.Variable(lookup_tensor))
+        id = self.model.fix_id('fix', self.model.fix_to_idx[name])
+        return self.lookup(id)
 
     # -------------------------------------------
     # Local embedding initialization
@@ -315,9 +322,12 @@ class EmbedCoqTacTr(object):
         self.tactr = tactr
         self.ece = EmbedCoqExp(model, tactr.decoder.decoded)
 
-        # Sharing
-        self.ctxid_embeds = {}
-        self.concl_embeds = {}
+        # # Sharing # Not needed as we share self.ece
+        # self.ctxid_embeds = {}
+        # self.concl_embeds = {}
+
+    def reset(self):
+        self.ece.reset()
 
     def embed(self):
         bfs = self.tactr.bfs_traverse()
@@ -351,21 +361,21 @@ class EmbedCoqTacTr(object):
         return env, evs
 
     def embed_ctx_ident(self, gid, env, typ_idx):
-        if typ_idx in self.ctxid_embeds:
-            return self.ctxid_embeds[typ_idx] #TODO(prafulla) we might not need this given ast sharing
+        # if typ_idx in self.ctxid_embeds:
+        #     return self.ctxid_embeds[typ_idx] #TODO(prafulla) we might not need this given ast sharing
         c = self.tactr.decoder.decode_exp_by_key(typ_idx)
         self.ece.GID = gid
         ev = self.ece.embed_ast(env, c)
-        self.ctxid_embeds[typ_idx] = ev
+        # self.ctxid_embeds[typ_idx] = ev
         return ev
 
     def embed_concl(self, gid, env, concl_idx):
-        if concl_idx in self.concl_embeds:
-            return self.concl_embeds[concl_idx] #TODO(prafulla) we might not need this given ast sharing
+        # if concl_idx in self.concl_embeds:
+        #     return self.concl_embeds[concl_idx] #TODO(prafulla) we might not need this given ast sharing
         c = self.tactr.decoder.decode_exp_by_key(concl_idx)
         self.ece.GID = gid
         ev = self.ece.embed_ast(env, c)
-        self.concl_embeds[concl_idx] = ev
+        # self.concl_embeds[concl_idx] = ev
         return ev
 
 
@@ -382,20 +392,28 @@ class MyModel(nn.Module):
         self.D = D
         self.state = state
 
-        # Embeddings
+        table_names = ['sort', 'const', 'ind', 'conid', 'evar', 'fix', 'fixbody']
+        tables = [sort_to_idx, const_to_idx, ind_to_idx, conid_to_idx, evar_to_idx, fix_to_idx, fix_to_idx]
+        shift = 0
+        self.shifts = {}
+        for table_name, table in zip(table_names, tables):
+            self.shifts[table_name] = shift
+            shift += len(table)
+        print(self.shifts, shift)
+        self.embed_table = nn.Embedding(shift, D)
+
+        # Embeddings for constants
         self.sort_to_idx = sort_to_idx
-        self.sort_embed = nn.Embedding(len(sort_to_idx), D)
+        # self.sort_embed = nn.Embedding(len(sort_to_idx), D)
         self.const_to_idx = const_to_idx
-        self.const_embed = nn.Embedding(len(const_to_idx), D)
+        # self.const_embed = nn.Embedding(len(const_to_idx), D)
         self.ind_to_idx = ind_to_idx
-        self.ind_embed = nn.Embedding(len(ind_to_idx), D)
+        # self.ind_embed = nn.Embedding(len(ind_to_idx), D)
         self.conid_to_idx = conid_to_idx
-        self.conid_embed = nn.Embedding(len(conid_to_idx), D)
+        # self.conid_embed = nn.Embedding(len(conid_to_idx), D)
         self.evar_to_idx = evar_to_idx
-        self.evar_embed = nn.Embedding(len(evar_to_idx), D)
+        # self.evar_embed = nn.Embedding(len(evar_to_idx), D)
         self.fix_to_idx = fix_to_idx
-        self.fix_embed = nn.Embedding(len(fix_to_idx), D)
-        self.fixbody_embed = nn.Embedding(len(fix_to_idx), D)
 
         # Embed AST
         self.cell_init_state = autograd.Variable(torch.randn((1, 1, self.state))) #TODO: Change this
@@ -413,17 +431,22 @@ class MyModel(nn.Module):
         self.final = nn.Linear(state, outsize)
         self.ctx_emb_func = lambda xs: gru_embed(xs, self.ctx_cell, self.ctx_cell_init_state)
 
+    def fix_id(self, table_name, id):
+        # print(table_name, id, )
+        # print(self.embed_table(autograd.Variable(torch.LongTensor([self.shifts[table_name] + id]))))
+        return self.shifts[table_name] + id
+
     def forward(self, embedder, tacst):
         evs = embedder.embed_tacst(tacst)
 
         # Adding 1 to conclusion and 0 to expressions
-        ctx_mask = torch.zeros(len(evs), 1, 1)
-        ctx_mask[0][0][0] = 1.0
-        x = torch.cat(evs, 0)
-        x = self.proj(x)
-        x = torch.cat([x, autograd.Variable(ctx_mask, requires_grad = False)], dim=-1)
-        xs = torch.split(x, 1)
-
+        # ctx_mask = torch.zeros(len(evs), 1, 1)
+        # ctx_mask[0][0][0] = 1.0
+        # x = torch.cat(evs, 0)
+        # x = self.proj(x)
+        # x = torch.cat([x, autograd.Variable(ctx_mask, requires_grad = False)], dim=-1)
+        # xs = torch.split(x, 1)
+        xs = evs
         # Run GRU on tacst
         x = self.ctx_emb_func(xs)
 
@@ -472,12 +495,13 @@ class PosEvalTrainer(object):
             total_loss = torch.Tensor([0])
             for idx, (tactr_id, poseval_pt) in enumerate(self.poseval_dataset):
                 tstart = time()
+                self.tactr_embedder[tactr_id].reset() # Uncomment to enable sh2. Note that this leads to stale parameter usage
                 print("TRAINING ({}/{}) TacSt={}, AstSize={}".format(tactr_id, len(self.tactrs), idx, poseval_pt.tacst_size))
                 self.model.zero_grad()
                 log_probs = self.model(self.tactr_embedder[tactr_id], poseval_pt.tacst)
                 target = autograd.Variable(torch.LongTensor([poseval_pt.subtr_bin]))
                 loss = loss_function(log_probs, target)
-                loss.backward(retain_graph = True)
+                loss.backward(retain_graph = True) # Only relevant when sh2 is on
                 optimizer.step()
                 total_loss += loss.data
                 tend = time()
@@ -486,9 +510,9 @@ class PosEvalTrainer(object):
                 # if idx % 10 == 0:
                 #     cpuStats()
                     # memReport()
-                # if tactr_id == 6:
-                #     print("Epoch Time with sh2 %.4f Loss %.4f" % (time() - testart, total_loss))
-                #     assert False
+                if tactr_id == 6:
+                    print("Epoch Time with sh2 %.4f Loss %.4f" % (time() - testart, total_loss))
+                    assert False
             print("Epoch Time %.4f Loss %.4f" % (time() - testart, total_loss))
             losses.append(total_loss)
         logger.close()

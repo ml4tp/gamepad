@@ -19,7 +19,7 @@ from coq.util import SizeCoqExp
 
 from ml.utils import ResultLogger
 
-import pytorch_tools.torchfold as ptf
+import ml.torchfold as ptf
 
 
 """
@@ -31,51 +31,84 @@ Version that uses torchfold
     close, medium, far
 """
 
-
 # -------------------------------------------------
 # Helper
 
-def ast_embed(folder, xs, init):
+def ast_embed(folder, xs, init, ln):
     hidden = init
     for i, x in enumerate(xs):
         #print("GRU Embed ",i, x.shape)
         hidden = folder.add('ast_cell_f', x, hidden) #cell(x.view(1, -1, 128), hidden)
     #print("hidden shape", hidden.shape)
+    if ln:
+        #print("using ln")
+        hidden = folder.add('ast_ln_f', hidden)
     return hidden
 
-def ctx_embed(xs, cell, init):
-    hidden = init
+def ctx_embed(folder, xs, init, ln):
+    hidden = folder.add('ctx_identity', init)
     for i, x in enumerate(xs):
         #print("GRU Embed ",i, x.shape)
-        hidden = cell(x.view(-1,128), hidden) #cell(x.view(1, -1, 128), hidden)
+        hidden = folder.add('ctx_cell_f', x, hidden) #cell(x.view(1, -1, 128), hidden)
     #print("hidden shape", hidden.shape)
+    if ln:
+        # Weird version of Layernorm
+        #print("using ln")
+        hidden = folder.add('ctx_ln_f', hidden)
     return hidden
 
 # -------------------------------------------------
-# Fold over tactic state
-
-class TacStFolder(object):
-    def __init__(self, model, tactr, f_fold=True):
-        self.model = model    # Only used to access embeddings
-        self.tactr = tactr    # Corresponding tactic tree
-        self.f_fold = f_fold  # Whether to use fold or not
-
+# Fold over anything
+class Folder(object):
+    def __init__(self, model, foldy, cuda):
         # Folding state
-        if self.f_fold:
-            self.folder = ptf.Fold()
-        else:
-            self.folder = ptf.Unfold(self.model)
-        self.folded = {}
-
-    def apply(self, all_logits, all_targets):
-        """Call after folding entire tactic state to force computation"""
-        return self.folder.apply(self.model, [all_logits, all_targets])
+        self.model = model
+        self.foldy = foldy
+        self.cuda = cuda
+        self.max_batch_ops = {}
+        self.max_batch_ops['embed_lookup_f'] = 128
+        self.max_batch_ops['ast_cell_f'] = 32
+        self.max_batch_ops['ctx_cell_f'] = 32
+        self.max_batch_ops['final_f'] = 32
+        self.reset()
 
     def reset(self):
         """Reset folding state"""
-        if self.f_fold:
-            self.folder = ptf.Fold()
-            self.folded = {}
+        if self.foldy:
+            #print("Folding")
+            self._folder = ptf.Fold(max_batch_ops = self.max_batch_ops)
+        else:
+            #print("Not folding")
+            self._folder = ptf.Unfold(self.model)
+        if self.cuda:
+            self._folder.cuda()
+
+    def apply(self, *args):
+        """Call after folding entire tactic state to force computation"""
+        return self._folder.apply(self.model, args)
+
+    def add(self, op, *args):
+        return self._folder.add(op, *args)
+
+    def __str__(self):
+        return str(self._folder)
+
+# Fold over tactic state
+
+class TacStFolder(object):
+    def __init__(self, model, tactr, folder):
+        self.model = model    # Only used to access embeddings
+        self.tactr = tactr    # Corresponding tactic tree
+
+        self.folder = folder
+        self.folded = {}
+        if folder.cuda:
+            self.torch = torch.cuda
+        else:
+            self.torch = torch
+
+    def reset(self):
+        self.folded = {}
 
     # -------------------------------------------
     # Tactic state folding
@@ -85,7 +118,7 @@ class TacStFolder(object):
         gid, ctx, concl_idx, tac = tacst
         env, foldeds = self.fold_ctx(gid, ctx)
         folded = self.fold_concl(gid, env, concl_idx)
-        return self.folder.add('logits', folded, *foldeds)
+        return self.model.pred(self.folder, folded, *foldeds)
 
     def fold_ctx(self, gid, ctx):
         foldeds = []
@@ -116,9 +149,9 @@ class TacStFolder(object):
         # for i,arg in enumerate(args):
         #     print(i, arg.shape)
 
-        folder = self.model.ast_emb_func(self.folder, args) #self.folder.add('coq_exp', *args)
-        self.folded[key] = folder
-        return folder
+        fold = self.model.ast_emb_func(self.folder, args) #self.folder.add('coq_exp', *args)
+        self.folded[key] = fold
+        return fold
 
     def _fold_ast(self, env, kind, c):
         key = c.tag
@@ -222,7 +255,7 @@ class TacStFolder(object):
     # -------------------------------------------
     # Global constant folding
     def lookup(self, lt):
-        return self.folder.add('embed_lookup_f', autograd.Variable(torch.LongTensor([lt])))
+        return self.folder.add('embed_lookup_f', autograd.Variable(self.torch.LongTensor([lt])))
 
     def fold_evar_name(self, exk):
         """Override Me"""
@@ -260,8 +293,7 @@ class TacStFolder(object):
 
     def fold_local_var(self, ty):
         """Override Me"""
-        return self.folder.add('var_identity', autograd.Variable(torch.randn(1,self.model.D), requires_grad=False))
-
+        return self.folder.add('var_normal', self.torch.FloatTensor(1,self.model.D))
 
 # -------------------------------------------------
 # Model
@@ -269,7 +301,7 @@ class TacStFolder(object):
 class PosEvalModel(nn.Module):
     def __init__(self, sort_to_idx, const_to_idx, ind_to_idx,
                  conid_to_idx, evar_to_idx, fix_to_idx,
-                 D=128, state=128, outsize=3):
+                 D=128, state=128, outsize=3, eps=1e-6, ln = False):
         super().__init__()
 
         # Dimensions
@@ -302,22 +334,38 @@ class PosEvalModel(nn.Module):
         # self.fixbody_embed = nn.Embedding(len(fix_to_idx), D)
 
         # Embeddings for Gallina AST
-        self.ast_cell_init_state = autograd.Variable(torch.randn((1, self.state))) #TODO(prafulla): Change this?
+        self.ast_cell_init_state = nn.Parameter(torch.randn(1, self.state)) #TODO(prafulla): Change this?
         self.ast_cell = nn.GRUCell(state, state)
-        self.ast_emb_func = lambda folder, xs: ast_embed(folder, xs, self.ast_cell_init_state)
+        self.ast_emb_func = lambda folder, xs: ast_embed(folder, xs, self.ast_cell_init_state, ln)
         for attr in ["rel", "var", "evar", "sort", "cast", "prod",
                      "lam", "letin", "app", "const", "ind", "construct",
                      "case", "fix", "cofix", "proj1"]:
-            self.__setattr__(attr, autograd.Variable(torch.randn(1, self.state)))
+            self.__setattr__(attr, nn.Parameter(torch.randn(1, self.state)))
 
         # Embeddings for Tactic State (ctx, goal)
-        self.ctx_cell_init_state = autograd.Variable(torch.randn((1, self.state))) #TODO(prafulla): Change this?
+        self.ctx_cell_init_state = nn.Parameter(torch.randn(1, self.state)) #TODO(prafulla): Change this?
         self.ctx_cell = nn.GRUCell(state, state)
-        self.proj = nn.Linear(state, state - 1)
+        self.proj = nn.Linear(state + 1, state)
         self.final = nn.Linear(state, outsize)
-        self.ctx_emb_func = lambda xs: ctx_embed(xs, self.ctx_cell, self.ctx_cell_init_state)
+        self.ctx_emb_func = lambda folder, xs: ctx_embed(folder, xs, self.ctx_cell_init_state, ln)
+        self.loss_fn = nn.CrossEntropyLoss()
 
-    def var_identity(self, x):
+        # Layer Norm
+        self.ast_gamma = nn.Parameter(torch.ones(state))
+        self.ast_beta = nn.Parameter(torch.zeros(state))
+        self.ctx_gamma = nn.Parameter(torch.ones(state))
+        self.ctx_beta = nn.Parameter(torch.zeros(state))
+
+        self.eps = eps
+
+        # Extra vars
+        self.register_buffer('concl_id', torch.ones([1,1]))
+        self.register_buffer('state_id', torch.zeros([1,1]))
+
+    def var_normal(self, x):
+        return autograd.Variable(x.normal_(), requires_grad = False)
+
+    def ctx_identity(self, x):
         return x
 
     def fix_id(self, table_name, id):
@@ -332,22 +380,94 @@ class PosEvalModel(nn.Module):
         hidden = self.ast_cell(x, hidden)
         return hidden
 
+    def ctx_cell_f(self, x, hidden):
+        hidden = self.ctx_cell(x, hidden)
+        return hidden
+
     def coq_exp(self, *args):
         return self.emb_func(args)
 
-    def logits(self, *tacst_evs):
-        # Adding 1 to conclusion and 0 to expressions
+    def final_f(self, x):
+        return self.final(x)
+
+    def proj_f(self, x):
+        return self.proj(x)
+
+    def cat_f(self, *xs):
+        return torch.cat(xs, dim = -1)
+
+    def ast_ln_f(self, x):
+        mean = x.mean(-1, keepdim=True)
+        std = x.std(-1, keepdim=True)
+        return self.ast_gamma * (x - mean) / (std + self.eps) + self.ast_beta
+
+    def ctx_ln_f(self, x):
+        mean = x.mean(-1, keepdim=True)
+        std = x.std(-1, keepdim=True)
+        return self.ctx_gamma * (x - mean) / (std + self.eps) + self.ctx_beta
+    # def loss_f(self, logits, target):
+    #     return self.loss_fn(logits, target)
+    #
+    # def loss_func(self, folder, logits, targets):
+    #     return folder.add('loss', logits, targets)
+
+    def final_func(self, folder, x):
+        return folder.add('final_f', x)
+
+    def proj_func(self, folder, x):
+        return folder.add('proj_f', x)
+
+    def cat_func(self, folder, xs):
+        return folder.add('cat_f', *xs)
+
+    def mask(self, folder, xs):
+        # First element is conclu, rest is state
+
+        projs = []
+
+        for i,x in enumerate(xs):
+            if i == 0:
+                id = self.concl_id
+            else:
+                id = self.state_id
+            projs.append(self.proj_func(folder, self.cat_func(folder, [x, autograd.Variable(id)])))
+        return projs
+
+        # ctx_mask = torch.zeros(len(xs), 1, 1)
+        # ctx_mask[0][0][0] = 1.0
+        # x = self.cat_func(xs, 0)
+        # x = self.proj(x)
+        # x = torch.cat([x, autograd.Variable(ctx_mask, requires_grad=False)], dim=-1)
+        # xs = torch.split(x, 1)
+
+    def pred(self, folder, *tacst_evs):
+        xs = self.mask(folder, tacst_evs)
+        x = self.ctx_emb_func(folder, xs)
+        # Final layer for logits
+        x = self.final_func(folder, x)
+        return x
+
+    def pred_attention(self, folder, *tacst_evs):
+        self.attn_proj_func(folder, *tacst_evs)
+    # def loss(self, folder, tactst_folder, tactst, target):
+    #     logits = tactst_folder.fold_tacst(tactst)
+    #     loss = self.loss_func(folder, logits, target)
+    #     return loss
+
+    # def logits(self, *tacst_evs):
+    #     # Adding 1 to conclusion and 0 to expressions
         # ctx_mask = torch.zeros(len(tacst_evs), 1, 1)
         # ctx_mask[0][0][0] = 1.0
         # x = torch.cat(list(tacst_evs), 0)
         # x = self.proj(x)
         # x = torch.cat([x, autograd.Variable(ctx_mask, requires_grad=False)], dim=-1)
         # xs = torch.split(x, 1)
-        xs = tacst_evs
-        # Run GRU on tacst
-        x = self.ctx_emb_func(xs)
+    #     xs = tacst_evs
+    #     # Run GRU on tacst
+    #     x = self.ctx_emb_func(xs)
+    #
+    #     # Final layer for logits
+    #     x = self.final(x)
+    #     print("Output shape", x.shape)
+    #     return x.view(1, -1)
 
-        # Final layer for logits
-        x = self.final(x)
-        # print("Output shape", x.shape)
-        return x.view(1, -1)
