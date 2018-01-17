@@ -165,10 +165,10 @@ class PosEvalTrainer(object):
             print(k)
 
         # Train
+        smooth_acc = None
+        smooth_loss = None
         while self.epochs < self.max_epochs:
             testart = time()
-            smooth_acc = None
-            smooth_loss = None
             for minibatch in tqdm(iter_data(data, shuffle = True, size = n_batch), total = n_train // n_batch, ncols = 80, leave = False):
                 with Timer() as t:
                     # Prepare to compute gradients
@@ -198,9 +198,9 @@ class PosEvalTrainer(object):
                     # if idx == 6:
                     #     print("Epoch Time with sh2 %.4f Loss %.4f" % (time() - testart, total_loss))
                     #     assert False
+                if self.updates % 1000 == 100:
+                    self.validate()
             self.epochs += 1
-            if self.epochs % 10 == 1:
-                self.validate()
             tqdm.write("Finished Epoch %0.4f Time %.4f" % (self.epochs, time() - testart))
 
     def validate(self):
