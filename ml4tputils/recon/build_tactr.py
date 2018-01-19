@@ -6,7 +6,7 @@ from plotly.graph_objs import *
 
 from coq.decode import DecodeCoqExp
 from recon.parse_rawtac import *
-from recon.tactr import TacStKind, TacTrNode, TacEdge, TacTree
+from recon.tactr import TacStKind, TacTrNode, TacEdge, TacTree, parse_full_tac
 
 """
 [Note]
@@ -108,17 +108,20 @@ class TacTreeBuilder(object):
             ftac = self.ftac_inscope
         else:
             ftac = bf_decl.hdr.tac
+        # print("Scope", self.ftac_inscope)
+        # print("My tac", rawtac.tac)
+        # print("Decl", bf_decl.hdr.tac)
 
         if af_decl.hdr.gid == GID_SOLVED:
             bf_node = self._mk_live_node(bf_decl)
             edge = TacEdge(self._fresh_edgeid(),
                            rawtac.uid, rawtac.name, rawtac.tkind,
-                           ftac, bf_node, self._mk_term_node())
+                           parse_full_tac(ftac), bf_node, self._mk_term_node())
         elif af_decl.hdr.mode == TOK_DEAD:
             bf_node = self._mk_live_node(bf_decl)
             edge = TacEdge(self._fresh_edgeid(),
                            rawtac.uid, rawtac.name, rawtac.tkind,
-                           ftac, bf_node, self._mk_dead_node())
+                           parse_full_tac(ftac), bf_node, self._mk_dead_node())
         # TODO(deh): how do we handle self-edges?
         # elif bf_decl.hdr.gid == af_decl.hdr.gid:
         #     # Take care of self-loops
@@ -138,7 +141,7 @@ class TacTreeBuilder(object):
             af_node = self._mk_live_node(af_decl)
             edge = TacEdge(self._fresh_edgeid(),
                            rawtac.uid, rawtac.name, rawtac.tkind,
-                           ftac, bf_node, af_node)
+                           parse_full_tac(ftac), bf_node, af_node)
 
         # TODO(deh): is this correct? should be node to edge?
         if edge.src in self.gid_tactic:
@@ -155,10 +158,13 @@ class TacTreeBuilder(object):
             ftac = self.ftac_inscope
         else:
             ftac = bf_decl.hdr.tac
+        # print("Scope", self.ftac_inscope)
+        # print("My tac", rawtac.tac)
+        # print("Decl", bf_decl.hdr.tac)
 
         edge = TacEdge(self._fresh_edgeid(),
                        rawtac.uid, rawtac.name, rawtac.tkind,
-                       ftac, self._mk_live_node(bf_decl), af_node, True)
+                       parse_full_tac(ftac), self._mk_live_node(bf_decl), af_node, True)
         return edge
 
     def _launch_rec(self, rawtacs, ftac_inscope):

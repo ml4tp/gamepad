@@ -40,7 +40,7 @@ class RawTac(object):
         self.body = body           # Raw tactics in the body
 
     def pp(self, tab=0):
-        epi = pp_tab(tab, "{}({}) {{\n".format(self.name, self.uid))
+        epi = pp_tab(tab, "{}({}, {}) {{\n".format(self.name, self.ftac, self.uid))
         bf = pp_tab(tab + 2, "bf_decl = {}\n".format(str(self.bf_decl)))
         if self.body:
             s1 = pp_tab(tab + 2, "bods = {\n")

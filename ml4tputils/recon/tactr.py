@@ -4,6 +4,7 @@ import networkx as nx
 import numpy as np
 import plotly
 from plotly.graph_objs import *
+import re
 
 from coq.ast import Name
 from coq.decode import DecodeCoqExp
@@ -24,6 +25,26 @@ multiple tactics applied to it. For example,
 is represented as
 14 [tac1, tac2]
 """
+
+
+# -------------------------------------------------
+# Helper
+
+def parse_full_tac(tac_str):
+    tokens = re.findall(r'\[[^}]*?\]|\([^}]*?\)|\S+', tac_str)
+    name = tokens[0]
+    if name == 'apply':
+        return 'apply', tokens[1:]
+    elif name == 'rewrite':
+        return 'rewrite', tokens[1:]
+    elif name == 'case':
+        return 'case', tokens[1:]
+    elif name == 'have':
+        idx = tokens[1].find(':')
+        tokens[1] = tokens[1][:idx].strip()
+        return 'have', tokens[1:]
+    else:
+        return tokens[0], [' '.join(tokens[1:])]
 
 
 # -------------------------------------------------
@@ -270,6 +291,8 @@ class TacTree(object):
     def view_tactic_hist(self, f_compress=False):
         hist = TACTIC_HIST.empty()
         for k, tacs in self.tactics().items():
+            # TODO(deh): Is this correct? I should iterate over all
+            # tactics right?
             tac = tacs[0]
             if tac.tkind == TacKind.ML:
                 tac_name = tac.name.split()[0]

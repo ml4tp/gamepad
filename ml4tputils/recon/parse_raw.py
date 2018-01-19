@@ -114,8 +114,8 @@ class TacStDecl(object):
             s_mode = "A"
         elif self.hdr.mode == TOK_DEAD:
             s_mode = "E"
-        info = s_mode, self.hdr.callid, self.hdr.gid, self.hdr.tac, self.hdr.loc
-        return "{}(callid={}, gid={}, tac={}, loc={})".format(*info)
+        info = s_mode, self.hdr.callid, self.hdr.gid, self.hdr.tac, self.hdr.ftac, self.hdr.loc
+        return "{}(callid={}, gid={}, tac={}, ftac={}, loc={})".format(*info)
 
 
 class LemTacSt(object):
