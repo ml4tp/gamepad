@@ -42,7 +42,7 @@ def seq_embed(name, folder, xs, init, ln, tup = False):
     for i, x in enumerate(xs):
         #print("GRU Embed ",i, x.shape)
         if tup:
-            if not isinstance(x, (tuple, list)):
+            if not isinstance(x, (tuple, list, nn.ParameterList)):
                 #print(x)
                 x = x.split(2)
             hidden = folder.add(name + '_cell_f', *x, *hidden).split(2)
