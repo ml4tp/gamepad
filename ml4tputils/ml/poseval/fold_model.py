@@ -383,7 +383,7 @@ class PosEvalModel(nn.Module):
 
         # Embeddings for Gallina AST
         if self.treelstm:
-            self.ast_cell_init_state = nn.ModuleList([nn.Parameter(torch.randn(1, state)), nn.Parameter(torch.randn(1, state))])
+            self.ast_cell_init_state = nn.ParameterList([nn.Parameter(torch.randn(1, state)), nn.Parameter(torch.randn(1, state))])
             self.ast_cell = TreeLSTM(state)
             self.ast_emb_func = lambda folder, xs: seq_embed('ast_tree', folder, xs, self.ast_cell_init_state, ln, tup = True)
         else:
@@ -394,13 +394,13 @@ class PosEvalModel(nn.Module):
                      "lam", "letin", "app", "const", "ind", "construct",
                      "case", "fix", "cofix", "proj1"]:
             if self.treelstm:
-                self.__setattr__(attr, nn.ModuleList([nn.Parameter(torch.randn(1, state)), nn.Parameter(torch.randn(1, state))]))
+                self.__setattr__(attr, nn.ParameterList([nn.Parameter(torch.randn(1, state)), nn.Parameter(torch.randn(1, state))]))
             else:
                 self.__setattr__(attr, nn.Parameter(torch.randn(1, state)))
 
         # Embeddings for Tactic State (ctx, goal)
         if self.treelstm:
-            self.ctx_cell_init_state = nn.ModuleList([nn.Parameter(torch.randn(1, state)), nn.Parameter(torch.randn(1, state))])
+            self.ctx_cell_init_state = nn.ParameterList([nn.Parameter(torch.randn(1, state)), nn.Parameter(torch.randn(1, state))])
             self.ctx_cell = TreeLSTM(state)
             self.ctx_emb_func = lambda folder, xs: seq_embed('ctx_tree', folder, xs, self.ctx_cell_init_state, ln, tup = True)
         else:
