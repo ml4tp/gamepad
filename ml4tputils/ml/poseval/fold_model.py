@@ -55,28 +55,28 @@ def seq_embed(name, folder, xs, init, ln, tup = False):
         hidden = folder.add(name + '_ln_f', hidden)
     return hidden
 
-def ast_embed(folder, xs, init, ln):
-    hidden = init
-    for i, x in enumerate(xs):
-        #print("GRU Embed ",i, x.shape)
-        hidden = folder.add('ast_cell_f', x, hidden) #cell(x.view(1, -1, 128), hidden)
-    #print("hidden shape", hidden.shape)
-    if ln:
-        #print("using ln")
-        hidden = folder.add('ast_ln_f', hidden)
-    return hidden
-
-def ctx_embed(folder, xs, init, ln):
-    hidden = folder.add('ctx_identity', init)
-    for i, x in enumerate(xs):
-        #print("GRU Embed ",i, x.shape)
-        hidden = folder.add('ctx_cell_f', x, hidden) #cell(x.view(1, -1, 128), hidden)
-    #print("hidden shape", hidden.shape)
-    if ln:
-        # Weird version of Layernorm
-        #print("using ln")
-        hidden = folder.add('ctx_ln_f', hidden)
-    return hidden
+# def ast_embed(folder, xs, init, ln):
+#     hidden = init
+#     for i, x in enumerate(xs):
+#         #print("GRU Embed ",i, x.shape)
+#         hidden = folder.add('ast_cell_f', x, hidden) #cell(x.view(1, -1, 128), hidden)
+#     #print("hidden shape", hidden.shape)
+#     if ln:
+#         #print("using ln")
+#         hidden = folder.add('ast_ln_f', hidden)
+#     return hidden
+#
+# def ctx_embed(folder, xs, init, ln):
+#     hidden = folder.add('ctx_identity', init)
+#     for i, x in enumerate(xs):
+#         #print("GRU Embed ",i, x.shape)
+#         hidden = folder.add('ctx_cell_f', x, hidden) #cell(x.view(1, -1, 128), hidden)
+#     #print("hidden shape", hidden.shape)
+#     if ln:
+#         # Weird version of Layernorm
+#         #print("using ln")
+#         hidden = folder.add('ctx_ln_f', hidden)
+#     return hidden
 
 # -------------------------------------------------
 # Fold over anything
@@ -327,14 +327,16 @@ class TreeLSTM(nn.Module):
         c = (a.tanh() * i.sigmoid() + f1.sigmoid() * left_c + f2.sigmoid() * right_c)
         h = o.sigmoid() * c.tanh()
         return h,c
-
+#
 # class TreeGRU(nn.Module):
 #     def __init__(self, state):
 #         super().__init__()
-#         self.whx = nn.Linear(state * 2, state * 5)
+#         self.whx = nn.Linear(state * 2, state * 3)
+#         self.
 #
 #     def forward(self, right_h, left_h):  # takes x as first arg, h as second
-#         z, r1, r2 = self.whx(torch.cat([left_h, right_h], dim=-1)).chunk(5, -1)
+#         z, r1, r2 = self.whx(torch.cat([left_h, right_h], dim=-1)).chunk(3, -1)
+#
 #         c = (a.tanh() * i.sigmoid() + r1.sigmoid() * left_c + r2.sigmoid() * right_c)
 #         h = o.sigmoid() * c.tanh()
 #         return h, c
@@ -344,7 +346,7 @@ class TreeLSTM(nn.Module):
 class PosEvalModel(nn.Module):
     def __init__(self, sort_to_idx, const_to_idx, ind_to_idx,
                  conid_to_idx, evar_to_idx, fix_to_idx,
-                 D=128, state=128, outsize=3, eps=1e-6, ln = False, treelstm = False):
+                 D=128, state=128, outsize=3, eps=1e-6, ln = False, treelstm = False, lstm = False):
         super().__init__()
 
         # Dimensions
@@ -360,8 +362,10 @@ class PosEvalModel(nn.Module):
             shift += len(table)
         # print(self.shifts, shift)
         self.treelstm = treelstm
+        self.lstm = lstm
+        self.tup = self.treelstm or self.lstm # So, we have hidden, state; instead of just state
 
-        if self.treelstm:
+        if self.tup:
             self.D = 2*D
         self.embed_table = nn.Embedding(shift, self.D)
 
@@ -380,33 +384,40 @@ class PosEvalModel(nn.Module):
         # self.fix_embed = nn.Embedding(len(fix_to_idx), D)
         # self.fixbody_embed = nn.Embedding(len(fix_to_idx), D)
 
-
-        # Embeddings for Gallina AST
-        if self.treelstm:
-            self.ast_cell_init_state = nn.ParameterList([nn.Parameter(torch.randn(1, state)), nn.Parameter(torch.randn(1, state))])
-            self.ast_cell = TreeLSTM(state)
-            self.ast_emb_func = lambda folder, xs: seq_embed('ast_tree', folder, xs, self.ast_cell_init_state, ln, tup = True)
-        else:
-            self.ast_cell_init_state = nn.Parameter(torch.randn(1, state)) #TODO(prafulla): Change this?
-            self.ast_cell = nn.GRUCell(state, state)
-            self.ast_emb_func = lambda folder, xs: seq_embed('ast', folder, xs, self.ast_cell_init_state, ln)
         for attr in ["rel", "var", "evar", "sort", "cast", "prod",
                      "lam", "letin", "app", "const", "ind", "construct",
                      "case", "fix", "cofix", "proj1"]:
-            if self.treelstm:
+            if self.tup:
                 self.__setattr__(attr, nn.ParameterList([nn.Parameter(torch.randn(1, state)), nn.Parameter(torch.randn(1, state))]))
             else:
                 self.__setattr__(attr, nn.Parameter(torch.randn(1, state)))
 
-        # Embeddings for Tactic State (ctx, goal)
-        if self.treelstm:
+        # Sequence models
+        if self.tup:
+            self.ast_cell_init_state = nn.ParameterList([nn.Parameter(torch.randn(1, state)), nn.Parameter(torch.randn(1, state))])
             self.ctx_cell_init_state = nn.ParameterList([nn.Parameter(torch.randn(1, state)), nn.Parameter(torch.randn(1, state))])
-            self.ctx_cell = TreeLSTM(state)
-            self.ctx_emb_func = lambda folder, xs: seq_embed('ctx_tree', folder, xs, self.ctx_cell_init_state, ln, tup = True)
         else:
-            self.ctx_cell_init_state = nn.Parameter(torch.randn(1, state)) #TODO(prafulla): Change this?
-            self.ctx_cell = nn.GRUCell(state, state)
-            self.ctx_emb_func = lambda folder, xs: seq_embed('ctx', folder, xs, self.ctx_cell_init_state, ln)
+            self.ast_cell_init_state = nn.Parameter(torch.randn(1, state))
+            self.ctx_cell_init_state = nn.Parameter(torch.randn(1, state))
+
+        if self.treelstm:
+            self.ast_cell = TreeLSTM(state)
+            self.ast_emb_func = lambda folder, xs: seq_embed('ast_tree', folder, xs, self.ast_cell_init_state, ln, tup = self.tup)
+            self.ctx_cell = TreeLSTM(state)
+            self.ctx_emb_func = lambda folder, xs: seq_embed('ctx_tree', folder, xs, self.ctx_cell_init_state, ln, tup=self.tup)
+        else:
+            if self.lstm:
+                self.ast_cell = nn.LSTMCell(state, state)
+                self.ctx_cell = nn.LSTMCell(state, state)
+                name = "_lstm"
+            else:
+                # Default is GRU
+                self.ast_cell = nn.GRUCell(state, state)
+                self.ctx_cell = nn.GRUCell(state, state)
+                name = ""
+            self.ast_emb_func = lambda folder, xs: seq_embed('ast' + name, folder, xs, self.ast_cell_init_state, ln, tup = self.tup)
+            self.ctx_emb_func = lambda folder, xs: seq_embed('ctx' + name, folder, xs, self.ctx_cell_init_state, ln, tup = self.tup)
+
         self.proj = nn.Linear(state + 1, state)
         self.final = nn.Linear(state, outsize)
         self.loss_fn = nn.CrossEntropyLoss()
@@ -424,7 +435,7 @@ class PosEvalModel(nn.Module):
         self.register_buffer('state_id', torch.zeros([1,1]))
 
     def var_normal(self, x):
-        if self.treelstm:
+        if self.tup:
             return autograd.Variable(x.normal_(), requires_grad = False).chunk(2,-1)
         else:
             return autograd.Variable(x.normal_(), requires_grad = False)
@@ -441,7 +452,7 @@ class PosEvalModel(nn.Module):
         return self.shifts[table_name] + id
 
     def embed_lookup_f(self, id):
-        if self.treelstm:
+        if self.tup:
             return self.embed_table(id).chunk(2,-1)
         else:
             return self.embed_table(id)
@@ -452,6 +463,14 @@ class PosEvalModel(nn.Module):
 
     def ctx_cell_f(self, x, hidden):
         hidden = self.ctx_cell(x, hidden)
+        return hidden
+
+    def ast_lstm_cell_f(self, right_h, right_c, left_h, left_c):
+        hidden = self.ast_cell(right_h, (left_h, left_c))
+        return hidden
+
+    def ctx_lstm_cell_f(self, right_h, right_c, left_h, left_c):
+        hidden = self.ctx_cell(right_h, (left_h, left_c))
         return hidden
 
     def ast_tree_cell_f(self, right_h, right_c, left_h, left_c):
@@ -519,7 +538,7 @@ class PosEvalModel(nn.Module):
         # xs = torch.split(x, 1)
 
     def pred(self, folder, *tacst_evs):
-        if self.treelstm:
+        if self.tup:
             x_hidden, x_cell = zip(*tacst_evs)
             x_hidden = self.mask(folder, x_hidden)
             xs = zip(x_hidden, x_cell)
@@ -527,7 +546,7 @@ class PosEvalModel(nn.Module):
             xs = self.mask(folder, tacst_evs)
         x = self.ctx_emb_func(folder, xs)
         # Final layer for logits
-        if self.treelstm:
+        if self.tup:
             x = x[0]
         x = self.final_func(folder, x)
         return x
