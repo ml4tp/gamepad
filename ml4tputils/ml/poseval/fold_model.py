@@ -440,8 +440,8 @@ class PosEvalModel(nn.Module):
         else:
             return autograd.Variable(x.normal_(), requires_grad = False)
 
-    def identity(self, *args):
-        return args
+    def identity(self, x):
+        return x
 
     def tup_identity(self, *args):
         return args
