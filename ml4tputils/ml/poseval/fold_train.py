@@ -198,6 +198,9 @@ class PosEvalTrainer(object):
                     # if idx == 6:
                     #     print("Epoch Time with sh2 %.4f Loss %.4f" % (time() - testart, total_loss))
                     #     assert False
+                if self.args.debug:
+                    if self.updates % 10 == 0:
+                        exit()
                 if self.updates % 1000 == 100:
                     self.validate()
             self.epochs += 1
