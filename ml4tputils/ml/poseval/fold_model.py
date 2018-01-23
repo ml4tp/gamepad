@@ -34,11 +34,22 @@ Version that uses torchfold
 # -------------------------------------------------
 # Helper
 
-def seq_embed(name, folder, xs, init, ln, tup = False):
+def seq_embed(name, folder, xs, init, ln, tup = False, input_dropout = False):
     if tup:
         hidden = folder.add('tup_identity', *init).split(2)
     else:
         hidden = folder.add('identity', init)
+
+    # Input dropout
+    if input_dropout:
+        if tup:
+            hidden[0] = folder.add('input_dropout_f', hidden[0])
+            for i in range(len(xs)):
+                xs[i][0] = folder.add('input_dropout_f', xs[i][0])
+        else:
+            hidden = folder.add('input_dropout_f', hidden)
+            for i in range(len(xs)):
+                xs[i] = folder.add('input_dropout_f', xs[i])
     for i, x in enumerate(xs):
         #print("GRU Embed ",i, x.shape)
         if tup:
@@ -53,9 +64,7 @@ def seq_embed(name, folder, xs, init, ln, tup = False):
     if ln:
         # Weird layer-norm
         if tup:
-            x_hidden, x_cell = hidden
-            x_hidden = folder.add(name[:3] + '_ln_f', x_hidden)
-            hidden = x_hidden, x_cell
+            hidden[0] = folder.add(name[:3] + '_ln_f', hidden[0])
         else:
             hidden = folder.add(name[:3] + '_ln_f', hidden)
     return hidden
@@ -363,7 +372,7 @@ class TreeLSTM(nn.Module):
 class PosEvalModel(nn.Module):
     def __init__(self, sort_to_idx, const_to_idx, ind_to_idx,
                  conid_to_idx, evar_to_idx, fix_to_idx,
-                 D=128, state=128, outsize=3, eps=1e-6, ln = False, treelstm = False, lstm = False):
+                 D=128, state=128, outsize=3, eps=1e-6, ln = False, treelstm = False, lstm = False, dropout = 0.0):
         super().__init__()
 
         # Dimensions
@@ -410,6 +419,19 @@ class PosEvalModel(nn.Module):
                 self.__setattr__(attr, nn.Parameter(torch.randn(1, state)))
 
         # Sequence models
+        seq_args = {'ln': ln, 'tup': self.tup, 'input_dropout': dropout > 0.0}
+        if seq_args['ln']:
+            # Layer Norm
+            self.ast_gamma = nn.Parameter(torch.ones(state))
+            self.ast_beta = nn.Parameter(torch.zeros(state))
+            self.ctx_gamma = nn.Parameter(torch.ones(state))
+            self.ctx_beta = nn.Parameter(torch.zeros(state))
+            self.eps = eps
+
+        if seq_args['input_dropout']:
+            # Input droput
+            self.input_dropout = nn.Dropout(dropout)
+
         if self.tup:
             self.ast_cell_init_state = nn.ParameterList([nn.Parameter(torch.randn(1, state)), nn.Parameter(torch.randn(1, state))])
             self.ctx_cell_init_state = nn.ParameterList([nn.Parameter(torch.randn(1, state)), nn.Parameter(torch.randn(1, state))])
@@ -419,9 +441,9 @@ class PosEvalModel(nn.Module):
 
         if self.treelstm:
             self.ast_cell = TreeLSTM(state)
-            self.ast_emb_func = lambda folder, xs: seq_embed('ast_tree', folder, xs, self.ast_cell_init_state, ln, tup = self.tup)
+            self.ast_emb_func = lambda folder, xs: seq_embed('ast_tree', folder, xs, self.ast_cell_init_state, **seq_args)
             self.ctx_cell = TreeLSTM(state)
-            self.ctx_emb_func = lambda folder, xs: seq_embed('ctx_tree', folder, xs, self.ctx_cell_init_state, ln, tup=self.tup)
+            self.ctx_emb_func = lambda folder, xs: seq_embed('ctx_tree', folder, xs, self.ctx_cell_init_state, **seq_args)
         else:
             if self.lstm:
                 self.ast_cell = nn.LSTMCell(state, state)
@@ -432,27 +454,22 @@ class PosEvalModel(nn.Module):
                 self.ast_cell = nn.GRUCell(state, state)
                 self.ctx_cell = nn.GRUCell(state, state)
                 name = ""
-            self.ast_emb_func = lambda folder, xs: seq_embed('ast' + name, folder, xs, self.ast_cell_init_state, ln, tup = self.tup)
-            self.ctx_emb_func = lambda folder, xs: seq_embed('ctx' + name, folder, xs, self.ctx_cell_init_state, ln, tup = self.tup)
+            self.ast_emb_func = lambda folder, xs: seq_embed('ast' + name, folder, xs, self.ast_cell_init_state, **seq_args)
+            self.ctx_emb_func = lambda folder, xs: seq_embed('ctx' + name, folder, xs, self.ctx_cell_init_state, **seq_args)
 
         self.pred = self.ctx_func
         self.proj = nn.Linear(state + 1, state)
         self.final = nn.Linear(state, outsize)
         self.loss_fn = nn.CrossEntropyLoss()
 
-        # Layer Norm
-        self.ast_gamma = nn.Parameter(torch.ones(state))
-        self.ast_beta = nn.Parameter(torch.zeros(state))
-        self.ctx_gamma = nn.Parameter(torch.ones(state))
-        self.ctx_beta = nn.Parameter(torch.zeros(state))
-
-        self.eps = eps
-
         # Extra vars
         self.register_buffer('concl_id', torch.ones([1,1]))
         self.register_buffer('state_id', torch.zeros([1,1]))
 
     # Folder forward functions
+    def input_dropout_f(self, x):
+        return self.input_dropout(x)
+
     def var_normal(self, x):
         if self.tup:
             return autograd.Variable(x.normal_(), requires_grad = False).chunk(2,-1)

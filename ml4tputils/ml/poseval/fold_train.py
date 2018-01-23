@@ -57,7 +57,7 @@ class PosEvalTrainer(object):
             self.tacst_folder[tactr_id] = TacStFolder(model, tactr, self.folder)
 
         misc = "_".join([v for k,v in (zip([args.lstm, args.treelstm], ["lstm", "treelstm"])) if k])
-        basepath = 'mllogs/sgv_nb_{}_lr_{}_ln_{}_m_{}_r_{}/'.format(args.nbatch, args.lr, args.ln, misc, args.name)
+        basepath = 'mllogs/sgv_nb_{}_lr_{}_ln_{}_drop_{}_m_{}_r_{}/'.format(args.nbatch, args.lr, args.ln, args.dropout, misc, args.name)
         if args.mload:
             self.load(args.mload)
             basepath += 'load_{}/'.format(self.ts)  # So reloaded models saved in subdirectory
@@ -167,6 +167,8 @@ class PosEvalTrainer(object):
             testart = time()
             for minibatch in tqdm(iter_data(data, shuffle = True, size = n_batch), total = n_train // n_batch, ncols = 80, leave = False):
                 with Timer() as t:
+                    # Set model to traiing mode (needed for dropout, batchnorm etc)
+                    self.model.train()
                     # Prepare to compute gradients
                     self.model.zero_grad()
 
@@ -203,6 +205,8 @@ class PosEvalTrainer(object):
             tqdm.write("Finished Epoch %0.4f Time %.4f" % (self.epochs, time() - testart))
 
     def validate(self):
+        # Set model to evaluation mode (needed for dropout)
+        self.model.eval()
         print("Validating")
         epochs = self.epochs
         updates = self.updates
