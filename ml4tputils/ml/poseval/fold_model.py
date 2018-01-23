@@ -51,8 +51,13 @@ def seq_embed(name, folder, xs, init, ln, tup = False):
             hidden = folder.add(name + '_cell_f', x, hidden) #cell(x.view(1, -1, 128), hidden)
     #print("hidden shape", hidden.shape)
     if ln:
-        print("using ln")
-        hidden = folder.add(name + '_ln_f', hidden)
+        # Weird layer-norm
+        if tup:
+            x_hidden, x_cell = hidden
+            x_hidden = folder.add(name[:3] + '_ln_f', x_hidden)
+            hidden = x_hidden, x_cell
+        else:
+            hidden = folder.add(name[:3] + '_ln_f', hidden)
     return hidden
 
 # def ast_embed(folder, xs, init, ln):

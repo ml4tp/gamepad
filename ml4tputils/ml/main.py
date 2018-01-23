@@ -9,7 +9,7 @@ from ml.tacst_prep import Dataset, PosEvalPt
 
 from ml.poseval.fold_model import PosEvalModel
 from ml.poseval.fold_train import PosEvalTrainer #, PosEvalInfer
-
+from ipdb import launch_ipdb_on_exception
 
 """
 [Note]
@@ -55,6 +55,7 @@ if __name__ == "__main__":
     argparser.add_argument('--lr', type = float, default=0.001, help = 'learning rate')
     argparser.add_argument('--name', type = str, default = "", help = 'name of experiment')
     argparser.add_argument('--mload', type = str, default = "", help = 'path to load saved model from')
+    argparser.add_argument('--validate', action='store_true', default = False, help = 'only validate')
 
 
     args = argparser.parse_args()
@@ -79,10 +80,14 @@ if __name__ == "__main__":
         poseval_dataset, tokens_to_idx = pickle.load(f)
 
     print("Points Train={} Val={} Test={}".format(len(poseval_dataset.train), len(poseval_dataset.val), len(poseval_dataset.test)))
+    #with launch_ipdb_on_exception():
     if not args.orig:
         model = PosEvalModel(*tokens_to_idx, ln=args.ln, treelstm=args.treelstm, lstm=args.lstm)
         trainer = PosEvalTrainer(model, tactrs, poseval_dataset, args)
-        trainer.train()
+        if args.validate:
+            trainer.validate()
+        else:
+            trainer.train()
     else:
         from ml.embed import MyModel, PosEvalTrainer
         print("Original")

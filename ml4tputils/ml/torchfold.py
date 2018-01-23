@@ -59,7 +59,7 @@ class Fold(object):
         #self.total_nodes += 1
         # Would check by default, to speedup/disable run with with -O flag ie python -O main.py.
         assert all([isinstance(arg, (Fold.Node, int, torch.tensor._TensorBase, Variable))
-                     for arg in args]), "All args should be Tensor, Variable, int or Node, got: %s" % str(args)
+                     for arg in args]), "All args should be Tensor, Variable, or Node, got: %s" % str(args)
         if args not in self.cached_nodes[op]:
             step = max([arg.step + 1 for arg in args
                               if isinstance(arg, Fold.Node)], default = 0)
@@ -77,29 +77,42 @@ class Fold(object):
         for arg in arg_lists:
             #print(arg_lists)
             r = []
-            if isinstance(arg[0], Fold.Node):
-                if arg[0].batch:
-                    for x in arg:
+            try:
+                # Fixed torchfold so it doesnt only check arg[0] for type. Removed aility to accept ints though
+                for x in arg:
+                    if isinstance(x, Fold.Node):
                         r.append(x.get(values))
-                    res.append(torch.cat(r, 0))
-                else:
-                    for i in range(2, len(arg)):
-                        if arg[i] != arg[0]:
-                            raise ValueError("Can not use more then one of nobatch argument, got: %s." % str(arg))
-                    x = arg[0]
-                    res.append(x.get(values))
-            elif isinstance(arg[0], (torch.tensor._TensorBase, Variable)):
-                res.append(torch.cat(arg, 0))
-            else:
-                try:
-                    if self._cuda:
-                        var = Variable(torch.cuda.LongTensor(arg), volatile=self.volatile)
                     else:
-                        var = Variable(torch.LongTensor(arg), volatile=self.volatile)
-                    res.append(var)
-                except:
-                    print("Constructing LongTensor from %s" % str(arg))
-                    raise
+                        r.append(x)
+                res.append(torch.cat(r, 0))
+            except:
+                print("Accepting only Fold.Node or torch tensors/variables. No ints")
+                print("Constructing batched arg from %s" % str(arg))
+                raise
+
+            # if isinstance(arg[0], Fold.Node):
+            #     if arg[0].batch:
+            #         for x in arg:
+            #             r.append(x.get(values))
+            #         res.append(torch.cat(r, 0))
+            #     else:
+            #         for i in range(2, len(arg)):
+            #             if arg[i] != arg[0]:
+            #                 raise ValueError("Can not use more then one of nobatch argument, got: %s." % str(arg))
+            #         x = arg[0]
+            #         res.append(x.get(values))
+            # elif isinstance(arg[0], (torch.tensor._TensorBase, Variable)):
+            #     res.append(torch.cat(arg, 0))
+            # else:
+            #     try:
+            #         if self._cuda:
+            #             var = Variable(torch.cuda.LongTensor(arg), volatile=self.volatile)
+            #         else:
+            #             var = Variable(torch.LongTensor(arg), volatile=self.volatile)
+            #         res.append(var)
+            #     except:
+            #         print("Constructing LongTensor from %s" % str(arg))
+            #         raise
         return res
 
     def reshuffle(self):
