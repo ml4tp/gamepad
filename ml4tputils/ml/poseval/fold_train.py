@@ -56,7 +56,8 @@ class PosEvalTrainer(object):
         for tactr_id, tactr in enumerate(self.tactrs):
             self.tacst_folder[tactr_id] = TacStFolder(model, tactr, self.folder)
 
-        basepath = 'mllogs/sgv_nb_{}_lr_{}_ln_{}_r_{}/'.format(args.nbatch, args.lr, args.ln, args.name)
+        misc = "_".join([v for k,v in (zip([args.lstm, args.treelstm], ["lstm", "treelstm"])) if k])
+        basepath = 'mllogs/sgv_nb_{}_lr_{}_ln_{}_m_{}_r_{}/'.format(args.nbatch, args.lr, args.ln, misc, args.name)
         if args.mload:
             self.load(args.mload)
             basepath += 'load_{}/'.format(self.ts)  # So reloaded models saved in subdirectory
