@@ -44,6 +44,7 @@ if __name__ == "__main__":
     argparser.add_argument("--lstm", action = 'store_true', help="To tree or not to tree")
 
     argparser.add_argument("--orig", action = 'store_true', help="Old is gold")
+    argparser.add_argument("--debug", action = 'store_true', help="debug training")
     argparser.add_argument('--no-cuda', action='store_true', default=False,
                         help='disables CUDA training')
     argparser.add_argument('--nbatch', type = int, default = 32, help = 'minibatch size')
@@ -57,7 +58,8 @@ if __name__ == "__main__":
     args = argparser.parse_args()
     assert not (args.lstm and args.treelstm)
     args.cuda = not args.no_cuda and torch.cuda.is_available()
-
+    if args.debug:
+        args.name = "debug_" + args.name
     torch.manual_seed(0)
     if args.cuda:
         torch.cuda.manual_seed(0)

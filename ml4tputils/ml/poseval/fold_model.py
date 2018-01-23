@@ -12,7 +12,7 @@ import torch.optim as optim
 
 from coq.ast import *
 from coq.decode import DecodeCoqExp
-from lib.myenv import MyEnv
+from lib.myenv import FastEnv
 from lib.myutil import NotFound
 
 from coq.util import SizeCoqExp
@@ -143,10 +143,10 @@ class TacStFolder(object):
 
     def fold_ctx(self, gid, ctx):
         foldeds = []
-        env = MyEnv()
+        env = FastEnv()
         for ident, typ_idx in ctx:
             folded = self.fold_ctx_ident(gid, env, typ_idx)
-            env = env.extend(Name(ident), folded)
+            env = env.ctx_extend(Name(ident), folded)
             foldeds += [folded]
         return env, foldeds
 
@@ -203,17 +203,17 @@ class TacStFolder(object):
         elif isinstance(c, ProdExp):
             ev_x = self.fold_local_var(c.ty1)
             ev_ty1 = self._fold_ast(env, Kind.TYPE, c.ty1)
-            ev_ty2 = self._fold_ast(env.extend(c.name, ev_x), Kind.TYPE, c.ty2)
+            ev_ty2 = self._fold_ast(env.local_extend(c.name, ev_x), Kind.TYPE, c.ty2)
             return self._fold(key, [self.model.prod, ev_ty1, ev_ty2])
         elif isinstance(c, LambdaExp):
             ev_x = self.fold_local_var(c.ty)
             ev_ty = self._fold_ast(env, Kind.TERM, c.ty)
-            ev_c = self._fold_ast(env.extend(c.name, ev_x), Kind.TYPE, c.c)
+            ev_c = self._fold_ast(env.local_extend(c.name, ev_x), Kind.TYPE, c.c)
             return self._fold(key, [self.model.lam, ev_ty, ev_c])
         elif isinstance(c, LetInExp):
             ev_c1 = self._fold_ast(env, Kind.TERM, c.c1)
             ev_ty = self._fold_ast(env, Kind.TYPE, c.ty)
-            ev_c2 = self._fold_ast(env.extend(c.name, ev_c1), Kind.TERM, c.c2)
+            ev_c2 = self._fold_ast(env.local_extend(c.name, ev_c1), Kind.TERM, c.c2)
             return self._fold(key, [self.model.letin, ev_c1, ev_ty, ev_c2])
         elif isinstance(c, AppExp):
             ev_c = self._fold_ast(env, Kind.TERM, c.c)
@@ -245,7 +245,7 @@ class TacStFolder(object):
             for name in c.names:
                 ev = self.fold_fix_name(name)
                 # self.fixbody_embed[name] = ev
-                env = env.extend(name, ev)
+                env = env.local_extend(name, ev)
 
             # 2. Use initial embeddings
             ev_tys = []
