@@ -9,7 +9,7 @@ from ml.tacst_prep import Dataset, PosEvalPt
 
 from ml.poseval.fold_model import PosEvalModel
 from ml.poseval.fold_train import PosEvalTrainer #, PosEvalInfer
-from ipdb import launch_ipdb_on_exception
+# from ipdb import launch_ipdb_on_exception
 
 """
 [Note]
