@@ -66,6 +66,8 @@ if __name__ == "__main__":
     torch.manual_seed(0)
     if args.cuda:
         torch.cuda.manual_seed(0)
+        import sys
+        sys.setrecursionlimit(5000)
 
     print(args)
     print("Loading tactrs ...")
