@@ -45,7 +45,7 @@ class Fold(object):
         self.steps = collections.defaultdict(
             lambda: collections.defaultdict(list))
         self.cached_nodes = collections.defaultdict(dict)
-        self.total_nodes = 0
+        #self.total_nodes = 0
         self.volatile = volatile
         self._cuda = cuda
         self.max_batch_ops = {} if max_batch_ops is None else max_batch_ops
@@ -56,14 +56,14 @@ class Fold(object):
 
     def add(self, op, *args):
         """Add op to the fold."""
-        self.total_nodes += 1
-        if not all([isinstance(arg, (
-            Fold.Node, int, torch.tensor._TensorBase, Variable)) for arg in args]):
-            raise ValueError(
-                "All args should be Tensor, Variable, int or Node, got: %s" % str(args))
+        #self.total_nodes += 1
+        # Would check by default, to speedup/disable run with with -O flag ie python -O main.py.
+        assert all([isinstance(arg, (Fold.Node, int, torch.tensor._TensorBase, Variable))
+                     for arg in args]), "All args should be Tensor, Variable, int or Node, got: %s" % str(args)
         if args not in self.cached_nodes[op]:
-            step = max([0] + [arg.step + 1 for arg in args
-                              if isinstance(arg, Fold.Node)])
+            step = max([arg.step + 1 for arg in args
+                              if isinstance(arg, Fold.Node)], default = 0)
+            # Optimisation for CPU with max_batches for each op
             if op in self.max_batch_ops:
                 while len(self.steps[step][op]) >= self.max_batch_ops[op]:
                     step += 1

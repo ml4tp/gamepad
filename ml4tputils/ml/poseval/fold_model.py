@@ -87,10 +87,20 @@ class Folder(object):
         self.foldy = foldy
         self.cuda = cuda
         self.max_batch_ops = {}
-        self.max_batch_ops['embed_lookup_f'] = 128
-        self.max_batch_ops['ast_cell_f'] = 32
-        self.max_batch_ops['ctx_cell_f'] = 32
-        self.max_batch_ops['final_f'] = 32
+        if not self.cuda:
+            # Optimisation for CPU. Ad-hoc, so might not be optimal
+
+            # Embed lookups
+            self.max_batch_ops['embed_lookup_f'] = 128
+
+            # Cell calls
+            for name in ["", "lstm", "tree"]:
+                self.max_batch_ops['ast_' + name + '_cell_f'] = 32
+                self.max_batch_ops['ctx_' + name + '_cell_f'] = 32
+
+            # FC calls
+            self.max_batch_ops['proj_f'] = 32
+            self.max_batch_ops['final_f'] = 32
         self.reset()
 
     def reset(self):
@@ -170,7 +180,7 @@ class TacStFolder(object):
         # for i,arg in enumerate(args):
         #     print(i, arg.shape)
 
-        fold = self.model.ast_emb_func(self.folder, args) #self.folder.add('coq_exp', *args)
+        fold = self.model.ast_emb_func(self.folder, args)
         self.folded[key] = fold
         return fold
 
@@ -179,68 +189,70 @@ class TacStFolder(object):
         if key in self.folded:
             return self.folded[key]
 
-        if isinstance(c, RelExp):
-            # NOTE(deh): DeBruinj indicides start at 1 ...
-            ev_idx = env.lookup_rel(c.idx - 1)
-            return self._fold(key, [self.model.rel, ev_idx])
-        elif isinstance(c, VarExp):
-            ev_x = env.lookup_id(Name(c.x))
-            return self._fold(key, [self.model.var, ev_x])
-        elif isinstance(c, MetaExp):
-            assert False, "NOTE(deh): MetaExp should never be in dataset"
-        elif isinstance(c, EvarExp):
-            ev_exk = self.fold_evar_name(c.exk)
-            # NOTE(deh): pruposely leaving out cs
-            # ev_cs = self._fold_asts(env, Kind.TYPE, c.cs)
-            return self._fold(key, [self.model.evar, ev_exk])
-        elif isinstance(c, SortExp):
-            ev_sort = self.fold_sort_name(c.sort)
-            return self._fold(key, [self.model.sort, ev_sort])
-        elif isinstance(c, CastExp):
-            ev_c = self._fold_ast(env, Kind.TERM, c.c)
-            ev_ty = self._fold_ast(env, Kind.TYPE, c.ty)
-            return self._fold(key, [self.model.cast, ev_c, ev_ty])
-        elif isinstance(c, ProdExp):
-            ev_x = self.fold_local_var(c.ty1)
-            ev_ty1 = self._fold_ast(env, Kind.TYPE, c.ty1)
-            ev_ty2 = self._fold_ast(env.local_extend(c.name, ev_x), Kind.TYPE, c.ty2)
-            return self._fold(key, [self.model.prod, ev_ty1, ev_ty2])
-        elif isinstance(c, LambdaExp):
-            ev_x = self.fold_local_var(c.ty)
-            ev_ty = self._fold_ast(env, Kind.TERM, c.ty)
-            ev_c = self._fold_ast(env.local_extend(c.name, ev_x), Kind.TYPE, c.c)
-            return self._fold(key, [self.model.lam, ev_ty, ev_c])
-        elif isinstance(c, LetInExp):
-            ev_c1 = self._fold_ast(env, Kind.TERM, c.c1)
-            ev_ty = self._fold_ast(env, Kind.TYPE, c.ty)
-            ev_c2 = self._fold_ast(env.local_extend(c.name, ev_c1), Kind.TERM, c.c2)
-            return self._fold(key, [self.model.letin, ev_c1, ev_ty, ev_c2])
-        elif isinstance(c, AppExp):
+        # Ordered by number of occurances, better would be a dict.
+        typ = type(c)
+        if typ is AppExp:
             ev_c = self._fold_ast(env, Kind.TERM, c.c)
             ev_cs = self._fold_asts(env, Kind.TERM, c.cs)
             return self._fold(key, [self.model.app, ev_c, *ev_cs])
-        elif isinstance(c, ConstExp):
+        elif typ is ConstExp:
             ev_const = self.fold_const_name(c.const)
             # NOTE(deh): leaving out universe instances on purpose
             # ev_ui = self.fold_ui(c.ui)
             return self._fold(key, [self.model.const, ev_const])
-        elif isinstance(c, IndExp):
-            ev_ind = self.fold_ind_name(c.ind)
-            # NOTE(deh): leaving out universe instances on purpose
-            # ev_ui = self.fold_ui(c.ui)
-            return self._fold(key, [self.model.ind, ev_ind])
-        elif isinstance(c, ConstructExp):
+        elif typ is VarExp:
+            ev_x = env.lookup_id(Name(c.x))
+            return self._fold(key, [self.model.var, ev_x])
+        elif typ is ConstructExp:
             ev_ind = self.fold_ind_name(c.ind)
             ev_conid = self.fold_conid_name((c.ind, c.conid))
             # NOTE(deh): leaving out universe instances on purpose
             # ev_ui = self.fold_ui(c.ui)
             return self._fold(key, [self.model.construct, ev_ind, ev_conid])
-        elif isinstance(c, CaseExp):
+        elif typ is IndExp:
+            ev_ind = self.fold_ind_name(c.ind)
+            # NOTE(deh): leaving out universe instances on purpose
+            # ev_ui = self.fold_ui(c.ui)
+            return self._fold(key, [self.model.ind, ev_ind])
+        elif typ is RelExp:
+            # NOTE(deh): DeBruinj indicides start at 1 ...
+            ev_idx = env.lookup_rel(c.idx - 1)
+            return self._fold(key, [self.model.rel, ev_idx])
+        elif typ is ProdExp:
+            ev_x = self.fold_local_var(c.ty1)
+            ev_ty1 = self._fold_ast(env, Kind.TYPE, c.ty1)
+            ev_ty2 = self._fold_ast(env.local_extend(c.name, ev_x), Kind.TYPE, c.ty2)
+            return self._fold(key, [self.model.prod, ev_ty1, ev_ty2])
+        elif typ is LambdaExp:
+            ev_x = self.fold_local_var(c.ty)
+            ev_ty = self._fold_ast(env, Kind.TERM, c.ty)
+            ev_c = self._fold_ast(env.local_extend(c.name, ev_x), Kind.TYPE, c.c)
+            return self._fold(key, [self.model.lam, ev_ty, ev_c])
+        elif typ is MetaExp:
+            assert False, "NOTE(deh): MetaExp should never be in dataset"
+        elif typ is EvarExp:
+            ev_exk = self.fold_evar_name(c.exk)
+            # NOTE(deh): pruposely leaving out cs
+            # ev_cs = self._fold_asts(env, Kind.TYPE, c.cs)
+            return self._fold(key, [self.model.evar, ev_exk])
+        elif typ is SortExp:
+            ev_sort = self.fold_sort_name(c.sort)
+            return self._fold(key, [self.model.sort, ev_sort])
+        elif typ is CastExp:
+            ev_c = self._fold_ast(env, Kind.TERM, c.c)
+            ev_ty = self._fold_ast(env, Kind.TYPE, c.ty)
+            return self._fold(key, [self.model.cast, ev_c, ev_ty])
+        elif typ is LetInExp:
+            ev_c1 = self._fold_ast(env, Kind.TERM, c.c1)
+            ev_ty = self._fold_ast(env, Kind.TYPE, c.ty)
+            ev_c2 = self._fold_ast(env.local_extend(c.name, ev_c1), Kind.TERM, c.c2)
+            return self._fold(key, [self.model.letin, ev_c1, ev_ty, ev_c2])
+        elif typ is CaseExp:
             ev_ret = self._fold_ast(env, Kind.TERM, c.ret)
             ev_match = self._fold_ast(env, Kind.TERM, c.match)
             ev_cases = self._fold_asts(env, Kind.TERM, c.cases)
             return self._fold(key, [self.model.case, ev_ret, ev_match, *ev_cases])
-        elif isinstance(c, FixExp):
+        elif typ is FixExp:
             # 1. Create initial embeddings
             for name in c.names:
                 ev = self.fold_fix_name(name)
@@ -258,10 +270,10 @@ class TacStFolder(object):
                 # self.fix_embed[name] = ev_c
                 ev_cs += [ev_c]
             return self._fold(key, [self.model.fix, *ev_tys, *ev_cs])
-        elif isinstance(c, CoFixExp):
+        elif typ is CoFixExp:
             # NOTE(deh): CoFixExp not in dataset
             raise NameError("NOTE(deh): CoFixExp not in dataset")
-        elif isinstance(c, ProjExp):
+        elif typ is ProjExp:
             # NOTE(deh): ProjExp not in dataset
             raise NameError("NOTE(deh): ProjExp not in dataset")
             # ev = self._fold_ast(env, Kind.TERM, c.c)
@@ -418,6 +430,7 @@ class PosEvalModel(nn.Module):
             self.ast_emb_func = lambda folder, xs: seq_embed('ast' + name, folder, xs, self.ast_cell_init_state, ln, tup = self.tup)
             self.ctx_emb_func = lambda folder, xs: seq_embed('ctx' + name, folder, xs, self.ctx_cell_init_state, ln, tup = self.tup)
 
+        self.pred = self.ctx_func
         self.proj = nn.Linear(state + 1, state)
         self.final = nn.Linear(state, outsize)
         self.loss_fn = nn.CrossEntropyLoss()
@@ -434,6 +447,7 @@ class PosEvalModel(nn.Module):
         self.register_buffer('concl_id', torch.ones([1,1]))
         self.register_buffer('state_id', torch.zeros([1,1]))
 
+    # Folder forward functions
     def var_normal(self, x):
         if self.tup:
             return autograd.Variable(x.normal_(), requires_grad = False).chunk(2,-1)
@@ -481,18 +495,6 @@ class PosEvalModel(nn.Module):
         out = self.ctx_cell(right_h, right_c, left_h, left_c)
         return out
 
-    def coq_exp(self, *args):
-        return self.emb_func(args)
-
-    def final_f(self, x):
-        return self.final(x)
-
-    def proj_f(self, x):
-        return self.proj(x)
-
-    def cat_f(self, *xs):
-        return torch.cat(xs, dim = -1)
-
     def ast_ln_f(self, x):
         mean = x.mean(-1, keepdim=True)
         std = x.std(-1, keepdim=True)
@@ -502,42 +504,27 @@ class PosEvalModel(nn.Module):
         mean = x.mean(-1, keepdim=True)
         std = x.std(-1, keepdim=True)
         return self.ctx_gamma * (x - mean) / (std + self.eps) + self.ctx_beta
-    # def loss_f(self, logits, target):
-    #     return self.loss_fn(logits, target)
-    #
-    # def loss_func(self, folder, logits, targets):
-    #     return folder.add('loss', logits, targets)
 
-    def final_func(self, folder, x):
-        return folder.add('final_f', x)
+    def final_f(self, x):
+        return self.final(x)
 
-    def proj_func(self, folder, x):
-        return folder.add('proj_f', x)
+    def proj_f(self, *xs):
+        x = torch.cat(xs, dim = -1)
+        return self.proj(x)
 
-    def cat_func(self, folder, xs):
-        return folder.add('cat_f', *xs)
-
+    # Folder helper functions, call the forward functions
     def mask(self, folder, xs):
         # First element is conclu, rest is state
-
         projs = []
-
         for i,x in enumerate(xs):
             if i == 0:
                 id = self.concl_id
             else:
                 id = self.state_id
-            projs.append(self.proj_func(folder, self.cat_func(folder, [x, autograd.Variable(id)])))
+            projs.append(folder.add('proj_f', x, autograd.Variable(id)))
         return projs
 
-        # ctx_mask = torch.zeros(len(xs), 1, 1)
-        # ctx_mask[0][0][0] = 1.0
-        # x = self.cat_func(xs, 0)
-        # x = self.proj(x)
-        # x = torch.cat([x, autograd.Variable(ctx_mask, requires_grad=False)], dim=-1)
-        # xs = torch.split(x, 1)
-
-    def pred(self, folder, *tacst_evs):
+    def ctx_func(self, folder, *tacst_evs):
         if self.tup:
             x_hidden, x_cell = zip(*tacst_evs)
             x_hidden = self.mask(folder, x_hidden)
@@ -548,30 +535,10 @@ class PosEvalModel(nn.Module):
         # Final layer for logits
         if self.tup:
             x = x[0]
-        x = self.final_func(folder, x)
+        x = folder.add('final_f', x)
         return x
 
     def pred_attention(self, folder, *tacst_evs):
         self.attn_proj_func(folder, *tacst_evs)
-    # def loss(self, folder, tactst_folder, tactst, target):
-    #     logits = tactst_folder.fold_tacst(tactst)
-    #     loss = self.loss_func(folder, logits, target)
-    #     return loss
 
-    # def logits(self, *tacst_evs):
-    #     # Adding 1 to conclusion and 0 to expressions
-        # ctx_mask = torch.zeros(len(tacst_evs), 1, 1)
-        # ctx_mask[0][0][0] = 1.0
-        # x = torch.cat(list(tacst_evs), 0)
-        # x = self.proj(x)
-        # x = torch.cat([x, autograd.Variable(ctx_mask, requires_grad=False)], dim=-1)
-        # xs = torch.split(x, 1)
-    #     xs = tacst_evs
-    #     # Run GRU on tacst
-    #     x = self.ctx_emb_func(xs)
-    #
-    #     # Final layer for logits
-    #     x = self.final(x)
-    #     print("Output shape", x.shape)
-    #     return x.view(1, -1)
 

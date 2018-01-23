@@ -14,13 +14,8 @@ import os
 from ml.poseval.fold_model import TacStFolder, Folder
 from ml.utils import ResultLogger, cpuStats, Timer, currTS
 
-
 # -------------------------------------------------
 # Training
-
-np.random.seed(0)
-torch.manual_seed(0)
-
 def iter_data(data, size, shuffle = False):
     n = len(data)
     n_end = (n // size)*size

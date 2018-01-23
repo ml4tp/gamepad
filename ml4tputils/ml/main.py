@@ -2,12 +2,14 @@ import argparse
 import os.path as op
 import pickle
 import torch
+import numpy as np
 
 from recon.recon import Recon
 from ml.tacst_prep import Dataset, PosEvalPt
 
 from ml.poseval.fold_model import PosEvalModel
 from ml.poseval.fold_train import PosEvalTrainer #, PosEvalInfer
+
 
 """
 [Note]
@@ -60,6 +62,7 @@ if __name__ == "__main__":
     args.cuda = not args.no_cuda and torch.cuda.is_available()
     if args.debug:
         args.name = "debug_" + args.name
+    np.random.seed(0)
     torch.manual_seed(0)
     if args.cuda:
         torch.cuda.manual_seed(0)
