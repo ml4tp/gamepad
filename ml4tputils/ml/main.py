@@ -40,6 +40,8 @@ if __name__ == "__main__":
                            type=str, help="Pickle file to save to")
     argparser.add_argument("-f", "--fold", action = 'store_true', help="To fold or not to fold")
     argparser.add_argument("--ln", action = 'store_true', help="To norm or not to norm")
+    argparser.add_argument("--treelstm", action = 'store_true', help="To tree or not to tree")
+    argparser.add_argument("--lstm", action = 'store_true', help="To tree or not to tree")
 
     argparser.add_argument("--orig", action = 'store_true', help="Old is gold")
     argparser.add_argument('--no-cuda', action='store_true', default=False,
@@ -53,6 +55,7 @@ if __name__ == "__main__":
 
 
     args = argparser.parse_args()
+    assert not (args.lstm and args.treelstm)
     args.cuda = not args.no_cuda and torch.cuda.is_available()
 
     torch.manual_seed(0)
@@ -70,7 +73,7 @@ if __name__ == "__main__":
 
     print("Points Train={} Val={} Test={}".format(len(poseval_dataset.train), len(poseval_dataset.val), len(poseval_dataset.test)))
     if not args.orig:
-        model = PosEvalModel(*tokens_to_idx, ln=args.ln)
+        model = PosEvalModel(*tokens_to_idx, ln=args.ln, treelstm=args.treelstm, lstm=args.lstm)
         trainer = PosEvalTrainer(model, tactrs, poseval_dataset, args)
         trainer.train()
     else:
