@@ -3,7 +3,7 @@ from lib.myutil import NotFound
 
 
 class MyEnv(object):
-    def __init__(self, env={}, order=[]):
+    def __init__(self, env, order):
         self.env = env
         self.order = order
 
@@ -36,7 +36,7 @@ class MyEnv(object):
 
 
 class FastEnv(object):
-    def __init__(self, ctx_env={}, local_env={}, ctx_order=[], local_order = []):
+    def __init__(self, ctx_env, local_env, ctx_order, local_order):
         self.ctx_env = ctx_env
         self.local_env = local_env
         self.ctx_order = ctx_order

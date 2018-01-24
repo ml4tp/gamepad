@@ -198,7 +198,7 @@ class PosEvalTrainer(object):
                     #     assert False
                 if self.args.debug:
                     if self.updates % 10 == 0:
-                        exit()
+                        return
                 if self.updates % 1000 == 100:
                     self.validate()
             self.epochs += 1
