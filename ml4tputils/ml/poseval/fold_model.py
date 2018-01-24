@@ -188,7 +188,7 @@ class TacStFolder(object):
 
     def fold_ctx(self, gid, ctx):
         foldeds = []
-        env = FastEnv()
+        env = FastEnv({}, {}, [], [])
         for ident, typ_idx in ctx:
             folded = self.fold_ctx_ident(gid, env, typ_idx)
             env = env.ctx_extend(Name(ident), folded)

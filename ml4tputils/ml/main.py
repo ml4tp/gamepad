@@ -10,7 +10,10 @@ from ml.tacst_prep import Dataset, PosEvalPt
 from ml.poseval.fold_model import PosEvalModel
 from ml.poseval.fold_train import PosEvalTrainer #, PosEvalInfer
 # from ipdb import launch_ipdb_on_exception
-
+# import tracemalloc
+#
+# tracemalloc.start()
+# from mem_top import mem_top
 """
 [Note]
 
@@ -89,8 +92,19 @@ if __name__ == "__main__":
         trainer = PosEvalTrainer(model, tactrs, poseval_dataset, args)
         if args.validate:
             trainer.validate()
+            # print(mem_top())
         else:
             trainer.train()
+        # snapshot1 = tracemalloc.take_snapshot()
+        # for i in range(10):
+        #     trainer.validate()
+        #     print(mem_top())
+        # snapshot2 = tracemalloc.take_snapshot()
+        # top_stats = snapshot2.compare_to(snapshot1, 'lineno')
+        #
+        # print("[ Top 10 ]")
+        # for stat in top_stats[:10]:
+        #     print(stat)
     else:
         from ml.embed import MyModel, PosEvalTrainer
         print("Original")
