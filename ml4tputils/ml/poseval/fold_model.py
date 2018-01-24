@@ -9,6 +9,7 @@ import torch.autograd as autograd
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+import numpy as np
 
 from coq.ast import *
 from coq.decode import DecodeCoqExp
@@ -393,7 +394,7 @@ class TreeLSTM(nn.Module):
 class PosEvalModel(nn.Module):
     def __init__(self, sort_to_idx, const_to_idx, ind_to_idx,
                  conid_to_idx, evar_to_idx, fix_to_idx,
-                 D=128, state=128, outsize=3, eps=1e-6, ln = False, treelstm = False, lstm = False, dropout = 0.0, attention = False):
+                 D=128, state=128, outsize=3, eps=1e-6, ln = False, treelstm = False, lstm = False, dropout = 0.0, attention = False, heads = 1):
         super().__init__()
 
         # Dimensions
@@ -454,9 +455,10 @@ class PosEvalModel(nn.Module):
             self.input_dropout = nn.Dropout(dropout)
 
         if attention:
-            self.attn_sv_init = nn.Parameter(torch.zeros(1, state))
-            self.attn_q = nn.Linear(state, state)
-            self.attn_kv = nn.Linear(state, 2*state)
+            self.m = heads
+            self.attn_sv_init = nn.Parameter(torch.zeros(1, heads*state))
+            self.attn_q = nn.Linear(state, heads*state)
+            self.attn_kv = nn.Linear(state, 2*heads*state)
 
         if self.tup:
             self.ast_cell_init_state = nn.ParameterList([nn.Parameter(torch.randn(1, state)), nn.Parameter(torch.randn(1, state))])
@@ -487,7 +489,7 @@ class PosEvalModel(nn.Module):
                 self.ctx_emb_func = lambda folder, xs: seq_sigmoid_attn_embed(folder, xs, self.attn_sv_init, **seq_args)
         self.pred = self.ctx_func
         self.proj = nn.Linear(state + 1, state)
-        self.final = nn.Linear(state, outsize)
+        self.final = nn.Linear(heads*state, outsize)
         self.loss_fn = nn.CrossEntropyLoss()
 
         # Extra vars
@@ -502,12 +504,24 @@ class PosEvalModel(nn.Module):
         return self.attn_q(x)
 
     def attn_sv_f(self, q, x, sv):
-        batch, state = q.shape
-        # q is [b, state], x is [b, state]
+        batch, state = x.shape
+        # q is [b, m*state], x is [b, state], k,v will bbe [b, m*state]
         k, v = self.attn_kv(x).chunk(2, -1)
-        k = k.unsqueeze(1)
-        q = q.unsqueeze(2)
-        sv = sv + torch.bmm(k, q).view(batch, 1).sigmoid() * v
+        if self.m == 1:
+            k = k.unsqueeze(1)
+            q = q.unsqueeze(2)
+            prod = torch.bmm(k, q).view(batch, 1)/float(np.sqrt(state))
+            prsg = prod.sigmoid()
+            sv = sv + (prsg * v)
+        else:
+            k = k.contiguous().view(batch*self.m, 1, state)  # or torch.stack(k.chunk(self.m,-1),0)
+            q = q.contiguous().view(batch*self.m, state, 1)
+            v = v.contiguous().view(batch*self.m, state)
+            prod = torch.bmm(k, q).view(batch*self.m, 1) / float(np.sqrt(state))
+            prsg = prod.sigmoid()
+            sv = sv + (prsg * v).view(batch, self.m*state)
+        # print("prod std dev {}".format(torch.sqrt(torch.mean(prod*prod)).data))
+        # print("sigmoid std dev {}".format(torch.sqrt(torch.mean(prsg*prsg)).data))
         return sv
 
     def input_dropout_f(self, x):
