@@ -43,9 +43,9 @@ def seq_embed(name, folder, xs, init, ln, tup, input_dropout):
     # Input dropout
     if input_dropout:
         if tup:
-            hidden[0] = folder.add('input_dropout_f', hidden[0])
+            hidden = folder.add('input_dropout_f', hidden[0]), hidden[1]
             for i in range(len(xs)):
-                xs[i][0] = folder.add('input_dropout_f', xs[i][0])
+                xs[i] = folder.add('input_dropout_f', xs[i][0]), xs[i][1]
         else:
             hidden = folder.add('input_dropout_f', hidden)
             for i in range(len(xs)):
@@ -64,7 +64,7 @@ def seq_embed(name, folder, xs, init, ln, tup, input_dropout):
     if ln:
         # Weird layer-norm
         if tup:
-            hidden[0] = folder.add(name[:3] + '_ln_f', hidden[0])
+            hidden = folder.add(name[:3] + '_ln_f', hidden[0]), hidden[1]
         else:
             hidden = folder.add(name[:3] + '_ln_f', hidden)
     return hidden
@@ -73,7 +73,7 @@ def seq_sigmoid_attn_embed(folder, xs, sv_init, ln, tup, input_dropout):
     if input_dropout:
         if tup:
             for i in range(len(xs)):
-                xs[i][0] = folder.add('input_dropout_f', xs[i][0])
+                xs[i] = folder.add('input_dropout_f', xs[i][0]), xs[i][1]
         else:
             for i in range(len(xs)):
                 xs[i] = folder.add('input_dropout_f', xs[i])
