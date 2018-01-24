@@ -36,8 +36,12 @@ Version that uses torchfold
 # Helper
 
 def seq_embed(name, folder, xs, init, ln, tup, input_dropout):
+    # Preprocess for fold
     if tup:
         hidden = folder.add('tup_identity', *init).split(2)
+        for i, x in enumerate(xs):
+            if not isinstance(x, (tuple, list, nn.ParameterList)):
+                xs[i] = x.split(2)
     else:
         hidden = folder.add('identity', init)
 
@@ -45,25 +49,23 @@ def seq_embed(name, folder, xs, init, ln, tup, input_dropout):
     if input_dropout:
         if tup:
             hidden = folder.add('input_dropout_f', hidden[0]), hidden[1]
-            for i in range(len(xs)):
-                xs[i] = folder.add('input_dropout_f', xs[i][0]), xs[i][1]
+            for i,x in enumerate(xs):
+                xs[i] = folder.add('input_dropout_f', x[0]), x[1]
         else:
             hidden = folder.add('input_dropout_f', hidden)
-            for i in range(len(xs)):
-                xs[i] = folder.add('input_dropout_f', xs[i])
-    for i, x in enumerate(xs):
-        #print("GRU Embed ",i, x.shape)
+            for i,x in enumerate(xs):
+                xs[i] = folder.add('input_dropout_f', x)
+
+    # Cell sequence
+    for i,x in enumerate(xs):
         if tup:
-            if not isinstance(x, (tuple, list, nn.ParameterList)):
-                #print(x)
-                x = x.split(2)
             hidden = folder.add(name + '_cell_f', *x, *hidden).split(2)
             assert isinstance(hidden, (tuple, list))
         else:
-            hidden = folder.add(name + '_cell_f', x, hidden) #cell(x.view(1, -1, 128), hidden)
-    #print("hidden shape", hidden.shape)
+            hidden = folder.add(name + '_cell_f', x, hidden)
+
+    # Weird layer-norm
     if ln:
-        # Weird layer-norm
         if tup:
             hidden = folder.add(name[:3] + '_ln_f', hidden[0]), hidden[1]
         else:
@@ -73,11 +75,11 @@ def seq_embed(name, folder, xs, init, ln, tup, input_dropout):
 def seq_sigmoid_attn_embed(folder, xs, sv_init, ln, tup, input_dropout):
     if input_dropout:
         if tup:
-            for i in range(len(xs)):
-                xs[i] = folder.add('input_dropout_f', xs[i][0]), xs[i][1]
+            for i, x in enumerate(xs):
+                xs[i] = folder.add('input_dropout_f', x[0]), x[1]
         else:
-            for i in range(len(xs)):
-                xs[i] = folder.add('input_dropout_f', xs[i])
+            for i, x in enumerate(xs):
+                xs[i] = folder.add('input_dropout_f', x)
 
     # Attention
     conclu = xs[0]
@@ -605,9 +607,9 @@ class PosEvalModel(nn.Module):
 
     def ctx_func(self, folder, *tacst_evs):
         if self.tup:
-            x_hidden, x_cell = zip(*tacst_evs)
+            x_hidden, x_cell = list(zip(*tacst_evs))
             x_hidden = self.mask(folder, x_hidden)
-            xs = zip(x_hidden, x_cell)
+            xs = list(zip(x_hidden, x_cell))
         else:
             xs = self.mask(folder, tacst_evs)
         x = self.ctx_emb_func(folder, xs)
