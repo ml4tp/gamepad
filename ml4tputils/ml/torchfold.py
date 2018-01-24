@@ -16,7 +16,7 @@ class Fold(object):
             self.args = args
             self.split_idx = -1
             self.batch = True
-            self.depth = 0
+            # self.depth = 0
 
         def split(self, num):
             """Split resulting node, if function returns multiple values."""

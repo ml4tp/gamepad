@@ -46,6 +46,7 @@ if __name__ == "__main__":
     argparser.add_argument('--lr', type = float, default=0.001, help = 'learning rate')
     argparser.add_argument("--ln", action = 'store_true', help="To norm or not to norm")
     argparser.add_argument('--dropout', type= float, default = 0.0, help = 'dropout rate')
+    argparser.add_argument("--attention", action = 'store_true', help="To attend or not to attend")
     argparser.add_argument("--treelstm", action = 'store_true', help="To tree or not to tree")
     argparser.add_argument("--lstm", action = 'store_true', help="To tree or not to tree")
     argparser.add_argument('--valbatch', type = int, default = 32, help = 'minibatch size for validation')
@@ -84,7 +85,7 @@ if __name__ == "__main__":
     print("Points Train={} Val={} Test={}".format(len(poseval_dataset.train), len(poseval_dataset.val), len(poseval_dataset.test)))
     #with launch_ipdb_on_exception():
     if not args.orig:
-        model = PosEvalModel(*tokens_to_idx, ln=args.ln, treelstm=args.treelstm, lstm=args.lstm, dropout=args.dropout)
+        model = PosEvalModel(*tokens_to_idx, ln=args.ln, treelstm=args.treelstm, lstm=args.lstm, dropout=args.dropout, attention=args.attention)
         trainer = PosEvalTrainer(model, tactrs, poseval_dataset, args)
         if args.validate:
             trainer.validate()

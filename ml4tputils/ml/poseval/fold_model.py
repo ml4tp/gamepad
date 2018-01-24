@@ -34,7 +34,7 @@ Version that uses torchfold
 # -------------------------------------------------
 # Helper
 
-def seq_embed(name, folder, xs, init, ln, tup = False, input_dropout = False):
+def seq_embed(name, folder, xs, init, ln, tup, input_dropout):
     if tup:
         hidden = folder.add('tup_identity', *init).split(2)
     else:
@@ -68,6 +68,27 @@ def seq_embed(name, folder, xs, init, ln, tup = False, input_dropout = False):
         else:
             hidden = folder.add(name[:3] + '_ln_f', hidden)
     return hidden
+
+def seq_sigmoid_attn_embed(folder, xs, sv_init, ln, tup, input_dropout):
+    if input_dropout:
+        if tup:
+            for i in range(len(xs)):
+                xs[i][0] = folder.add('input_dropout_f', xs[i][0])
+        else:
+            for i in range(len(xs)):
+                xs[i] = folder.add('input_dropout_f', xs[i])
+
+    # Attention
+    conclu = xs[0]
+    other = xs[1:]
+    q = folder.add('attn_q_f', conclu)
+    sv = folder.add('attn_identity', sv_init)
+    for x in other:
+        sv = folder.add('attn_sv_f', q, x, sv)
+
+    return sv
+
+
 
 # def ast_embed(folder, xs, init, ln):
 #     hidden = init
@@ -372,7 +393,7 @@ class TreeLSTM(nn.Module):
 class PosEvalModel(nn.Module):
     def __init__(self, sort_to_idx, const_to_idx, ind_to_idx,
                  conid_to_idx, evar_to_idx, fix_to_idx,
-                 D=128, state=128, outsize=3, eps=1e-6, ln = False, treelstm = False, lstm = False, dropout = 0.0):
+                 D=128, state=128, outsize=3, eps=1e-6, ln = False, treelstm = False, lstm = False, dropout = 0.0, attention = False):
         super().__init__()
 
         # Dimensions
@@ -432,6 +453,11 @@ class PosEvalModel(nn.Module):
             # Input droput
             self.input_dropout = nn.Dropout(dropout)
 
+        if attention:
+            self.attn_sv_init = nn.Parameter(torch.zeros(1, state))
+            self.attn_q = nn.Linear(state, state)
+            self.attn_kv = nn.Linear(state, 2*state)
+
         if self.tup:
             self.ast_cell_init_state = nn.ParameterList([nn.Parameter(torch.randn(1, state)), nn.Parameter(torch.randn(1, state))])
             self.ctx_cell_init_state = nn.ParameterList([nn.Parameter(torch.randn(1, state)), nn.Parameter(torch.randn(1, state))])
@@ -455,8 +481,10 @@ class PosEvalModel(nn.Module):
                 self.ctx_cell = nn.GRUCell(state, state)
                 name = ""
             self.ast_emb_func = lambda folder, xs: seq_embed('ast' + name, folder, xs, self.ast_cell_init_state, **seq_args)
-            self.ctx_emb_func = lambda folder, xs: seq_embed('ctx' + name, folder, xs, self.ctx_cell_init_state, **seq_args)
-
+            if not attention:
+                self.ctx_emb_func = lambda folder, xs: seq_embed('ctx' + name, folder, xs, self.ctx_cell_init_state, **seq_args)
+            else:
+                self.ctx_emb_func = lambda folder, xs: seq_sigmoid_attn_embed(folder, xs, self.attn_sv_init, **seq_args)
         self.pred = self.ctx_func
         self.proj = nn.Linear(state + 1, state)
         self.final = nn.Linear(state, outsize)
@@ -467,6 +495,21 @@ class PosEvalModel(nn.Module):
         self.register_buffer('state_id', torch.zeros([1,1]))
 
     # Folder forward functions
+    def attn_identity(self, x):
+        return x
+
+    def attn_q_f(self, x):
+        return self.attn_q(x)
+
+    def attn_sv_f(self, q, x, sv):
+        batch, state = q.shape
+        # q is [b, state], x is [b, state]
+        k, v = self.attn_kv(x).chunk(2, -1)
+        k = k.unsqueeze(1)
+        q = q.unsqueeze(2)
+        sv = sv + torch.bmm(k, q).view(batch, 1).sigmoid() * v
+        return sv
+
     def input_dropout_f(self, x):
         return self.input_dropout(x)
 
@@ -560,7 +603,6 @@ class PosEvalModel(nn.Module):
         x = folder.add('final_f', x)
         return x
 
-    def pred_attention(self, folder, *tacst_evs):
-        self.attn_proj_func(folder, *tacst_evs)
+
 
 
