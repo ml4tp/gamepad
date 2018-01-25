@@ -35,51 +35,29 @@ Version that uses torchfold
 # -------------------------------------------------
 # Helper
 
-def seq_embed(name, folder, xs, init, ln, tup, input_dropout):
+def seq_embed(name, folder, xs, init, ln, input_dropout):
     # Preprocess for fold
-    if tup:
-        hidden = folder.add('tup_identity', *init).split(2)
-        for i, x in enumerate(xs):
-            if not isinstance(x, (tuple, list, nn.ParameterList)):
-                xs[i] = x.split(2)
-    else:
-        hidden = folder.add('identity', init)
+    hidden = folder.add('identity', init)
 
     # Input dropout
     if input_dropout:
-        if tup:
-            hidden = folder.add('input_dropout_f', hidden[0]), hidden[1]
-            for i,x in enumerate(xs):
-                xs[i] = folder.add('input_dropout_f', x[0]), x[1]
-        else:
-            hidden = folder.add('input_dropout_f', hidden)
-            for i,x in enumerate(xs):
-                xs[i] = folder.add('input_dropout_f', x)
+        hidden = folder.add('input_dropout_f', hidden)
+        for i,x in enumerate(xs):
+            xs[i] = folder.add('input_dropout_f', x)
 
     # Cell sequence
     for i,x in enumerate(xs):
-        if tup:
-            hidden = folder.add(name + '_cell_f', *x, *hidden).split(2)
-            assert isinstance(hidden, (tuple, list))
-        else:
-            hidden = folder.add(name + '_cell_f', x, hidden)
+        hidden = folder.add(name + '_cell_f', x, hidden)
 
     # Weird layer-norm
     if ln:
-        if tup:
-            hidden = folder.add(name[:3] + '_ln_f', hidden[0]), hidden[1]
-        else:
-            hidden = folder.add(name[:3] + '_ln_f', hidden)
+        hidden = folder.add(name[:3] + '_ln_f', hidden)
     return hidden
 
-def seq_sigmoid_attn_embed(folder, xs, sv_init, ln, tup, input_dropout):
+def seq_sigmoid_attn_embed(folder, xs, sv_init, ln, input_dropout):
     if input_dropout:
-        if tup:
-            for i, x in enumerate(xs):
-                xs[i] = folder.add('input_dropout_f', x[0]), x[1]
-        else:
-            for i, x in enumerate(xs):
-                xs[i] = folder.add('input_dropout_f', x)
+        for i, x in enumerate(xs):
+            xs[i] = folder.add('input_dropout_f', x)
 
     # Attention
     conclu = xs[0]
@@ -364,7 +342,7 @@ class TacStFolder(object):
 
     def fold_local_var(self, ty):
         """Override Me"""
-        return self.folder.add('var_normal', self.torch.FloatTensor(1,self.model.D))
+        return self.folder.add('var_normal', self.torch.FloatTensor(1,self.model.init_D))
 
 
 class TreeLSTM(nn.Module):
@@ -401,7 +379,7 @@ class PosEvalModel(nn.Module):
 
         # Dimensions
         self.D = D            # Dimension of embeddings
-        self.state = state    # Dimension of GRU state
+        self.state = state    # Dimension of GRU/LSTM/TreeLSTM state. For LSTM's, each of hidden state and cell state has that size
 
         table_names = ['sort', 'const', 'ind', 'conid', 'evar', 'fix', 'fixbody']
         tables = [sort_to_idx, const_to_idx, ind_to_idx, conid_to_idx, evar_to_idx, fix_to_idx, fix_to_idx]
@@ -416,8 +394,14 @@ class PosEvalModel(nn.Module):
         self.tup = self.treelstm or self.lstm # So, we have hidden, state; instead of just state
 
         if self.tup:
-            self.D = 2*D
-        self.embed_table = nn.Embedding(shift, self.D)
+            # Initial state
+            self.init_D = 2*D
+            self.init_state = 2*state
+        else:
+            self.init_D = D
+            self.init_state = state
+
+        self.embed_table = nn.Embedding(shift, self.init_D)
 
         # Embeddings for constants
         self.sort_to_idx = sort_to_idx
@@ -437,19 +421,16 @@ class PosEvalModel(nn.Module):
         for attr in ["rel", "var", "evar", "sort", "cast", "prod",
                      "lam", "letin", "app", "const", "ind", "construct",
                      "case", "fix", "cofix", "proj1"]:
-            if self.tup:
-                self.__setattr__(attr, nn.ParameterList([nn.Parameter(torch.randn(1, state)), nn.Parameter(torch.randn(1, state))]))
-            else:
-                self.__setattr__(attr, nn.Parameter(torch.randn(1, state)))
+            self.__setattr__(attr, nn.Parameter(torch.randn(1, self.init_state)))
 
         # Sequence models
-        seq_args = {'ln': ln, 'tup': self.tup, 'input_dropout': dropout > 0.0}
+        seq_args = {'ln': ln, 'input_dropout': dropout > 0.0}
         if seq_args['ln']:
             # Layer Norm
-            self.ast_gamma = nn.Parameter(torch.ones(state))
-            self.ast_beta = nn.Parameter(torch.zeros(state))
-            self.ctx_gamma = nn.Parameter(torch.ones(state))
-            self.ctx_beta = nn.Parameter(torch.zeros(state))
+            self.ast_gamma = nn.Parameter(torch.ones(self.init_state))
+            self.ast_beta = nn.Parameter(torch.zeros(self.init_state))
+            self.ctx_gamma = nn.Parameter(torch.ones(self.init_state))
+            self.ctx_beta = nn.Parameter(torch.zeros(self.init_state))
             self.eps = eps
 
         if seq_args['input_dropout']:
@@ -462,12 +443,9 @@ class PosEvalModel(nn.Module):
             self.attn_q = nn.Linear(state, heads*state)
             self.attn_kv = nn.Linear(state, 2*heads*state)
 
-        if self.tup:
-            self.ast_cell_init_state = nn.ParameterList([nn.Parameter(torch.randn(1, state)), nn.Parameter(torch.randn(1, state))])
-            self.ctx_cell_init_state = nn.ParameterList([nn.Parameter(torch.randn(1, state)), nn.Parameter(torch.randn(1, state))])
-        else:
-            self.ast_cell_init_state = nn.Parameter(torch.randn(1, state))
-            self.ctx_cell_init_state = nn.Parameter(torch.randn(1, state))
+
+        self.ast_cell_init_state = nn.Parameter(torch.randn(1, self.init_state))
+        self.ctx_cell_init_state = nn.Parameter(torch.randn(1, self.init_state))
 
         if self.treelstm:
             self.ast_cell = TreeLSTM(state)
@@ -503,9 +481,15 @@ class PosEvalModel(nn.Module):
         return x
 
     def attn_q_f(self, x):
+        if self.tup:
+            # Only use hidden state
+            x = x.chunk(2,-1)[0]
         return self.attn_q(x)
 
     def attn_sv_f(self, q, x, sv):
+        if self.tup:
+            # Only use hidden state
+            x = x.chunk(2,-1)[0]
         batch, state = x.shape
         # q is [b, m*state], x is [b, state], k,v will bbe [b, m*state]
         k, v = self.attn_kv(x).chunk(2, -1)
@@ -530,10 +514,7 @@ class PosEvalModel(nn.Module):
         return self.input_dropout(x)
 
     def var_normal(self, x):
-        if self.tup:
-            return autograd.Variable(x.normal_(), requires_grad = False).chunk(2,-1)
-        else:
-            return autograd.Variable(x.normal_(), requires_grad = False)
+        return autograd.Variable(x.normal_(), requires_grad = False)
 
     def identity(self, x):
         return x
@@ -547,10 +528,7 @@ class PosEvalModel(nn.Module):
         return self.shifts[table_name] + id
 
     def embed_lookup_f(self, id):
-        if self.tup:
-            return self.embed_table(id).chunk(2,-1)
-        else:
-            return self.embed_table(id)
+        return self.embed_table(id)
 
     def ast_cell_f(self, x, hidden):
         hidden = self.ast_cell(x, hidden)
@@ -560,20 +538,28 @@ class PosEvalModel(nn.Module):
         hidden = self.ctx_cell(x, hidden)
         return hidden
 
-    def ast_lstm_cell_f(self, right_h, right_c, left_h, left_c):
-        hidden = self.ast_cell(right_h, (left_h, left_c))
+    def ast_lstm_cell_f(self, right, left):
+        right_h, right_c = right.chunk(2,-1)
+        left_h, left_c = left.chunk(2,-1)
+        hidden = torch.cat(self.ast_cell(right_h, (left_h, left_c)),-1)
         return hidden
 
-    def ctx_lstm_cell_f(self, right_h, right_c, left_h, left_c):
-        hidden = self.ctx_cell(right_h, (left_h, left_c))
+    def ctx_lstm_cell_f(self, right, left):
+        right_h, right_c = right.chunk(2,-1)
+        left_h, left_c = left.chunk(2,-1)
+        hidden = torch.cat(self.ctx_cell(right_h, (left_h, left_c)),-1)
         return hidden
 
-    def ast_tree_cell_f(self, right_h, right_c, left_h, left_c):
-        out = self.ast_cell(right_h, right_c, left_h, left_c)
+    def ast_tree_cell_f(self, right, left):
+        right_h, right_c = right.chunk(2,-1)
+        left_h, left_c = left.chunk(2,-1)
+        out = torch.cat(self.ast_cell(right_h, right_c, left_h, left_c),-1)
         return out
 
-    def ctx_tree_cell_f(self, right_h, right_c, left_h, left_c):
-        out = self.ctx_cell(right_h, right_c, left_h, left_c)
+    def ctx_tree_cell_f(self, right, left):
+        right_h, right_c = right.chunk(2,-1)
+        left_h, left_c = left.chunk(2,-1)
+        out = torch.cat(self.ctx_cell(right_h, right_c, left_h, left_c),-1)
         return out
 
     def ast_ln_f(self, x):
@@ -587,11 +573,21 @@ class PosEvalModel(nn.Module):
         return self.ctx_gamma * (x - mean) / (std + self.eps) + self.ctx_beta
 
     def final_f(self, x):
+        if self.tup:
+            # Only apply final to hidden
+            x = x.chunk(2,-1)[0]
         return self.final(x)
 
     def proj_f(self, *xs):
-        x = torch.cat(xs, dim = -1)
-        return self.proj(x)
+        if self.tup:
+            # Only apply proj to hidden
+            x, cell = xs[0].chunk(2,-1)
+            x = torch.cat([x,xs[1]], dim = -1)
+            x = self.proj(x)
+            return torch.cat([x, cell], dim = -1)
+        else:
+            x = torch.cat(xs, dim = -1)
+            return self.proj(x)
 
     # Folder helper functions, call the forward functions
     def mask(self, folder, xs):
@@ -606,16 +602,9 @@ class PosEvalModel(nn.Module):
         return projs
 
     def ctx_func(self, folder, *tacst_evs):
-        if self.tup:
-            x_hidden, x_cell = list(zip(*tacst_evs))
-            x_hidden = self.mask(folder, x_hidden)
-            xs = list(zip(x_hidden, x_cell))
-        else:
-            xs = self.mask(folder, tacst_evs)
+        xs = self.mask(folder, tacst_evs)
         x = self.ctx_emb_func(folder, xs)
         # Final layer for logits
-        if self.tup:
-            x = x[0]
         x = folder.add('final_f', x)
         return x
 

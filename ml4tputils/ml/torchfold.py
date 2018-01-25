@@ -9,6 +9,7 @@ import torch.nn.functional as F
 class Fold(object):
 
     class Node(object):
+        __slots__ = ["op", "step", "index", "args", "batch", "split_idx"]
         def __init__(self, op, step, index, *args):
             self.op = op
             self.step = step
