@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import IntEnum
 import json
 import networkx as nx
 import numpy as np
@@ -50,7 +50,7 @@ def parse_full_tac(tac_str):
 # -------------------------------------------------
 # Data structures
 
-class TacStKind(Enum):
+class TacStKind(IntEnum):
     LIVE = 0
     TERM = 1
     DEAD = 2
@@ -79,22 +79,25 @@ class TacTrNode(object):
             self.uid = x
 
     def __eq__(self, other):
-        return isinstance(other, TacTrNode) and self.uid == other.uid
+        # return isinstance(other, TacTrNode) and self.uid == other.uid
+        return (isinstance(other, TacTrNode) and
+                self.gid == other.gid and
+                self.kind == other.kind)
         """
         return (isinstance(other, TacTrNode) and self.gid == other.gid and
                 self.kind == other.kind and self.order == other.order)
         """
 
     def __hash__(self):
-        return self.uid
-        # return self.gid
+        # return self.uid
+        return self.gid
         # return hash(self.uid)
 
     def __str__(self):
         if self.order != None:
             x = "{}-{}".format(self.gid, self.order)
         else:
-            x = str(self.gid)
+            x = "{}(uid={})".format(self.gid, self.uid)
 
         if self.kind == TacStKind.TERM:
             s = "T{}".format(x)
