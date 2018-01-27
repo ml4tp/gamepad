@@ -9,6 +9,8 @@ import torch.autograd as autograd
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+from torch.nn import Parameter
+
 import numpy as np
 
 from coq.ast import *
@@ -346,9 +348,11 @@ class TacStFolder(object):
 
 
 class TreeLSTM(nn.Module):
-    def __init__(self, state):
+    def __init__(self, state, weight_dropout, variational):
         super().__init__()
-        self.whx = nn.Linear(state * 2, state *5)
+        self.whx = nn.Linear(state * 2, state * 5)
+        if weight_dropout:
+            self.whx = WeightDrop(self.whx, ["weight"], weight_dropout, variational)
 
     def forward(self, right_h, right_c, left_h, left_c): #takes x as first arg, h as second
         a, i, f1, f2, o = self.whx(torch.cat([left_h, right_h], dim = -1)).chunk(5, -1)
@@ -374,7 +378,7 @@ class TreeLSTM(nn.Module):
 class PosEvalModel(nn.Module):
     def __init__(self, sort_to_idx, const_to_idx, ind_to_idx,
                  conid_to_idx, evar_to_idx, fix_to_idx,
-                 D=128, state=128, outsize=3, eps=1e-6, ln = False, treelstm = False, lstm = False, dropout = 0.0, attention = False, heads = 1):
+                 D=128, state=128, outsize=3, eps=1e-6, ln = False, treelstm = False, lstm = False, dropout = 0.0, attention = False, heads = 1, weight_dropout = 0.0, variational = False):
         super().__init__()
 
         # Dimensions
@@ -448,9 +452,9 @@ class PosEvalModel(nn.Module):
         self.ctx_cell_init_state = nn.Parameter(torch.randn(1, self.init_state))
 
         if self.treelstm:
-            self.ast_cell = TreeLSTM(state)
+            self.ast_cell = TreeLSTM(state, weight_dropout, variational)
             self.ast_emb_func = lambda folder, xs: seq_embed('ast_tree', folder, xs, self.ast_cell_init_state, **seq_args)
-            self.ctx_cell = TreeLSTM(state)
+            self.ctx_cell = TreeLSTM(state, weight_dropout, variational)
             self.ctx_emb_func = lambda folder, xs: seq_embed('ctx_tree', folder, xs, self.ctx_cell_init_state, **seq_args)
         else:
             if self.lstm:
@@ -467,6 +471,11 @@ class PosEvalModel(nn.Module):
                 self.ctx_emb_func = lambda folder, xs: seq_embed('ctx' + name, folder, xs, self.ctx_cell_init_state, **seq_args)
             else:
                 self.ctx_emb_func = lambda folder, xs: seq_sigmoid_attn_embed(folder, xs, self.attn_sv_init, **seq_args)
+
+        if weight_dropout and not treelstm:
+            weights = ["weight_hh"]
+            self.ast_cell = WeightDrop(self.ast_cell, weights=weights, dropout = weight_dropout, variational=variational)
+            self.ctx_cell = WeightDrop(self.ctx_cell, weights=weights, dropout = weight_dropout, variational= variational)
         self.pred = self.ctx_func
         self.proj = nn.Linear(state + 1, state)
         self.final = nn.Linear(heads*state, outsize)
@@ -475,7 +484,6 @@ class PosEvalModel(nn.Module):
         # Extra vars
         self.register_buffer('concl_id', torch.ones([1,1]))
         self.register_buffer('state_id', torch.zeros([1,1]))
-
     # Folder forward functions
     def attn_identity(self, x):
         return x
@@ -609,5 +617,46 @@ class PosEvalModel(nn.Module):
         return x
 
 
+class WeightDrop(torch.nn.Module):
+    def __init__(self, module, weights, dropout=0.0, variational=False):
+        super(WeightDrop, self).__init__()
+        self.module = module
+        self.weights = weights
+        self.dropout = dropout
+        self.variational = variational
+        self._setup()
 
+    def widget_demagnetizer_y2k_edition(*args, **kwargs):
+        # We need to replace flatten_parameters with a nothing function
+        # It must be a function rather than a lambda as otherwise pickling explodes
+        # We can't write boring code though, so ... WIDGET DEMAGNETIZER Y2K EDITION!
+        # (╯°□°）╯︵ ┻━┻
+        return
 
+    def _setup(self):
+        # Terrible temporary solution to an issue regarding compacting weights re: CUDNN RNN
+        if issubclass(type(self.module), torch.nn.RNNBase):
+            self.module.flatten_parameters = self.widget_demagnetizer_y2k_edition
+
+        for name_w in self.weights:
+            print('Applying weight drop of {} to {}'.format(self.dropout, name_w))
+            w = getattr(self.module, name_w)
+            del self.module._parameters[name_w]
+            self.module.register_parameter(name_w + '_raw', Parameter(w.data))
+
+    def _setweights(self):
+        for name_w in self.weights:
+            raw_w = getattr(self.module, name_w + '_raw')
+            w = None
+            if self.variational:
+                mask = torch.autograd.Variable(torch.ones(raw_w.size(0), 1))
+                if raw_w.is_cuda: mask = mask.cuda()
+                mask = torch.nn.functional.dropout(mask, p=self.dropout, training=True)
+                w = mask.expand_as(raw_w) * raw_w
+            else:
+                w = torch.nn.functional.dropout(raw_w, p=self.dropout, training=self.training)
+            setattr(self.module, name_w, w)
+
+    def forward(self, *args):
+        self._setweights()
+        return self.module.forward(*args)

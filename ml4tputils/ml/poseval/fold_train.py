@@ -12,7 +12,7 @@ import os
 # -------------------------------------------------
 # Helper
 from ml.poseval.fold_model import TacStFolder, Folder
-from ml.utils import ResultLogger, cpuStats, Timer, currTS
+from ml.utils import ResultLogger, cpuStats, Timer, currTS, torch_summarize_df, flatten
 
 # -------------------------------------------------
 # Training
@@ -57,7 +57,7 @@ class PosEvalTrainer(object):
             self.tacst_folder[tactr_id] = TacStFolder(model, tactr, self.folder)
 
         misc = "_".join([v for k,v in (zip([args.lstm, args.treelstm], ["lstm", "treelstm"])) if k])
-        basepath = 'mllogs/state_{}_lr_{}_ln_{}_drop_{}_attn_{}_heads_{}_m_{}_r_{}/'.format(args.state, args.lr, args.ln, args.dropout, args.attention, args.heads, misc, args.name)
+        basepath = 'mllogs/state_{}_lr_{}_ln_{}_drop_{}_wd_{}_v_{}_attn_{}_heads_{}_m_{}_r_{}/'.format(args.state, args.lr, args.ln, args.dropout, args.weight_dropout, args.variational, args.attention, args.heads, misc, args.name)
         if args.mload:
             self.load(args.mload)
             basepath += 'load_{}/'.format(self.ts)  # So reloaded models saved in subdirectory
@@ -147,18 +147,33 @@ class PosEvalTrainer(object):
         n_batch = self.args.nbatch
         n_train = len(data)
 
-        # Model Info
-        total_params = 0
-        for param in self.model.parameters():
-            total_params += np.prod(param.shape)
-            print(param.shape)
-        print("Total Parameters ", total_params)
+        # Model info
+        print(torch_summarize_df(self.model))
 
-        # State info
+        # Parameters
+        total_params = 0
+        learnable_params = 0
+        param_names = set()
+        for name,param in self.model.named_parameters():
+            param_names.add(name)
+            total_params += np.prod(param.shape)
+            if param.requires_grad:
+                learnable_params += np.prod(param.shape)
+            print(name, param.shape, param.requires_grad)
+
+        print("Total Parameters", total_params)
+        print("Learnable Parameters", learnable_params)
+
+        grad_params = [(name,p) for name,p in self.model.named_parameters() if p.requires_grad]
+
+        # Other model state
         for k,v in self.model.state_dict().items():
-            print(k, v.shape)
+            if k not in param_names:
+                print(k,v.shape, "False", "state")
+
+        # Optimizer State info
         for k,v in self.opt.state_dict().items():
-            print(k)
+            print(k, v)
 
         # Train
         smooth_acc = None
@@ -187,15 +202,31 @@ class PosEvalTrainer(object):
                     loss.backward()
                     self.opt.step()
 
+                    # Gradient metrics
+                    grads = {}
+                    sgrads = {}
+                    for (name, p) in grad_params:
+                        if p.grad is not None:
+                            gg = float(torch.norm(p.grad).data)
+                            grads[name] = "%0.8f" % gg
+                            sgrads[name] = "%0.4f" % gg
+                        else:
+                            grads[name] = "0.0"
+                            sgrads[name] = "0.0"
+
                 self.updates += 1
                 tqdm.write("Update %d Loss %.4f Accuracy %0.4f SmAccuracy %.4f Interval %.4f AstSizes %d TpN %0.4f TpE %0.4f" % (self.updates, loss.data, accuracy, smooth_acc, t.interval, astsizes, t.interval*1e3 / astsizes, t.interval / n_batch))
-                self.logger.log(epoch=self.epochs, updates=self.updates, loss="%0.4f" % loss.data, acc="%0.4f" % accuracy, smooth_loss = "%0.4f" % smooth_loss, smooth_acc = "%0.4f" % smooth_acc)
+                self.logger.log(epoch=self.epochs, updates=self.updates, loss="%0.4f" % loss.data, acc="%0.4f" % accuracy, smooth_loss = "%0.4f" % smooth_loss, smooth_acc = "%0.4f" % smooth_acc, **grads)
                     # if idx % 10 == 0:
                     #     cpuStats()
                         # memReport()
                     # if idx == 6:
                     #     print("Epoch Time with sh2 %.4f Loss %.4f" % (time() - testart, total_loss))
                     #     assert False
+                if self.updates % 10 == 0 or self.args.debug:
+                    tqdm.write("Grad norms")
+                    for gg in sgrads.items():
+                        tqdm.write("%s %s" % gg)
                 if self.args.debug:
                     if self.updates % 10 == 0:
                         return
