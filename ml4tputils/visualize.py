@@ -129,7 +129,6 @@ if __name__ == "__main__":
     # Visualize
     vis = Visualize(f_display=args.display, f_verbose=args.verbose,
                     tactr_file=args.tactrout)
-    print("HERE", args.lemma)
     if args.lemma:
         file = op.join(args.path, args.file)
         vis.visualize_lemma(file, args.lemma)
@@ -149,5 +148,5 @@ if __name__ == "__main__":
         vis.finalize()
         vis.save_tactrs()
 
-    from recon.build_tactr import HINTROS
-    HINTROS.close()
+    # from recon.build_tactr import HINTROS
+    # HINTROS.close()

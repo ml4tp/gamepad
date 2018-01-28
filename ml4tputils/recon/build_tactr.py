@@ -22,7 +22,7 @@ Observations/Issues:
 """
 
 
-HINTROS = open("intros.log", 'w')
+# HINTROS = open("intros.log", 'w')
 
 # -------------------------------------------------
 # Tactic Tree Building
@@ -101,13 +101,13 @@ class TacTreeBuilder(object):
     def _select_ftac(self, rawtac, bf_decl):
         if rawtac.tkind == TacKind.ATOMIC:
             ftac = rawtac.ftac
-            print("    ATOMIC", ftac)
+            # print("    ATOMIC", ftac)
         elif self.ftac_inscope:
             ftac = self.ftac_inscope
-            print("    SCOPE", ftac)
+            # print("    SCOPE", ftac)
         else:
             ftac = bf_decl.hdr.tac
-            print("    BFDECL", ftac)
+            # print("    BFDECL", ftac)
         return ftac
 
     def _mk_edge(self, rawtac, bf_decl, af_decl):
@@ -200,15 +200,15 @@ class TacTreeBuilder(object):
 
         tac = next(it_rawtacs)
 
-        print("DOING", tac.name, tac.ftac, "INSCOPE", self.ftac_inscope)
+        # print("DOING", tac.name, tac.ftac, "INSCOPE", self.ftac_inscope)
         if tac.body:
             # 1. Recursively connect up body
             if self._is_tclintros_all(tac):
                 ftac = self.ftac_inscope
-                print("CHOOSING SCOPE", ftac)
+                # print("CHOOSING SCOPE", ftac)
             else:
                 ftac = tac.ftac
-                print("CHOOSING CURR", ftac)
+                # print("CHOOSING CURR", ftac)
             body_edges, body_graph = self._launch_rec(tac.body, ftac)
             self._add_edges(body_edges)
 
@@ -227,7 +227,7 @@ class TacTreeBuilder(object):
                     root_nodes += [edge.src]
                     seen.add(edge.src)
                     if tac.bf_decl.hdr.gid != edge.src.gid:
-                        print("ADDING BODY EDGE", tac.name, tac.tkind, tac.bf_decl.hdr.gid, edge.src.gid, edge.src.kind)
+                        # print("ADDING BODY EDGE", tac.name, tac.tkind, tac.bf_decl.hdr.gid, edge.src.gid, edge.src.kind)
                         edges += [self._mk_body_edge(tac, tac.bf_decl, edge.src)]
             self._add_edges(edges)
 
@@ -264,7 +264,7 @@ class TacTreeBuilder(object):
             # 4. Connect up the internals of <ssreflect_plugin::ssrtclintros@0>
             edges = []
             for af_decl in tac.af_decls:
-                print("ADDING INTRO EDGE", tac.name, tac.tkind, tac.bf_decl.hdr.gid, af_decl.hdr.gid, af_decl.hdr.mode)
+                # print("ADDING INTRO EDGE", tac.name, tac.tkind, tac.bf_decl.hdr.gid, af_decl.hdr.gid, af_decl.hdr.mode)
                 edges += self._mk_edge(tac, tac.bf_decl, af_decl)
             self._add_edges(edges)
         elif tac.name.startswith("<ssreflect_plugin::ssrapply"):
@@ -273,7 +273,7 @@ class TacTreeBuilder(object):
             if not any([tac_p.name == "ml4tp.SI" for tac_p in tac.body]):
                 edges = []
                 for af_decl in tac.af_decls:
-                    print("ADDING APPLY EDGE", tac.name, tac.tkind, tac.bf_decl.hdr.gid, af_decl.hdr.gid, af_decl.hdr.mode)
+                    # print("ADDING APPLY EDGE", tac.name, tac.tkind, tac.bf_decl.hdr.gid, af_decl.hdr.gid, af_decl.hdr.mode)
                     edges += self._mk_edge(tac, tac.bf_decl, af_decl)
                 self._add_edges(edges)
         elif not (tac.tkind == TacKind.NOTATION or
@@ -284,7 +284,7 @@ class TacTreeBuilder(object):
             # 6. Connect me up
             edges = []
             for af_decl in tac.af_decls:
-                print("ADDING EDGE", tac.name, tac.tkind, tac.bf_decl.hdr.gid, af_decl.hdr.gid, af_decl.hdr.mode)
+                # print("ADDING EDGE", tac.name, tac.tkind, tac.bf_decl.hdr.gid, af_decl.hdr.gid, af_decl.hdr.mode)
                 edges += self._mk_edge(tac, tac.bf_decl, af_decl)
             self._add_edges(edges)
 
