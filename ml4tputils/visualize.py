@@ -1,6 +1,7 @@
 import argparse
 import os.path as op
 import pickle
+import json
 
 from recon.build_tactr import TacTreeBuilder
 from recon.parse_raw import TacStParser
@@ -16,7 +17,6 @@ from recon.recon import FILES, Recon
 2. Visualize a lemma in a specific file
     python ml4tp/visualize.py <file> -l <lemma>
 """
-
 
 class Visualize(object):
     def __init__(self, f_display=False, f_jupyter=False, f_verbose=False,
@@ -36,6 +36,9 @@ class Visualize(object):
         self.h_tactr_file = open(tactr_file, 'w')
         self.h_tactr_file.write("LEMMA INFO\n")
 
+        # self.h_tactics = open("tactics.log", 'w')
+        # self.tactics = {}
+
     def finalize(self):
         self.h_tactr_file.write("TOTAL: {} WERID: {}\n".format(
                                 len(self.tactrs), len(self.failed)))
@@ -53,6 +56,10 @@ class Visualize(object):
                                 len(self.recon.embed_tokens.unique_fix)))
         self.h_tactr_file.close()
 
+        # msg = json.dumps({"tactics": self.tactics})
+        # self.h_tactics.write(msg)
+        # self.h_tactics.close()
+
     def save_tactrs(self):
         with open("tactr.pickle", 'wb') as f:
             pickle.dump(self.tactrs, f)
@@ -68,8 +75,21 @@ class Visualize(object):
         for tactr in tactrs:
             succ, ncc = tactr.check_success()
             if not succ:
-                self.failed += [(file, lemma.name, ncc, len(tr_builder.notok))]
+                print("FAILED", tactr.name, ncc)
+                self.failed += [(file, tactr.name, ncc, len(tactr.notok))]
+
             tactr.log_stats(self.h_tactr_file)
+
+            # for _, tacs in tactr.tactics().items():
+            #     for tac in tacs:
+            #         print(tac.ftac)
+
+            # for _, tacs in tactr.tactics().items():
+            #     for tac in tacs:
+            #         if tac.ftac in self.tactics:
+            #             self.tactics[tac.ftac] += 1
+            #         else:
+            #             self.tactics[tac.ftac] = 1
 
     def visualize_lemma(self, file, lemma):
         tactr = self.recon.recon_lemma(file, lemma, not(self.f_jupyter))
@@ -110,7 +130,8 @@ if __name__ == "__main__":
     vis = Visualize(f_display=args.display, f_verbose=args.verbose,
                     tactr_file=args.tactrout)
     if args.lemma:
-        vis.visualize_lemma(args.file, args.lemma)
+        file = op.join(args.path, args.file)
+        vis.visualize_lemma(file, args.lemma)
     else:
         if args.file == "all":
             for file in files:

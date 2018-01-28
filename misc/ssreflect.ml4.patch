@@ -1,0 +1,75 @@
+1731c1731
+<   if arg = nohint then mt() else str " by " ++ pr_hintarg prt arg
+---
+>   if arg = nohint then mt() else str "by " ++ pr_hintarg prt arg
+2941c2941
+< let introstac, tclEQINTROS, tclEQINTROS' =
+---
+> let introstac, tclEQINTROS =
+2986c2986
+<     | orp ->
+---
+>     | orp -> 
+2988,2995c2988,2989
+<   and tclIORPAT' ?ist k tac = function
+<     | [[]] -> tac
+<     | orp ->
+<        let f tac' = Proofview.V82.of_tactic (ml4tp_wrap_catchfail_tac None (Proofview.V82.tactic tac') "SPC2" None) in
+<        tclTHENS_nonstrict tac (mapLR (fun x -> f (ipatstac ?ist k x)) orp) "intro pattern"
+<   and ipatstac ?ist k ipats =
+<     tclTHENLIST (map_acc_k (ipattac ?ist) k ipats)
+<   in
+---
+>   and ipatstac ?ist k ipats = 
+>     tclTHENLIST (map_acc_k (ipattac ?ist) k ipats) in
+2999,3005c2993
+<     tclTHENLIST [tac; clear_wilds !wild_ids]
+<     (*
+<     let tac' = Proofview.V82.of_tactic (ml4tp_wrap_catchfail_tac None (Proofview.V82.tactic tac) "SI2" None) in
+<     let ctac' = Proofview.V82.of_tactic (ml4tp_wrap_catchfail_tac None (Proofview.V82.tactic (clear_wilds !wild_ids)) "SC" None) in
+<     tclTHENLIST [tac'; ctac'] 
+<     *)
+<   in
+---
+>     tclTHENLIST [tac; clear_wilds !wild_ids] in
+3017,3038c3005,3006
+<     tclTHENLIST [tac1; eqtac; tac2; clear_wilds !wild_ids]
+<   in
+<   let tclEQINTROS' ?ist tac eqtac ipats =
+<     wild_ids := [];
+<     let rec split_itacs to_clr tac' = function
+<     | (IpatSimpl _ as spat) :: ipats' -> 
+<       let to_clr, tac = ipattac ?ist to_clr ipats' spat in
+<       let tac_w = Proofview.V82.of_tactic (ml4tp_wrap_catchfail_tac None (Proofview.V82.tactic tac') "SPS" None) in
+<       split_itacs to_clr (tclTHEN tac_w tac) ipats'
+<     | IpatCase iorpat :: ipats' -> 
+< 	let tac_w = Proofview.V82.of_tactic (ml4tp_wrap_catchfail_tac None (Proofview.V82.tactic tac') "SPC" None) in
+< 	to_clr, tclIORPAT' ?ist to_clr tac_w iorpat, ipats'
+<     | ipats' -> to_clr, tac', ipats' in
+<     let to_clr, tac1, ipats' = split_itacs [] tac ipats in
+<     let tac2 = ipatstac ?ist to_clr ipats' in
+<     let tac1' = Proofview.V82.of_tactic (ml4tp_wrap_catchfail_tac None (Proofview.V82.tactic tac1) "SIO" None) in
+<     (* let eqtac' = Proofview.V82.of_tactic (ml4tp_wrap_catchfail_tac None (Proofview.V82.tactic eqtac) "SIE" None) in *)
+<     let tac2' = Proofview.V82.of_tactic (ml4tp_wrap_catchfail_tac None (Proofview.V82.tactic tac2) "SI" None) in
+<     let ctac' = Proofview.V82.of_tactic (ml4tp_wrap_catchfail_tac None (Proofview.V82.tactic (clear_wilds !wild_ids)) "SC" None) in
+<     tclTHENLIST [tac1'; eqtac; tac2'; ctac']
+<   in
+<   introstac, tclEQINTROS, tclEQINTROS'
+---
+>     tclTHENLIST [tac1; eqtac; tac2; clear_wilds !wild_ids] in
+>   introstac, tclEQINTROS
+3048c3016
+<   tclEQINTROS' ~ist (tac ist) tclIDTAC ipats
+---
+>   tclEQINTROS ~ist (tac ist) tclIDTAC ipats
+4264,4266c4232
+<   (* tclTHENLIST [gen_eq_tac; elim_intro_tac] orig_gl *)
+<   let gen_eq_tac' = Proofview.V82.of_tactic (ml4tp_wrap_catchfail_tac None (Proofview.V82.tactic gen_eq_tac) "SGE" None) in
+<   tclTHENLIST [gen_eq_tac'; elim_intro_tac] orig_gl
+---
+>   tclTHENLIST [gen_eq_tac; elim_intro_tac] orig_gl
+5233,5236d5198
+<   (*
+<   let f tac = ml4tp_wrap_catchfail_tac None (rwargtac ist tac) "SsrRewrite" None in
+<   tclTHENLIST (List.map f rwargs))
+<   *)

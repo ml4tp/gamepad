@@ -247,13 +247,14 @@ class TacStParser(object):
             # Parse rest of header
             hdr = h_head.consume_line()
             toks = hdr.split(TOK_SEP)
-            while len(toks) < 3:
+            while len(toks) < 6:
                 line = h_head.consume_line()
                 hdr += line
                 toks = hdr.split(TOK_SEP)
             ngs = int(toks[0].strip())
             ftac = toks[1].strip()
             gid = int(toks[2].strip())
+            # gid = int(toks[5].strip())
 
             # Unpack (note that we handle error and success here)
             hdr = TacStHdr(callid, mode, tac, kind, ftac, gid, ngs, loc)

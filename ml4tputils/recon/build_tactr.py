@@ -14,10 +14,9 @@ from recon.tactr import TacStKind, TacTrNode, TacEdge, TacTree, parse_full_tac
 Goal: [TacStDecl] -> [Tac]
 
 Observations/Issues: 
-1. open problem actually ... how to scope done
-   (in coq, more generally LTAC name calls)
+1. how to scope done (need to instrument ssreflect)
 2. If the before state is solved, then we ignore the tactic.
-3. What about self-edges?
+3. What about self-edges? (solved, keep track of them)
 4. If tcldo is dead, then don't do body? (solved)
 5. why are we duplicating some edges? (Is this still true?)
 """
@@ -97,20 +96,24 @@ class TacTreeBuilder(object):
             self.gid2node[gid] = tid
             return tid
 
+    def _select_ftac(self, rawtac, bf_decl):
+        if rawtac.tkind == TacKind.ATOMIC:
+            ftac = rawtac.ftac
+            # print("    ATOMIC", ftac)
+        elif self.ftac_inscope:
+            ftac = self.ftac_inscope
+            # print("    SCOPE", ftac)
+        else:
+            ftac = bf_decl.hdr.tac
+            # print("    BFDECL", ftac)
+        return ftac
+
     def _mk_edge(self, rawtac, bf_decl, af_decl):
         # Skip adding tactics which begin in solved states
         if bf_decl.hdr.gid == GID_SOLVED:
             return []
 
-        if rawtac.tkind == TacKind.ATOMIC:
-            ftac = rawtac.ftac
-        elif self.ftac_inscope:
-            ftac = self.ftac_inscope
-        else:
-            ftac = bf_decl.hdr.tac
-        # print("Scope", self.ftac_inscope)
-        # print("My tac", rawtac.tac)
-        # print("Decl", bf_decl.hdr.tac)
+        ftac = self._select_ftac(rawtac, bf_decl)
 
         if af_decl.hdr.gid == GID_SOLVED:
             bf_node = self._mk_live_node(bf_decl)
@@ -122,7 +125,7 @@ class TacTreeBuilder(object):
             edge = TacEdge(self._fresh_edgeid(),
                            rawtac.uid, rawtac.name, rawtac.tkind,
                            parse_full_tac(ftac), bf_node, self._mk_dead_node())
-        # TODO(deh): how do we handle self-edges?
+        # Note(deh): handling self-edges by keeping track of multiple tactics
         # elif bf_decl.hdr.gid == af_decl.hdr.gid:
         #     # Take care of self-loops
         #     bf_tid = self._mk_live_node(bf_decl)
@@ -143,7 +146,7 @@ class TacTreeBuilder(object):
                            rawtac.uid, rawtac.name, rawtac.tkind,
                            parse_full_tac(ftac), bf_node, af_node)
 
-        # TODO(deh): is this correct? should be node to edge?
+        # Note(deh): handling self-edges by keeping track of multiple tactics
         if edge.src in self.gid_tactic:
             self.gid_tactic[edge.src] += [edge]
         else:
@@ -152,15 +155,7 @@ class TacTreeBuilder(object):
         return [edge]
 
     def _mk_body_edge(self, rawtac, bf_decl, af_node):
-        if rawtac.tkind == TacKind.ATOMIC:
-            ftac = rawtac.tac
-        elif self.ftac_inscope:
-            ftac = self.ftac_inscope
-        else:
-            ftac = bf_decl.hdr.tac
-        # print("Scope", self.ftac_inscope)
-        # print("My tac", rawtac.tac)
-        # print("Decl", bf_decl.hdr.tac)
+        ftac = self._select_ftac(rawtac, bf_decl)
 
         edge = TacEdge(self._fresh_edgeid(),
                        rawtac.uid, rawtac.name, rawtac.tkind,
@@ -182,14 +177,18 @@ class TacTreeBuilder(object):
         self.numtacs += tr_builder.numtacs
         return tr_builder.edges, tr_builder.graph
 
-    def build_name(self):
-        # Internal
-        it_rawtacs = self.it_rawtacs
-        self._mylog("@build_name:before<{}>".format(it_rawtacs.peek()))
-        self.numtacs += 1
+    def _is_tclintros_intern(self, tac):
+        # return (tac.name == "ml4tp.SIE" or tac.name == "ml4tp.SI" or
+        #         tac.name == "ml4tp.SC" or tac.name == "ml4tp.SPC" or
+        #         tac.name == "ml4tp.SPS" or tac.name == "ml4tp.SPC2")
+        return (tac.name == "ml4tp.SI" or   # intro part of tclintros
+                tac.name == "ml4tp.SC" or   # clear part of tclintros
+                tac.name == "ml4tp.SPS" or  # simpl pattern
+                tac.name == "ml4tp.SPC2")   # case pattern
 
-        # Skip Name
-        tac = next(it_rawtacs)
+    def _is_tclintros_all(self, tac):
+        return (tac.name == "ml4tp.SIO" or  # original tactic wrapped by tclintros
+                self._is_tclintros_intern(tac))
 
     def build_nested(self):
         # Internal
@@ -199,13 +198,21 @@ class TacTreeBuilder(object):
 
         tac = next(it_rawtacs)
 
+        # print("DOING", tac.name, tac.ftac, "INSCOPE", self.ftac_inscope)
         if tac.body:
             # 1. Recursively connect up body
-            body_edges, body_graph = self._launch_rec(tac.body, tac.ftac)
+            if self._is_tclintros_all(tac):
+                ftac = self.ftac_inscope
+                # print("CHOOSING SCOPE", ftac)
+            else:
+                ftac = tac.ftac
+                # print("CHOOSING CURR", ftac)
+            body_edges, body_graph = self._launch_rec(tac.body, ftac)
             self._add_edges(body_edges)
 
             # 2. Connect body to top-level
             # Every gid that does not have a parent is connected to the top
+            root_nodes = []
             edges = []
             seen = set()
             for edge in body_edges:
@@ -214,19 +221,60 @@ class TacTreeBuilder(object):
                     if edge_p[0] == edge_p[1]:
                         self_edges += 1
                 if (body_graph.in_degree(edge.src) == self_edges and
-                    not edge.src in seen):
-                    edges += [self._mk_body_edge(tac, tac.bf_decl, edge.src)]
+                    edge.src not in seen):
+                    root_nodes += [edge.src]
                     seen.add(edge.src)
+                    if tac.bf_decl.hdr.gid != edge.src.gid:
+                        # print("ADDING BODY EDGE", tac.name, tac.tkind, tac.bf_decl.hdr.gid, edge.src.gid, edge.src.kind)
+                        edges += [self._mk_body_edge(tac, tac.bf_decl, edge.src)]
             self._add_edges(edges)
 
-        if not (tac.tkind == TacKind.NOTATION or
-                tac.tkind == TacKind.NAME or
-                tac.name.startswith("<ssreflect_plugin::ssrtclseq@0>") or
-                tac.name.startswith("<ssreflect_plugin::ssrtclby@0>")):
-            # TODO(deh): what other ones to avoid?
-            # 3. Connect me up
+            # 3. Handle tacticals that can try multiple possibilities
+            #    with failure. Add error node to those that don't go anywhere.
+            if (tac.name.startswith("ml4tp.TacSolveIn") or
+                tac.name.startswith("ml4tp.TacFirstIn")):
+                for node in body_graph.nodes():
+                    if node.kind != TacStKind.LIVE:
+                        continue
+                    self_edges = 0
+                    for edge_p in body_graph.in_edges(node):
+                        if edge_p[0] == edge_p[1]:
+                            self_edges += 1
+                    if body_graph.out_degree(node) == self_edges:
+                        if node.gid == tac.af_decls[0].hdr.gid:
+                            bf_node = self.gid2node[node.gid]
+                            af_node = self._mk_dead_node()
+                            edge = TacEdge(self._fresh_edgeid(),
+                                           tac.uid, tac.name, tac.tkind,
+                                           parse_full_tac(tac.ftac),
+                                           bf_node, af_node)
+                            self._add_edges([edge])
+
+        if self._is_tclintros_intern(tac):
+            # 4. Connect up the internals of <ssreflect_plugin::ssrtclintros@0>
             edges = []
             for af_decl in tac.af_decls:
+                # print("ADDING INTRO EDGE", tac.name, tac.tkind, tac.bf_decl.hdr.gid, af_decl.hdr.gid, af_decl.hdr.mode)
+                edges += self._mk_edge(tac, tac.bf_decl, af_decl)
+            self._add_edges(edges)
+        elif tac.name.startswith("<ssreflect_plugin::ssrapply"):
+            # 5. Apply uses the intros tactical (look at ssreflect source code)
+            #.   Connect if intros tactical was not used.
+            if not any([tac_p.name == "ml4tp.SI" for tac_p in tac.body]):
+                edges = []
+                for af_decl in tac.af_decls:
+                    # print("ADDING APPLY EDGE", tac.name, tac.tkind, tac.bf_decl.hdr.gid, af_decl.hdr.gid, af_decl.hdr.mode)
+                    edges += self._mk_edge(tac, tac.bf_decl, af_decl)
+                self._add_edges(edges)
+        elif not (tac.tkind == TacKind.NOTATION or
+                  tac.tkind == TacKind.NAME or
+                  tac.name.startswith("<ssreflect_plugin::ssrtclseq@0>") or
+                  tac.name.startswith("<ssreflect_plugin::ssrtclintros@0>") or
+                  tac.name.startswith("<ssreflect_plugin::ssrtclby@0>")):
+            # 6. Connect me up
+            edges = []
+            for af_decl in tac.af_decls:
+                # print("ADDING EDGE", tac.name, tac.tkind, tac.bf_decl.hdr.gid, af_decl.hdr.gid, af_decl.hdr.mode)
                 edges += self._mk_edge(tac, tac.bf_decl, af_decl)
             self._add_edges(edges)
 
@@ -237,10 +285,6 @@ class TacTreeBuilder(object):
         while it_rawtacs.has_next():
             tac = it_rawtacs.peek()
             self.build_nested()
-            # if tac.tkind == TacKind.NAME:
-            #     self.build_name()
-            # else:
-            #     self.build_nested()
 
     def get_tactree(self, f_verbose=False):
         tactr = TacTree(self.name, self.edges, self.graph,
