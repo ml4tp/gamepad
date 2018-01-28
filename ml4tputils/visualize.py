@@ -147,6 +147,3 @@ if __name__ == "__main__":
             vis.visualize_file(file)
         vis.finalize()
         vis.save_tactrs()
-
-    # from recon.build_tactr import HINTROS
-    # HINTROS.close()

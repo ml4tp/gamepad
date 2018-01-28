@@ -22,8 +22,6 @@ Observations/Issues:
 """
 
 
-# HINTROS = open("intros.log", 'w')
-
 # -------------------------------------------------
 # Tactic Tree Building
 
@@ -252,14 +250,6 @@ class TacTreeBuilder(object):
                                            bf_node, af_node)
                             self._add_edges([edge])
 
-        # 1. tcldo?
-        # if tac.tkind == TacKind.ML:
-        #     if not tac.body:
-        #         edges = []
-        #         for af_decl in tac.af_decls:
-        #             print("ADDING ML EDGE", tac.name, tac.tkind, tac.bf_decl.hdr.gid, af_decl.hdr.gid, af_decl.hdr.mode)
-        #             edges += self._mk_edge(tac, tac.bf_decl, af_decl)
-        #         self._add_edges(edges)
         if self._is_tclintros_intern(tac):
             # 4. Connect up the internals of <ssreflect_plugin::ssrtclintros@0>
             edges = []
@@ -303,93 +293,3 @@ class TacTreeBuilder(object):
         if f_verbose:
             tactr.dump()
         return tactr
-
-
-"""
-    def build_name(self):
-        # Internal
-        it_rawtacs = self.it_rawtacs
-        self._mylog("@build_name:before<{}>".format(it_rawtacs.peek()))
-        self.numtacs += 1
-
-        # Skip Name
-        tac = next(it_rawtacs)
-"""
-
-"""
-    def _leaf_nodes(self, graph, node):
-        leaf_nodes = []
-
-        visited_nodes = []
-        queue = [node]
-        while queue:
-            curr = queue.pop()
-            # print("CHECKING", str(curr))
-            visited_nodes += [curr]
-            next_nodes = [tgt for src, tgt in graph.edges(curr)
-                              if src.gid != tgt.gid]
-            # print("NEXT NODES", [str(x) for x in next_nodes])
-            visited_nodes += next_nodes
-            if not next_nodes:
-                leaf_nodes += [curr]
-                print("ADDING", str(curr))
-            queue += next_nodes
-        print("VISITED", [str(node) for node in visited_nodes])
-        # print("HERE", [str(node) for node in leaf_nodes])
-        return leaf_nodes
-
-            # 4. Handle intro tactical
-            # Connect up last live node to the end of the intro tactic
-            # if tac.name.startswith("<ssreflect_plugin::ssrtclintros@0>"):
-            #     # Find last live nodes
-            #     acc = []
-            #     acc2 = []
-            #     last_live_nodes = []
-            #     for node in root_nodes:
-            #         leaf_nodes = self._leaf_nodes(body_graph, node)
-            #         print("LEAF NODES", [node.gid for node in leaf_nodes])
-            #         acc2 += [leaf_nodes]
-            #         live_nodes = [node_p for node_p in leaf_nodes if node_p.kind == TacStKind.LIVE]
-            #         acc += [live_nodes]
-            #         if not live_nodes:
-            #             last_live_nodes += [node]
-            #         else:
-            #             last_live_nodes += live_nodes
-
-            #     # Error checking
-            #     msg = json.dumps({"lemma": self.name,
-            #                       "root": [str(node) for node in root_nodes],
-            #                       "leaf": [[str(node) for node in foo] for foo in acc2],
-            #                       "live": [[str(node) for node in foo] for foo in acc],
-            #                       "last_live": [str(node) for node in last_live_nodes],
-            #                       "fst": [af_decl.hdr.gid for af_decl in tac.body[0].af_decls],
-            #                       "last": [af_decl.hdr.gid for af_decl in tac.body[-1].af_decls],
-            #                       "tac": [af_decl.hdr.tac for af_decl in tac.body[0].af_decls],
-            #                       "before": tac.bf_decl.hdr.gid,
-            #                       "after": [af_decl.hdr.gid for af_decl in tac.af_decls]})
-            #     HINTROS.write(msg)
-            #     HINTROS.write('\n')
-            #     HINTROS.flush()
-
-            #     if len(root_nodes) != 1:
-            #         print("WTF !!!!!!!!!!!!!!!!!!!!!!!")
-            #         print("WTF !!!!!!!!!!!!!!!!!!!!!!!")
-            #         print("WTF !!!!!!!!!!!!!!!!!!!!!!!")
-            #         print("WTF !!!!!!!!!!!!!!!!!!!!!!!")
-            #     if len(last_live_nodes) != len(tac.af_decls):
-            #         print("ROOT NODES", [str(node) for node in root_nodes])
-            #         print("LASTLIVE NODES", [str(node) for node in last_live_nodes])
-            #         print("TOP==========================")
-            #         for af_decl in tac.af_decls:
-            #             print(af_decl)
-
-            #     # Connect up with the after part of the intro tactic
-            #     for src_node, tgt_decl in zip(last_live_nodes, tac.af_decls):
-            #         # print("ADDING INTRO EDGE", af_decl.hdr.gid, tac.af_decls[0].hdr.gid)
-            #         af_node = self._mk_live_node(tgt_decl)
-            #         edge = TacEdge(self._fresh_edgeid(),
-            #                        tac.uid, tac.name, tac.tkind,
-            #                        parse_full_tac(tac.ftac),
-            #                        src_node, af_node)
-            #         self._add_edges([edge])
-"""

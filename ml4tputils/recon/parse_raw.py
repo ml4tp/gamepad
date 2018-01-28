@@ -253,7 +253,8 @@ class TacStParser(object):
                 toks = hdr.split(TOK_SEP)
             ngs = int(toks[0].strip())
             ftac = toks[1].strip()
-            gid = int(toks[5].strip())
+            gid = int(toks[2].strip())
+            # gid = int(toks[5].strip())
 
             # Unpack (note that we handle error and success here)
             hdr = TacStHdr(callid, mode, tac, kind, ftac, gid, ngs, loc)
