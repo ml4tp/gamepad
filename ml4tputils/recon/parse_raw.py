@@ -275,10 +275,10 @@ class TacStParser(object):
 
             # Unpack (note that we handle error and success here)
             hdr = TacStHdr(callid, mode, tac, kind, ftac, gid, ngs, loc, sexp_ftac)
-            # ctx, concl_idx = self.parse_decl_body()
-            self.h_head.consume_line()
-            ctx = TacStCtx([])
-            concl_idx = -1
+            ctx, concl_idx = self.parse_decl_body()
+            # self.h_head.consume_line()
+            # ctx = TacStCtx([])
+            # concl_idx = -1
         else:
             raise NameError("Parsing error @line{}: {}".format(
                             h_head.line, h_head.peek_line()))
