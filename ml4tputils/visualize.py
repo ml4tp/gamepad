@@ -68,6 +68,10 @@ class Visualize(object):
         with open("tactr.pickle", 'rb') as f:
             self.tactrs = pickle.load(f)
 
+    def test_parse_tac(self, file):
+        ts_parser = TacStParser(file)
+        ts_parser.parse_file()
+
     def visualize_file(self, file):
         tactrs = self.recon.recon_file(file, not(self.f_jupyter))
         self.tactrs += tactrs
@@ -131,19 +135,24 @@ if __name__ == "__main__":
                     tactr_file=args.tactrout)
     if args.lemma:
         file = op.join(args.path, args.file)
-        vis.visualize_lemma(file, args.lemma)
+        # vis.visualize_lemma(file, args.lemma)
+        vis.test_parse_tac(file)
     else:
         if args.file == "all":
             for file in files:
-                vis.visualize_file(file)
+                # vis.visualize_file(file)
+                vis.test_parse_tac(file)
         elif args.file == "bg":
             for file in bgfiles:
-                vis.visualize_file(file)
+                # vis.visualize_file(file)
+                vis.test_parse_tac(file)
         elif args.file == "pf":
             for file in pffiles:
-                vis.visualize_file(file)
+                # vis.visualize_file(file)
+                vis.test_parse_tac(file)
         else:
             file = op.join(args.path, args.file)
-            vis.visualize_file(file)
+            # vis.visualize_file(file)
+            vis.test_parse_tac(file)
         vis.finalize()
         vis.save_tactrs()

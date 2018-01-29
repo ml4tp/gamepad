@@ -4,6 +4,9 @@ class FvsTactic(object):
     def __init__(self):
         self.globs = set()
 
+    def _log(self, msg):
+        print(msg)
+
     def _unpack(self, sexpr):
         try:
             tag = sexpr[0]
@@ -58,6 +61,7 @@ class FvsTactic(object):
 
     def fvs_intro_pattern_expr(self, fvs, ipe):
         tag, body = self._unpack(ipe)
+        self._log("@fvs_intro_pattern_expr | tag={}; raw={}".format(tag, ipe))
         if tag == "F":
             # Printf.sprintf "F(%b)" b
             return set()
@@ -72,6 +76,7 @@ class FvsTactic(object):
 
     def fvs_intro_pattern_naming_expr(self, ipne):
         tag, body = self._unpack(ipne)
+        self._log("@fvs_intro_pattern_naming_expr | tag={}; raw={}".format(tag, ipne))
         if tag == "I":
             # Printf.sprintf "I(%s)" (show_id id)
             return set(self._conv(body[0]))
@@ -86,6 +91,7 @@ class FvsTactic(object):
 
     def fvs_intro_pattern_action_expr(self, fvs, ipae):
         tag, body = self._unpack(ipae)
+        
         if tag == "W":
             # "W()"
             return set()
@@ -143,6 +149,7 @@ class FvsTactic(object):
 
     def fvs_glob_constr(self, gc):
         tag, body = self._unpack(gc)
+        self._log("@fvs_glob_constr | tag={}; raw={}".format(tag, gc))
         if tag == "!":
             # Printf.sprintf "!(%s)" (show_global_reference gr)
             return self.fvs_global_reference(body[0])
@@ -332,6 +339,7 @@ class FvsTactic(object):
 
     def fvs_match_pattern(self, fvs_pat, mp):
         # TODO(deh): error in coq printing
+        self._log("@fvs_match_pattern".format(mp))
         return set()
 
     def fvs_match_context_hyps(self, fvs_pat, hyps):
@@ -349,6 +357,7 @@ class FvsTactic(object):
 
     def fvs_generic_arg(self, garg):
         tag, body = self._unpack(garg)
+        self._log("@fvs_generic_arg | tag={}; raw={}".format(tag, garg))
         if tag == "L":
             return self.fvs_ls(self.fvs_generic_arg, body[0])
         elif tag == "O":
@@ -385,6 +394,7 @@ class FvsTactic(object):
 
     def fvs_tactic_arg(self, targ):
         tag, body = self._unpack(targ)
+        self._log("@fvs_tactic_arg | tag={}; raw={}".format(tag, targ))
         if tag == "G":
             # Printf.sprintf "(G %s)" (show_generic_arg ga)
             return self.fvs_generic_arg(body[0])
@@ -419,6 +429,7 @@ class FvsTactic(object):
 
     def fvs_atomic_tac(self, atac):
         tag, body = self._unpack(atac)
+        self._log("@fvs_atomic_tac | tag={}; raw={}".format(tag, atac))
         if tag == "IntroPattern":
             # let f (loc, ipe) = show_intro_pattern_expr show_gtrm ipe in
             # Printf.sprintf "(IntroPattern %b %s)" ef (show_sexpr_ls f ipes)
@@ -498,6 +509,7 @@ class FvsTactic(object):
         if tac == None:
             return set()
         tag, body = self._unpack(tac)
+        self._log("@fvs_tac | tag={}; raw={}".format(tag, tac))
         if tag == "Atom":
             # Printf.sprintf "(Atom %s)" (show_atomic_tac atac)
             return self.fvs_atomic_tac(body[0])
@@ -641,6 +653,7 @@ class FvsTactic(object):
 
     def fvs_pattern(self, pat):
         tag, body = self._unpack(pat)
+        self._log("@fvs_pattern | tag={}; raw={}".format(tag, gc))
         if tag == "T":
             return self.fvs_term(body[0])
         elif tag == "IT":
@@ -677,11 +690,11 @@ class FvsTactic(object):
 
     def fvs_ssrortacs(self, ortacs):
         # Pml4tp.show_sexpr_ls (fun m_tac -> Pml4tp.show_maybe Pml4tp.show_tac m_tac) ortacs
-        pass
+        return self.fvs_ls(lambda x: self.fvs_maybe(self.fvs_tac, x), ortacs)
 
     def fvs_ssrhintarg(self, ha):
         # Printf.sprintf "(%b %s)" b (show_ssrortacs ortacs)
-        return set()
+        return self.fvs_ssrortacs(ha[1])
 
     def fvs_ssrhyp(self, hyp):
         # Pml4tp.show_id id
@@ -910,7 +923,6 @@ class FvsTactic(object):
         return self.fvs_ls(self.fvs_ssrrwarg, rwargs)
 
     def fvs_ssrfwdid(self, fwdid):
-        print("HOHOHO", fwdid)
         return set(self._conv(fwdid))
 
     def fvs_ssrfwd(self, fwd):
