@@ -1,3 +1,4 @@
+import sexpdata
 
 class FvsTactic(object):
     def __init__(self):
@@ -10,6 +11,13 @@ class FvsTactic(object):
             return tag._val, body
         except:
             return sexpr._val, None
+
+    def _conv(self, obj):
+        if isinstance(obj, sexpdata.Symbol):
+            return obj._val
+        elif isinstance(obj, float):
+            # NOTE(deh): wtf, inF -> inf the floating point ...
+            return str(obj)
 
     # -------------------------------------------------
     # utility
@@ -38,12 +46,15 @@ class FvsTactic(object):
         if tag == "A":
             return fvs(body[0])
         elif tag == "V":
-            return set(body[0]._val)
+            return set(self._conv(body[0]))
         else:
             raise NameError("Tag {} not supported".format(tag))
 
     def fvs_g_reference(self, gref):
-        return self.fvs_or_var(lambda x: set(x._val), gref)
+        return self.fvs_or_var(lambda x: set(self._conv(x)), gref)
+
+    def fvs_gname(self, gnm):
+        return set(self._conv(gnm))
 
     def fvs_intro_pattern_expr(self, fvs, ipe):
         tag, body = self._unpack(ipe)
@@ -63,10 +74,10 @@ class FvsTactic(object):
         tag, body = self._unpack(ipne)
         if tag == "I":
             # Printf.sprintf "I(%s)" (show_id id)
-            return set(body[0]._val)
+            return set(self._conv(body[0]))
         elif tag == "F":
             # Printf.sprintf "F(%s)" (show_id id)
-            return set(body[0]._val)
+            return set(self._conv(body[0]))
         elif tag == "A":
             # "A()"
             return set()
@@ -137,7 +148,7 @@ class FvsTactic(object):
             return self.fvs_global_reference(body[0])
         elif tag == "V":
             # Printf.sprintf "V(%s)" (show_id id)
-            return set(body[0]._val)
+            return set(self._conv(body[0]))
         elif tag == "E":
             # let f (id, gc) = Printf.sprintf "(%s, %s)" (show_id id) (show_glob_constr gc) in
             # Printf.sprintf "E(%s, %s)" (show_id en) (brackets (show_ls f ", " args))
@@ -155,16 +166,19 @@ class FvsTactic(object):
             # Printf.sprintf "L(%s, %s, %s)" (show_name n) (show_glob_constr gc1) (show_glob_constr gc2)
             fvs1 = self.fvs_glob_constr(body[1])
             fvs2 = self.fvs_glob_constr(body[2])
-            return fvs1.union(fvs2).difference(set(body[0]))
+            return fvs1.union(fvs2).difference(set(self._conv(body[0])))
         elif tag == "LI":
             # Printf.sprintf "LI(%s, %s, %s)" (show_name n) (show_glob_constr gc1) (show_glob_constr gc2)
             fvs1 = self.fvs_glob_constr(body[1])
             fvs2 = self.fvs_glob_constr(body[2])
-            return fvs1.union(fvs2).difference(body[0])
+            return fvs1.union(fvs2).difference(self._conv(body[0]))
         elif tag == "C":
             # Printf.sprintf "C(%s, %s, %s, %s)" "TODO" (show_maybe show_glob_constr m_gc) (show_tomatch_tuples tups) (show_case_clauses ccs)
             # return ("C", "TODO", self.fvs_maybe(self.fvs_glob_constr, body[0]), self.fvs_tomatch_tuples(body[1]), self.fvs_case_clauses(body[2]))
-            raise NameError("TODO")
+            fvs0 = self.fvs_maybe(self.fvs_glob_constr, body[0])
+            fvs1 = self.fvs_tomatch_tuples(body[1])
+            fvs2 = self.fvs_case_clauses(body[2])
+            return fvs0.union(fvs2).difference(fvs1)
         elif tag == "LT":
             # let f (name, m_gc) = Printf.sprintf "(%s, %s)" (show_name name) (show_maybe show_glob_constr m_gc) in
             # Printf.sprintf "LT(%s, %s, %s, %s)" (show_ls show_name ", " ns) (f arg) (show_glob_constr gc1) (show_glob_constr gc2)
@@ -187,10 +201,12 @@ class FvsTactic(object):
             return self.fvs_intro_pattern_naming_expr(body[1])
         elif tag == "T":
             # Printf.sprintf "T(%s, %s)" (show_glob_constr gc) (show_cast_type show_glob_constr gc_ty)
-            print("HERE", gc)
-            fvs0 = self.fvs_glob_constr(body[0])
-            fvs1 = self.fvs_cast_type(body[1])
-            return fvs0.union(fvs1)
+            
+            # print("HERE", gc)
+            # fvs0 = self.fvs_glob_constr(body[0])
+            # fvs1 = self.fvs_cast_type(body[1])
+            # return fvs0.union(fvs1)
+            return set()
         else:
             raise NameError("Tag {} not supported".format(tag))
 
@@ -259,7 +275,7 @@ class FvsTactic(object):
         return fvs0.union(fvs1)
 
     def fvs_quantified_hypothesis(self, qhyp):
-        return set(qhyp._val)
+        return set(self._conv(qhyp))
 
     def fvs_explicit_binding(self, fvs, eb):
         fvs0 = self.fvs_quantified_hypothesis(eb[0])
@@ -288,13 +304,13 @@ class FvsTactic(object):
     def fvs_global_reference(self, gref):
         tag, body = self._unpack(gref)
         if tag == "VR":
-            self.globs.add(body[0]._val)
+            self.globs.add(self._conv(body[0]))
         elif tag == "CR":
-            self.globs.add(body[0]._val)
+            self.globs.add(self._conv(body[0]))
         elif tag == "IR":
-            self.globs.add(body[0]._val)
+            self.globs.add(self._conv(body[0]))
         elif tag == "TR":
-            self.globs.add(body[0]._val)
+            self.globs.add(self._conv(body[0]))
         else:
             raise NameError("Tag {} not supported".format(tag))
         return set()
@@ -322,11 +338,11 @@ class FvsTactic(object):
         # tag, body = self._unpack(hyps)
         # if tag == "H":
         #     fvs1 = self.fvs_match_pattern(fvs_pat, body[1])
-        #     return fvs1.add(body[0]._val)
+        #     return fvs1.add(self._conv(body[0]))
         # elif tag == "D":
         #     fvs1 = self.fvs_match_pattern(fvs_pat, body[1])
         #     fvs2 = self.fvs_match_pattern(fvs_pat, body[2])
-        #     return fvs1.union(fvs2).add(body[0]._val)
+        #     return fvs1.union(fvs2).add(self._conv(body[0]))
         # else:
         #     raise NameError("Tag {} not supported".format(tag))
         return set()
@@ -342,17 +358,27 @@ class FvsTactic(object):
             fvs1 = self.fvs_generic_arg(body[1])
             return fvs0.union(fvs1)
         elif tag == "E":
-            method = getattr(self, "fvs_{}".format(body[0]._val))
+            method = getattr(self, "fvs_{}".format(self._conv(body[0])))
             return method(body[1])
         else:
             if (tag == "auto_using" or
                 tag == "hintbases" or
+                tag == "bindings" or
+                tag == "intropattern" or
+                tag == "constr" or       # TODO(deh): huh??
+                tag == "casted_constr" or
+                tag == "natural" or
+                tag == "var" or
+                tag == "ssrhint" or
                 tag == "ssrexactarg" or
                 tag == "ssrdoarg" or
                 tag == "ssrhpats_nobs" or
                 tag == "ssrwlogfwd" or
-                tag == "ssrhint" or
-                tag == "ssrsufffwd"):
+                tag == "ssrsufffwd" or
+                tag == "ssrsetfwd" or
+                tag == "ssrcongrarg" or
+                tag == "ssrfixfwd" or
+                tag == "ssrrpat"):
                 return set()
             else:
                 raise NameError("Tag {} not supported".format(tag))
@@ -376,7 +402,7 @@ class FvsTactic(object):
         elif tag == "FreshId":
             # Printf.sprintf "(F %s)" (show_sexpr_ls (fun x -> show_or_var (fun x -> x) x) sovs)
             return set()
-        elif tag == "Exp":
+        elif tag == "E":
             # Printf.sprintf "(E %s)" (show_tac tac)
             return self.fvs_tac(body[0])
         elif tag == "P":
@@ -403,7 +429,7 @@ class FvsTactic(object):
             # Printf.sprintf "(Apply %b %b %s %s)" af ef (show_sexpr_ls (show_with_bindings_arg show_gtrm) bargss) (show_maybe g gnm_and_ipe)
             fvs2 = self.fvs_ls(lambda x: self.fvs_with_bindings_arg(self.fvs_gtrm, x), body[2])
             f = lambda gnm, x: self.fvs_gname(gnm).union(self.fvs_maybe(lambda y: self.fvs_intro_pattern_expr(self.fvs_gtrm, y)), x)
-            fvs3 = union(self.fvs_maybe(f, body[3]))
+            fvs3 = self.fvs_maybe(f, body[3])
             return fvs2.union(fvs3)
         elif tag == "Elim":
             # Printf.sprintf "(Elim %b %s %s)" ef (show_with_bindings_arg show_gtrm bargs) (show_maybe (show_with_bindings show_gtrm) maybe_wb)
@@ -443,7 +469,7 @@ class FvsTactic(object):
             fvs1 = self.fvs_gtrm(body[1])
             fvs2 = self.fvs_clause_expr(body[2])
             fvs3 = self.fvs_maybe(self.fvs_gtrm(body[4]))
-            return fvs1.union(fvs2).union(fvs3).difference(body[0]._val)
+            return fvs1.union(fvs2).union(fvs3).difference(self._conv(body[0]))
         elif tag == "InductionDestruct":
             # Printf.sprintf "InductionDestruct(%b, %b, %s)" rf ef (show_induction_clause_list ics)
             return self.fvs_induction_clause_list(body[2])
@@ -613,8 +639,35 @@ class FvsTactic(object):
     def fvs_cpattern(self, cpat):
         return self.fvs_glob_constr(cpat)
 
+    def fvs_pattern(self, pat):
+        tag, body = self._unpack(pat)
+        if tag == "T":
+            return self.fvs_term(body[0])
+        elif tag == "IT":
+            return self.fvs_term(body[0])
+        elif tag == "XT":
+            fvs0 = self.fvs_term(body[0])
+            fvs1 = self.fvs_term(body[1])
+            return fvs0.union(fvs1)
+        elif tag == "IXT":
+            fvs0 = self.fvs_term(body[0])
+            fvs1 = self.fvs_term(body[1])
+            return fvs0.union(fvs1)
+        elif tag == "EIXT":
+            fvs0 = self.fvs_term(body[0])
+            fvs1 = self.fvs_term(body[1])
+            fvs2 = self.fvs_term(body[2])
+            return fvs0.union(fvs1).union(fvs2)
+        elif tag == "EAXT":
+            fvs0 = self.fvs_term(body[0])
+            fvs1 = self.fvs_term(body[1])
+            fvs2 = self.fvs_term(body[2])
+            return fvs0.union(fvs1).union(fvs2)
+        else:
+            raise NameError("Tag {} not supported".format(tag))
+
     def fvs_rpattern(self, rpat):
-        return self.fvs_glob_constr(rpat)
+        return self.fvs_pattern(rpat)
 
     def fvs_term(self, term):
         return self.fvs_glob_constr(term)
@@ -632,18 +685,18 @@ class FvsTactic(object):
 
     def fvs_ssrhyp(self, hyp):
         # Pml4tp.show_id id
-        return set(hyp._val)
+        return set(self._conv(hyp))
 
     def fvs_ssrhyprep(self, hyp):
         # Pml4tp.show_id id
-        return set(hyp._val)
+        return set(self._conv(hyp))
 
     def fvs_ssrhoirep(self, hoirep):
         tag, body = self._unpack(hoirep)
         if tag == "H":
             return self.fvs_ssrhyp(body[0])
         elif tag == "I":
-            return self.fvs_srrhyp(body[0])
+            return self.fvs_ssrhyp(body[0])
         else:
             raise NameError("Tag {} not supported".format(tag))
 
@@ -781,7 +834,8 @@ class FvsTactic(object):
         return self.fvs_dgens(self.fvs_ssrgen, dgens)
 
     def fvs_ssreqid(self, eqid):
-        return set(eqid._val)
+        # Pml4tp.show_maybe show_ipat eqid
+        return self.fvs_maybe(self.fvs_ssripat, eqid)
 
     def fvs_ssrarg(self, arg):
         # Printf.sprintf "(%s %s %s %s)" (show_view view) (show_eqid eqid) (show_dgens show_gen dgens) (show_intros ipats)
@@ -856,7 +910,8 @@ class FvsTactic(object):
         return self.fvs_ls(self.fvs_ssrrwarg, rwargs)
 
     def fvs_ssrfwdid(self, fwdid):
-        return set(fwdid._val)
+        print("HOHOHO", fwdid)
+        return set(self._conv(fwdid))
 
     def fvs_ssrfwd(self, fwd):
         tag, body = self._unpack(fwd)
