@@ -1,16 +1,223 @@
-1731c1731
+1659,1667d1658
+< 
+< (* ============= *)
+< (* ML4TP *)
+< let show_ssrortacs ortacs =
+<   Pml4tp.show_sexpr_ls (fun m_tac -> Pml4tp.show_maybe Pml4tp.show_tac m_tac) ortacs
+< let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssrortacs show_ssrortacs
+< (* ============= *)
+< 
+< 
+1686,1694d1676
+< 
+< (* ============= *)
+< (* ML4TP *)
+< let show_ssrhintarg (b, ortacs)=
+<   Printf.sprintf "(%b %s)" b (show_ssrortacs ortacs)
+< let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssrhintarg show_ssrhintarg
+< (* ============= *)
+< 
+< 
+1749c1731
 <   if arg = nohint then mt() else str " by " ++ pr_hintarg prt arg
 ---
 >   if arg = nohint then mt() else str "by " ++ pr_hintarg prt arg
-2941c2941
+1804,1812d1785
+< 
+< (* ============= *)
+< (* ML4TP *)
+< let show_hyp (SsrHyp (_, id)) = Pml4tp.show_id id
+< let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssrhyp show_hyp
+< let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssrhyprep show_hyp
+< (* ============= *)
+< 
+< 
+1845,1858d1817
+< 
+< (* ============= *)
+< (* ML4TP *)
+< let show_hoi = function
+<   | Hyp x -> Printf.sprintf "(H %s)" (show_hyp x)
+<   | Id x -> Printf.sprintf "(I %s)" (show_hyp x)
+< let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssrhoirep show_hoi
+< let show_hoi_hyp = show_hoi
+< let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssrhoi_hyp show_hoi_hyp
+< let show_hoi_id = show_hoi
+< let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssrhoi_id show_hoi_id
+< (* ============= *)
+< 
+< 
+1884,1891d1842
+< 
+< (* ============= *)
+< (* ML4TP *)
+< let show_hyps hyps = Pml4tp.show_sexpr_ls show_hyp hyps
+< let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssrhyps show_hyps
+< (* ============= *)
+< 
+< 
+1971,1978d1921
+< 
+< (* ============= *)
+< (* ML4TP *)
+< let show_clear clr = show_hyps clr
+< let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssrclear show_clear
+< (* ============= *)
+< 
+< 
+2007,2016d1949
+< 
+< (* ============= *)
+< (* ML4TP *)
+< let show_wgen (clr, x) =
+<   let f ((id, k), c_p) = Printf.sprintf "(%s %s)" (show_hoi id) (Pml4tp.show_maybe show_cpattern c_p) in
+<   Printf.sprintf "(%s %s)" (show_clear clr) (Pml4tp.show_maybe f x)
+< let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssrwgen show_wgen
+< (* ============= *)
+< 
+< 
+2040,2058d1972
+< 
+< (* ============= *)
+< (* ML4TP *)
+< let show_clseq = function
+<   | InGoal -> "G"
+<   | InHyps -> "H"
+<   | InSeqGoal -> "SG"
+<   | InHypsSeqGoal -> "HSG"
+<   | InHypsGoal -> "IHG"
+<   | InAll -> "A"
+<   | InHypsSeq -> "HS"
+<   | InAllHyps -> "AH"
+< let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssrclseq show_clseq
+< let show_ssrclausehyps hyps =
+<   Pml4tp.show_sexpr_ls show_wgen hyps
+< let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssrclausehyps show_ssrclausehyps
+< (* ============= *)
+< 
+< 
+2078,2086d1991
+< 
+< (* ============= *)
+< (* ML4TP *)
+< let show_ssrclauses (hyps, clseq) =
+<   Printf.sprintf "(%s %s)" (show_ssrclausehyps hyps) (show_clseq clseq)
+< let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssrclauses show_ssrclauses
+< (* ============= *)
+< 
+< 
+2271,2284d2175
+< 
+< (* ============= *)
+< (* ML4TP *)
+< let show_simpl = function
+<   | Simpl -> "S"
+<   | Cut -> "C"
+<   | SimplCut -> "SC"
+<   | Nop -> "N"
+< let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssrsimplrep show_simpl
+< let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssrsimpl_ne show_simpl
+< let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssrsimpl show_simpl
+< (* ============= *)
+< 
+< 
+2302,2311d2192
+< 
+< (* ============= *)
+< (* ML4TP *)
+< let show_rwdir = function
+<   | L2R -> "L2R"
+<   | R2L -> "R2L"
+< let show_dir = show_rwdir
+< (* ============= *)
+< 
+< 
+2401,2409d2281
+< 
+< (* ============= *)
+< (* ML4TP *)
+< let show_occ occ =
+<   Pml4tp.show_maybe (fun (b, occ) -> Printf.sprintf "(%b %s)" b (Pml4tp.show_sexpr_ls string_of_int occ)) occ
+< let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssrocc show_occ
+< (* ============= *)
+< 
+< 
+2437,2446d2308
+< 
+< (* ============= *)
+< (* ML4TP *)
+< let show_docc = function
+<   | None, occ -> Printf.sprintf "(N %s)" (show_occ occ)
+<   | Some clr, _ -> Printf.sprintf "(S %s)" (show_clear clr)
+< let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssrdocc show_docc
+< (* ============= *)
+< 
+< 
+2583,2590d2444
+< 
+< (* ============= *)
+< (* ML4TP *)
+< let show_view view =
+<   Pml4tp.show_sexpr_ls (fun (_, (c, _)) -> Pml4tp.show_glob_constr c) view
+< let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssrview show_view
+< (* ============= *)
+< 
+2812,2837d2665
+< 
+< (* ============= *)
+< (* ML4TP *)
+< let rec show_ipat = function
+<   | IpatId id -> "I"
+<   | IpatSimpl (clr, sim) -> Printf.sprintf "(S %s %s)" (show_clear clr) (show_simpl sim)
+<   | IpatCase iorpat -> Printf.sprintf "(C %s)" (show_iorpat iorpat)
+<   | IpatRw (occ, dir) -> Printf.sprintf "(R %s %s)" (show_occ occ) (show_dir dir)
+<   | IpatAll -> "A"
+<   | IpatWild -> "W"
+<   | IpatAnon -> "AN"
+<   | IpatView v -> "V"
+<   | IpatNoop -> "N"
+<   | IpatNewHidden l -> "H"
+< and show_iorpat iorpat =
+<   Pml4tp.show_sexpr_ls show_ipats iorpat
+< and show_ipats ipats =
+<   Pml4tp.show_sexpr_ls show_ipat ipats
+< 
+< let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssripat show_ipats
+< let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssripats show_ipats
+< let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssriorpat show_iorpat
+< let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssripatrep show_ipat
+< (* ============= *)
+< 
+< 
+2911,2919d2738
+< 
+< (* ============= *)
+< (* ML4TP *)
+< let show_hpats (((clr, ipat), binders), simpl) =
+<   Printf.sprintf "(%s %s %s %s)" (show_clear clr) (show_ipats ipat) (show_ipats binders) (show_ipats simpl)
+< let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssrhpats show_hpats
+< (* ============= *)
+< 
+< 
+2953,2961d2771
+< 
+< (* ============= *)
+< (* ML4TP *)
+< let show_intros intrs = show_ipats intrs
+< let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssrintros_ne show_intros
+< let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssrintros show_intros
+< (* ============= *)
+< 
+< 
+3131c2941
 < let introstac, tclEQINTROS, tclEQINTROS' =
 ---
 > let introstac, tclEQINTROS =
-2986c2986
+3176c2986
 <     | orp ->
 ---
 >     | orp -> 
-2988,2995c2988,2989
+3178,3185c2988,2989
 <   and tclIORPAT' ?ist k tac = function
 <     | [[]] -> tac
 <     | orp ->
@@ -22,7 +229,7 @@
 ---
 >   and ipatstac ?ist k ipats = 
 >     tclTHENLIST (map_acc_k (ipattac ?ist) k ipats) in
-2999,3005c2993
+3189,3195c2993
 <     tclTHENLIST [tac; clear_wilds !wild_ids]
 <     (*
 <     let tac' = Proofview.V82.of_tactic (ml4tp_wrap_catchfail_tac None (Proofview.V82.tactic tac) "SI2" None) in
@@ -32,7 +239,7 @@
 <   in
 ---
 >     tclTHENLIST [tac; clear_wilds !wild_ids] in
-3017,3038c3005,3006
+3207,3228c3005,3006
 <     tclTHENLIST [tac1; eqtac; tac2; clear_wilds !wild_ids]
 <   in
 <   let tclEQINTROS' ?ist tac eqtac ipats =
@@ -58,18 +265,247 @@
 ---
 >     tclTHENLIST [tac1; eqtac; tac2; clear_wilds !wild_ids] in
 >   introstac, tclEQINTROS
-3048c3016
+3238c3016
 <   tclEQINTROS' ~ist (tac ist) tclIDTAC ipats
 ---
 >   tclEQINTROS ~ist (tac ist) tclIDTAC ipats
-4264,4266c4232
+3296,3306d3073
+< 
+< (* ============= *)
+< (* ML4TP *)
+< let show_mmod = function
+<   | May -> "M"
+<   | Must -> "U"
+<   | Once -> "O"
+< let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssrmmod show_mmod
+< (* ============= *)
+< 
+< 
+3677,3685d3443
+< 
+< (* ============= *)
+< (* ML4TP *)
+< let show_gen (docc, dt) =
+<   Printf.sprintf "(%s %s)" (show_docc docc) (show_cpattern dt)
+< let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssrgen show_gen
+< (* ============= *)
+< 
+< 
+3803,3816d3560
+< 
+< (* ============= *)
+< (* ML4TP *)
+< let show_dgens show_gen (gensl, clr) =
+<   match gensl with
+<   | [deps; []] -> Printf.sprintf "(%s %s %s)" (Pml4tp.show_sexpr_ls show_gen deps) "[]" (show_clear clr)
+<   | [deps; gens] -> Printf.sprintf "(%s %s %s)" (Pml4tp.show_sexpr_ls show_gen deps) (Pml4tp.show_sexpr_ls show_gen gens) (show_clear clr)
+<   | [gens] -> Printf.sprintf "(%s %s %s)" "()" (Pml4tp.show_sexpr_ls show_gen gens) (show_clear clr)
+<   | _ -> Printf.sprintf "(() () %s)" (show_clear clr)
+< let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssrdgens_tl (show_dgens show_gen)
+< let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssrdgens (show_dgens show_gen)
+< (* ============= *)
+< 
+< 
+3869,3876d3612
+< 
+< (* ============= *)
+< (* ML4TP *)
+< let show_eqid eqid = Pml4tp.show_maybe show_ipat eqid
+< let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssreqid show_eqid
+< (* ============= *)
+< 
+< 
+3969,3978d3704
+< 
+< (* ============= *)
+< (* ML4TP *)
+< (* TODO *)
+< let show_ssrarg (view, (eqid, (dgens, ipats))) =
+<   Printf.sprintf "(%s %s %s %s)" (show_view view) (show_eqid eqid) (show_dgens show_gen dgens) (show_intros ipats)
+< let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssrarg show_ssrarg
+< (* ============= *)
+< 
+< 
+4011,4017d3736
+< 
+< (* ============= *)
+< (* ML4TP *)
+< let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssrmovearg show_ssrarg
+< (* ============= *)
+< 
+< 
+4513,4515c4232
 <   (* tclTHENLIST [gen_eq_tac; elim_intro_tac] orig_gl *)
 <   let gen_eq_tac' = Proofview.V82.of_tactic (ml4tp_wrap_catchfail_tac None (Proofview.V82.tactic gen_eq_tac) "SGE" None) in
 <   tclTHENLIST [gen_eq_tac'; elim_intro_tac] orig_gl
 ---
 >   tclTHENLIST [gen_eq_tac; elim_intro_tac] orig_gl
-5233,5236d5198
+4531,4535d4247
+< (* ============= *)
+< (* ML4TP *)
+< let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssrcasearg show_ssrarg
+< (* ============= *)
+< 
+4602,4612d4313
+< 
+< (* ============= *)
+< (* ML4TP *)
+< let show_agen (docc, dt) =
+<   Printf.sprintf "(%s %s)" (show_docc docc) (show_term dt)
+< let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssragen show_agen
+< let show_agens = show_dgens show_agen
+< let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssragens show_agens
+< (* ============= *)
+< 
+< 
+4634,4642d4334
+< 
+< (* ============= *)
+< (* ML4TP *)
+< let show_ssraarg (view, (eqid, (dgens, ipats))) =
+<   Printf.sprintf "(%s %s %s %s)" (show_view view) (show_eqid eqid) (show_agens dgens) (show_ipats ipats)
+< let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssrapplyarg show_ssraarg
+< (* ============= *)
+< 
+< 
+4900,4911d4591
+< 
+< (* ============= *)
+< (* ML4TP *)
+< let show_mult (n, m) =
+<   if n > 0 && m <> Once
+<   then Printf.sprintf "(%d %s)" n (show_mmod m)
+<   else show_mmod m
+< let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssrmult_ne show_mult
+< let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssrmult show_mult
+< (* ============= *)
+< 
+< 
+4927,4935d4606
+< 
+< (* ============= *)
+< (* ML4TP *)
+< let show_rwocc (m_clr, occ) =
+<   Printf.sprintf "(%s %s)" (Pml4tp.show_maybe show_clear m_clr) (show_occ occ)
+< let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssrrwocc show_rwocc
+< (* ============= *)
+< 
+< 
+4968,4979d4638
+< 
+< (* ============= *)
+< (* ML4TP *)
+< let show_rule = function
+<   | RWred s, _ -> Printf.sprintf "(R %s)" (show_simpl s)
+<   | RWdef, r-> Printf.sprintf "(D %s)" (show_term r)
+<   | RWeq, r -> Printf.sprintf "(E %s)" (show_term r)
+< let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssrrule_ne show_rule
+< let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssrrule show_rule
+< (* ============= *)
+< 
+< 
+5029,5036d4687
+< (* ============= *)
+< (* ML4TP *)
+< let show_pattern_squarep rx = Pml4tp.show_maybe show_rpattern rx
+< let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssrpattern_squarep show_pattern_squarep
+< let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssrpattern_ne_squarep show_pattern_squarep
+< (* ============= *)
+< 
+< 
+5060,5068d4710
+< 
+< (* ============= *)
+< (* ML4TP *)
+< let show_ssrrwarg ((d, m), ((docc, rx), r)) =
+<    Printf.sprintf "(%s %s %s %s %s)" (show_rwdir d) (show_mult m) (show_rwocc docc) (show_pattern_squarep rx) (show_rule r)
+< let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssrrwarg show_ssrrwarg
+< (* ============= *)
+< 
+< 
+5529,5535d5170
+< (* ============= *)
+< (* ML4TP *)
+< let show_ssrrwargs rwargs =
+<    Pml4tp.show_sexpr_ls show_ssrrwarg rwargs
+< let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssrrwargs show_ssrrwargs
+< (* ============= *)
+< 
+5564,5567d5198
 <   (*
 <   let f tac = ml4tp_wrap_catchfail_tac None (rwargtac ist tac) "SsrRewrite" None in
 <   tclTHENLIST (List.map f rwargs))
 <   *)
+5630,5637d5260
+< 
+< (* ============= *)
+< (* ML4TP *)
+< let show_ssrfwdid id = Pml4tp.show_id id
+< let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssrfwdid show_ssrfwdid
+< (* ============= *)
+< 
+< 
+5682,5698d5304
+< 
+< (* ============= *)
+< (* ML4TP *)
+< let show_binder = function
+<   | Bvar x ->
+<     Printf.sprintf "(V %s)" (Pml4tp.show_name x)
+<   | Bdecl (xs, t) ->
+<     Printf.sprintf "(DC %s %s)" (Pml4tp.show_sexpr_ls Pml4tp.show_name xs) (Pml4tp.show_glob_constr t)
+<   | Bdef (x, m_t, v) ->
+<     Printf.sprintf "(Df %s %s %s)" (Pml4tp.show_name x) (Pml4tp.show_maybe Pml4tp.show_glob_constr m_t) (Pml4tp.show_glob_constr v)
+<   | Bstruct x ->
+<     Printf.sprintf "(S %s)" (Pml4tp.show_name x)
+<   | Bcast t ->
+<     Printf.sprintf "(C %s)" (Pml4tp.show_glob_constr t)
+< (* ============= *)
+< 
+< 
+5861,5876d5466
+< 
+< (* ============= *)
+< (* ML4TP *)
+< let show_ssrfwdkind = function
+<   | FwdHint _ -> "HT"
+<   | FwdHave _ -> "HV"
+<   | FwdPose _ -> "P"
+< let show_gen_fwd fk (bs, c) =
+<   Printf.sprintf "(%s %s %s)" (show_ssrfwdkind fk) (Pml4tp.show_sexpr_ls show_binder bs) (Pml4tp.show_glob_constr c)
+< let show_fwd = function
+<   | (fk, h), (_, (c, _)) ->
+<     Printf.sprintf "(%s %s)" (show_ssrfwdkind fk) (show_gen_fwd fk (format_glob_constr h c))
+< let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssrfwd show_fwd
+< (* ============= *)
+< 
+< 
+5980,5987d5569
+< 
+< (* ============= *)
+< (* ML4TP *)
+< let show_ssrposefwd = show_fwd
+< let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssrposefwd show_ssrposefwd
+< (* ============= *)
+< 
+< 
+6117,6125d5698
+< 
+< (* ============= *)
+< (* ML4TP *)
+< let show_ssrhavefwd (fwd, hint) =
+<   Printf.sprintf "%s" (show_fwd fwd)
+< let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssrhavefwd show_ssrhavefwd
+< (* ============= *)
+< 
+< 
+6157,6165d5729
+< 
+< (* ============= *)
+< (* ML4TP *)
+< let show_ssrhavefwdwbinders (tr, ((hpats, (fwd, hint)))) =
+<   Printf.sprintf "(%s %s)" (show_hpats hpats) (show_fwd fwd)
+< let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssrhavefwdwbinders show_ssrhavefwdwbinders
+< (* ============= *)
+< 
+< 
