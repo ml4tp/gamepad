@@ -1,5 +1,13 @@
 import sexpdata
 
+"""
+[Note]
+
+Get the free variables in a tactic.
+
+WARNING(deh): buggy, need to check
+"""
+
 class FvsTactic(object):
     def __init__(self):
         self.globs = set()
@@ -20,7 +28,7 @@ class FvsTactic(object):
         if isinstance(obj, sexpdata.Symbol):
             return obj._val
         elif isinstance(obj, float):
-            # NOTE(deh): wtf, inF -> inf the floating point ...
+            # NOTE(deh): wtf, inF -> inf as a floating point ...
             return str(obj)
 
     # -------------------------------------------------
@@ -131,7 +139,9 @@ class FvsTactic(object):
         elif tag == "C":
             # Printf.sprintf "C(%s, %d, %d, %s, %s)" (Names.MutInd.to_string mutind) i j (brackets (show_ls show_cases_pattern ", " cps)) (show_name n)
             self.globs.add(self._conv(body[0]))
-            fvs3 = self.fvs_ls(self.fvs_cases_pattern, body[3])
+            # TODO(deh): error in coq printing, extra parens
+            wtf = body[3]
+            fvs3 = self.fvs_ls(self.fvs_cases_pattern, wtf[0])
             fvs4 = set([self._conv(body[4])])
             return fvs3.union(fvs4)
         else:
