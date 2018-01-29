@@ -46,6 +46,7 @@ if __name__ == "__main__":
     argparser.add_argument('--lr', type = float, default=0.001, help = 'learning rate')
     argparser.add_argument('--state', type = int, default = 128, help = 'state size')
     argparser.add_argument("--ln", action = 'store_true', help="To norm or not to norm")
+    argparser.add_argument('--conclu_pos', type = int, choices = [0, -1], default = 0, help = 'conclusion at start or end')
     argparser.add_argument('--dropout', type= float, default = 0.0, help = 'dropout rate')
     argparser.add_argument('--weight_dropout', type= float, default = 0.0, help = 'weight dropout rate')
     argparser.add_argument('--variational', action='store_true', help = 'Variational dropout')
@@ -89,7 +90,7 @@ if __name__ == "__main__":
     print("Points Train={} Val={} Test={}".format(len(poseval_dataset.train), len(poseval_dataset.val), len(poseval_dataset.test)))
     #with launch_ipdb_on_exception():
     if not args.orig:
-        model = PosEvalModel(*tokens_to_idx, ln=args.ln, treelstm=args.treelstm, lstm=args.lstm, dropout=args.dropout, attention=args.attention, heads=args.heads, D = args.state, state = args.state, weight_dropout=args.weight_dropout, variational=args.variational)
+        model = PosEvalModel(*tokens_to_idx, ln=args.ln, treelstm=args.treelstm, lstm=args.lstm, dropout=args.dropout, attention=args.attention, heads=args.heads, D = args.state, state = args.state, weight_dropout=args.weight_dropout, variational=args.variational, conclu_pos=args.conclu_pos)
         trainer = PosEvalTrainer(model, tactrs, poseval_dataset, args)
         if args.validate:
             trainer.validate()
