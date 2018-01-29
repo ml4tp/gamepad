@@ -1,9 +1,11 @@
 from enum import Enum
+import sexpdata
 
 from lib.myfile import MyFile
 from lib.myutil import pp_tab
 from coq.decode import *
 from recon.tokens import *
+from coq.tactics_util import FvsTactic
 
 """
 [Note]
@@ -42,7 +44,7 @@ class TacStHdr(object):
     """
     Contains the header for a tactic state declaration.
     """
-    def __init__(self, callid, mode, tac, kind, ftac, gid, ngs, loc):
+    def __init__(self, callid, mode, tac, kind, ftac, gid, ngs, loc, sexp_ftac=None):
         self.callid = callid         # tactic call identifier (almost unique)
         toks = mode.split()
         self.mode = toks[0].strip()  # before/after/error
@@ -56,6 +58,7 @@ class TacStHdr(object):
         self.gid = gid               # goal identifier
         self.ngs = ngs               # number of goals
         self.loc = loc               # location in file
+        self.sexp_ftac = sexp_ftac   # sexpression of full-tactic
 
     def pp(self, tab=0):
         info = (self.mode, self.callid, self.gid, self.ngs,
@@ -253,12 +256,29 @@ class TacStParser(object):
                 toks = hdr.split(TOK_SEP)
             ngs = int(toks[0].strip())
             ftac = toks[1].strip()
-            gid = int(toks[2].strip())
-            # gid = int(toks[5].strip())
+            # gid = int(toks[2].strip())
+            ast_ftac = toks[2].strip()
+            if ast_ftac:
+                print("PARSING", ftac, "AST", ast_ftac)
+                # TODO(deh): need to handle this shit properly
+                ast_ftac = ast_ftac.replace('\'', '!@#')
+                try:
+                    sexp_ftac = sexpdata.loads(ast_ftac, true="true", false="false")
+                    print("FVS", FvsTactic().fvs_tac(sexp_ftac))
+                except:
+                    raise NameError("WTF " + self.filename)
+            else:
+                sexp_ftac = None
+            # TODO(deh): get rid of grefs?
+            # TODO(deh): get rid of lrefs?
+            gid = int(toks[5].strip())
 
             # Unpack (note that we handle error and success here)
-            hdr = TacStHdr(callid, mode, tac, kind, ftac, gid, ngs, loc)
-            ctx, concl_idx = self.parse_decl_body()
+            hdr = TacStHdr(callid, mode, tac, kind, ftac, gid, ngs, loc, sexp_ftac)
+            # ctx, concl_idx = self.parse_decl_body()
+            self.h_head.consume_line()
+            ctx = TacStCtx([])
+            concl_idx = -1
         else:
             raise NameError("Parsing error @line{}: {}".format(
                             h_head.line, h_head.peek_line()))
