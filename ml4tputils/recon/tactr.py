@@ -392,7 +392,7 @@ class TacTree(object):
         cbname_comp = {}
         scv = SizeCoqVal(self.decoder.decoded)
         for _, _, _, _, ctx, concl_idx, _ in self.flatview:
-            env = MyEnv()
+            env = MyEnv({}, [])
             for ident, typ_idx in ctx:
                 if ident in vals:
                     v = vals[ident]
