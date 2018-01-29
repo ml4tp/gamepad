@@ -247,7 +247,7 @@ class TacStParser(object):
             # Parse rest of header
             hdr = h_head.consume_line()
             toks = hdr.split(TOK_SEP)
-            while len(toks) < 6:
+            while len(toks) < 3:
                 line = h_head.consume_line()
                 hdr += line
                 toks = hdr.split(TOK_SEP)
