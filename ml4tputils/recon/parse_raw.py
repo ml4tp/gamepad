@@ -48,15 +48,15 @@ class FullTac(object):
         self.gids = gids          # Global identifiers mentioned by tactic
 
     def __str__(self):
-        pass
+        return "({} | lids={}, gids={})".format(self.pp_tac, self.lids, self.gids)
 
 
 class TacStHdr(object):
     """
     Contains the header for a tactic state declaration.
     """
-    def __init__(self, callid, mode, tac, kind, ftac, gid, ngs, loc,
-                 sexp_ftac=None, tac_lids=None, tac_gids=None):
+    def __init__(self, callid, mode, tac, kind, ftac, gid, ngs, loc):
+        assert isinstance(ftac, FullTac)
         self.callid = callid         # tactic call identifier (almost unique)
         toks = mode.split()
         self.mode = toks[0].strip()  # before/after/error
@@ -70,9 +70,6 @@ class TacStHdr(object):
         self.gid = gid               # goal identifier
         self.ngs = ngs               # number of goals
         self.loc = loc               # location in file
-        self.sexp_ftac = sexp_ftac   # sexpression of full-tactic
-        self.tac_lids = tac_lids     # local identifiers mentioned by tactic
-        self.tac_gids = tac_gids     # global identifiers mentioned by tactic
 
     def pp(self, tab=0):
         info = (self.mode, self.callid, self.gid, self.ngs,
@@ -256,7 +253,7 @@ class TacStParser(object):
             h_head.consume_line()  # en(ts)
 
             # Unpack
-            hdr = TacStHdr(callid, mode, tac, kind, "", GID_SOLVED, 0, loc)
+            hdr = TacStHdr(callid, mode, tac, kind, FullTac(""), GID_SOLVED, 0, loc)
             ctx = TacStCtx([])
             concl_idx = -1
         elif TOK_SEP in h_head.peek_line():
@@ -269,11 +266,10 @@ class TacStParser(object):
                 hdr += line
                 toks = hdr.split(TOK_SEP)
             ngs = int(toks[0].strip())
-            ftac = toks[1].strip()
-            # gid = int(toks[2].strip())
+            pp_tac = toks[1].strip()
             ast_ftac = toks[2].strip()
             if ast_ftac:
-                print("PARSING", ftac, "AST", ast_ftac)
+                # print("PARSING", pp_tac, "AST", ast_ftac)
                 # TODO(deh): need to handle this shit properly
                 ast_ftac = ast_ftac.replace('\'', '!@#')
                 try:
@@ -281,24 +277,21 @@ class TacStParser(object):
                     fvs = FvsTactic()
                     tac_lids = fvs.fvs_tac(sexp_ftac)
                     tac_gids = fvs.globs
-                    # print("FVS", FvsTactic().fvs_tac(sexp_ftac))
+                    ftac = FullTac(pp_tac, sexp_ftac, tac_lids, tac_gids)
                 except:
                     raise NameError("Sexpr parsing failed in {}".format(self.filename))
             else:
-                sexp_ftac = None
-                tac_lids = None
-                tac_gids = None
-            # TODO(deh): get rid of grefs?
-            # TODO(deh): get rid of lrefs?
+                ftac = FullTac(pp_tac)
+            # TODO(deh): get rid of grefs? toks[3]
+            # TODO(deh): get rid of lrefs? toks[3]
             gid = int(toks[5].strip())
 
             # Unpack (note that we handle error and success here)
-            hdr = TacStHdr(callid, mode, tac, kind, ftac, gid, ngs, loc,
-                           sexp_ftac, tac_lids, tac_gids)
-            ctx, concl_idx = self.parse_decl_body()
-            # self.h_head.consume_line()
-            # ctx = TacStCtx([])
-            # concl_idx = -1
+            hdr = TacStHdr(callid, mode, tac, kind, ftac, gid, ngs, loc)
+            # ctx, concl_idx = self.parse_decl_body()
+            self.h_head.consume_line()
+            ctx = TacStCtx([])
+            concl_idx = -1
         else:
             raise NameError("Parsing error @line{}: {}".format(
                             h_head.line, h_head.peek_line()))

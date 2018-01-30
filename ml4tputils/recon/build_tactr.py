@@ -27,7 +27,7 @@ Observations/Issues:
 
 class TacTreeBuilder(object):
     def __init__(self, name, rawtacs, tacst_info, gid_tactic, decoder,
-                 ftac_inscope=None, tac_lids=None, tac_gids=None, 
+                 ftac_inscope=None,
                  gs_nodeid=GenSym(), gs_edgeid=GenSym(),
                  gs_deadid=GenSym(), gs_termid=GenSym(),
                  gid2node={}, tid_gensyms={},
@@ -53,8 +53,6 @@ class TacTreeBuilder(object):
         # graph with goal ids as nodes, tactics as edges
         self.graph = nx.MultiDiGraph()
         self.ftac_inscope = ftac_inscope    # full-tactic in scope?
-        self.tac_lids = tac_lids
-        self.tac_gids = tac_gids
         self.gid_tactic = gid_tactic        # Dict[int, TacEdge]
 
         # Internal symbol generation for reconstruction
@@ -103,6 +101,9 @@ class TacTreeBuilder(object):
         if rawtac.tkind == TacKind.ATOMIC:
             ftac = rawtac.ftac
             # print("    ATOMIC", ftac)
+        elif rawtac.name == "ml4tp.MYDONE":
+            ftac = rawtac.ftac
+            ftac.pp_tac = "ssrdone"
         elif self.ftac_inscope:
             ftac = self.ftac_inscope
             # print("    SCOPE", ftac)
@@ -171,12 +172,10 @@ class TacTreeBuilder(object):
 
         return edge
 
-    def _launch_rec(self, rawtacs, ftac_inscope, tac_lids, tac_gids):
+    def _launch_rec(self, rawtacs, ftac_inscope):
         tr_builder = TacTreeBuilder(self.name, rawtacs, self.tacst_info,
                                     self.gid_tactic, self.decoder,
                                     ftac_inscope=ftac_inscope,
-                                    tac_lids=tac_lids,
-                                    tac_gids=tac_gids,
                                     gs_nodeid=self.gs_nodeid,
                                     gs_edgeid=self.gs_edgeid,
                                     gs_deadid=self.gs_deadid,
@@ -209,20 +208,22 @@ class TacTreeBuilder(object):
 
         tac = next(it_rawtacs)
 
+        if tac.name == "ml4tp.MYDONE":
+            edges = self._mk_edge(tac, tac.bf_decl, tac.af_decls[0])
+            self._add_edges(edges)
+            print("HERE", edges[0].ftac)
+            return
+
         # print("DOING", tac.name, tac.ftac, "INSCOPE", self.ftac_inscope)
         if tac.body:
             # 1. Recursively connect up body
             if self._is_tclintros_all(tac):
                 ftac = self.ftac_inscope
-                tac_lids = self.tac_lids
-                tac_gids = self.tac_gids
                 # print("CHOOSING SCOPE", ftac)
             else:
                 ftac = tac.ftac
-                tac_lids = tac.tac_lids
-                tac_gids = tac.tac_gids
                 # print("CHOOSING CURR", ftac)
-            body_edges, body_graph = self._launch_rec(tac.body, ftac, tac_lids, tac_gids)
+            body_edges, body_graph = self._launch_rec(tac.body, ftac)
             self._add_edges(body_edges)
 
             # 2. Connect body to top-level

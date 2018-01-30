@@ -82,7 +82,7 @@ class Visualize(object):
                 print("FAILED", tactr.name, ncc)
                 self.failed += [(file, tactr.name, ncc, len(tactr.notok))]
 
-            tactr.log_stats(self.h_tactr_file)
+            # tactr.log_stats(self.h_tactr_file)
 
             # for _, tacs in tactr.tactics().items():
             #     for tac in tacs:
@@ -140,19 +140,19 @@ if __name__ == "__main__":
     else:
         if args.file == "all":
             for file in files:
-                # vis.visualize_file(file)
-                vis.test_parse_tac(file)
+                vis.visualize_file(file)
+                # vis.test_parse_tac(file)
         elif args.file == "bg":
             for file in bgfiles:
-                # vis.visualize_file(file)
-                vis.test_parse_tac(file)
+                vis.visualize_file(file)
+                # vis.test_parse_tac(file)
         elif args.file == "pf":
             for file in pffiles:
-                # vis.visualize_file(file)
-                vis.test_parse_tac(file)
+                vis.visualize_file(file)
+                # vis.test_parse_tac(file)
         else:
             file = op.join(args.path, args.file)
-            # vis.visualize_file(file)
-            vis.test_parse_tac(file)
+            vis.visualize_file(file)
+            # vis.test_parse_tac(file)
         vis.finalize()
         vis.save_tactrs()

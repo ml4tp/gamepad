@@ -421,16 +421,16 @@ class FvsTactic(object):
                 tag == "ssrhint" or
                 tag == "ssrexactarg" or
                 tag == "ssrdoarg" or
+                tag == "ssrintrosarg" or
+                tag == "ssrcongrarg" or
+                tag == "ssrseqarg" or
                 tag == "ssrhpats_nobs" or
                 tag == "ssrwlogfwd" or
                 tag == "ssrsufffwd" or
                 tag == "ssrsetfwd" or
-                tag == "ssrcongrarg" or
                 tag == "ssrfixfwd" or
-                tag == "ssrintrosarg" or
                 tag == "ssrtclarg" or
                 tag == "ssrseqdir" or
-                tag == "ssrseqarg" or
                 tag == "ssrrpat"):
                 return set()
             else:

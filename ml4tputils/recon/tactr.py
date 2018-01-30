@@ -127,7 +127,7 @@ class TacEdge(object):
         # Information
         self.name = name       # Name of tactic
         self.tkind = tkind     # Kind of tactic
-        self.ftac = ftac       # Full tactic (contains arguments)
+        self.ftac = ftac       # Full tactic
         self.src = src         # Source tactic state
         self.tgt = tgt         # Target tactic state
         self.isbod = isbod     # Is the connection to a body?
@@ -292,7 +292,7 @@ class TacTree(object):
                         break
                     except nx.exception.NetworkXNoPath:
                         pass
-                acc += [(edge.ftac, len(edge.ftac), [str(node) for node in path])]
+                acc += [(str(edge.ftac), len(edge.ftac.pp_tac), [str(node) for node in path])]
         return acc
 
     def view_tactic_hist(self, f_compress=False):
