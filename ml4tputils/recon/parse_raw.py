@@ -40,11 +40,23 @@ class DeclMode(Enum):
             return "E"
 
 
+class FullTac(object):
+    def __init__(self, pp_tac, sexp_tac=None, lids=None, gids=None):
+        self.pp_tac = pp_tac      # Pretty-print tactic
+        self.sexp_tac = sexp_tac  # Tactic as sexpression
+        self.lids = lids          # Local identifiers mentioned by tactic
+        self.gids = gids          # Global identifiers mentioned by tactic
+
+    def __str__(self):
+        pass
+
+
 class TacStHdr(object):
     """
     Contains the header for a tactic state declaration.
     """
-    def __init__(self, callid, mode, tac, kind, ftac, gid, ngs, loc, sexp_ftac=None):
+    def __init__(self, callid, mode, tac, kind, ftac, gid, ngs, loc,
+                 sexp_ftac=None, tac_lids=None, tac_gids=None):
         self.callid = callid         # tactic call identifier (almost unique)
         toks = mode.split()
         self.mode = toks[0].strip()  # before/after/error
@@ -59,6 +71,8 @@ class TacStHdr(object):
         self.ngs = ngs               # number of goals
         self.loc = loc               # location in file
         self.sexp_ftac = sexp_ftac   # sexpression of full-tactic
+        self.tac_lids = tac_lids     # local identifiers mentioned by tactic
+        self.tac_gids = tac_gids     # global identifiers mentioned by tactic
 
     def pp(self, tab=0):
         info = (self.mode, self.callid, self.gid, self.ngs,
@@ -264,17 +278,23 @@ class TacStParser(object):
                 ast_ftac = ast_ftac.replace('\'', '!@#')
                 try:
                     sexp_ftac = sexpdata.loads(ast_ftac, true="true", false="false")
-                    print("FVS", FvsTactic().fvs_tac(sexp_ftac))
+                    fvs = FvsTactic()
+                    tac_lids = fvs.fvs_tac(sexp_ftac)
+                    tac_gids = fvs.globs
+                    # print("FVS", FvsTactic().fvs_tac(sexp_ftac))
                 except:
-                    raise NameError("WTF " + self.filename)
+                    raise NameError("Sexpr parsing failed in {}".format(self.filename))
             else:
                 sexp_ftac = None
+                tac_lids = None
+                tac_gids = None
             # TODO(deh): get rid of grefs?
             # TODO(deh): get rid of lrefs?
             gid = int(toks[5].strip())
 
             # Unpack (note that we handle error and success here)
-            hdr = TacStHdr(callid, mode, tac, kind, ftac, gid, ngs, loc, sexp_ftac)
+            hdr = TacStHdr(callid, mode, tac, kind, ftac, gid, ngs, loc,
+                           sexp_ftac, tac_lids, tac_gids)
             ctx, concl_idx = self.parse_decl_body()
             # self.h_head.consume_line()
             # ctx = TacStCtx([])

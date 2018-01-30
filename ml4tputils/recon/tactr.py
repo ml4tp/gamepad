@@ -110,7 +110,8 @@ class TacTrNode(object):
 
 
 class TacEdge(object):
-    def __init__(self, eid, tid, name, tkind, ftac, src, tgt, isbod=False):
+    def __init__(self, eid, tid, name, tkind, ftac, src, tgt,
+                 isbod=False, tac_lids=None, tac_gids=None):
         """
         An edge identifier uniquely identifies the edge. A single tactic
         invocation can emit multiple tactic edges, which corresponds to
@@ -130,6 +131,8 @@ class TacEdge(object):
         self.src = src         # Source tactic state
         self.tgt = tgt         # Target tactic state
         self.isbod = isbod     # Is the connection to a body?
+        self.tac_lids = tac_lids
+        self.tac_gids = tac_gids
 
     def conn_to_dead(self):
         return self.tgt.kind == TacStKind.DEAD
