@@ -219,6 +219,9 @@ class TacTreeBuilder(object):
             if self._is_tclintros_all(tac):
                 ftac = self.ftac_inscope
                 # print("CHOOSING SCOPE", ftac)
+            elif (tac.name.startswith("ml4tp.TacSolveIn") or
+                  tac.name.startswith("ml4tp.TacFirstIn")):
+                ftac = tac.ftac
             else:
                 ftac = tac.ftac
                 # print("CHOOSING CURR", ftac)
