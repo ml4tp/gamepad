@@ -37,7 +37,12 @@ Version that uses torchfold
 # -------------------------------------------------
 # Helper
 
-def seq_embed(name, folder, xs, init, ln, input_dropout):
+def get_other(l, index):
+    # return (item at index, all items in list other than at index). Handles negative indexes too
+    index = index % len(l)
+    return l[index], l[:index] + l[index+1:]
+
+def seq_embed(name, folder, xs, init, get_hiddens, ln, input_dropout, conclu_pos):
     # Preprocess for fold
     hidden = folder.add('identity', init)
 
@@ -47,23 +52,27 @@ def seq_embed(name, folder, xs, init, ln, input_dropout):
         for i,x in enumerate(xs):
             xs[i] = folder.add('input_dropout_f', x)
 
+    hiddens = []
     # Cell sequence
     for i,x in enumerate(xs):
         hidden = folder.add(name + '_cell_f', x, hidden)
+        hiddens.append(hidden)
 
     # Weird layer-norm
     if ln:
         hidden = folder.add(name[:3] + '_ln_f', hidden)
-    return hidden
+    if get_hiddens:
+        return hidden, hiddens
+    else:
+        return hidden
 
-def seq_sigmoid_attn_embed(folder, xs, sv_init, ln, input_dropout):
+def seq_sigmoid_attn_embed(folder, xs, sv_init, ln, input_dropout, conclu_pos):
     if input_dropout:
         for i, x in enumerate(xs):
             xs[i] = folder.add('input_dropout_f', x)
 
     # Attention
-    conclu = xs[0]
-    other = xs[1:]
+    conclu, other = get_other(xs, conclu_pos)
     q = folder.add('attn_q_f', conclu)
     sv = folder.add('attn_identity', sv_init)
     for x in other:
@@ -378,7 +387,7 @@ class TreeLSTM(nn.Module):
 class PosEvalModel(nn.Module):
     def __init__(self, sort_to_idx, const_to_idx, ind_to_idx,
                  conid_to_idx, evar_to_idx, fix_to_idx,
-                 D=128, state=128, outsize=3, eps=1e-6, ln = False, treelstm = False, lstm = False, dropout = 0.0, attention = False, heads = 1, weight_dropout = 0.0, variational = False):
+                 D=128, state=128, outsize=3, eps=1e-6, ln = False, treelstm = False, lstm = False, dropout = 0.0, attention = False, heads = 1, weight_dropout = 0.0, variational = False, conclu_pos = 0):
         super().__init__()
 
         # Dimensions
@@ -427,8 +436,11 @@ class PosEvalModel(nn.Module):
                      "case", "fix", "cofix", "proj1"]:
             self.__setattr__(attr, nn.Parameter(torch.randn(1, self.init_state)))
 
+        # Conclusion position
+        self.conclu_pos = conclu_pos
+
         # Sequence models
-        seq_args = {'ln': ln, 'input_dropout': dropout > 0.0}
+        seq_args = {'get_hiddens': False, 'ln': ln, 'input_dropout': dropout > 0.0, 'conclu_pos': self.conclu_pos}
         if seq_args['ln']:
             # Layer Norm
             self.ast_gamma = nn.Parameter(torch.ones(self.init_state))
@@ -484,6 +496,9 @@ class PosEvalModel(nn.Module):
         # Extra vars
         self.register_buffer('concl_id', torch.ones([1,1]))
         self.register_buffer('state_id', torch.zeros([1,1]))
+
+
+
     # Folder forward functions
     def attn_identity(self, x):
         return x
@@ -611,6 +626,8 @@ class PosEvalModel(nn.Module):
 
     def ctx_func(self, folder, *tacst_evs):
         xs = self.mask(folder, tacst_evs)
+        if self.conclu_pos != 0:
+            xs = xs[1:] + xs[0:1] # moved to end
         x = self.ctx_emb_func(folder, xs)
         # Final layer for logits
         x = folder.add('final_f', x)
