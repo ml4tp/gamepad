@@ -93,7 +93,17 @@ TACTICS = [info[0] for info in TACTIC_INFO]
 TACTIC_HIST = MyHist(TACTICS)
 
 
-TACTICS_INFO_EQUIV = [[("<coretactics::intro@0>", Type.COQ_ML)],
+
+"""
+[Note]
+
+ml4tp.SI      ssr internal intros inside tclintros
+ml4tp.SC      ssr internal clear inside tclintros
+ml4tp.SPS     ssr internal simpl pattern
+ml4tp.SPC2    ssr internal case pattern
+"""
+
+TACTICS_INFO_EQUIV = [[("<coretactics::intro@0>", Type.COQ_ML), [("intros", Type.ATOM)]],
                       [("<coretactics::assumption@0>", Type.COQ_ML)],
                       [("<coretactics::clear@0>", Type.COQ_ML), ("<ssreflect_plugin::ssrclear@0>", Type.SSR_ML)],
                       [("<coretactics::clearbody@0>", Type.COQ_ML)],
@@ -114,7 +124,6 @@ TACTICS_INFO_EQUIV = [[("<coretactics::intro@0>", Type.COQ_ML)],
                       [("apply", Type.ATOM), ("<ssreflect_plugin::ssrapply@0>", Type.SSR_ML), ("<ssreflect_plugin::ssrapply@1>", Type.SSR_ML)],
                       [("case", Type.ATOM), ("<ssreflect_plugin::ssrcase@0>", Type.SSR_ML), ("<ssreflect_plugin::ssrcase@1>", Type.SSR_ML)],
                       [("compute", Type.ATOM)],
-                      [("intros", Type.ATOM)],
                       [("red", Type.ATOM)],
                       [("split", Type.ATOM)],
                       [("simpl", Type.ATOM)],
@@ -128,14 +137,10 @@ TACTICS_INFO_EQUIV = [[("<coretactics::intro@0>", Type.COQ_ML)],
                       [("<ssreflect_plugin::ssrsuff@0>", Type.SSR_ML), ("<ssreflect_plugin::ssrsuffices@0>", Type.SSR_ML)],
                       [("<ssreflect_plugin::ssrtclby@0>", Type.SSR_ML)],
                       [("<ssreflect_plugin::ssrtcldo@0>", Type.SSR_ML)],
-                      [("<ssreflect_plugin::ssrtclintros@0>", Type.SSR_ML)],
+                      [("<ssreflect_plugin::ssrtclintros@0>", Type.SSR_ML), ("ml4tp.SI", Type.SSR_AUX), ("ml4tp.SC", Type.SSR_AUX), ("ml4tp.SPS", Type.SSR_AUX), ("ml4tp.SPC2", Type.SSR_AUX)],
                       [("<ssreflect_plugin::ssrtclseq@0>", Type.SSR_ML)],
                       [("<ssreflect_plugin::ssrwithoutloss@0>", Type.SSR_ML), ("<ssreflect_plugin::ssrwithoutlossss@0>", Type.SSR_ML), ("<ssreflect_plugin::ssrwlog@0>", Type.SSR_ML), ("<ssreflect_plugin::ssrwlogs@0>", Type.SSR_ML), ("<ssreflect_plugin::ssrwlogss@0>", Type.SSR_ML)],               
                       [("ml4tp.MYDONE", Type.SSR_AUX)],   # ssr done
-                      [("ml4tp.SI", Type.SSR_AUX)],       # ssr internal intros inside tclintros
-                      [("ml4tp.SC", Type.SSR_AUX)],       # ssr internal clear inside tclintros
-                      [("ml4tp.SPS", Type.SSR_AUX)],      # ssr internal simpl pattern
-                      [("ml4tp.SPC2", Type.SSR_AUX)]      # ssr internal case pattern
                       ]
 
 
