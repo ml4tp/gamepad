@@ -140,8 +140,9 @@ class FvsTactic(object):
             # Printf.sprintf "C(%s, %d, %d, %s, %s)" (Names.MutInd.to_string mutind) i j (brackets (show_ls show_cases_pattern ", " cps)) (show_name n)
             self.globs.add(self._conv(body[0]))
             # TODO(deh): error in coq printing, extra parens
-            wtf = body[3]
-            fvs3 = self.fvs_ls(self.fvs_cases_pattern, wtf[0])
+            # wtf = body[3]
+            # fvs3 = self.fvs_ls(self.fvs_cases_pattern, wtf[0])
+            fvs3 = self.fvs_ls(self.fvs_cases_pattern, body[3])
             fvs4 = set([self._conv(body[4])])
             return fvs3.union(fvs4)
         else:
@@ -187,6 +188,11 @@ class FvsTactic(object):
             fvs1 = self.fvs_glob_constr(body[1])
             fvs2 = self.fvs_glob_constr(body[2])
             return fvs1.union(fvs2).difference(set([self._conv(body[0])]))
+        elif tag == "P":
+            # rintf.sprintf "(P %s %s %s)" (show_name n) (show_glob_constr gc1) (show_glob_constr gc2)
+            fvs1 = self.fvs_glob_constr(body[1])
+            fvs2 = self.fvs_glob_constr(body[2])
+            return fvs1.union(fvs2).difference(set([self._conv(body[0])]))
         elif tag == "LI":
             # Printf.sprintf "LI(%s, %s, %s)" (show_name n) (show_glob_constr gc1) (show_glob_constr gc2)
             fvs1 = self.fvs_glob_constr(body[1])
@@ -222,10 +228,10 @@ class FvsTactic(object):
             # Printf.sprintf "T(%s, %s)" (show_glob_constr gc) (show_cast_type show_glob_constr gc_ty)
             
             # print("HERE", gc)
-            # fvs0 = self.fvs_glob_constr(body[0])
-            # fvs1 = self.fvs_cast_type(body[1])
-            # return fvs0.union(fvs1)
-            return set()
+            fvs0 = self.fvs_glob_constr(body[0])
+            fvs1 = self.fvs_cast_type(body[1])
+            return fvs0.union(fvs1)
+            # return set()
         else:
             raise NameError("Tag {} not supported".format(tag))
 
@@ -272,7 +278,6 @@ class FvsTactic(object):
         return fvs0.union(fvs1).union(fvs2)
 
     def fvs_case_clauses(self, ccs):
-        # brackets (show_ls show_case_clause ", " ccs)
         return self.fvs_ls(self.fvs_case_clause, ccs)
 
 
@@ -291,6 +296,7 @@ class FvsTactic(object):
             return self.fvs_ls(fvs, body[0])
 
     def fvs_occurrences_expr(self, oe):
+        # TODO(deh): check
         # return self.fvs_occurrences_gen(lambda x: set(), oe)
         return set()
 
@@ -366,33 +372,38 @@ class FvsTactic(object):
         return self.fvs_ls(lambda x: self.fvs_match_rule(fvs_pat, fvs_tac, x), mrules)
 
     def fvs_match_pattern(self, fvs_pat, mp):
-        # TODO(deh): error in coq printing
-        self._log("@fvs_match_pattern".format(mp))
-        return set()
+        tag, body = self._unpack(mp)
+        if tag == "T":
+            return fvs_pat(body[0])
+        elif tag == "S":
+            fvs1 = self.fvs_maybe(self.fvs_id, body[1])
+            fvs2 = fvs_pat(body[2])
+            return fvs1.union(fvs2)
+        else:
+            raise NameError("Tag {} not supported".format(tag))
 
     def fvs_match_context_hyps(self, fvs_pat, hyps):
-        # tag, body = self._unpack(hyps)
-        # if tag == "H":
-        #     fvs1 = self.fvs_match_pattern(fvs_pat, body[1])
-        #     return fvs1.add(self._conv(body[0]))
-        # elif tag == "D":
-        #     fvs1 = self.fvs_match_pattern(fvs_pat, body[1])
-        #     fvs2 = self.fvs_match_pattern(fvs_pat, body[2])
-        #     return fvs1.union(fvs2).add(self._conv(body[0]))
-        # else:
-        #     raise NameError("Tag {} not supported".format(tag))
-        return set()
+        tag, body = self._unpack(hyps)
+        if tag == "H":
+            fvs0 = set([self._conv(body[0])])
+            fvs1 = self.fvs_match_pattern(fvs_pat, body[1])
+            return fvs0.union(fvs1)
+        elif tag == "D":
+            fvs0 = set([self._conv(body[0])])
+            fvs1 = self.fvs_match_pattern(fvs_pat, body[1])
+            fvs2 = self.fvs_match_pattern(fvs_pat, body[2])
+            return fvs0.union(fvs1).union(fvs2)
+        else:
+            raise NameError("Tag {} not supported".format(tag))
 
     def fvs_message_token(self, mtok):
-        return set()
-        # TODO(deh): error in coq printing
-        # tag, body = self._unpack(mtok)
-        # if tag == "S":
-        #     return set()
-        # elif tag == "I":
-        #     return set()
-        # elif tag == "G":
-        #     return self.fvs_gname(body[0])
+        tag, body = self._unpack(mtok)
+        if tag == "S":
+            return set()
+        elif tag == "I":
+            return set()
+        elif tag == "D":
+            return self.fvs_gname(body[0])
 
     def fvs_generic_arg(self, garg):
         tag, body = self._unpack(garg)
@@ -424,12 +435,12 @@ class FvsTactic(object):
                 tag == "ssrintrosarg" or
                 tag == "ssrcongrarg" or
                 tag == "ssrseqarg" or
+                tag == "ssrtclarg" or
                 tag == "ssrhpats_nobs" or
                 tag == "ssrwlogfwd" or
                 tag == "ssrsufffwd" or
                 tag == "ssrsetfwd" or
                 tag == "ssrfixfwd" or
-                tag == "ssrtclarg" or
                 tag == "ssrseqdir" or
                 tag == "ssrrpat"):
                 return set()
@@ -453,9 +464,9 @@ class FvsTactic(object):
             fvs0 = self.fvs_g_reference(body[0])
             fvs1 = self.fvs_tactic_args(body[1])
             return fvs0.union(fvs1)
-        elif tag == "FreshId":
+        elif tag == "F":
             # Printf.sprintf "(F %s)" (show_sexpr_ls (fun x -> show_or_var (fun x -> x) x) sovs)
-            return set()
+            return self.fvs_ls(lambda x: self.fvs_or_var(lambda y: y, x), body[0])
         elif tag == "E":
             # Printf.sprintf "(E %s)" (show_tac tac)
             return self.fvs_tac(body[0])
@@ -816,7 +827,6 @@ class FvsTactic(object):
             raise NameError("Tag {} not supported".format(tag))
 
     def fvs_ssrview(self, view):
-        # Pml4tp.show_sexpr_ls (fun (_, (c, _)) -> Pml4tp.show_glob_constr c) view
         return self.fvs_ls(self.fvs_glob_constr, view)
 
     def fvs_ssripat(self, ipat):
@@ -890,7 +900,6 @@ class FvsTactic(object):
         return self.fvs_dgens(self.fvs_ssrgen, dgens)
 
     def fvs_ssreqid(self, eqid):
-        # Pml4tp.show_maybe show_ipat eqid
         return self.fvs_maybe(self.fvs_ssripat, eqid)
 
     def fvs_ssrarg(self, arg):
@@ -989,3 +998,64 @@ class FvsTactic(object):
         fvs0 = self.fvs_ssrhpats(hfwb[0])
         fvs1 = self.fvs_ssrfwd(hfwb[1])
         return fvs0.union(fvs1)
+
+    def fvs_ssrhint(self, hint):
+        return self.fvs_ssrhintarg(hint)
+
+    def fvs_ssrexactarg(self, ea):
+        return self.fvs_ssrapplyarg(ea)
+
+    def fvs_ssrdoarg(self, da):
+        fvs1 = self.fvs_ssrmmod(da[1])
+        fvs2 = self.fvs_ssrhintarg(da[2])
+        fvs3 = self.fvs_ssrclauses(da[3])
+        return fvs1.union(fvs2).union(fvs3)
+
+    def fvs_ssrintrosarg(self, ia):
+        fvs0 = self.fvs_tac(ia[0])
+        fvs1 = self.fvs_ssripats(ia[1])
+        return fvs0.union(fvs1)
+
+    def fvs_ssrcongrarg(self, ca):
+        fvs0 = self.fvs_term(ca[1])
+        fvs1 = self.fvs_dgens(self.fvs_ssrgen, ca[2])
+        return fvs0.union(fvs1)
+
+    def fvs_ssrseqarg(self, sa):
+        fvs1 = self.fvs_ssrhintarg(sa[1])
+        fvs2 = self.fvs_maybe(self.fvs_tac, sa[2])
+        return fvs1.union(fvs2)
+
+    def fvs_ssrtclarg(self, ta):
+        return self.fvs_tac(ta)
+
+    def fvs_ssrhpats_nobs(self, hpats):
+        return self.fvs_ssrhpats(hpats)
+
+    def fvs_ssrwlogfwd(self, fwd):
+        fvs0 = self.fvs_ls(self.fvs_ssrwgen, fwd[0])
+        fvs1 = self.fvs_ssrfwd(fwd[1])
+        return fvs0.union(fvs1)
+
+    def fvs_ssrsufffwd(self, fwd):
+        fvs0 = self.fvs_ssrhpats(fwd[0])
+        fvs1 = self.fvs_ssrfwd(fwd[1])
+        fvs2 = self.fvs_ssrhint(fwd[2])
+        return fvs0.union(fvs1).union(fvs2)
+
+    def fvs_ssrsetfwd(self, fwd):
+        fvs1 = self.fvs_cpattern(fwd[1])
+        fvs2 = self.fvs_maybe(self.fvs_term, fwd[2])
+        fvs3 = self.fvs_ssrdocc(fwd[3])
+        return fvs1.union(fvs2).union(fvs3)
+        # return set()
+
+    def fvs_ssrseqdir(self, sd):
+        return set()
+
+    def fvs_ssrrpat(self, rpat):
+        return self.fvs_ssripat(rpat)
+
+    def fvs_ssrfixfwd(self, fwd):
+        # TODO(deh): sigh*...
+        return set()

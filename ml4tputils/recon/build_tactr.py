@@ -211,7 +211,6 @@ class TacTreeBuilder(object):
         if tac.name == "ml4tp.MYDONE":
             edges = self._mk_edge(tac, tac.bf_decl, tac.af_decls[0])
             self._add_edges(edges)
-            print("HERE", edges[0].ftac)
             return
 
         # print("DOING", tac.name, tac.ftac, "INSCOPE", self.ftac_inscope)
