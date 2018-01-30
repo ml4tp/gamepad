@@ -241,7 +241,7 @@ class FvsTactic(object):
     def fvs_gtrm(self, gtrm):
         return self.fvs_glob_constr(gtrm)
 
-    def fvs_id(self, id):
+    def fvs_id(self, x):
         return set([self._conv(x)])
 
     def fvs_predicate_pattern(self, parg):
@@ -977,22 +977,55 @@ class FvsTactic(object):
     def fvs_ssrfwdid(self, fwdid):
         return set([self._conv(fwdid)])
 
+    def fvs_name(self, name):
+        return set([self._conv(name)])
+
+    def fvs_binder(self, b):
+        tag, body = self._unpack(b)
+        if tag == "V":
+            return self.fvs_name(body[0])
+        elif tag == "DC":
+            fvs0 = self.fvs_ls(self.fvs_name, body[0])
+            fvs1 = self.fvs_glob_constr(body[1])
+            return fvs0.union(fvs1)
+        elif tag == "Df":
+            fvs0 = self.fvs_name(body[0])
+            fvs1 = self.fvs_maybe(self.fvs_glob_constr, body[1])
+            fvs2 = self.fvs_glob_constr(body[2])
+            return fvs0.union(fvs1).union(fvs2)
+        elif tag == "S":
+            return self.fvs_name(body[0])
+        elif tag == "C":
+            return self.fvs_glob_constr(body[0])
+        else:
+            raise NameError("Tag {} not supported".format(tag))
+
+    def fvs_ssrgen_fwd(self, fwd):
+        # print("HERE", fwd)
+        fvs1 = self.fvs_ls(self.fvs_binder, fwd[1])
+        fvs2 = self.fvs_glob_constr(fwd[2])
+        return fvs1.union(fvs2)
+
     def fvs_ssrfwd(self, fwd):
         tag, body = self._unpack(fwd)
-        if tag == "HT":
-            return set()
-        elif tag == "HV":
-            return set()
-        elif tag == "P":
-            return set()
-        else:
-            raise NameError("Tag {} not supported".format(tag)) 
+        return self.fvs_ssrgen_fwd(fwd[1])
+        # ssrfwdfmt * ssrterm *
+        # if tag == "HT":
+        #     return set()
+        # elif tag == "HV":
+        #     return set()
+        # elif tag == "P":
+        #     return set()
+        # else:
+        #     raise NameError("Tag {} not supported".format(tag)) 
 
     def fvs_ssrposefwd(self, posefwd):
         return self.fvs_ssrfwd(posefwd)
 
-    def fvs_ssrhavefwd(self, havefwd):
-        return self.fvs_ssrfwd(havefwd)
+    def fvs_ssrhavefwd(self, fwd):
+        fvs0 = self.fvs_ssrfwd(fwd[0])
+        fvs1 = self.fvs_ssrhint(fwd[1])
+        return fvs0.union(fvs1)
 
     def fvs_ssrhavefwdwbinders(self, hfwb):
         fvs0 = self.fvs_ssrhpats(hfwb[0])

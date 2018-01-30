@@ -644,7 +644,7 @@
 < (* ============= *)
 < (* ML4TP *)
 < let show_ssrhavefwd (fwd, hint) =
-<   Printf.sprintf "%s" (show_fwd fwd)
+<   Printf.sprintf "(%s %s)" (show_fwd fwd) (show_ssrhint hint)
 < let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssrhavefwd show_ssrhavefwd
 < (* ============= *)
 < 

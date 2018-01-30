@@ -284,14 +284,14 @@ class TacStParser(object):
                 ftac = FullTac(pp_tac)
             # TODO(deh): get rid of grefs? toks[3]
             # TODO(deh): get rid of lrefs? toks[3]
-            gid = int(toks[5].strip())
+            gid = int(toks[3].strip())
 
             # Unpack (note that we handle error and success here)
             hdr = TacStHdr(callid, mode, tac, kind, ftac, gid, ngs, loc)
-            # ctx, concl_idx = self.parse_decl_body()
-            self.h_head.consume_line()
-            ctx = TacStCtx([])
-            concl_idx = -1
+            ctx, concl_idx = self.parse_decl_body()
+            # self.h_head.consume_line()
+            # ctx = TacStCtx([])
+            # concl_idx = -1
         else:
             raise NameError("Parsing error @line{}: {}".format(
                             h_head.line, h_head.peek_line()))
