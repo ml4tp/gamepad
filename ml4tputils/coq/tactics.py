@@ -69,7 +69,12 @@ TACTIC_INFO = [("<coretactics::intro@0>", Type.BASE),
                ("<ssreflect_plugin::ssrwithoutlossss@0>", Type.BASE),
                ("<ssreflect_plugin::ssrwlog@0>", Type.BASE),
                ("<ssreflect_plugin::ssrwlogs@0>", Type.BASE),
-               ("<ssreflect_plugin::ssrwlogss@0>", Type.BASE)
+               ("<ssreflect_plugin::ssrwlogss@0>", Type.BASE),
+               ("ml4tp.MYDONE", Type.BASE),   # ssr done
+               ("ml4tp.SI", Type.BASE),       # ssr internal intros inside tclintros
+               ("ml4tp.SC", Type.BASE),       # ssr internal clear inside tclintros
+               ("ml4tp.SPS", Type.BASE),      # ssr internal simpl pattern
+               ("ml4tp.SPC2", Type.BASE)      # ssr internal case pattern
                ]
 
 
