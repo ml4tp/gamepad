@@ -160,6 +160,12 @@ class TacTreeBuilder(object):
         edge = TacEdge(self._fresh_edgeid(),
                        rawtac.uid, rawtac.name, rawtac.tkind,
                        parse_full_tac(ftac), self._mk_live_node(bf_decl), af_node, True)
+
+        if edge.src in self.gid_tactic:
+            self.gid_tactic[edge.src] += [edge]
+        else:
+            self.gid_tactic[edge.src] = [edge]
+
         return edge
 
     def _launch_rec(self, rawtacs, ftac_inscope):
@@ -248,6 +254,11 @@ class TacTreeBuilder(object):
                                            tac.uid, tac.name, tac.tkind,
                                            parse_full_tac(tac.ftac),
                                            bf_node, af_node)
+                            # Note(deh): handling self-edges by keeping track of multiple tactics
+                            if edge.src in self.gid_tactic:
+                                self.gid_tactic[edge.src] += [edge]
+                            else:
+                                self.gid_tactic[edge.src] = [edge]
                             self._add_edges([edge])
 
         if self._is_tclintros_intern(tac):
@@ -290,6 +301,7 @@ class TacTreeBuilder(object):
         tactr = TacTree(self.name, self.edges, self.graph,
                         self.tacst_info, self.gid_tactic, self.decoder)
 
+        # tactr.bfs_traverse()
         if f_verbose:
             tactr.dump()
         return tactr
