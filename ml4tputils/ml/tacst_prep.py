@@ -33,7 +33,7 @@ class PosEvalPt(object):
             self.subtr_bin = 2
         self.tac_bin = 0
         for idx, (tac_p, _) in enumerate(TACTIC_INFO):
-            if tac[-1].ftac.startswith(tac_p):
+            if tac[-1].name.startswith(tac_p):
                 self.tac_bin = idx
 
 class SizeSubTr(object):

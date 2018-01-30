@@ -277,6 +277,7 @@ class TacStParser(object):
                     fvs = FvsTactic()
                     tac_lids = fvs.fvs_tac(sexp_ftac)
                     tac_gids = fvs.globs
+                    # print("LIDS", tac_lids, "GIDS", tac_gids)
                     ftac = FullTac(pp_tac, sexp_ftac, tac_lids, tac_gids)
                 except:
                     raise NameError("Sexpr parsing failed in {}".format(self.filename))
