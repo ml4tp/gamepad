@@ -31,7 +31,7 @@ class PosEvalPt(object):
             self.subtr_bin = 1
         else:
             self.subtr_bin = 2
-        self.tac_bin = 0
+        self.tac_bin = None
         # for idx, (tac_p, _) in enumerate(TACTIC_INFO):
         #     if tac[-1].name.startswith(tac_p):
         #         self.tac_bin = idx
@@ -39,6 +39,9 @@ class PosEvalPt(object):
             for tac_p in eq_tacs:
                 if tac[-1].name.startswith(tac_p):
                     self.tac_bin = idx
+
+        if self.tac_bin == None:
+            raise NameError("WTF", tac[-1].name)
 
 class SizeSubTr(object):
     def __init__(self, tactr):
