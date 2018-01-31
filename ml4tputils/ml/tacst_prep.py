@@ -78,7 +78,7 @@ class PosEvalDataset(object):
         print("TACHIST")
         for idx, eq_tacs in enumerate(TACTICS_EQUIV):
             print("TAC", eq_tacs[0], self.tac_hist[idx])
-        assert False
+        # assert False
 
     def mk_tactr(self, tactr_id, tactr):
         print("Working on ({}/{}) {}".format(tactr_id, len(self.tactrs), tactr.name))
