@@ -537,7 +537,9 @@ class FvsTactic(object):
             return fvs1.union(fvs2).union(fvs3).difference(self._conv(body[0]))
         elif tag == "InductionDestruct":
             # Printf.sprintf "InductionDestruct(%b, %b, %s)" rf ef (show_induction_clause_list ics)
-            return self.fvs_induction_clause_list(body[2])
+            # return self.fvs_induction_clause_list(body[2])
+            # TODO(deh): complete me
+            return set()
         elif tag == "Reduce":
             # Printf.sprintf "Reduce(%s, %s)" "TODO" (show_clause_expr ce)
             # return ("Reduce", "TODO", self.fvs_clause_expr(body[1]))
@@ -832,7 +834,8 @@ class FvsTactic(object):
     def fvs_ssripat(self, ipat):
         tag, body = self._unpack(ipat)
         if tag == "I":
-            return set()
+            return self.fvs_id(body[0])
+            # return set()
         elif tag == "S":
             fvs0 = self.fvs_ssrclear(body[0])
             fvs1 = self.fvs_ssrsimpl(body[1])

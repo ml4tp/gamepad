@@ -39,9 +39,10 @@ class PosEvalPt(object):
             for tac_p in eq_tacs:
                 if tac[-1].name.startswith(tac_p):
                     self.tac_bin = idx
+                    break
 
         if self.tac_bin == None:
-            raise NameError("WTF", tac[-1].name)
+            raise NameError("Not assigned to bin", tac[-1].name)
 
 class SizeSubTr(object):
     def __init__(self, tactr):

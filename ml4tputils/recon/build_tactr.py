@@ -280,6 +280,12 @@ class TacTreeBuilder(object):
                 # print("ADDING INTRO EDGE", tac.name, tac.tkind, tac.bf_decl.hdr.gid, af_decl.hdr.gid, af_decl.hdr.mode)
                 edges += self._mk_edge(tac, tac.bf_decl, af_decl)
             self._add_edges(edges)
+        elif tac.name.startswith("ml4tp.DOEND"):
+            edges = []
+            for af_decl in tac.af_decls:
+                # print("ADDING INTRO EDGE", tac.name, tac.tkind, tac.bf_decl.hdr.gid, af_decl.hdr.gid, af_decl.hdr.mode)
+                edges += self._mk_edge(tac, tac.bf_decl, af_decl)
+            self._add_edges(edges)
         elif tac.name.startswith("<ssreflect_plugin::ssrapply"):
             # 5. Apply uses the intros tactical (look at ssreflect source code)
             #.   Connect if intros tactical was not used.
@@ -293,6 +299,7 @@ class TacTreeBuilder(object):
                   tac.tkind == TacKind.NAME or
                   tac.name.startswith("<ssreflect_plugin::ssrtclseq@0>") or
                   tac.name.startswith("<ssreflect_plugin::ssrtclintros@0>") or
+                  tac.name.startswith("<ssreflect_plugin::ssrtcldo@0>") or
                   tac.name.startswith("<ssreflect_plugin::ssrtclby@0>")):
             # 6. Connect me up
             edges = []

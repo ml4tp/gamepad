@@ -100,10 +100,10 @@ TACTIC_HIST = MyHist(TACTICS)
 ml4tp.SI      ssr internal intros inside tclintros
 ml4tp.SC      ssr internal clear inside tclintros
 ml4tp.SPS     ssr internal simpl pattern
-ml4tp.SPC2    ssr internal case pattern
+ml4tp.SPC2    ssr internal intros on case pattern
 """
 
-TACTICS_INFO_EQUIV = [[("<coretactics::intro@0>", Type.COQ_ML), ("intros", Type.ATOM), ("<ssreflect_plugin::ssrtclintros@0>", Type.SSR_ML), ("ml4tp.SI", Type.SSR_AUX)],
+TACTICS_INFO_EQUIV = [[("<coretactics::intro@0>", Type.COQ_ML), ("intros", Type.ATOM), ("<ssreflect_plugin::ssrtclintros@0>", Type.SSR_ML), ("ml4tp.SI", Type.SSR_AUX), ("ml4tp.SPC2", Type.SSR_AUX)],
                       [("ml4tp.MYDONE", Type.SSR_AUX), ("<coretactics::assumption@0>", Type.COQ_ML), ("<g_auto::trivial@0>", Type.COQ_ML), ("<coretactics::reflexivity@0>", Type.COQ_ML), ("<extratactics::discriminate@0>", Type.COQ_ML), ("<extratactics::contradiction@0>", Type.COQ_ML)],
                       [("<coretactics::clear@0>", Type.COQ_ML), ("<ssreflect_plugin::ssrclear@0>", Type.SSR_ML), ("<coretactics::clearbody@0>", Type.COQ_ML), ("ml4tp.SC", Type.SSR_AUX)],
                       [("<coretactics::exact@0>", Type.COQ_ML), ("<ssreflect_plugin::ssrexact@0>", Type.SSR_ML), ("<ssreflect_plugin::ssrexact@1>", Type.SSR_ML)],
@@ -127,7 +127,6 @@ TACTICS_INFO_EQUIV = [[("<coretactics::intro@0>", Type.COQ_ML), ("intros", Type.
                       [("<ssreflect_plugin::ssrsuff@0>", Type.SSR_ML), ("<ssreflect_plugin::ssrsuffices@0>", Type.SSR_ML)],
                       [("<ssreflect_plugin::ssrtcldo@0>", Type.SSR_ML)], # TODO(deh): GET RID OF ME
                       [("ml4tp.SPC", Type.SSR_AUX)], # TODO(deh): GET RID OF ME
-                      [("ml4tp.SPC2", Type.SSR_AUX)], # TODO(deh): GET RID OF ME
                       # [("<ssreflect_plugin::ssrtclseq@0>", Type.SSR_ML)],
                       # [("<ssreflect_plugin::ssrtclby@0>", Type.SSR_ML)],
                       [("<ssreflect_plugin::ssrwithoutloss@0>", Type.SSR_ML), ("<ssreflect_plugin::ssrwithoutlossss@0>", Type.SSR_ML), ("<ssreflect_plugin::ssrwlog@0>", Type.SSR_ML), ("<ssreflect_plugin::ssrwlogs@0>", Type.SSR_ML), ("<ssreflect_plugin::ssrwlogss@0>", Type.SSR_ML)],
