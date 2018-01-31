@@ -3,7 +3,7 @@ import os.path as op
 import pickle
 
 from recon.embed_tokens import EmbedTokens
-from coq.tactics import TACTIC_INFO
+from coq.tactics import TACTIC_INFO, TACTICS_EQUIV
 from coq.util import SizeCoqExp
 import numpy as np
 np.random.seed(7)
@@ -31,10 +31,18 @@ class PosEvalPt(object):
             self.subtr_bin = 1
         else:
             self.subtr_bin = 2
-        self.tac_bin = 0
-        for idx, (tac_p, _) in enumerate(TACTIC_INFO):
-            if tac[-1].ftac.startswith(tac_p):
-                self.tac_bin = idx
+        self.tac_bin = None
+        # for idx, (tac_p, _) in enumerate(TACTIC_INFO):
+        #     if tac[-1].name.startswith(tac_p):
+        #         self.tac_bin = idx
+        for idx, eq_tacs in enumerate(TACTICS_EQUIV):
+            for tac_p in eq_tacs:
+                if tac[-1].name.startswith(tac_p):
+                    self.tac_bin = idx
+                    break
+
+        if self.tac_bin == None:
+            raise NameError("Not assigned to bin", tac[-1].name)
 
 class SizeSubTr(object):
     def __init__(self, tactr):
@@ -59,11 +67,18 @@ class PosEvalDataset(object):
     def __init__(self, tactrs):
         self.tactrs = tactrs
         self.data = {}
+        self.tactics = set()
+        self.tac_hist = [0 for _ in TACTICS_EQUIV]
 
     def mk_tactrs(self):
         self.data = {}
         for tactr_id, tactr in enumerate(self.tactrs):
             self.mk_tactr(tactr_id, tactr)
+        print("TACTICS", self.tactics)
+        print("TACHIST")
+        for idx, eq_tacs in enumerate(TACTICS_EQUIV):
+            print("TAC", eq_tacs[0], self.tac_hist[idx])
+        # assert False
 
     def mk_tactr(self, tactr_id, tactr):
         print("Working on ({}/{}) {}".format(tactr_id, len(self.tactrs), tactr.name))
@@ -72,13 +87,21 @@ class PosEvalDataset(object):
         size_subtr = SizeSubTr(tactr)
         for node in tactr.graph.nodes():
             subtr_size[node.gid] = size_subtr.size(node)
+            # for k, v in tactr.gid_tactic.items():
+            #     print("HERE", k, v)
+            if node in tactr.gid_tactic:
+                for edge in tactr.gid_tactic[node]:
+                    self.tactics.add(edge.name)
+        # print("TACTICS", self.tactics)
         sce = SizeCoqExp(tactr.decoder.decoded)
         tacst_size = 0
         for _, gid, _, _, ctx, concl_idx, tac in tactr.bfs_traverse():
             tacst_size += sce.decode_size(concl_idx)
             for ident, idx in ctx:
                 tacst_size += sce.decode_size(idx)
-            self.data[tactr_id].append(PosEvalPt(gid, ctx, concl_idx, tac, tacst_size, subtr_size[gid]))
+            pt = PosEvalPt(gid, ctx, concl_idx, tac, tacst_size, subtr_size[gid])
+            self.data[tactr_id].append(pt)
+            self.tac_hist[pt.tac_bin] += 1
 
     def split_by_lemma(self):
         if self.data == {}:

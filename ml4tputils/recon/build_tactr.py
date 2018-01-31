@@ -27,8 +27,9 @@ Observations/Issues:
 
 class TacTreeBuilder(object):
     def __init__(self, name, rawtacs, tacst_info, gid_tactic, decoder,
-                 ftac_inscope=None, gs_nodeid=GenSym(),
-                 gs_edgeid=GenSym(), gs_deadid=GenSym(), gs_termid=GenSym(),
+                 ftac_inscope=None,
+                 gs_nodeid=GenSym(), gs_edgeid=GenSym(),
+                 gs_deadid=GenSym(), gs_termid=GenSym(),
                  gid2node={}, tid_gensyms={},
                  f_log=False):
         for rawtac in rawtacs:
@@ -100,6 +101,9 @@ class TacTreeBuilder(object):
         if rawtac.tkind == TacKind.ATOMIC:
             ftac = rawtac.ftac
             # print("    ATOMIC", ftac)
+        elif rawtac.name == "ml4tp.MYDONE":
+            ftac = rawtac.ftac
+            ftac.pp_tac = "ssrdone"
         elif self.ftac_inscope:
             ftac = self.ftac_inscope
             # print("    SCOPE", ftac)
@@ -204,12 +208,20 @@ class TacTreeBuilder(object):
 
         tac = next(it_rawtacs)
 
+        if tac.name == "ml4tp.MYDONE":
+            edges = self._mk_edge(tac, tac.bf_decl, tac.af_decls[0])
+            self._add_edges(edges)
+            return
+
         # print("DOING", tac.name, tac.ftac, "INSCOPE", self.ftac_inscope)
         if tac.body:
             # 1. Recursively connect up body
             if self._is_tclintros_all(tac):
                 ftac = self.ftac_inscope
                 # print("CHOOSING SCOPE", ftac)
+            elif (tac.name.startswith("ml4tp.TacSolveIn") or
+                  tac.name.startswith("ml4tp.TacFirstIn")):
+                ftac = tac.ftac
             else:
                 ftac = tac.ftac
                 # print("CHOOSING CURR", ftac)
@@ -268,6 +280,12 @@ class TacTreeBuilder(object):
                 # print("ADDING INTRO EDGE", tac.name, tac.tkind, tac.bf_decl.hdr.gid, af_decl.hdr.gid, af_decl.hdr.mode)
                 edges += self._mk_edge(tac, tac.bf_decl, af_decl)
             self._add_edges(edges)
+        elif tac.name.startswith("ml4tp.DOEND"):
+            edges = []
+            for af_decl in tac.af_decls:
+                # print("ADDING INTRO EDGE", tac.name, tac.tkind, tac.bf_decl.hdr.gid, af_decl.hdr.gid, af_decl.hdr.mode)
+                edges += self._mk_edge(tac, tac.bf_decl, af_decl)
+            self._add_edges(edges)
         elif tac.name.startswith("<ssreflect_plugin::ssrapply"):
             # 5. Apply uses the intros tactical (look at ssreflect source code)
             #.   Connect if intros tactical was not used.
@@ -281,6 +299,7 @@ class TacTreeBuilder(object):
                   tac.tkind == TacKind.NAME or
                   tac.name.startswith("<ssreflect_plugin::ssrtclseq@0>") or
                   tac.name.startswith("<ssreflect_plugin::ssrtclintros@0>") or
+                  tac.name.startswith("<ssreflect_plugin::ssrtcldo@0>") or
                   tac.name.startswith("<ssreflect_plugin::ssrtclby@0>")):
             # 6. Connect me up
             edges = []

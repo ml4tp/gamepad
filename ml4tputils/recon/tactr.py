@@ -110,7 +110,8 @@ class TacTrNode(object):
 
 
 class TacEdge(object):
-    def __init__(self, eid, tid, name, tkind, ftac, src, tgt, isbod=False):
+    def __init__(self, eid, tid, name, tkind, ftac, src, tgt,
+                 isbod=False, tac_lids=None, tac_gids=None):
         """
         An edge identifier uniquely identifies the edge. A single tactic
         invocation can emit multiple tactic edges, which corresponds to
@@ -126,10 +127,12 @@ class TacEdge(object):
         # Information
         self.name = name       # Name of tactic
         self.tkind = tkind     # Kind of tactic
-        self.ftac = ftac       # Full tactic (contains arguments)
+        self.ftac = ftac       # Full tactic
         self.src = src         # Source tactic state
         self.tgt = tgt         # Target tactic state
         self.isbod = isbod     # Is the connection to a body?
+        self.tac_lids = tac_lids
+        self.tac_gids = tac_gids
 
     def conn_to_dead(self):
         return self.tgt.kind == TacStKind.DEAD
@@ -289,7 +292,7 @@ class TacTree(object):
                         break
                     except nx.exception.NetworkXNoPath:
                         pass
-                acc += [(edge.ftac, len(edge.ftac), [str(node) for node in path])]
+                acc += [(str(edge.ftac), len(edge.ftac.pp_tac), [str(node) for node in path])]
         return acc
 
     def view_tactic_hist(self, f_compress=False):
