@@ -553,7 +553,11 @@ class FvsTactic(object):
             # let f (b, m, barg) = Printf.sprintf "(%b %s %s)" b (show_multi m) (show_with_bindings_arg show_gtrm barg) in
             # Printf.sprintf "(Rewrite %b %s %s %s)" ef (show_sexpr_ls f rargs) (show_clause_expr ce) (show_maybe show_tac maybe_tac)
             # return self.fvs_clause_expr(body[2]), self.fvs_maybe(self.fvs_tac, body[3])
-            raise NameError("TODO")
+            fvs1 = self.fvs_ls(lambda x: self.fvs_with_bindings_arg(self.fvs_gtrm, x[2]) , body[1])
+            fvs2 = self.fvs_clause_expr(body[2])
+            fvs3 = self.fvs_maybe(self.fvs_tac, body[3])
+            return fvs1.union(fvs2).union(fvs3)
+            # raise NameError("TODO")
         elif tag == "Inversion":
             # Printf.sprintf "(Inversion %s %s)" (show_inversion_strength is) (show_quantified_hypothesis qhyp)
             # return self.fvs_quantified_hypothesis(body[1])

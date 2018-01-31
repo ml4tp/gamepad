@@ -131,7 +131,40 @@
 < (* ============= *)
 < 
 < 
-2290,2303d2175
+2265,2296d2150
+< 
+< (* ============= *)
+< (* ML4TP *)
+< 
+< let tclCLAUSES' ist tac (gens, clseq) gl =
+<   if clseq = InGoal || clseq = InSeqGoal
+<   then tac gl
+<   else
+<     let clr_gens = pf_clauseids gl gens clseq in
+<     let clear = tclTHENLIST (List.rev(List.fold_right clr_of_wgen clr_gens [])) in
+<     let gl_id = mk_anon_id hidden_goal_tag gl in
+<     let cl0 = pf_concl gl in
+<     let dtac gl =
+<       let c = pf_concl gl in
+<       let gl, args, c =
+<         List.fold_right (abs_wgen true ist mk_discharged_id) gens (gl,[], c)
+<       in
+<       apply_type c args gl
+<     in
+<     let endtac =
+<       let id_map = CList.map_filter (function
+<         | _, Some ((x,_),_) -> let id = hoi_id x in Some (mk_discharged_id id, id)
+<         | _, None -> None) gens
+<       in
+<       endclausestac id_map clseq gl_id cl0
+<     in
+<     let endtac' = Proofview.V82.of_tactic (ml4tp_wrap_catchfail_tac None (Proofview.V82.tactic endtac) "DOEND" None) in
+<     tclTHENLIST (hidetacs clseq gl_id cl0 @ [dtac; clear; tac; endtac']) gl
+< 
+< (* ============= *)
+< 
+< 
+2322,2335d2175
 < 
 < (* ============= *)
 < (* ML4TP *)
@@ -146,7 +179,7 @@
 < (* ============= *)
 < 
 < 
-2321,2330d2192
+2353,2362d2192
 < 
 < (* ============= *)
 < (* ML4TP *)
@@ -157,7 +190,7 @@
 < (* ============= *)
 < 
 < 
-2357,2363d2218
+2389,2395d2218
 < 
 < (* ============= *)
 < (* ML4TP *)
@@ -165,7 +198,7 @@
 < (* ============= *)
 < 
 < 
-2427,2435d2281
+2459,2467d2281
 < 
 < (* ============= *)
 < (* ML4TP *)
@@ -175,7 +208,7 @@
 < (* ============= *)
 < 
 < 
-2463,2472d2308
+2495,2504d2308
 < 
 < (* ============= *)
 < (* ML4TP *)
@@ -186,7 +219,7 @@
 < (* ============= *)
 < 
 < 
-2609,2616d2444
+2641,2648d2444
 < 
 < (* ============= *)
 < (* ML4TP *)
@@ -195,15 +228,19 @@
 < let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssrview show_view
 < (* ============= *)
 < 
-2838,2863d2665
+2870,2899d2665
 < 
 < (* ============= *)
 < (* ML4TP *)
 < let rec show_ipat = function
-<   | IpatId id -> "I"
-<   | IpatSimpl (clr, sim) -> Printf.sprintf "(S %s %s)" (show_clear clr) (show_simpl sim)
-<   | IpatCase iorpat -> Printf.sprintf "(C %s)" (show_iorpat iorpat)
-<   | IpatRw (occ, dir) -> Printf.sprintf "(R %s %s)" (show_occ occ) (show_dir dir)
+<   | IpatId id ->
+<       Printf.sprintf "(I %s)" (Pml4tp.show_id id)
+<   | IpatSimpl (clr, sim) ->
+<       Printf.sprintf "(S %s %s)" (show_clear clr) (show_simpl sim)
+<   | IpatCase iorpat ->
+<       Printf.sprintf "(C %s)" (show_iorpat iorpat)
+<   | IpatRw (occ, dir) ->
+<       Printf.sprintf "(R %s %s)" (show_occ occ) (show_dir dir)
 <   | IpatAll -> "A"
 <   | IpatWild -> "W"
 <   | IpatAnon -> "AN"
@@ -222,7 +259,7 @@
 < (* ============= *)
 < 
 < 
-2937,2945d2738
+2973,2981d2738
 < 
 < (* ============= *)
 < (* ML4TP *)
@@ -232,7 +269,7 @@
 < (* ============= *)
 < 
 < 
-2963,2973d2755
+2999,3009d2755
 < 
 < (* ============= *)
 < (* ML4TP *)
@@ -244,7 +281,7 @@
 < (* ============= *)
 < 
 < 
-2990,2998d2771
+3026,3034d2771
 < 
 < (* ============= *)
 < (* ML4TP *)
@@ -254,15 +291,15 @@
 < (* ============= *)
 < 
 < 
-3168c2941
+3204c2941
 < let introstac, tclEQINTROS, tclEQINTROS' =
 ---
 > let introstac, tclEQINTROS =
-3213c2986
+3249c2986
 <     | orp ->
 ---
 >     | orp -> 
-3215,3222c2988,2989
+3251,3258c2988,2989
 <   and tclIORPAT' ?ist k tac = function
 <     | [[]] -> tac
 <     | orp ->
@@ -274,7 +311,7 @@
 ---
 >   and ipatstac ?ist k ipats = 
 >     tclTHENLIST (map_acc_k (ipattac ?ist) k ipats) in
-3226,3232c2993
+3262,3268c2993
 <     tclTHENLIST [tac; clear_wilds !wild_ids]
 <     (*
 <     let tac' = Proofview.V82.of_tactic (ml4tp_wrap_catchfail_tac None (Proofview.V82.tactic tac) "SI2" None) in
@@ -284,7 +321,7 @@
 <   in
 ---
 >     tclTHENLIST [tac; clear_wilds !wild_ids] in
-3244,3265c3005,3006
+3280,3304c3005,3006
 <     tclTHENLIST [tac1; eqtac; tac2; clear_wilds !wild_ids]
 <   in
 <   let tclEQINTROS' ?ist tac eqtac ipats =
@@ -294,9 +331,12 @@
 <       let to_clr, tac = ipattac ?ist to_clr ipats' spat in
 <       let tac_w = Proofview.V82.of_tactic (ml4tp_wrap_catchfail_tac None (Proofview.V82.tactic tac') "SPS" None) in
 <       split_itacs to_clr (tclTHEN tac_w tac) ipats'
-<     | IpatCase iorpat :: ipats' -> 
+<     | IpatCase iorpat :: ipats' ->
+<         to_clr, tclIORPAT' ?ist to_clr tac' iorpat, ipats'
+<         (*
 < 	let tac_w = Proofview.V82.of_tactic (ml4tp_wrap_catchfail_tac None (Proofview.V82.tactic tac') "SPC" None) in
 < 	to_clr, tclIORPAT' ?ist to_clr tac_w iorpat, ipats'
+< 	*)
 <     | ipats' -> to_clr, tac', ipats' in
 <     let to_clr, tac1, ipats' = split_itacs [] tac ipats in
 <     let tac2 = ipatstac ?ist to_clr ipats' in
@@ -310,11 +350,11 @@
 ---
 >     tclTHENLIST [tac1; eqtac; tac2; clear_wilds !wild_ids] in
 >   introstac, tclEQINTROS
-3275c3016
+3314c3016
 <   tclEQINTROS' ~ist (tac ist) tclIDTAC ipats
 ---
 >   tclEQINTROS ~ist (tac ist) tclIDTAC ipats
-3299,3307d3039
+3338,3346d3039
 < 
 < (* ============= *)
 < (* ML4TP *)
@@ -324,7 +364,7 @@
 < (* ============= *)
 < 
 < 
-3342,3352d3073
+3381,3391d3073
 < 
 < (* ============= *)
 < (* ML4TP *)
@@ -336,7 +376,7 @@
 < (* ============= *)
 < 
 < 
-3403,3411d3123
+3442,3450d3123
 < 
 < (* ============= *)
 < (* ML4TP *)
@@ -346,7 +386,15 @@
 < (* ============= *)
 < 
 < 
-3464,3472d3175
+3453,3457c3126
+<   tclCLAUSES' ist (tclMULT mul (hinttac ist false tac)) clauses
+<   (*
+<   let tac' = Proofview.V82.of_tactic (ml4tp_wrap_catchfail_tac None (Proofview.V82.tactic (hinttac ist false tac)) "DO" None) in
+<   tclCLAUSES ist (tclMULT mul tac') clauses
+<   *)
+---
+>   tclCLAUSES ist (tclMULT mul (hinttac ist false tac)) clauses
+3507,3515d3175
 < 
 < (* ============= *)
 < (* ML4TP *)
@@ -356,7 +404,7 @@
 < (* ============= *)
 < 
 < 
-3589,3596d3291
+3632,3639d3291
 < 
 < (* ============= *)
 < (* ML4TP *)
@@ -365,7 +413,7 @@
 < (* ============= *)
 < 
 < 
-3749,3757d3443
+3792,3800d3443
 < 
 < (* ============= *)
 < (* ML4TP *)
@@ -375,7 +423,7 @@
 < (* ============= *)
 < 
 < 
-3875,3888d3560
+3918,3931d3560
 < 
 < (* ============= *)
 < (* ML4TP *)
@@ -390,7 +438,7 @@
 < (* ============= *)
 < 
 < 
-3941,3948d3612
+3984,3991d3612
 < 
 < (* ============= *)
 < (* ML4TP *)
@@ -399,7 +447,7 @@
 < (* ============= *)
 < 
 < 
-4041,4050d3704
+4084,4093d3704
 < 
 < (* ============= *)
 < (* ML4TP *)
@@ -410,7 +458,7 @@
 < (* ============= *)
 < 
 < 
-4083,4089d3736
+4126,4132d3736
 < 
 < (* ============= *)
 < (* ML4TP *)
@@ -418,19 +466,19 @@
 < (* ============= *)
 < 
 < 
-4585,4587c4232
+4628,4630c4232
 <   (* tclTHENLIST [gen_eq_tac; elim_intro_tac] orig_gl *)
 <   let gen_eq_tac' = Proofview.V82.of_tactic (ml4tp_wrap_catchfail_tac None (Proofview.V82.tactic gen_eq_tac) "SGE" None) in
 <   tclTHENLIST [gen_eq_tac'; elim_intro_tac] orig_gl
 ---
 >   tclTHENLIST [gen_eq_tac; elim_intro_tac] orig_gl
-4603,4607d4247
+4646,4650d4247
 < (* ============= *)
 < (* ML4TP *)
 < let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssrcasearg show_ssrarg
 < (* ============= *)
 < 
-4674,4684d4313
+4717,4727d4313
 < 
 < (* ============= *)
 < (* ML4TP *)
@@ -442,7 +490,7 @@
 < (* ============= *)
 < 
 < 
-4706,4714d4334
+4749,4757d4334
 < 
 < (* ============= *)
 < (* ML4TP *)
@@ -452,7 +500,7 @@
 < (* ============= *)
 < 
 < 
-4820,4827d4439
+4863,4870d4439
 < 
 < (* ============= *)
 < (* ML4TP *)
@@ -461,7 +509,7 @@
 < (* ============= *)
 < 
 < 
-4855,4863d4466
+4898,4906d4466
 < 
 < (* ============= *)
 < (* ML4TP *)
@@ -471,7 +519,7 @@
 < (* ============= *)
 < 
 < 
-4989,5000d4591
+5032,5043d4591
 < 
 < (* ============= *)
 < (* ML4TP *)
@@ -484,7 +532,7 @@
 < (* ============= *)
 < 
 < 
-5016,5024d4606
+5059,5067d4606
 < 
 < (* ============= *)
 < (* ML4TP *)
@@ -494,7 +542,7 @@
 < (* ============= *)
 < 
 < 
-5057,5068d4638
+5100,5111d4638
 < 
 < (* ============= *)
 < (* ML4TP *)
@@ -507,7 +555,7 @@
 < (* ============= *)
 < 
 < 
-5118,5125d4687
+5161,5168d4687
 < (* ============= *)
 < (* ML4TP *)
 < let show_pattern_squarep rx = Pml4tp.show_maybe show_rpattern rx
@@ -516,7 +564,7 @@
 < (* ============= *)
 < 
 < 
-5149,5157d4710
+5192,5200d4710
 < 
 < (* ============= *)
 < (* ML4TP *)
@@ -526,7 +574,7 @@
 < (* ============= *)
 < 
 < 
-5618,5624d5170
+5661,5667d5170
 < (* ============= *)
 < (* ML4TP *)
 < let show_ssrrwargs rwargs =
@@ -534,12 +582,12 @@
 < let _ = Pml4tp.declare_extra_genarg_showrule1 wit_ssrrwargs show_ssrrwargs
 < (* ============= *)
 < 
-5653,5656d5198
+5696,5699d5198
 <   (*
 <   let f tac = ml4tp_wrap_catchfail_tac None (rwargtac ist tac) "SsrRewrite" None in
 <   tclTHENLIST (List.map f rwargs))
 <   *)
-5719,5726d5260
+5762,5769d5260
 < 
 < (* ============= *)
 < (* ML4TP *)
@@ -548,7 +596,7 @@
 < (* ============= *)
 < 
 < 
-5771,5787d5304
+5814,5830d5304
 < 
 < (* ============= *)
 < (* ML4TP *)
@@ -566,7 +614,7 @@
 < (* ============= *)
 < 
 < 
-5910,5931d5426
+5953,5974d5426
 < 
 < (* ============= *)
 < (* ML4TP *)
@@ -589,7 +637,7 @@
 < (* ============= *)
 < 
 < 
-5972,5983d5466
+6015,6026d5466
 < 
 < (* ============= *)
 < (* ML4TP *)
@@ -602,7 +650,7 @@
 < (* ============= *)
 < 
 < 
-6087,6094d5569
+6130,6137d5569
 < 
 < (* ============= *)
 < (* ML4TP *)
@@ -611,7 +659,7 @@
 < (* ============= *)
 < 
 < 
-6126,6133d5600
+6169,6176d5600
 < (* ============= *)
 < (* ML4TP *)
 < let show_ssrfixfwd (id, fwd) =
@@ -620,7 +668,7 @@
 < (* ============= *)
 < 
 < 
-6152,6159d5618
+6195,6202d5618
 < 
 < (* ============= *)
 < (* ML4TP *)
@@ -629,7 +677,7 @@
 < (* ============= *)
 < 
 < 
-6206,6214d5664
+6249,6257d5664
 < 
 < (* ============= *)
 < (* ML4TP *)
@@ -639,7 +687,7 @@
 < (* ============= *)
 < 
 < 
-6249,6257d5698
+6292,6300d5698
 < 
 < (* ============= *)
 < (* ML4TP *)
@@ -649,7 +697,7 @@
 < (* ============= *)
 < 
 < 
-6289,6297d5729
+6332,6340d5729
 < 
 < (* ============= *)
 < (* ML4TP *)
@@ -659,7 +707,7 @@
 < (* ============= *)
 < 
 < 
-6577,6585d6008
+6620,6628d6008
 < 
 < (* ============= *)
 < (* ML4TP *)
@@ -669,7 +717,7 @@
 < (* ============= *)
 < 
 < 
-6617,6625d6039
+6660,6668d6039
 < 
 < (* ============= *)
 < (* ML4TP *)

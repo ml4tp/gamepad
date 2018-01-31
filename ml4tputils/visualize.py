@@ -82,7 +82,7 @@ class Visualize(object):
                 print("FAILED", tactr.name, ncc)
                 self.failed += [(file, tactr.name, ncc, len(tactr.notok))]
 
-            # tactr.log_stats(self.h_tactr_file)
+            tactr.log_stats(self.h_tactr_file)
 
             # for _, tacs in tactr.tactics().items():
             #     for tac in tacs:
