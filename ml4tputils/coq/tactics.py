@@ -122,7 +122,7 @@ TACTICS_INFO_EQUIV = [[("<coretactics::intro@0>", Type.COQ_ML), ("intros", Type.
                       [("<ssreflect_plugin::ssrhave@0>", Type.SSR_ML), ("<coretactics::exists@0>", Type.COQ_ML), ("<coretactics::exists@1>", Type.COQ_ML)],
                       [("<ssreflect_plugin::ssrmove@0>", Type.SSR_ML), ("<ssreflect_plugin::ssrmove@1>", Type.SSR_ML), ("<ssreflect_plugin::ssrmove@2>", Type.SSR_ML), ("<ssreflect_plugin::ssrmove@3>", Type.SSR_ML)],
                       [("<ssreflect_plugin::ssrpose@0>", Type.SSR_ML), ("<ssreflect_plugin::ssrpose@1>", Type.SSR_ML), ("<ssreflect_plugin::ssrpose@2>", Type.SSR_ML)],
-                      [("<ssreflect_plugin::ssrrewrite@0>", Type.SSR_ML)],
+                      [("<ssreflect_plugin::ssrrewrite@0>", Type.SSR_ML), ("rewrite", Type.ATOM)],
                       [("<ssreflect_plugin::ssrset@0>", Type.SSR_ML)],
                       [("<ssreflect_plugin::ssrsuff@0>", Type.SSR_ML), ("<ssreflect_plugin::ssrsuffices@0>", Type.SSR_ML)],
                       [("<ssreflect_plugin::ssrtcldo@0>", Type.SSR_ML)], # TODO(deh): GET RID OF ME

@@ -110,6 +110,7 @@ class TacTreeBuilder(object):
         else:
             ftac = bf_decl.hdr.tac
             # print("    BFDECL", ftac)
+
         return ftac
 
     def _mk_edge(self, rawtac, bf_decl, af_decl):
@@ -156,6 +157,11 @@ class TacTreeBuilder(object):
         else:
             self.gid_tactic[edge.src] = [edge]
 
+        # if edge.name.startswith("<ssreflect_plugin::ssrtcldo@0>"):
+        #     print("HERE", rawtac)
+        #     print("ftac_inscope", self.ftac_inscope)
+        #     assert False
+
         return [edge]
 
     def _mk_body_edge(self, rawtac, bf_decl, af_node):
@@ -169,6 +175,11 @@ class TacTreeBuilder(object):
             self.gid_tactic[edge.src] += [edge]
         else:
             self.gid_tactic[edge.src] = [edge]
+
+        # if edge.name.startswith("<ssreflect_plugin::ssrtcldo@0>"):
+        #     print("HERE", rawtac.pp())
+        #     print("ftac_inscope", self.ftac_inscope)
+        #     assert False
 
         return edge
 
@@ -321,6 +332,10 @@ class TacTreeBuilder(object):
                         self.tacst_info, self.gid_tactic, self.decoder)
 
         # tactr.bfs_traverse()
+        # for edge in tactr.edges:
+        #     if edge.name.startswith("<ssreflect_plugin::ssrtcldo@0>"):
+        #         print(edge)
+        #         raise NameError("WTF")
         if f_verbose:
             tactr.dump()
         return tactr

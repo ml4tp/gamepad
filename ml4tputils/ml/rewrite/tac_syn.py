@@ -5,10 +5,10 @@ import torch
 
 from lib.myfile import MyFile
 from ml.poseval.fold_model import PosEvalModel
-from ml.poseval.fold_train import PosEvalTrainer, PosEvalInfer
+from ml.poseval.fold_train import PosEvalTrainer
 from ml.tacst_prep import PosEvalPt
 from pycoqtop.coqtop import CoqTop
-from recon.parse_raw import TacStParser
+from recon.parse_raw import TacStParser, FullTac
 
 """
 [Note]
@@ -17,6 +17,9 @@ Don't forget to set environment variable of where to load the
 intermediate results.
 
     export TCOQ_DUMP=/tmp/tcoq.log
+
+How to run:
+python ml4tputils/ml/main.py --end2end --mload mllogs/state_128_lr_0.001_conclu_pos_0_ln_False_drop_0.0_wd_0.0_v_False_attn_False_heads_1_m__r_/2018-01-31T155013.695099.pth --validate
 """
 
 # 1. Replace random policy (left, right) with learned policy
@@ -59,8 +62,13 @@ def policy():
     return random.choice(["LEFT", "RIGHT"])
 
 
+class FakeTacEdge(object):
+    def __init__(self, name):
+        self.name = name
+
+
 class MyAlgRewriter(object):
-    def __init__(self, infer, lemma):
+    def __init__(self, trainer, lemma):
         self.ts_parser = TacStParser("/tmp/tcoq.log")
 
         self.top = CoqTop()
@@ -71,7 +79,7 @@ class MyAlgRewriter(object):
         self.top.sendone("intros.")
         self.load_tcoq_result()
 
-        self.infer = infer
+        self.trainer = trainer
         self.good_choices = 0
         self.num_steps = 0
 
@@ -114,8 +122,10 @@ class MyAlgRewriter(object):
     def attempt_proof_step(self):
         # TODO(deh): run infer
         # gid, ctx, concl_idx, tac, tacst_size, subtr_size
-        poseval_pt = PosEvalPt(0, self.ctx, self.concl_idx, "foobar", 0, 0)
-        preds = self.infer.infer([(0, poseval_pt)])
+        # def __init__(self, gid, ctx, concl_idx, tac, tacst_size, subtr_size):
+        edge = FakeTacEdge("rewrite")
+        poseval_pt = PosEvalPt(0, self.ctx, self.concl_idx, [edge], 0, 0)
+        preds = self.trainer.forward([(0, poseval_pt)])
         print("Prediction", preds[0])
 
         self.num_steps += 1
@@ -142,23 +152,28 @@ class MyAlgRewriter(object):
 LEMMA = "Lemma rewrite_eq_0: forall b, ( e <+> ( ( ( ( b ) <+> m ) <+> m ) <+> m ) ) <+> m = b."
 
 
-if __name__ == "__main__":
-    # Load stuff
-    print("Loading tactrs ...")
-    with open("tactr.pickle", 'rb') as f:
-        tactrs = pickle.load(f)
-    print("Loading poseval dataset ...")
-    with open("poseval.pickle", 'rb') as f:
-        poseval_dataset, tokens_to_idx = pickle.load(f)
+def end2end(trainer):
+   rewriter = MyAlgRewriter(trainer, LEMMA)
+   rewriter.attempt_proof()
 
-    # TODO(deh): save the model to test_model and load from there
-    # Load model
-    model_name = "mllogs/model-2018-01-14T193916.553740.params"
-    model_infer = PosEvalModel(*tokens_to_idx)
-    model_infer.load_state_dict(torch.load(model_name))
-    infer = PosEvalInfer(tactrs, model_infer)
 
-    # Run rewriter
-    rw = MyAlgRewriter(infer, LEMMA)
-    rw.attempt_proof()
-    # rw.finalize()
+# if __name__ == "__main__":
+#     # Load stuff
+#     print("Loading tactrs ...")
+#     with open("tactr.pickle", 'rb') as f:
+#         tactrs = pickle.load(f)
+#     print("Loading poseval dataset ...")
+#     with open("poseval.pickle", 'rb') as f:
+#         poseval_dataset, tokens_to_idx = pickle.load(f)
+
+#     # TODO(deh): save the model to test_model and load from there
+#     # Load model
+#     model_name = "mllogs/model-2018-01-14T193916.553740.params"
+#     model_infer = PosEvalModel(*tokens_to_idx)
+#     model_infer.load_state_dict(torch.load(model_name))
+#     infer = PosEvalInfer(tactrs, model_infer)
+
+#     # Run rewriter
+#     rw = MyAlgRewriter(infer, LEMMA)
+#     rw.attempt_proof()
+#     # rw.finalize()

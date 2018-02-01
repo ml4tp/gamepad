@@ -10,6 +10,7 @@ from ml.tacst_prep import Dataset, PosEvalPt
 from ml.poseval.fold_model import PosEvalModel
 from ml.poseval.fold_train import PosEvalTrainer #, PosEvalInfer
 # from ipdb import launch_ipdb_on_exception
+from ml.rewrite.tac_syn import end2end
 
 """
 [Note]
@@ -58,6 +59,7 @@ if __name__ == "__main__":
     argparser.add_argument('--name', type = str, default = "", help = 'name of experiment')
     argparser.add_argument("--debug", action = 'store_true', help="debug training")
     argparser.add_argument("--orig", action = 'store_true', help="Old is gold")
+    argparser.add_argument("--end2end", action = 'store_true', help="run end-to-end model")
 
     argparser.add_argument("-f", "--fold", action = 'store_true', help="To fold or not to fold")
     argparser.add_argument('--no-cuda', action='store_true', default=False, help='disables CUDA training')
@@ -92,10 +94,16 @@ if __name__ == "__main__":
     if not args.orig:
         model = PosEvalModel(*tokens_to_idx, ln=args.ln, treelstm=args.treelstm, lstm=args.lstm, dropout=args.dropout, attention=args.attention, heads=args.heads, D = args.state, state = args.state, weight_dropout=args.weight_dropout, variational=args.variational, conclu_pos=args.conclu_pos)
         trainer = PosEvalTrainer(model, tactrs, poseval_dataset, args)
-        if args.validate:
-            trainer.validate()
+        if args.end2end:
+            if args.validate:
+                end2end(trainer)
+            else:
+                trainer.train()
         else:
-            trainer.train()
+            if args.validate:
+                trainer.validate()
+            else:
+                trainer.train()
         trainer.logger.close()
         trainer.vallogger.close()
     else:
