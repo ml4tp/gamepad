@@ -41,7 +41,11 @@ class DeclMode(Enum):
 
 
 class FullTac(object):
-    def __init__(self, pp_tac, sexp_tac=None, lids=None, gids=None):
+    def __init__(self, pp_tac, sexp_tac=None, lids=set(), gids=set()):
+        assert isinstance(pp_tac, str)
+        assert isinstance(lids, set)
+        assert isinstance(gids, set)
+
         self.pp_tac = pp_tac      # Pretty-print tactic
         self.sexp_tac = sexp_tac  # Tactic as sexpression
         self.lids = lids          # Local identifiers mentioned by tactic

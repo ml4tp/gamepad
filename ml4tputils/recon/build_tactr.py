@@ -5,6 +5,7 @@ import plotly
 from plotly.graph_objs import *
 
 from coq.decode import DecodeCoqExp
+from recon.parse_raw import FullTac 
 from recon.parse_rawtac import *
 from recon.tactr import TacStKind, TacTrNode, TacEdge, TacTree, parse_full_tac
 
@@ -108,7 +109,7 @@ class TacTreeBuilder(object):
             ftac = self.ftac_inscope
             # print("    SCOPE", ftac)
         else:
-            ftac = bf_decl.hdr.tac
+            ftac = bf_decl.hdr.ftac
             # print("    BFDECL", ftac)
 
         return ftac
@@ -331,11 +332,23 @@ class TacTreeBuilder(object):
         tactr = TacTree(self.name, self.edges, self.graph,
                         self.tacst_info, self.gid_tactic, self.decoder)
 
+        for _, gid, _, _, ctx, concl_idx, tacs in tactr.bfs_traverse():
+            assert isinstance(gid, int)
+            for ident, idx in ctx:
+                assert isinstance(ident, str)
+                assert isinstance(idx, int)
+            assert isinstance(concl_idx, int)
+            for tac in tacs:
+                assert isinstance(tac, TacEdge)
+
         # tactr.bfs_traverse()
         # for edge in tactr.edges:
-        #     if edge.name.startswith("<ssreflect_plugin::ssrtcldo@0>"):
-        #         print(edge)
-        #         raise NameError("WTF")
+        #     print("HERE1", edge.ftac)
+        #     print("HERE2", edge.ftac.lids)
+        #     print("HERE3", edge.ftac.gids)
+            # if edge.name.startswith("<ssreflect_plugin::ssrtcldo@0>"):
+            #     print(edge)
+            #     raise NameError("WTF")
         if f_verbose:
             tactr.dump()
         return tactr

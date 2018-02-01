@@ -13,6 +13,7 @@ from coq.tactics import TacKind, TACTIC_HIST
 from coq.util import SizeCoqExp, HistCoqExp, TokenCoqExp, VisualizeCoqExp, COQEXP_HIST
 from lib.myenv import MyEnv
 from lib.myutil import dict_ls_app
+from recon.parse_raw import FullTac 
 
 """
 [Note]
@@ -119,6 +120,7 @@ class TacEdge(object):
         """
         assert isinstance(src, TacTrNode)
         assert isinstance(tgt, TacTrNode)
+        assert isinstance(ftac, FullTac)
 
         # Internal
         self.eid = eid         # Edge identifier
