@@ -6,7 +6,7 @@ import torch
 from lib.myfile import MyFile
 from ml.poseval.fold_model import PosEvalModel
 from ml.poseval.fold_train import PosEvalTrainer
-from ml.tacst_prep import PosEvalPt
+from ml.tacst_prep import PosEvalPt, Dataset
 from pycoqtop.coqtop import CoqTop
 from recon.parse_raw import TacStParser, FullTac
 
@@ -125,16 +125,26 @@ class MyAlgRewriter(object):
         # def __init__(self, gid, ctx, concl_idx, tac, tacst_size, subtr_size):
         edge = FakeTacEdge("rewrite")
         poseval_pt = PosEvalPt(0, self.ctx, self.concl_idx, [edge], 0, 0)
-        preds = self.trainer.forward([(0, poseval_pt)])
-        print("Prediction", preds[0])
+        poseval_pt.tac_bin = 0
+        logits, _, _, _ = self.trainer.forward([(0, poseval_pt)])
+        print("Prediction", logits[0])
+        values, indices = logits[0].max(0)
+        print("Values", values, "indicies", indices)
 
         self.num_steps += 1
+        if indices == 0:
+            self._log("Trying RIGHT")
+            res = self.top.sendone("rewrite id_r.")
+        elif indices == 1:
+            self._log("Trying LEFT")
+            res = self.top.sendone("rewrite id_l.")
+
         choice = policy()
         if choice == "RIGHT":
             self._log("Trying RIGHT")
             res = self.top.sendone("rewrite id_r.")
         else:
-            self._log("Trying RIGHT")
+            self._log("Trying LEFT")
             res = self.top.sendone("rewrite id_l.")
         self._log(res)
 
@@ -150,6 +160,25 @@ class MyAlgRewriter(object):
 
 
 LEMMA = "Lemma rewrite_eq_0: forall b, ( e <+> ( ( ( ( b ) <+> m ) <+> m ) <+> m ) ) <+> m = b."
+
+
+def to_tacpred_dataset(poseval_dataset):
+    def clean(orig):
+        dataset = []
+        for tactr_id, pt in orig:
+            # Item 3 contains [TacEdge]
+            tac = pt.tacst[3][-1]
+            if "theorems.id_r" in tac.ftac.gids:
+                pt.tac_bin = 0
+                dataset += [(tactr_id, pt)]
+            elif "theorems.id_l" in tac.ftac.gids:
+                pt.tac_bin = 1
+                dataset += [(tactr_id, pt)]
+        return dataset
+    train = clean(poseval_dataset.train)
+    test = clean(poseval_dataset.test)
+    val = clean(poseval_dataset.val)
+    return Dataset(train, test, val)
 
 
 def end2end(trainer):
