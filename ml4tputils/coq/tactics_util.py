@@ -523,7 +523,11 @@ class FvsTactic(object):
             # let f (loc, ipe) = show_intro_pattern_expr show_gtrm ipe in
             # let g = show_maybe f in
             # Printf.sprintf "(Assert %b %s %s %s)" b (show_maybe (show_maybe show_tac) mm_tac) (g ml_ipe) (show_gtrm c)
-            raise NameError("TODO")
+            fvs1 = self.fvs_maybe(lambda x: self.fvs_maybe(self.fvs_tac, x), body[1])
+            f = lambda x: self.fvs_intro_pattern_expr(self.fvs_gtrm, x)
+            fvs2 = self.fvs_maybe(f, body[2])
+            fvs3 = self.fvs_gtrm(body[3])
+            return fvs1.union(fvs2).union(fvs3)
         elif tag == "Generalize":
             # let f (wo, name) = Printf.sprintf "(%s, %s)" (show_with_occurrences show_gtrm wo) (show_name name) in
             # Printf.sprintf "Generalize(%s)" (brackets (show_ls f ", " ls))
