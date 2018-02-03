@@ -51,8 +51,11 @@ Axiom id_r : forall a, a <+> m = a.
 Axiom id_l : forall a, e <+> a = a.
 
 Ltac surgery dir e1 e2 :=
-  let H := fresh in
-  (have H : e1 = e2 by repeat (rewrite dir); reflexivity); rewrite H; clear H.
+  match goal with
+  | [ |- _ ] =>
+    let H := fresh in
+    (have H : e1 = e2 by repeat (rewrite dir); reflexivity); rewrite H; clear H
+  end.
 
 """
 
@@ -120,7 +123,7 @@ def is_leaf(c):
     else:
         raise NameError("Shouldn't happen {}".format(c))
 
-class InOrder(object):
+class PreOrder(object):
     def __init__(self):
         self.acc = []
 
@@ -146,28 +149,6 @@ class InOrder(object):
         for c in cs:
             self._traverse(c)
 
-    # def traverse_nonleaf(self, c):
-    #     self.acc = []
-    #     self._traverse_nonleaf(c)
-    #     return self.acc
-
-    # def _traverse_nonleaf(self, c):
-    #     typ = type(c)
-    #     if typ is VarExp:
-    #         pass
-    #     elif typ is ConstExp:
-    #         pass
-    #     elif typ is AppExp:
-    #         self.acc += [c]
-    #         # self._traverse_nonleaf(c.c)
-    #         self._traverse_nonleafs(c.cs)
-    #     else:
-    #         raise NameError("Shouldn't happen {}".format(c))
-
-    # def _traverse_nonleafs(self, cs):
-    #     for c in cs:
-    #         self._traverse_nonleaf(c)
-
 
 class AstOp(object):
     def __init__(self):
@@ -178,6 +159,7 @@ class AstOp(object):
         return c_new
 
     def copy(self, c):
+        # TODO(deh): probably make this a member function
         typ = type(c)
         if typ is VarExp:
             return self._tag(c, VarExp(c.x))
@@ -193,9 +175,39 @@ class AstOp(object):
     def copys(self, cs):
         return [self.copy(c) for c in cs]
 
-    def staple(self, c_skel, c_loc, c_subst):
-        if c_skel.tag == c_loc.tag:
+    def eq(self, c1, c2):
+        # TODO(deh): probably make this a member function
+        typ1, typ2 = type(c1), type(c2)
+        if typ1 is VarExp and typ2 is VarExp:
+            return c1.x == c2.x
+        elif typ1 is ConstExp and typ2 is ConstExp:
+            return c1.const == c2.const
+        elif typ1 is AppExp and typ2 is AppExp:
+            b1 = self.eq(c1.c, c2.c)
+            b2 = self.eqs(c1.cs, c2.cs)
+            return all(lambda x: x, )
+        else:
+            # TODO(deh): more cases ...
+            return False
+
+    def eqs(self, cs1, cs2):
+        if len(cs1) == len(cs2):
+            return all(lambda x: x, [self.eq(c1, c2) for c1, c2 in zip(cs1, cs2)])
+        else:
+            return False
+
+    def staple(self, c_skel, pos, c_subst):
+        self.pos = 0
+        return self._staple(c_skel, pos, c_subst)
+
+    def _staple(self, c_skel, pos, c_subst):
+        # print("At {}, Stapling to {}".format(self.pos, pos))
+        # print(c_skel)
+        if self.pos == pos:
+            self.pos += 1
             return c_subst
+        else:
+            self.pos += 1
 
         typ = type(c_skel)
         if typ is VarExp:
@@ -203,14 +215,14 @@ class AstOp(object):
         elif typ is ConstExp:
             return c_skel
         elif typ is AppExp:
-            c_p = self.staple(c_skel.c, c_loc, c_subst)
-            cs_p = self.staples(c_skel.cs, c_loc, c_subst)
+            c_p = self._staple(c_skel.c, pos, c_subst)
+            cs_p = self._staples(c_skel.cs, pos, c_subst)
             return self._tag(c_skel, AppExp(c_p, cs_p))
         else:
             raise NameError("Shouldn't happen {}".format(c))
 
-    def staples(self, cs, c_loc, c_subst):
-        return [self.staple(c, c_loc, c_subst) for c in cs]
+    def _staples(self, cs, pos, c_subst):
+        return [self._staple(c, pos, c_subst) for c in cs]
 
 
 # -------------------------------------------------
@@ -235,43 +247,231 @@ class RandAlgPolicy(object):
                 return idx
         raise NameError("Variable b not found in {}".format(self._pp(orig_c)))
 
-    def _select(self, c):
-        c = AstOp().copy(c)
-        inorder = [(pos, c_p) for pos, c_p in enumerate(InOrder().traverse(c))]
-        nonleaves = [(pos, c_p) for pos, c_p in inorder if not is_leaf(c_p)]
-        pos_b = self._locate_b(c, inorder)
+    def _count(self, preorder):
+        cnt_e = 0
+        cnt_m = 0
+        for pos, c in preorder:
+            if isinstance(c, ConstExp):
+                if c.const == Name("Top.m"):
+                    cnt_m += 1
+                elif c.const == Name("Top.e"):
+                    cnt_e += 1
+        return cnt_e, cnt_m
 
-        cnt = 0
-        while cnt < 20:
-            cnt += 1
-            # 1. Pick a random place in the AST
-            pos_rw, c_rw = random.choice(nonleaves)
-            left_c = c_rw.cs[0]
-            right_c = c_rw.cs[1]
+    def _reduce2(self, red, c):
+        self.elim_m = False
+        self.elim_e = False
+        return self._reduce(red, c)
 
-            # 2. Check to see if we are on the left or right side of b
-            #    b <+> (e <+> m) -> b <+> e   (stuck)
-            #    b <+> (e <+> m) -> b <+> m   (success)
-            if pos_rw < pos_b:
-                # 3. On left, check to see if we can rewrite left or right
-                print("LEFT", pos_rw, pos_b, "ORIG", self._pp(c), "left", self._pp(left_c), "right", self._pp(right_c))
+    def _reduce(self, red, c):
+        if self.elim_m or self.elim_e:
+            return c
+
+        typ = type(c)
+        if typ is VarExp:
+            return c
+        elif typ is ConstExp:
+            return c
+        elif typ is AppExp:
+            left_c = c.cs[0]
+            right_c = c.cs[1]
+            if red == "e":
+                print("REDUCING e", self._pp(c))
                 if isinstance(right_c, ConstExp) and right_c.const == Name("Top.m"):
-                    return "id_r", AstOp().staple(c, c_rw, c_rw.cs[0])
-                elif isinstance(left_c, ConstExp) and left_c.const == Name("Top.e"):
-                    return "id_l", AstOp().staple(c, c_rw, c_rw.cs[1])
-            elif pos_rw > pos_b:
-                print("RIGHT", pos_rw, pos_b, "ORIG", self._pp(c), "left", self._pp(left_c), "right", self._pp(right_c))
-                # 3. On right, check to see if we can rewrite left or right
+                    self.elim_m = True
+                    return left_c
+                elif isinstance(left_c, ConstExp) and left_c.const == Name("Top.e") and is_leaf(right_c):
+                    self.elim_e = True
+                    return right_c
+                else:
+                    c1 = self._reduce("e", left_c)
+                    c2 = self._reduce("m", right_c)
+                    return AppExp(c.c, [c1, c2])
+            elif red == "m":
+                print("REDUCING m", self._pp(c))
                 if isinstance(left_c, ConstExp) and left_c.const == Name("Top.e"):
-                    return "id_l", AstOp().staple(c, c_rw, c_rw.cs[1])
-                elif isinstance(right_c, ConstExp) and right_c.const == Name("Top.m"):
-                    return "id_r", AstOp().staple(c, c_rw, c_rw.cs[0])
+                    self.elim_e = True
+                    return right_c
+                elif isinstance(right_c, ConstExp) and right_c.const == Name("Top.m") and is_leaf(left_c):
+                    self.elim_m = True
+                    return left_c
+                else:
+                    c1 = self._reduce("e", left_c)
+                    c2 = self._reduce("m", right_c)
+                    return AppExp(c.c, [c1, c2])
+            elif red == "em":
+                print("REDUCING em", self._pp(c))
+                preorder_p = [(pos, c_p) for pos, c_p in enumerate(PreOrder().traverse(right_c))]
+                cnt_e, cnt_m = self._count(preorder_p)
+                if isinstance(right_c, ConstExp) and right_c.const == Name("Top.m"):
+                    self.elim_m = True
+                    return left_c
+                elif isinstance(left_c, ConstExp) and left_c.const == Name("Top.e") and cnt_e >= 1:
+                    self.elim_e = True
+                    return right_c
+                else:
+                    c1 = self._reduce("e", left_c)
+                    c2 = self._reduce("m", right_c)
+                    return AppExp(c.c, [c1, c2])
+            elif red == "me":
+                print("REDUCING me", self._pp(c))
+                preorder_p = [(pos, c_p) for pos, c_p in enumerate(PreOrder().traverse(left_c))]
+                cnt_e, cnt_m = self._count(preorder_p)
+                if isinstance(left_c, ConstExp) and left_c.const == Name("Top.e"):
+                    self.elim_e = True
+                    return right_c
+                elif isinstance(right_c, ConstExp) and right_c.const == Name("Top.m") and cnt_m >= 1:
+                    self.elim_m = True
+                    return left_c
+                else:
+                    c1 = self._reduce("e", left_c)
+                    c2 = self._reduce("m", right_c)
+                    return AppExp(c.c, [c1, c2])
             else:
-                # 3. At root, check to see if we can rewrite left or right
-                if isinstance(left_c, ConstExp) and left_c.const == Name("Top.e"):
-                    return "id_l", AstOp().staple(c, c_rw, c_rw.cs[1])
-                elif isinstance(right_c, ConstExp) and right_c.const == Name("Top.m"):
-                    return "id_r", AstOp().staple(c, c_rw, c_rw.cs[0])
+                raise NameError("Shouldn't happen")
+        else:
+            raise NameError("I'm tired of these motherf*cking snakes on this motherf*cking plane {}.".format(c))
+
+    def _select22(self, mode, c):
+        self.elim_e = False
+        self.elim_m = False
+        return self._select2(mode, c)
+
+    def _select2(self, mode, c):
+        if self.elim_e or self.elim_m:
+            return c
+        typ = type(c)
+        if typ is VarExp:
+            return c
+        elif typ is ConstExp:
+            return c
+        elif typ is AppExp:
+            left_c = c.cs[0]
+            right_c = c.cs[1]
+            if isinstance(left_c, ConstExp) and left_c.const == Name("Top.e") and mode == "LEFT":
+                self.elim_e = True
+                return right_c
+            elif isinstance(right_c, ConstExp) and right_c.const == Name("Top.m") and mode == "RIGHT":
+                self.elim_m = True
+                return left_c
+            else:
+                c1 = self._select2("RIGHT", c.cs[0])
+                c2 = self._select2("LEFT", c.cs[1])
+                return AppExp(c.c, [c1, c2])
+
+    def _select(self, c):
+        # side = random.choice(["LEFT", "RIGHT"])
+        cnt = 0
+        while cnt < 10:
+            cnt += 1
+            c_p = self._reduce2("e", c)
+            if self.elim_e:
+                return "id_l", c_p
+            elif self.elim_m:
+                return "id_r", c_p
+
+    # def _select(self, c2):
+    #     c = AstOp().copy(c2)
+    #     print("ORIG", self._pp(c2))
+    #     print("COPY", self._pp(c))
+    #     preorder = [(pos, c_p) for pos, c_p in enumerate(PreOrder().traverse(c))]
+    #     nonleaves = [(pos, c_p) for pos, c_p in preorder if not is_leaf(c_p)]
+    #     pos_b = self._locate_b(c, preorder)
+    #     total_e, total_m = self._count(preorder)
+
+    #     cnt = 0
+    #     while cnt < 100:
+    #         cnt += 1
+    #         # 1. Pick a random place in the AST
+    #         pos_rw, c_rw = random.choice(nonleaves)
+    #         left_c = c_rw.cs[0]
+    #         right_c = c_rw.cs[1]
+
+    #         if pos_rw < pos_b:
+    #             preorder_p = [(pos, c_p) for pos, c_p in enumerate(PreOrder().traverse(left_c))]
+    #             cnt_e, cnt_m = self._count(preorder_p)
+    #             if isinstance(right_c, ConstExp) and right_c.const == Name("Top.m"):
+    #                 return "id_r", AstOp().staple(c, pos_rw, left_c)
+    #             elif isinstance(left_c, ConstExp) and left_c.const == Name("Top.e") and cnt_e >= 1:
+    #                 return "id_l", AstOp().staple(c, pos_rw, right_c)
+    #             elif isinstance(left_c, ConstExp) and left_c.const == Name("Top.e") and is_leaf(right_c):
+    #                 return "id_r", AstOp().staple(c, pos_rw, left_c)
+    #         elif pos_rw > pos_b:
+    #             preorder_p = [(pos, c_p) for pos, c_p in enumerate(PreOrder().traverse(right_c))]
+    #             cnt_e, cnt_m = self._count(preorder_p)
+    #             if isinstance(left_c, ConstExp) and left_c.const == Name("Top.e"):
+    #                 return "id_l", AstOp().staple(c, pos_rw, right_c)
+    #             elif isinstance(right_c, ConstExp) and right_c.const == Name("Top.m") and cnt_m >= 1:
+    #                 return "id_r", AstOp().staple(c, pos_rw, left_c)
+    #             elif isinstance(right_c, ConstExp) and right_c.const == Name("Top.m") and is_leaf(left_c):
+    #                 return "id_l", AstOp().staple(c, pos_rw, right_c)
+
+    #         # if isinstance(right_c, ConstExp) and right_c.const == Name("Top.m"):
+    #         #     preorder_p = [(pos, c_p) for pos, c_p in enumerate(PreOrder().traverse(left_c))]
+    #         #     cnt_e, cnt_m = self._count(preorder_p)
+    #         #     if cnt_m >= 1:
+    #         #         return "id_r", AstOp().staple(c, pos_rw, left_c)
+    #         #     elif isinstance(left_c, VarExp) and left_c.x == "b":
+    #         #         return "id_r", AstOp().staple(c, pos_rw, left_c)
+    #         #     elif pos_rw < pos_b:
+    #         #         return "id_r", AstOp().staple(c, pos_rw, left_c)
+    #         #     elif isinstance(left_c, ConstExp) and left_c.const == Name("Top.e"):
+    #         #         return "id_l", AstOp().staple(c, pos_rw, right_c)
+    #         #     else:
+    #         #         print("FAILING RIGHT", self._pp(left_c), self._pp(right_c))
+    #         #         print("pos_rw", pos_rw, "pos_b", pos_b, "cnt_e", cnt_e, "cnt_m", cnt_m)
+    #         # elif isinstance(left_c, ConstExp) and left_c.const == Name("Top.e"):
+    #         #     preorder_p = [(pos, c_p) for pos, c_p in enumerate(PreOrder().traverse(right_c))]
+    #         #     cnt_e, cnt_m = self._count(preorder_p)
+    #         #     if cnt_e >= 1:
+    #         #         return "id_l", AstOp().staple(c, pos_rw, right_c)
+    #         #     elif isinstance(right_c, VarExp) and right_c.x == "b":
+    #         #         return "id_l", AstOp().staple(c, pos_rw, right_c)
+    #         #     elif pos_rw > pos_b:
+    #         #         return "id_l", AstOp().staple(c, pos_rw, right_c)
+    #         #     elif isinstance(right_c, ConstExp) and right_c.const == Name("Top.m"):
+    #         #         return "id_r", AstOp().staple(c, pos_rw, left_c)
+    #         #     else:
+    #         #         print("FAILING LEFT", self._pp(left_c), self._pp(right_c))
+    #         # else:
+    #         #     print("WTF", pos_rw, self._pp(c_rw), self._pp(c))
+    #         #     print(nonleaves)
+
+    #         # preorder_p = [(pos, c_p) for pos, c_p in enumerate(PreOrder().traverse(c_rw))]
+    #         # cnt_e, cnt_m = self._count(preorder_p)
+
+    #         # 2. Check to see if we are on the left or right side of b
+    #         #    b <+> (e <+> m) -> b <+> e   (stuck)
+    #         #    b <+> (e <+> m) -> b <+> m   (success)
+    #         # if pos_rw == 0:
+    #         #     # 3. At root, check to see if we can rewrite left or right
+    #         #     print("ROOT", pos_rw, pos_b, "cnt_e", cnt_e, "cnt_m", cnt_m, "ORIG", self._pp(c), "left", self._pp(left_c), "right", self._pp(right_c))
+    #         #     if isinstance(left_c, ConstExp) and left_c.const == Name("Top.e"):
+    #         #         return "id_l", AstOp().staple(c, pos_rw, c_rw.cs[1])
+    #         #     elif isinstance(right_c, ConstExp) and right_c.const == Name("Top.m"):
+    #         #         return "id_r", AstOp().staple(c, pos_rw, c_rw.cs[0])
+            
+    #         # if pos_rw < pos_b:
+    #         #     # 3. On left, check to see if we can rewrite left or right
+    #         #     print("LEFT", pos_rw, pos_b, "cnt_e", cnt_e, "cnt_m", cnt_m, "ORIG", self._pp(c), "left", self._pp(left_c), "right", self._pp(right_c))
+    #         #     if isinstance(right_c, ConstExp) and right_c.const == Name("Top.m"):
+    #         #         return "id_r", AstOp().staple(c, pos_rw, c_rw.cs[0])
+    #         #     elif isinstance(left_c, ConstExp) and left_c.const == Name("Top.e"):
+    #         #         if cnt_e > 1:
+    #         #             return "id_l", AstOp().staple(c, pos_rw, c_rw.cs[1])
+    #         #         elif isinstance(right_c, VarExp) and right_c.x == "b":
+    #         #             return "id_l", AstOp().staple(c, pos_rw, c_rw.cs[1])
+    #         # elif pos_rw > pos_b:
+    #         #     print("RIGHT", pos_rw, pos_b, "cnt_e", cnt_e, "cnt_m", cnt_m, "ORIG", self._pp(c), "left", self._pp(left_c), "right", self._pp(right_c))
+    #         #     # 3. On right, check to see if we can rewrite left or right
+    #         #     if isinstance(left_c, ConstExp) and left_c.const == Name("Top.e"):
+    #         #         return "id_l", AstOp().staple(c, pos_rw, c_rw.cs[1])
+    #         #     elif isinstance(right_c, ConstExp) and right_c.const == Name("Top.m"):
+    #         #         if cnt_m > 1:
+    #         #             return "id_r", AstOp().staple(c, pos_rw, c_rw.cs[0])
+    #         #         elif isinstance(left_c, VarExp) and left_c.x == "b":
+    #         #             return "id_l", AstOp().staple(c, pos_rw, c_rw.cs[1])
+    #     assert False
 
     def _strip(self, name):
         # Convert Top.name into name
@@ -398,12 +598,13 @@ class PyCoqAlgProver(object):
 
 # LEMMA = "Lemma rewrite_eq_0: forall b, ( e <+> ( ( ( ( b ) <+> m ) <+> m ) <+> m ) ) <+> m = b."
 # LEMMA = "Lemma rewrite_eq_0: forall b: G, ((b <+> m) <+> (m <+> ((e <+> (m <+> m)) <+> (e <+> ((e <+> e) <+> m))))) = b."
-LEMMA = "Lemma rewrite_eq_0: forall b: G, ((e <+> (b <+> (e <+> m))) <+> m) = b."
+# LEMMA = "Lemma rewrite_eq_0: forall b: G, ((e <+> (b <+> (e <+> m))) <+> m) = b."
+# LEMMA = "Lemma rewrite_eq_49: forall b: G, (b <+> (((e <+> e) <+> (e <+> e)) <+> m)) <+> (e <+> m) = b."
 
 """
-1. [Y] Generate a bunch of lemmas
-2. [Y] Run it through current surgery
-3. [Y] Dump it into file and run coqc
+1. [X] Generate a bunch of lemmas
+2. [X] Run it through current surgery
+3. [X] Dump it into file and run coqc
 4. [Y] Fix reconstructor to blacklist surgery
 5. Write goal AST attention model
    predict <id_l | id_r> and <loc>
@@ -421,22 +622,25 @@ random.seed(0)
 # ((f (f e (f b m)) m))
 
 if __name__ == "__main__":
-    num_theorems = 1
+    num_theorems = 500
     sent_len = 10
 
-    lemma = GenAlgExpr().gen_lemma(sent_len)
-    print(lemma)
-    policy = RandAlgPolicy()
-    rewriter = PyCoqAlgProver(policy, lemma)
-    rewriter.attempt_proof()
-    print(rewriter.extract_proof())
-    # with open('theorems.v', 'w') as f:
-    #     lemma = GenAlgExpr().gen_lemma(10)
-    #     for i in range(num_theorems):
-    #         policy = RandAlgPolicy()
-    #         print(lemma)
-    #         rewriter = PyCoqAlgProver(policy, lemma)
-    #         rewriter.attempt_proof()
-    #         print(rewriter.extract_proof())
-    #         f.write(rewriter.extract_proof())
-    #         f.write('\n')
+    # lemma = GenAlgExpr().gen_lemma(sent_len)
+    # print(lemma)
+    # policy = RandAlgPolicy()
+    # rewriter = PyCoqAlgProver(policy, LEMMA)
+    # rewriter.attempt_proof()
+    # print(rewriter.extract_proof())
+
+    with open('theorems.v', 'w') as f:
+        f.write(PREFIX)
+        gen = GenAlgExpr()
+        for i in range(num_theorems):
+            lemma = gen.gen_lemma(sent_len)
+            print(lemma)
+            policy = RandAlgPolicy()
+            rewriter = PyCoqAlgProver(policy, lemma)
+            rewriter.attempt_proof()
+            print(rewriter.extract_proof())
+            f.write(rewriter.extract_proof())
+            f.write('\n\n')
