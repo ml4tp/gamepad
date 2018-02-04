@@ -1,5 +1,7 @@
 from enum import Enum
+import sexpdata
 
+from coq.tactics_util import FvsTactic
 from coq.tactics import TacKind
 from lib.gensym import GenSym
 from lib.myiter import MyIter
@@ -39,6 +41,17 @@ class RawTac(object):
         self.af_decls = af_decls   # After declarations
         self.body = body           # Raw tactics in the body
         self.constrs = constrs     # Expressions in scope (for Ltac substitution)?
+
+        # NOTE(deh): sigh*, need to change to substitued arguments
+        # instead of formal parameters
+        if self.constrs:
+            self.ftac.pp_tac = self.name
+            self.ftac.lids = set()
+            self.ftac.gids = set()
+            for sexp_gc in self.constrs:
+                fvs = FvsTactic()
+                self.ftac.lids = self.ftac.lids.union(fvs.fvs_glob_constr(sexp_gc))
+                self.ftac.gids = self.ftac.gids.union(fvs.globs)
 
     def pp(self, tab=0):
         epi = pp_tab(tab, "{}({}, {}) {{\n".format(self.name, self.ftac, self.uid))
@@ -119,8 +132,11 @@ class RawTacParser(object):
         constrs = []
         while it.has_next() and it.peek().hdr.kind.startswith("Constr("):
             decl = next(it)
-            # Constr(stuff)
-            constrs += [decl.hdr.kind[7:-1]]
+            # Constr(stuff), fucking '
+            str_gc = decl.hdr.kind[7:-1].replace('\'', '!@#')
+            # print("DOING", str_gc)
+            sexp_gc = sexpdata.loads(str_gc)
+            constrs += [sexp_gc]
             # print("CONSUMING", constr)
         return constrs
 

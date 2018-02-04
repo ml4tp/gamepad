@@ -220,7 +220,8 @@ class FvsTactic(object):
         elif tag == "S":
             # Printf.sprintf "S(%s)" (show_glob_sort gsort)
             # return ("S", self.fvs_glob_sort(body[0]))
-            raise NameError("TODO")
+            # raise NameError("TODO")
+            return set()
         elif tag == "H":
             # Printf.sprintf "H(%s, %s, %s)" "TODO" (show_intro_pattern_naming_expr ipne) "TODO"
             return self.fvs_intro_pattern_naming_expr(body[1])

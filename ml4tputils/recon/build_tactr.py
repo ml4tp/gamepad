@@ -5,6 +5,7 @@ import plotly
 from plotly.graph_objs import *
 import sexpdata
 
+from coq.tactics_util import FvsTactic
 from coq.parse_sexpr import ParseSexpr
 from coq.decode import DecodeCoqExp
 from recon.parse_raw import FullTac 
@@ -227,9 +228,19 @@ class TacTreeBuilder(object):
             self._add_edges(edges)
             return
         elif tac.name == "surgery":
+            # tac.ftac.pp_tac = "surgery"
+            # tac.ftac.lids = set()
+            # tac.ftac.gids = set()
+            # parser = ParseSexpr()
+            # for sexp_gc in tac.constrs:
+            #     # sexp_gc = sexpdata.loads(str_gc)
+            #     gc = parser.parse_glob_constr(sexp_gc)
+            #     fvs = FvsTactic()
+            #     tac.ftac.lids = tac.ftac.lids.union(fvs.fvs_glob_constr(sexp_gc))
+            #     tac.ftac.gids = tac.ftac.gids.union(fvs.globs)
+            # foo = [str(ParseSexpr().parse_glob_constr(sexpdata.loads(gc))) for gc in tac.constrs]
+            # print("HERE", len(tac.constrs), tac.constrs, foo)
             edges = self._mk_edge(tac, tac.bf_decl, tac.af_decls[0])
-            foo = [str(ParseSexpr().parse_glob_constr(sexpdata.loads(gc))) for gc in tac.constrs]
-            print("HERE", len(tac.constrs), tac.constrs, foo)
             self._add_edges(edges)
             return
 
