@@ -103,7 +103,7 @@ class Recon(object):
     def _recon_lemma(self, file, lemma):
         # [TacStDecl] tokens to [RawTac]
         tr_parser = RawTacParser(lemma, f_log=False)
-        tacs = tr_parser.parse_rawtacs()
+        tacs, _ = tr_parser.parse_rawtacs()
 
         # [RawTac] to tactic tree
         tr_builder = TacTreeBuilder(lemma.name, tacs, lemma.get_tacst_info(),

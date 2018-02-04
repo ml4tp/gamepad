@@ -50,12 +50,18 @@ Axiom id_r : forall a, a <+> m = a.
 (* [e] is the left-identity for all elements [a] *)
 Axiom id_l : forall a, e <+> a = a.
 
+(*
 Ltac surgery dir e1 e2 :=
   match goal with
   | [ |- _ ] =>
     let H := fresh in
     (have H : e1 = e2 by repeat (rewrite dir); reflexivity); rewrite H; clear H
   end.
+*)
+
+Ltac surgery dir e1 e2 :=
+  let H := fresh in
+  (have H : e1 = e2 by repeat (rewrite dir); reflexivity); rewrite H; clear H.
 
 """
 
@@ -622,7 +628,7 @@ random.seed(0)
 # ((f (f e (f b m)) m))
 
 if __name__ == "__main__":
-    num_theorems = 500
+    num_theorems = 5
     sent_len = 10
 
     # lemma = GenAlgExpr().gen_lemma(sent_len)
@@ -632,7 +638,7 @@ if __name__ == "__main__":
     # rewriter.attempt_proof()
     # print(rewriter.extract_proof())
 
-    with open('theorems.v', 'w') as f:
+    with open('theorems2.v', 'w') as f:
         f.write(PREFIX)
         gen = GenAlgExpr()
         for i in range(num_theorems):

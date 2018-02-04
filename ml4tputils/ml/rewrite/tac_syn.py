@@ -3,6 +3,7 @@ import random
 
 import torch
 
+from coq.ast import *
 from lib.myfile import MyFile
 from ml.poseval.fold_model import PosEvalModel
 from ml.poseval.fold_train import PosEvalTrainer
@@ -21,18 +22,6 @@ intermediate results.
 How to run:
 python ml4tputils/ml/main.py --end2end --mload mllogs/state_128_lr_0.001_conclu_pos_0_ln_False_drop_0.0_wd_0.0_v_False_attn_False_heads_1_m__r_/2018-01-31T155013.695099.pth --validate
 """
-
-# 1. Replace random policy (left, right) with learned policy
-#    a. [DONE] fix tcoq to print AST table after each sendone
-#    b. [DONE] use existing stuff to parse context + AST to feed into
-#       tac pred + pos eval model
-#    c. [DONE] Load pretrained model. Use it to do inference. Feed in next state.
-#    d. Do this also for tactic prediction and use that to take the next step with "some search" to make sure we don't choose the same tactic (if it fails)
-# 2. [DONE] interface with coqtop
-# 3. [DONE] sample from policy, send to coqtop, parse result
-# 4. Extension is to write which part of goal the model is attending
-# 5. [didn't need to do] Generate dataset without myrewrite from dataset with myrewrite
-# 6. [DONE] Train model
 
 
 PREFIX = """(* The set of the group. *)
@@ -65,6 +54,75 @@ def policy():
 class FakeTacEdge(object):
     def __init__(self, name):
         self.name = name
+
+
+class InOrder(object):
+    def __init__(self):
+        self.acc = []
+
+    def traverse(self, c):
+        self.acc = []
+        self._traverse(c)
+        return self.acc
+
+    def _traverse(self, c):
+        typ = type(c)
+        if typ is VarExp:
+            self.acc += [c]
+        elif typ is ConstExp:
+            self.acc += [c]
+        elif typ is AppExp:
+            self.acc += [c]
+            self._traverse(c.c)
+            self._traverses(c.cs)
+        else:
+            raise NameError("TODO")
+
+    def _traverses(self, cs):
+        for c in cs:
+            self._traverse(c)
+
+
+class RewritePos(object):
+    """Rewrite at a specific position
+    """
+    def __init__(self):
+        self.cnt = 0
+        self.pos = 0
+
+    def rewrite(self, pos, c):
+        self.cnt = 0
+        self.pos = pos
+        return self._rewrite(c)
+
+    def _rewrite(self, c):
+        if cnt == self.pos:
+            if typ is VarExp:
+                return None
+            elif typ is ConstExp:
+                return None
+            elif typ is AppExp:
+                return c.cs[0], c.cs[1]
+
+        self.cnt += 1
+        typ = type(c)
+        if typ is VarExp:
+            self.acc += [c]
+        elif typ is ConstExp:
+            self.acc += [c]
+        elif typ is AppExp:
+            self.acc += [c]
+            self._rewrite(c.c)
+            self._rewrite(c.cs)
+        else:
+            raise NameError("TODO")
+
+
+def separate_goal(c):
+    # 0 is I(Coq.Init.Logic.eq.0, )
+    left_c = c.cs[1]
+    right_c = c.cs[2]
+    return left_c, right_c
 
 
 class MyAlgRewriter(object):
@@ -117,7 +175,14 @@ class MyAlgRewriter(object):
         print("CTX")
         for ident, typ_idx in self.ctx:
             print(ident, typ_idx, self.decoder.decode_exp_by_key(typ_idx))
-        print("CONCL", self.concl_idx, self.decoder.decode_exp_by_key(self.concl_idx))
+        if self.concl_idx != -1:
+            c = self.decoder.decode_exp_by_key(self.concl_idx)
+            print("CONCL", self.concl_idx, c)
+            left_c, right_c = separate_goal(c)
+            print("LEFT", left_c)
+            print(InOrder().traverse(left_c))
+            print("RIGHT", right_c)
+            InOrder().traverse(right_c)
 
     def attempt_proof_step(self):
         # TODO(deh): run infer
@@ -132,10 +197,10 @@ class MyAlgRewriter(object):
         print("Values", values, "indicies", indices)
 
         self.num_steps += 1
-        if indices == 0:
+        if indices.data[0] == 0:
             self._log("Trying RIGHT")
             res = self.top.sendone("rewrite id_r.")
-        elif indices == 1:
+        elif indices.data[0] == 1:
             self._log("Trying LEFT")
             res = self.top.sendone("rewrite id_l.")
 

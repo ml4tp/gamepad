@@ -21,7 +21,7 @@ bf body af
 # Data structures
 
 class RawTac(object):
-    def __init__(self, uid, name, tkind, ftac, bf_decl, af_decls, body):
+    def __init__(self, uid, name, tkind, ftac, bf_decl, af_decls, body, constrs):
         assert isinstance(uid, int)
         assert isinstance(name, str)
         assert isinstance(tkind, TacKind)
@@ -38,6 +38,7 @@ class RawTac(object):
         self.bf_decl = bf_decl     # Before declarations
         self.af_decls = af_decls   # After declarations
         self.body = body           # Raw tactics in the body
+        self.constrs = constrs     # Expressions in scope (for Ltac substitution)?
 
     def pp(self, tab=0):
         epi = pp_tab(tab, "{}({}, {}) {{\n".format(self.name, self.ftac, self.uid))
@@ -84,37 +85,50 @@ class RawTacParser(object):
     def _fresh_uid(self):
         return self.gensym.gensym()
 
-    def parse_name_call(self):
+    # def parse_name_call(self):
+    #     # Internal
+    #     it = self.it
+    #     self._mylog("@parse_name_call:before<{}>".format(it.peek()))
+
+    #     # Parse before
+    #     befores = []
+    #     start_decl = it.peek()
+    #     while (it.peek().hdr.mode == TOK_BEFORE and
+    #            it.peek().hdr.callid == start_decl.hdr.callid):
+    #         befores += [next(it)]
+
+    #     # Parse after
+    #     afters = []
+    #     while (it.has_next() and
+    #            is_after(it.peek().hdr.mode) and
+    #            it.peek().hdr.callid == start_decl.hdr.callid):
+    #         afters += [next(it)]
+
+    #     rawtacs = []
+    #     for bf_decl, af_decl in zip(befores, afters):
+    #         rawtacs += [RawTac(self._fresh_uid(), start_decl.hdr.tac,
+    #                            TacKind.NAME, start_decl.hdr.ftac,
+    #                            bf_decl, [af_decl], [])]
+    #     return rawtacs
+
+    def parse_constr(self):
         # Internal
         it = self.it
-        self._mylog("@parse_name_call:before<{}>".format(it.peek()))
+        self._mylog("@parse_constr:before<{}>".format(it.peek()))
 
-        # Parse before
-        befores = []
-        start_decl = it.peek()
-        while (it.peek().hdr.mode == TOK_BEFORE and
-               it.peek().hdr.callid == start_decl.hdr.callid):
-            befores += [next(it)]
-
-        # Parse after
-        afters = []
-        while (it.has_next() and
-               is_after(it.peek().hdr.mode) and
-               it.peek().hdr.callid == start_decl.hdr.callid):
-            afters += [next(it)]
-
-        rawtacs = []
-        for bf_decl, af_decl in zip(befores, afters):
-            rawtacs += [RawTac(self._fresh_uid(), start_decl.hdr.tac,
-                               TacKind.NAME, start_decl.hdr.ftac,
-                               bf_decl, [af_decl], [])]
-        return rawtacs
+        constrs = []
+        while it.has_next() and it.peek().hdr.kind.startswith("Constr("):
+            decl = next(it)
+            # Constr(stuff)
+            constrs += [decl.hdr.kind[7:-1]]
+            # print("CONSUMING", constr)
+        return constrs
 
     def rec_parse_rawtac(self):
         self.depth += 1
-        body = self.parse_rawtacs()
+        body, constrs = self.parse_rawtacs()
         self.depth -= 1
-        return body
+        return body, constrs
 
     def parse_nested(self, tackind):
         # Internal
@@ -125,7 +139,8 @@ class RawTacParser(object):
         start_decl = it.peek()
         while it.has_next() and it.peek().hdr.callid == start_decl.hdr.callid:
             bf_decl = next(it)
-            body = self.rec_parse_rawtac()
+            constrs1 = self.parse_constr()
+            body, constrs2 = self.rec_parse_rawtac()
             af_decls = []
             while (it.has_next() and
                    is_after(it.peek().hdr.mode) and
@@ -133,7 +148,7 @@ class RawTacParser(object):
                 af_decls += [next(it)]
             rawtacs += [RawTac(self._fresh_uid(), start_decl.hdr.tac,
                                tackind, start_decl.hdr.ftac, bf_decl,
-                               af_decls, body)]
+                               af_decls, body, constrs1 + constrs2)]
         return rawtacs
 
     def parse_rawtacs(self):
@@ -146,6 +161,7 @@ class RawTacParser(object):
 
         # Reconstruct tactic tree
         acc = []
+        constrs = []
         while it.has_next():
             decl = it.peek()
 
@@ -154,25 +170,28 @@ class RawTacParser(object):
                 acc += self.parse_nested(TacKind.NAME)
                 # acc += self.parse_name_call()
             elif is_after(decl.hdr.mode) and decl.hdr.kind == TOK_NAME:
-                return acc
+                return acc, constrs
 
             # Nested cases
             elif decl.hdr.mode == TOK_BEFORE and decl.hdr.kind == TOK_NOTATION:
                 acc += self.parse_nested(TacKind.NOTATION)
             elif is_after(decl.hdr.mode) and decl.hdr.kind == TOK_NOTATION:
-                return acc
+                return acc, constrs
 
             elif decl.hdr.mode == TOK_BEFORE and decl.hdr.kind == TOK_ATOMIC:
                 acc += self.parse_nested(TacKind.ATOMIC)
             elif is_after(decl.hdr.mode) and decl.hdr.kind == TOK_ATOMIC:
-                return acc
+                return acc, constrs
 
             elif decl.hdr.mode == TOK_BEFORE and decl.hdr.kind == TOK_ML:
                 acc += self.parse_nested(TacKind.ML)
             elif is_after(decl.hdr.mode) and decl.hdr.kind == TOK_ML:
-                return acc
+                return acc, constrs
+
+            elif decl.hdr.mode == TOK_AFTER and decl.hdr.kind.startswith("Constr"):
+                constrs += self.parse_constr()
 
             else:
                 self._log_acc(acc)
                 raise NameError("Parsing alignment error {}".format(decl))
-        return acc
+        return acc, constrs

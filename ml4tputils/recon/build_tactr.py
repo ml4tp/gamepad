@@ -3,7 +3,9 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import plotly
 from plotly.graph_objs import *
+import sexpdata
 
+from coq.parse_sexpr import ParseSexpr
 from coq.decode import DecodeCoqExp
 from recon.parse_raw import FullTac 
 from recon.parse_rawtac import *
@@ -222,6 +224,12 @@ class TacTreeBuilder(object):
 
         if tac.name == "ml4tp.MYDONE":
             edges = self._mk_edge(tac, tac.bf_decl, tac.af_decls[0])
+            self._add_edges(edges)
+            return
+        elif tac.name == "surgery":
+            edges = self._mk_edge(tac, tac.bf_decl, tac.af_decls[0])
+            foo = [str(ParseSexpr().parse_glob_constr(sexpdata.loads(gc))) for gc in tac.constrs]
+            print("HERE", len(tac.constrs), tac.constrs, foo)
             self._add_edges(edges)
             return
 

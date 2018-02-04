@@ -669,11 +669,13 @@ class FvsTactic(object):
         elif tag == "Info":
             # Printf.sprintf "Info(%s)" (show_tac tac)
             return self.fvs_tac(body[0])
-        elif tag == "LetIn":
+        elif tag == "Let":
             # let f ((loc, id), targ) = Printf.sprintf "(%s, %s)" (show_id id) (show_tactic_arg targ) in
             # Printf.sprintf "Let(%b, %s, %s)" rf (brackets (show_ls f ", " bindings)) (show_tac tac)
             # return ("LetIn", bool(body[0]), self.fvs_ls(lambda x, targ: (self.fvs_id(x), self.fvs_tactic_arg(targ))), self.fvs_tac(body[2]))
-            raise NameError("TODO")
+            # TODO(deh): subtract away bindings
+            fvs2 = self.fvs_tac(body[2])
+            return fvs2
         elif tag == "Match":
             # let f (_, gtrm, cpat) = show_gtrm gtrm in
             # Printf.sprintf "Match(%s, %s, %s)" (show_lazy_flag lf) (show_tac tac) (show_match_rules f show_tac mrules)
