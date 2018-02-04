@@ -4,9 +4,12 @@ import random
 import torch
 
 from coq.ast import *
+from coq.glob_ast import *
 from lib.myfile import MyFile
 from pycoqtop.coqtop import CoqTop
 from recon.parse_raw import TacStParser, FullTac
+from ml.tacst_prep import PosEvalPt, Dataset
+from coq.parse_sexpr import ParseSexpr
 
 
 """
@@ -16,14 +19,6 @@ Don't forget to set environment variable of where to load the
 intermediate results.
 
     export TCOQ_DUMP=/tmp/tcoq.log
-
-1. Use algorithm in gen_rewrite to create a bunch of proofs
-[x] 2. Use PyCoqTop + algorithm in python to solve proof with surgery
-[x] 3. Modify formatter to just look at surgery
-[x] 4. Need functions that 
-   - numbers nodes in an AST
-   - takes position in an AST and gets left/right children
-   - implement surgery
 """
 
 
@@ -207,8 +202,6 @@ class AstOp(object):
         return self._staple(c_skel, pos, c_subst)
 
     def _staple(self, c_skel, pos, c_subst):
-        # print("At {}, Stapling to {}".format(self.pos, pos))
-        # print(c_skel)
         if self.pos == pos:
             self.pos += 1
             return c_subst
@@ -338,33 +331,6 @@ class RandAlgPolicy(object):
         else:
             raise NameError("I'm tired of these motherf*cking snakes on this motherf*cking plane {}.".format(c))
 
-    def _select22(self, mode, c):
-        self.elim_e = False
-        self.elim_m = False
-        return self._select2(mode, c)
-
-    def _select2(self, mode, c):
-        if self.elim_e or self.elim_m:
-            return c
-        typ = type(c)
-        if typ is VarExp:
-            return c
-        elif typ is ConstExp:
-            return c
-        elif typ is AppExp:
-            left_c = c.cs[0]
-            right_c = c.cs[1]
-            if isinstance(left_c, ConstExp) and left_c.const == Name("Top.e") and mode == "LEFT":
-                self.elim_e = True
-                return right_c
-            elif isinstance(right_c, ConstExp) and right_c.const == Name("Top.m") and mode == "RIGHT":
-                self.elim_m = True
-                return left_c
-            else:
-                c1 = self._select2("RIGHT", c.cs[0])
-                c2 = self._select2("LEFT", c.cs[1])
-                return AppExp(c.c, [c1, c2])
-
     def _select(self, c):
         # side = random.choice(["LEFT", "RIGHT"])
         cnt = 0
@@ -375,109 +341,6 @@ class RandAlgPolicy(object):
                 return "id_l", c_p
             elif self.elim_m:
                 return "id_r", c_p
-
-    # def _select(self, c2):
-    #     c = AstOp().copy(c2)
-    #     print("ORIG", self._pp(c2))
-    #     print("COPY", self._pp(c))
-    #     preorder = [(pos, c_p) for pos, c_p in enumerate(PreOrder().traverse(c))]
-    #     nonleaves = [(pos, c_p) for pos, c_p in preorder if not is_leaf(c_p)]
-    #     pos_b = self._locate_b(c, preorder)
-    #     total_e, total_m = self._count(preorder)
-
-    #     cnt = 0
-    #     while cnt < 100:
-    #         cnt += 1
-    #         # 1. Pick a random place in the AST
-    #         pos_rw, c_rw = random.choice(nonleaves)
-    #         left_c = c_rw.cs[0]
-    #         right_c = c_rw.cs[1]
-
-    #         if pos_rw < pos_b:
-    #             preorder_p = [(pos, c_p) for pos, c_p in enumerate(PreOrder().traverse(left_c))]
-    #             cnt_e, cnt_m = self._count(preorder_p)
-    #             if isinstance(right_c, ConstExp) and right_c.const == Name("Top.m"):
-    #                 return "id_r", AstOp().staple(c, pos_rw, left_c)
-    #             elif isinstance(left_c, ConstExp) and left_c.const == Name("Top.e") and cnt_e >= 1:
-    #                 return "id_l", AstOp().staple(c, pos_rw, right_c)
-    #             elif isinstance(left_c, ConstExp) and left_c.const == Name("Top.e") and is_leaf(right_c):
-    #                 return "id_r", AstOp().staple(c, pos_rw, left_c)
-    #         elif pos_rw > pos_b:
-    #             preorder_p = [(pos, c_p) for pos, c_p in enumerate(PreOrder().traverse(right_c))]
-    #             cnt_e, cnt_m = self._count(preorder_p)
-    #             if isinstance(left_c, ConstExp) and left_c.const == Name("Top.e"):
-    #                 return "id_l", AstOp().staple(c, pos_rw, right_c)
-    #             elif isinstance(right_c, ConstExp) and right_c.const == Name("Top.m") and cnt_m >= 1:
-    #                 return "id_r", AstOp().staple(c, pos_rw, left_c)
-    #             elif isinstance(right_c, ConstExp) and right_c.const == Name("Top.m") and is_leaf(left_c):
-    #                 return "id_l", AstOp().staple(c, pos_rw, right_c)
-
-    #         # if isinstance(right_c, ConstExp) and right_c.const == Name("Top.m"):
-    #         #     preorder_p = [(pos, c_p) for pos, c_p in enumerate(PreOrder().traverse(left_c))]
-    #         #     cnt_e, cnt_m = self._count(preorder_p)
-    #         #     if cnt_m >= 1:
-    #         #         return "id_r", AstOp().staple(c, pos_rw, left_c)
-    #         #     elif isinstance(left_c, VarExp) and left_c.x == "b":
-    #         #         return "id_r", AstOp().staple(c, pos_rw, left_c)
-    #         #     elif pos_rw < pos_b:
-    #         #         return "id_r", AstOp().staple(c, pos_rw, left_c)
-    #         #     elif isinstance(left_c, ConstExp) and left_c.const == Name("Top.e"):
-    #         #         return "id_l", AstOp().staple(c, pos_rw, right_c)
-    #         #     else:
-    #         #         print("FAILING RIGHT", self._pp(left_c), self._pp(right_c))
-    #         #         print("pos_rw", pos_rw, "pos_b", pos_b, "cnt_e", cnt_e, "cnt_m", cnt_m)
-    #         # elif isinstance(left_c, ConstExp) and left_c.const == Name("Top.e"):
-    #         #     preorder_p = [(pos, c_p) for pos, c_p in enumerate(PreOrder().traverse(right_c))]
-    #         #     cnt_e, cnt_m = self._count(preorder_p)
-    #         #     if cnt_e >= 1:
-    #         #         return "id_l", AstOp().staple(c, pos_rw, right_c)
-    #         #     elif isinstance(right_c, VarExp) and right_c.x == "b":
-    #         #         return "id_l", AstOp().staple(c, pos_rw, right_c)
-    #         #     elif pos_rw > pos_b:
-    #         #         return "id_l", AstOp().staple(c, pos_rw, right_c)
-    #         #     elif isinstance(right_c, ConstExp) and right_c.const == Name("Top.m"):
-    #         #         return "id_r", AstOp().staple(c, pos_rw, left_c)
-    #         #     else:
-    #         #         print("FAILING LEFT", self._pp(left_c), self._pp(right_c))
-    #         # else:
-    #         #     print("WTF", pos_rw, self._pp(c_rw), self._pp(c))
-    #         #     print(nonleaves)
-
-    #         # preorder_p = [(pos, c_p) for pos, c_p in enumerate(PreOrder().traverse(c_rw))]
-    #         # cnt_e, cnt_m = self._count(preorder_p)
-
-    #         # 2. Check to see if we are on the left or right side of b
-    #         #    b <+> (e <+> m) -> b <+> e   (stuck)
-    #         #    b <+> (e <+> m) -> b <+> m   (success)
-    #         # if pos_rw == 0:
-    #         #     # 3. At root, check to see if we can rewrite left or right
-    #         #     print("ROOT", pos_rw, pos_b, "cnt_e", cnt_e, "cnt_m", cnt_m, "ORIG", self._pp(c), "left", self._pp(left_c), "right", self._pp(right_c))
-    #         #     if isinstance(left_c, ConstExp) and left_c.const == Name("Top.e"):
-    #         #         return "id_l", AstOp().staple(c, pos_rw, c_rw.cs[1])
-    #         #     elif isinstance(right_c, ConstExp) and right_c.const == Name("Top.m"):
-    #         #         return "id_r", AstOp().staple(c, pos_rw, c_rw.cs[0])
-            
-    #         # if pos_rw < pos_b:
-    #         #     # 3. On left, check to see if we can rewrite left or right
-    #         #     print("LEFT", pos_rw, pos_b, "cnt_e", cnt_e, "cnt_m", cnt_m, "ORIG", self._pp(c), "left", self._pp(left_c), "right", self._pp(right_c))
-    #         #     if isinstance(right_c, ConstExp) and right_c.const == Name("Top.m"):
-    #         #         return "id_r", AstOp().staple(c, pos_rw, c_rw.cs[0])
-    #         #     elif isinstance(left_c, ConstExp) and left_c.const == Name("Top.e"):
-    #         #         if cnt_e > 1:
-    #         #             return "id_l", AstOp().staple(c, pos_rw, c_rw.cs[1])
-    #         #         elif isinstance(right_c, VarExp) and right_c.x == "b":
-    #         #             return "id_l", AstOp().staple(c, pos_rw, c_rw.cs[1])
-    #         # elif pos_rw > pos_b:
-    #         #     print("RIGHT", pos_rw, pos_b, "cnt_e", cnt_e, "cnt_m", cnt_m, "ORIG", self._pp(c), "left", self._pp(left_c), "right", self._pp(right_c))
-    #         #     # 3. On right, check to see if we can rewrite left or right
-    #         #     if isinstance(left_c, ConstExp) and left_c.const == Name("Top.e"):
-    #         #         return "id_l", AstOp().staple(c, pos_rw, c_rw.cs[1])
-    #         #     elif isinstance(right_c, ConstExp) and right_c.const == Name("Top.m"):
-    #         #         if cnt_m > 1:
-    #         #             return "id_r", AstOp().staple(c, pos_rw, c_rw.cs[0])
-    #         #         elif isinstance(left_c, VarExp) and left_c.x == "b":
-    #         #             return "id_l", AstOp().staple(c, pos_rw, c_rw.cs[1])
-    #     assert False
 
     def _strip(self, name):
         # Convert Top.name into name
@@ -601,6 +464,69 @@ class PyCoqAlgProver(object):
         return "\n".join([self.lemma, "Proof."] + self.proof + ["Qed."])
 
 
+# -------------------------------------------------
+# Data stuff
+
+class DiffAst(object):
+    def __init__(self):
+        self.pos = 0
+        self.found = False
+
+    def diff_ast(self, c1, c2):
+        self.pos = 0
+        self.found = False
+        self._diff_ast(c1, c2)
+        return self.pos        
+
+    def _diff_ast(self, c1, c2):
+        if isinstance(c1, GRef) and isinstance(c2, GRef):
+            if not self.found:
+                self.pos += 1
+        elif isinstance(c1, GVar) and isinstance(c2, GVar):
+            if not self.found:
+                self.pos += 1
+        elif isinstance(c1, GApp) and isinstance(c2, GApp):
+            if not self.found:
+                self.pos += 1
+                self._diff_ast(c1.g, c2.g)
+                for c1_p, c2_p in zip(c1.gs, c2.gs):
+                    if not self.found:
+                        self._diff_ast(c1_p, c2_p)
+        else:
+            self.found = True
+            return self.pos
+
+
+
+def to_goalattn_dataset(poseval_dataset):
+    def clean(orig):
+        dataset = []
+        for tactr_id, pt in orig:
+            # Item 3 contains [TacEdge]
+            tac = pt.tacst[3][-1]
+            if tac.name.startswith("surgery"):
+                args = tac.ftac.tac_args
+                rw_dir = ParseSexpr().parse_glob_constr(args[0])
+                orig_ast = ParseSexpr().parse_glob_constr(args[1])
+                rw_ast = ParseSexpr().parse_glob_constr(args[2])
+                pos = DiffAst().diff_ast(orig_ast, rw_ast)
+                print("DIFF", pos, orig_ast, rw_ast)
+                # Put the tactic in tac_bin
+                # Put the position of the ast in the subtr_bin
+                if "theorems.id_r" in tac.ftac.gids:
+                    pt.tac_bin = 0
+                    pt.subtr_bin = pos
+                    dataset += [(tactr_id, pt)]
+                elif "theorems.id_l" in tac.ftac.gids:
+                    pt.tac_bin = 1
+                    pt.subtr_bin = pos
+                    dataset += [(tactr_id, pt)]
+        return dataset
+    train = clean(poseval_dataset.train)
+    test = clean(poseval_dataset.test)
+    val = clean(poseval_dataset.val)
+    return Dataset(train, test, val)
+
 
 # LEMMA = "Lemma rewrite_eq_0: forall b, ( e <+> ( ( ( ( b ) <+> m ) <+> m ) <+> m ) ) <+> m = b."
 # LEMMA = "Lemma rewrite_eq_0: forall b: G, ((b <+> m) <+> (m <+> ((e <+> (m <+> m)) <+> (e <+> ((e <+> e) <+> m))))) = b."
@@ -650,3 +576,33 @@ if __name__ == "__main__":
             print(rewriter.extract_proof())
             f.write(rewriter.extract_proof())
             f.write('\n\n')
+
+
+"""
+    def _select22(self, mode, c):
+        self.elim_e = False
+        self.elim_m = False
+        return self._select2(mode, c)
+
+    def _select2(self, mode, c):
+        if self.elim_e or self.elim_m:
+            return c
+        typ = type(c)
+        if typ is VarExp:
+            return c
+        elif typ is ConstExp:
+            return c
+        elif typ is AppExp:
+            left_c = c.cs[0]
+            right_c = c.cs[1]
+            if isinstance(left_c, ConstExp) and left_c.const == Name("Top.e") and mode == "LEFT":
+                self.elim_e = True
+                return right_c
+            elif isinstance(right_c, ConstExp) and right_c.const == Name("Top.m") and mode == "RIGHT":
+                self.elim_m = True
+                return left_c
+            else:
+                c1 = self._select2("RIGHT", c.cs[0])
+                c2 = self._select2("LEFT", c.cs[1])
+                return AppExp(c.c, [c1, c2])
+"""

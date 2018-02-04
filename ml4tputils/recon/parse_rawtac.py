@@ -48,6 +48,7 @@ class RawTac(object):
             self.ftac.pp_tac = self.name
             self.ftac.lids = set()
             self.ftac.gids = set()
+            self.ftac.tac_args = self.constrs
             for sexp_gc in self.constrs:
                 fvs = FvsTactic()
                 self.ftac.lids = self.ftac.lids.union(fvs.fvs_glob_constr(sexp_gc))

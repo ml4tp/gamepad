@@ -17,11 +17,29 @@ Prepare data for:
 """
 
 
+def one_hot_lid(ctx, lids):
+    vec = [0 for _ in ctx]
+    for idx, (ident, _) in enumerate(ctx):
+        if ident in lids:
+            vec[idx] = 1
+            break
+    return vec
+
+
+def one_hot_gid(tokens_to_idx, gids):
+    vec = [0 for _ in tokens_to_idx]
+    for idx, (k, v) in enumerate(tokens_to_idx.items()):
+        if k in gids:
+            vec[idx] = 1
+            break
+    return vec
+
+
 # -------------------------------------------------
 # Position Evaluation Dataset
 
 class PosEvalPt(object):
-    def __init__(self, gid, ctx, concl_idx, tac, tacst_size, subtr_size):
+    def __init__(self, gid, ctx, concl_idx, tac, tacst_size, subtr_size, tac_bin):
         self.tacst = (gid, ctx, concl_idx, tac)
         self.tacst_size = tacst_size
         self.subtr_size = subtr_size
@@ -31,18 +49,11 @@ class PosEvalPt(object):
             self.subtr_bin = 1
         else:
             self.subtr_bin = 2
-        self.tac_bin = None
+        self.tac_bin = tac_bin
         # for idx, (tac_p, _) in enumerate(TACTIC_INFO):
         #     if tac[-1].name.startswith(tac_p):
         #         self.tac_bin = idx
-        for idx, eq_tacs in enumerate(TACTICS_EQUIV):
-            for tac_p in eq_tacs:
-                if tac[-1].name.startswith(tac_p):
-                    self.tac_bin = idx
-                    break
 
-        if self.tac_bin == None:
-            raise NameError("Not assigned to bin", tac[-1].name)
 
 class SizeSubTr(object):
     def __init__(self, tactr):
@@ -64,11 +75,12 @@ class Dataset(object):
         self.test = test
 
 class PosEvalDataset(object):
-    def __init__(self, tactrs):
+    def __init__(self, tactics_equiv, tactrs):
         self.tactrs = tactrs
         self.data = {}
         self.tactics = set()
-        self.tac_hist = [0 for _ in TACTICS_EQUIV]
+        self.tactics_equiv = tactics_equiv
+        self.tac_hist = [0 for _ in tactics_equiv]
 
     def mk_tactrs(self):
         self.data = {}
@@ -76,9 +88,16 @@ class PosEvalDataset(object):
             self.mk_tactr(tactr_id, tactr)
         print("TACTICS", self.tactics)
         print("TACHIST")
-        for idx, eq_tacs in enumerate(TACTICS_EQUIV):
+        for idx, eq_tacs in enumerate(self.tactics_equiv):
             print("TAC", eq_tacs[0], self.tac_hist[idx])
         # assert False
+
+    def tac_bin(self, tac):
+        for idx, eq_tacs in enumerate(self.tactics_equiv):
+            for tac_p in eq_tacs:
+                if tac[-1].name.startswith(tac_p):
+                    return idx
+        raise NameError("Not assigned to bin", tac[-1].name)
 
     def mk_tactr(self, tactr_id, tactr):
         print("Working on ({}/{}) {}".format(tactr_id, len(self.tactrs), tactr.name))
@@ -99,11 +118,13 @@ class PosEvalDataset(object):
             tacst_size += sce.decode_size(concl_idx)
             for ident, idx in ctx:
                 tacst_size += sce.decode_size(idx)
-            pt = PosEvalPt(gid, ctx, concl_idx, tac, tacst_size, subtr_size[gid])
+
+            tac_bin = self.tac_bin(tac)
+            pt = PosEvalPt(gid, ctx, concl_idx, tac, tacst_size, subtr_size[gid], tac_bin)
             self.data[tactr_id].append(pt)
             self.tac_hist[pt.tac_bin] += 1
 
-    def split_by_lemma(self):
+    def split_by_lemma(self, f_rec=True):
         if self.data == {}:
             self.mk_tactrs()
         strain, sval, stest = 0.8, 0.1, 0.1
@@ -127,9 +148,10 @@ class PosEvalDataset(object):
         print("Split Tactrs Train={} Valid={} Test={}".format(len(data_train), len(data_val), len(data_test)))
         ps = [len(data_train) / len(train), len(data_val) / len(val), len(data_test) / len(test)]
         print("ps ", ps)
-        for p in ps:
-            if (p - 64.5)**2 > (66 - 64.5)**2:
-                return self.split_by_lemma()
+        if f_rec:
+            for p in ps:
+                if (p - 64.5)**2 > (66 - 64.5)**2:
+                    return self.split_by_lemma()
         return Dataset(data_train, data_val, data_test)
 
 
@@ -158,6 +180,7 @@ if __name__ == "__main__":
     argparser.add_argument("-t", "--tacpred", default="tacpred.pickle",
                            type=str, help="Pickle file to save to")
     argparser.add_argument("-v", "--verbose", action="store_true")
+    argparser.add_argument("--simprw", action="store_true")
     args = argparser.parse_args()
 
     with open(args.load, 'rb') as f:
@@ -166,8 +189,15 @@ if __name__ == "__main__":
 
     print("Creating dataset {}...".format(args.load))
 
-    poseval = PosEvalDataset(tactrs)
-    poseval_dataset = poseval.split_by_lemma()
+    if args.simprw:
+        tactics_equiv = [["intros"], ["surgery"], ["<coretactics::reflexivity@0>"]]
+        poseval = PosEvalDataset(tactics_equiv, tactrs)
+    else:
+        poseval = PosEvalDataset(TACTICS_EQUIV, tactrs)
+    if args.simprw:
+        poseval_dataset = poseval.split_by_lemma(f_rec=False)
+    else:
+        poseval_dataset = poseval.split_by_lemma()
 
     embed_tokens = EmbedTokens()
     embed_tokens.tokenize_tactrs(tactrs)

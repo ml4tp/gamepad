@@ -6,11 +6,12 @@ from coq.glob_ast import *
 [Note]
 
 TODO
-1. Write Python ast
-2. write parser
+1. [ish] Write Python ast
+2. [ish] write parser
 3. Traverse AST to get positions
 
 Ideally have ctx/conclusion in GAst (TODO later)
+Hmm, train on kernel or GAST???
 """
 
 

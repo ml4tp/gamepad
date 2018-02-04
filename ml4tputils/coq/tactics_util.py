@@ -216,7 +216,9 @@ class FvsTactic(object):
         elif tag == "R":
             # Printf.sprintf "R(%s, %s, %s, %s, %s)" "TODO" (brackets (show_arr show_id ", " ids)) "TODO" (show_glob_constr_arr gcs1) (show_glob_constr_arr gcs2)
             # return ("R", "TODO", self.fvs_ls(self.fvs_id, body[1]), "TODO", self.fvs_ls(self.fvs_glob_constr, body[3]), self.fvs_ls(self.fvs_glob_constr, body[4]))
-            raise NameError("TODO")
+            # raise NameError("TODO")
+            # TODO(deh): sigh* fuck me
+            return set()
         elif tag == "S":
             # Printf.sprintf "S(%s)" (show_glob_sort gsort)
             # return ("S", self.fvs_glob_sort(body[0]))
