@@ -10,7 +10,8 @@ from ml.tacst_prep import Dataset, PosEvalPt
 from ml.poseval.fold_model import PosEvalModel
 from ml.poseval.fold_train import PosEvalTrainer #, PosEvalInfer
 # from ipdb import launch_ipdb_on_exception
-from ml.rewrite.tac_syn import end2end
+from ml.rewrite.tac_syn import end2end, to_tacpred_dataset
+from ml.rewrite.solver import to_goalattn_dataset
 
 """
 [Note]
@@ -95,10 +96,12 @@ if __name__ == "__main__":
         model = PosEvalModel(*tokens_to_idx, ln=args.ln, treelstm=args.treelstm, lstm=args.lstm, dropout=args.dropout, attention=args.attention, heads=args.heads, D = args.state, state = args.state, weight_dropout=args.weight_dropout, variational=args.variational, conclu_pos=args.conclu_pos)
         trainer = PosEvalTrainer(model, tactrs, poseval_dataset, args)
         if args.end2end:
-            if args.validate:
-                end2end(trainer)
-            else:
-                trainer.train()
+            dataset = to_goalattn_dataset(poseval_dataset)
+            # trainer = PosEvalTrainer(model, tactrs, to_tacpred_dataset(poseval_dataset), args, f_tac=True)
+            # if args.validate:
+            #     end2end(trainer)
+            # else:
+            #     trainer.train()
         else:
             if args.validate:
                 trainer.validate()
