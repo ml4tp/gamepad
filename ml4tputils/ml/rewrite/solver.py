@@ -223,6 +223,32 @@ class AstOp(object):
     def _staples(self, cs, pos, c_subst):
         return [self._staple(c, pos, c_subst) for c in cs]
 
+    def rewrite(self, pos, rw_dir, c):
+        self.pos = 0
+        return self._rewrite(rw_dir, c)
+
+    def _rewrite(self, rw_dir, c):
+        typ = type(c)
+        if typ is VarExp:
+            self.pos += 1
+            return c
+        elif typ is ConstExp:
+            self.pos += 1
+            return c
+        elif typ is AppExp:
+            if self.pos == pos:
+                if rw_dir == 0:
+                    return c.cs[0]
+                else:
+                    return c.cs[1]
+            self.pos += 1
+            c_p = self._rewrite(rw_dir, c)
+            c1 = self._rewrite(rw_dir, c.cs[0])
+            c2 = self._rewrite(rw_dir, c.cs[1])
+            return AppExp(c_p, [c1, c2])
+        else:
+            raise NameError("Shouldn't happen {}".format(c))
+
 
 # -------------------------------------------------
 # Simple algebraic problem
@@ -360,11 +386,10 @@ class RandAlgPolicy(object):
             return "({} {} {})".format(s_op, s_left, s_right)
 
 
+# -------------------------------------------------
+# Prover
+
 class PyCoqAlgProver(object):
-    """A random policy that
-    1. Picks a random place in the AST
-    2. Attempts a left or right rewrite
-    """
     def __init__(self, policy, lemma):
         # Internal state
         self.ts_parser = TacStParser("/tmp/tcoq.log")
@@ -464,6 +489,57 @@ class PyCoqAlgProver(object):
         return "\n".join([self.lemma, "Proof."] + self.proof + ["Qed."])
 
 
+class PyCoqAlgTrainedProver(PyCoqAlgProver):
+    def __init__(self, policy, lemma, trainer):
+        super().__init__(policy, lemma)
+        self.trainer = trainer
+
+    def get_proof_step(self, goal_c):
+        edge = FakeTacEdge("rewrite")
+        poseval_pt = PosEvalPt(0, self.ctx, self.concl_idx, [edge], 0, 0)
+        poseval_pt.tac_bin = 0
+        (pos_logits, dir_logits), _, _, _ = self.trainer.forward([(0, poseval_pt)])
+        pos_values, pos_indices = pos_logits[0].max(0)
+        print("Pos Values", pos_values, "Pos Index", pos_indices)
+        dir_values, dir_indices = dir_logits[0].max(0)
+        print("Dir Values", dir_values, "Dir Index", dir_indices)
+
+        rw_c = AstOp.rewrite(pos_indices, dir_indices, goal_c)
+        if dir_indices == 0:
+            rw_dir = "id_r"
+        else:
+            rw_dir = "id_l"
+        return "surgery {} ({}) ({}).".format(rw_dir, self._pp(goal_c), self._pp(rw_c))
+
+    def attempt_proof_step(self):
+        self.num_steps += 1
+
+        # 1. Obtain goal
+        goal_c = self.decoder.decode_exp_by_key(self.concl_idx)
+        left_c, right_c = self.sep_eq_goal(goal_c)
+        
+        # 2. Compute and take next step
+        # NOTE(deh): we assume the thing to simplify is on the left
+        step = self.get_proof_step()
+        print("STEP", step)
+        res = self.top.sendone(step)
+        self._log(res)
+        if self.is_success(res):
+            self.proof += [step]
+        else:
+            step = self.policy.next_proof_step(left_c)
+            print("STEP", step)
+            res = self.top.sendone(step)
+            self._log(res)
+            self.proof += [step]
+        
+        # 3. Prepare for next iteration
+        self.load_tcoq_result()
+        # self._dump_ctx()
+        
+        return self.is_success(res)
+
+
 # -------------------------------------------------
 # Data stuff
 
@@ -497,7 +573,6 @@ class DiffAst(object):
             return self.pos
 
 
-
 def to_goalattn_dataset(poseval_dataset):
     def clean(orig):
         dataset = []
@@ -510,7 +585,7 @@ def to_goalattn_dataset(poseval_dataset):
                 orig_ast = ParseSexpr().parse_glob_constr(args[1])
                 rw_ast = ParseSexpr().parse_glob_constr(args[2])
                 pos = DiffAst().diff_ast(orig_ast, rw_ast)
-                print("DIFF", pos, orig_ast, rw_ast)
+                # print("DIFF", pos, orig_ast, rw_ast)
                 # Put the tactic in tac_bin
                 # Put the position of the ast in the subtr_bin
                 if "theorems.id_r" in tac.ftac.gids:

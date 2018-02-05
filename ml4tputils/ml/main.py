@@ -93,16 +93,17 @@ if __name__ == "__main__":
     print("Points Train={} Val={} Test={}".format(len(poseval_dataset.train), len(poseval_dataset.val), len(poseval_dataset.test)))
     #with launch_ipdb_on_exception():
     if not args.orig:
-        model = PosEvalModel(*tokens_to_idx, ln=args.ln, treelstm=args.treelstm, lstm=args.lstm, dropout=args.dropout, attention=args.attention, heads=args.heads, D = args.state, state = args.state, weight_dropout=args.weight_dropout, variational=args.variational, conclu_pos=args.conclu_pos)
-        trainer = PosEvalTrainer(model, tactrs, poseval_dataset, args)
         if args.end2end:
+            model = PosEvalModel(*tokens_to_idx, ln=args.ln, treelstm=args.treelstm, lstm=args.lstm, dropout=args.dropout, attention=args.attention, heads=args.heads, D = args.state, state = args.state, weight_dropout=args.weight_dropout, variational=args.variational, conclu_pos=args.conclu_pos, f_twoway=args.end2end, outsize=20)
             dataset = to_goalattn_dataset(poseval_dataset)
-            # trainer = PosEvalTrainer(model, tactrs, to_tacpred_dataset(poseval_dataset), args, f_tac=True)
-            # if args.validate:
-            #     end2end(trainer)
-            # else:
-            #     trainer.train()
+            trainer = PosEvalTrainer(model, tactrs, dataset, args, f_twoway=True)
+            if args.validate:
+                trainer.validate()
+            else:
+                trainer.train()
         else:
+            model = PosEvalModel(*tokens_to_idx, ln=args.ln, treelstm=args.treelstm, lstm=args.lstm, dropout=args.dropout, attention=args.attention, heads=args.heads, D = args.state, state = args.state, weight_dropout=args.weight_dropout, variational=args.variational, conclu_pos=args.conclu_pos, f_twoway=args.end2end)
+            trainer = PosEvalTrainer(model, tactrs, poseval_dataset, args)
             if args.validate:
                 trainer.validate()
             else:

@@ -128,6 +128,7 @@ class Folder(object):
             # FC calls
             self.max_batch_ops['proj_f'] = 32
             self.max_batch_ops['final_f'] = 32
+            self.max_batch_ops['final_f2'] = 32
         self.reset()
 
     def reset(self):
@@ -165,17 +166,34 @@ class TacStFolder(object):
         else:
             self.torch = torch
 
+        self.ast_cnt = 0
+        self.goal_ast = {}
+        self.f_save = False
+
     def reset(self):
         self.folded = {}
+
+    def reset_ast(self):
+        self.ast_cnt = 0
+        self.goal_ast = {}
+
+    def save_ast(self, c):
+        idx = self.ast_cnt
+        self.ast_cnt += 1
+        self.goal_ast[idx] = c
 
     # -------------------------------------------
     # Tactic state folding
 
-    def fold_tacst(self, tacst):
+    def fold_tacst(self, tacst, f_attn_goal=False):
         """Top-level fold function"""
         gid, ctx, concl_idx, tac = tacst
-        env, foldeds = self.fold_ctx(gid, ctx)
-        folded = self.fold_concl(gid, env, concl_idx)
+        if f_attn_goal:
+            folded = self.fold_concl(gid, env, concl_idx)
+            env, foldeds = self.fold_ctx(gid, ctx)
+        else:
+            env, foldeds = self.fold_ctx(gid, ctx)
+            folded = self.fold_concl(gid, env, concl_idx)
         return self.model.pred(self.folder, folded, *foldeds)
 
     def fold_ctx(self, gid, ctx):
@@ -194,7 +212,10 @@ class TacStFolder(object):
 
     def fold_concl(self, gid, env, concl_idx):
         # NOTE(deh): Do not need conclusion sharing because of AST sharing
+        self.f_save = True
+        self.reset_ast()
         c = self.tactr.decoder.decode_exp_by_key(concl_idx)
+        self.f_save = False
         return self.fold_ast(env, c)
 
     # -------------------------------------------
@@ -209,6 +230,9 @@ class TacStFolder(object):
 
         fold = self.model.ast_emb_func(self.folder, args)
         self.folded[key] = fold
+        if self.f_save:
+            for node in args[1:]:
+                self.save_ast(node)
         return fold
 
     def _fold_ast(self, env, kind, c):
@@ -387,7 +411,7 @@ class TreeLSTM(nn.Module):
 class PosEvalModel(nn.Module):
     def __init__(self, sort_to_idx, const_to_idx, ind_to_idx,
                  conid_to_idx, evar_to_idx, fix_to_idx,
-                 D=128, state=128, outsize=3, eps=1e-6, ln = False, treelstm = False, lstm = False, dropout = 0.0, attention = False, heads = 1, weight_dropout = 0.0, variational = False, conclu_pos = 0):
+                 D=128, state=128, outsize=3, eps=1e-6, ln = False, treelstm = False, lstm = False, dropout = 0.0, attention = False, heads = 1, weight_dropout = 0.0, variational = False, conclu_pos = 0, f_twoway = False):
         super().__init__()
 
         # Dimensions
@@ -491,6 +515,11 @@ class PosEvalModel(nn.Module):
         self.pred = self.ctx_func
         self.proj = nn.Linear(state + 1, state)
         self.final = nn.Linear(heads*state, outsize)
+        # For two way classification
+        self.f_twoway = f_twoway
+        if self.f_twoway:
+            self.final2 = nn.Linear(heads*state, 2)
+        
         self.loss_fn = nn.CrossEntropyLoss()
 
         # Extra vars
@@ -601,6 +630,12 @@ class PosEvalModel(nn.Module):
             x = x.chunk(2,-1)[0]
         return self.final(x)
 
+    def final_f2(self, x):
+        if self.tup:
+            # Only apply final to hidden
+            x = x.chunk(2,-1)[0]
+        return self.final2(x)        
+
     def proj_f(self, *xs):
         if self.tup:
             # Only apply proj to hidden
@@ -630,8 +665,12 @@ class PosEvalModel(nn.Module):
             xs = xs[1:] + xs[0:1] # moved to end
         x = self.ctx_emb_func(folder, xs)
         # Final layer for logits
-        x = folder.add('final_f', x)
-        return x
+        pred1 = folder.add('final_f', x)
+        if self.f_twoway:
+            pred2 = folder.add('final_f2', x)
+            return pred1, pred2
+        else:
+            return pred1
 
 
 class WeightDrop(torch.nn.Module):
