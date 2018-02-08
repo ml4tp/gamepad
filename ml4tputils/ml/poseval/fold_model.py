@@ -348,6 +348,9 @@ class TacStFolder(object):
 
     def fold_const_name(self, const):
         """Override Me"""
+        print("LOOKING UP", const)
+        for k in self.model.const_to_idx.keys():
+            print(k)
         id = self.model.fix_id('const', self.model.const_to_idx[const])
         return self.lookup(id)
 

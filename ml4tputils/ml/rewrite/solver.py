@@ -1,6 +1,6 @@
 import pickle
 import random
-
+import json
 import torch
 
 from coq.ast import *
@@ -19,6 +19,11 @@ Don't forget to set environment variable of where to load the
 intermediate results.
 
     export TCOQ_DUMP=/tmp/tcoq.log
+
+1. Check train/test for duplicates
+2. Accuracy code for logits2
+3. Use policy greedily
+4. Implement beam search
 """
 
 
@@ -45,20 +50,22 @@ Axiom id_r : forall a, a <+> m = a.
 (* [e] is the left-identity for all elements [a] *)
 Axiom id_l : forall a, e <+> a = a.
 
-(*
+
 Ltac surgery dir e1 e2 :=
   match goal with
   | [ |- _ ] =>
     let H := fresh in
     (have H : e1 = e2 by repeat (rewrite dir); reflexivity); rewrite H; clear H
   end.
-*)
 
+(*
 Ltac surgery dir e1 e2 :=
   let H := fresh in
   (have H : e1 = e2 by repeat (rewrite dir); reflexivity); rewrite H; clear H.
-
+*)
 """
+
+FILE = "theorems"
 
 
 # -------------------------------------------------
@@ -224,10 +231,16 @@ class AstOp(object):
         return [self._staple(c, pos, c_subst) for c in cs]
 
     def rewrite(self, pos, rw_dir, c):
+        print("REWRITING POS", pos, c)
         self.pos = 0
-        return self._rewrite(rw_dir, c)
+        self.found = False
+        rw_c = self._rewrite(pos, rw_dir, c)
+        if self.found:
+            return rw_c
+        else:
+            return None
 
-    def _rewrite(self, rw_dir, c):
+    def _rewrite(self, pos, rw_dir, c):
         typ = type(c)
         if typ is VarExp:
             self.pos += 1
@@ -238,13 +251,17 @@ class AstOp(object):
         elif typ is AppExp:
             if self.pos == pos:
                 if rw_dir == 0:
+                    self.pos += 1
+                    self.found = True
                     return c.cs[0]
                 else:
+                    self.pos += 1
+                    self.found = True
                     return c.cs[1]
             self.pos += 1
-            c_p = self._rewrite(rw_dir, c)
-            c1 = self._rewrite(rw_dir, c.cs[0])
-            c2 = self._rewrite(rw_dir, c.cs[1])
+            c_p = self._rewrite(pos, rw_dir, c.c)
+            c1 = self._rewrite(pos, rw_dir, c.cs[0])
+            c2 = self._rewrite(pos, rw_dir, c.cs[1])
             return AppExp(c_p, [c1, c2])
         else:
             raise NameError("Shouldn't happen {}".format(c))
@@ -367,6 +384,7 @@ class RandAlgPolicy(object):
                 return "id_l", c_p
             elif self.elim_m:
                 return "id_r", c_p
+        assert False
 
     def _strip(self, name):
         # Convert Top.name into name
@@ -404,13 +422,15 @@ class PyCoqAlgProver(object):
         # Initializing proof
         self.top.sendone(lemma)
         self.top.sendone("Proof.")
-        self.top.sendone("intros.")
-        self.load_tcoq_result()
+        res = self.top.sendone("intros.")
+        self.load_tcoq_result(res)
+        print("AFTER INTROS")
 
         # Proof state
         self.proof = ["intros."]
         self.good_choices = 0
         self.num_steps = 0
+        self.bad_points = set()
 
     def finalize(self):
         self.top.__exit__()        
@@ -421,17 +441,25 @@ class PyCoqAlgProver(object):
     def is_success(self, msg):
         return "Error" not in msg
 
-    def load_tcoq_result(self):
+    def load_tcoq_result(self, res):
         # TODO(deh): can optimize to not read whole file
         # NOTE(deh): export TCOQ_DUMP=/tmp/tcoq.log
         ts_parser = TacStParser("/tmp/tcoq.log")
         lemma = ts_parser.parse_partial_lemma()
-        
-        # Set decoder, contex, and conclusion
-        decl = lemma.decls[-1]
         self.decoder = lemma.decoder
-        self.ctx = decl.ctx.traverse()
-        self.concl_idx = decl.concl_idx
+        self.last_res = res
+
+        if self.is_success(res):
+            # Set contex and conclusion
+            decl = lemma.decls[-1]
+            self.ctx = decl.ctx.traverse()
+            self.concl_idx = decl.concl_idx
+            
+            goal_c = self.decoder.decode_exp_by_key(self.concl_idx)
+            left_c, right_c = self.sep_eq_goal(goal_c)
+            print("DOING", self.policy._pp(goal_c))
+            print("LEFT", self.policy._pp(left_c))
+            print("RIGHT", self.policy._pp(right_c))
 
     def proof_complete(self):
         # NOTE(deh): only works for straight-line proofs
@@ -450,7 +478,7 @@ class PyCoqAlgProver(object):
 
     def _dump_ctx(self):
         for ident, typ_idx in self.ctx:
-            self.log("id({}): {}".format(ident, typ_idx, self.decoder.decode_exp_by_key(typ_idx)))
+            self._log("id({}): {}".format(ident, typ_idx, self.decoder.decode_exp_by_key(typ_idx)))
         if self.concl_idx != -1:
             c = self.decoder.decode_exp_by_key(self.concl_idx)
             self._log("concl({}): {}".format(self.concl_idx, c))
@@ -471,10 +499,10 @@ class PyCoqAlgProver(object):
         if self.is_success(res):
             self.proof += [step]
         else:
-            assert False
+            return None
         
         # 3. Prepare for next iteration
-        self.load_tcoq_result()
+        self.load_tcoq_result(res)
         # self._dump_ctx()
         
         return self.is_success(res)
@@ -489,52 +517,134 @@ class PyCoqAlgProver(object):
         return "\n".join([self.lemma, "Proof."] + self.proof + ["Qed."])
 
 
+class FakeTacEdge(object):
+    def __init__(self, name):
+        self.name = name
+
+
 class PyCoqAlgTrainedProver(PyCoqAlgProver):
     def __init__(self, policy, lemma, trainer):
         super().__init__(policy, lemma)
         self.trainer = trainer
+        # Module shenanigans
+        acc = {}
+        for k, v in self.trainer.model.const_to_idx.items():
+            acc[Name(k.base.replace(FILE, "Top"))] = v
+        self.trainer.model.const_to_idx = acc
+        self.trainer.tacst_folder[0].tactr.decoder = self.decoder
+        
+        self.pos_of_pred = {}
+        for k in range(20):
+            self.pos_of_pred[k] = 0
+        self.bad_steps = 0
+
+    def replace_const(self, decoded):
+        acc = {}
+        for k, v in decoded.items():
+            c = decoded[k]
+            if isinstance(c, ConstExp):
+                acc[k] = ConstExp(Name(c.const.base.replace("Top", FILE)), c.ui)
+                print("REPLACE", acc[k])
+            else:
+                acc[k] = c
+                # acc[k].const.base = decoded[k].const.base.replace("Top", FILE)
+        return acc
 
     def get_proof_step(self, goal_c):
         edge = FakeTacEdge("rewrite")
-        poseval_pt = PosEvalPt(0, self.ctx, self.concl_idx, [edge], 0, 0)
+        poseval_pt = PosEvalPt(0, self.ctx, self.concl_idx, [edge], 0, 0, 0)
         poseval_pt.tac_bin = 0
         (pos_logits, dir_logits), _, _, _ = self.trainer.forward([(0, poseval_pt)])
+        print("Pos logits", pos_logits)
+        print("Dir logits", dir_logits)
         pos_values, pos_indices = pos_logits[0].max(0)
         print("Pos Values", pos_values, "Pos Index", pos_indices)
         dir_values, dir_indices = dir_logits[0].max(0)
         print("Dir Values", dir_values, "Dir Index", dir_indices)
 
-        rw_c = AstOp.rewrite(pos_indices, dir_indices, goal_c)
-        if dir_indices == 0:
+        np_pos_logits = pos_logits[0].data.numpy()
+        pos_pred = np_pos_logits.argsort()[::-1]
+        for idx, pos in enumerate(pos_pred):
+            rw_c = AstOp().rewrite(pos, dir_indices.data[0], goal_c)
+            if rw_c != None:
+                self.pos_of_pred[idx] += 1
+                break
+        # print("REWRITING", self.policy._pp(goal_c), self.policy._pp(rw_c))
+        # assert False
+        if dir_indices.data[0] == 0:
             rw_dir = "id_r"
         else:
             rw_dir = "id_l"
-        return "surgery {} ({}) ({}).".format(rw_dir, self._pp(goal_c), self._pp(rw_c))
+        return "surgery {} ({}) ({}).".format(rw_dir, self.policy._pp(goal_c), self.policy._pp(rw_c))
 
     def attempt_proof_step(self):
         self.num_steps += 1
 
         # 1. Obtain goal
+        # print("PROOF KEYS", self.decoder.decoded.keys())
+        # print("TRAINER KEYS", self.trainer.tacst_folder[0].tactr.decoder.decoded.keys())
         goal_c = self.decoder.decode_exp_by_key(self.concl_idx)
         left_c, right_c = self.sep_eq_goal(goal_c)
         
-        # 2. Compute and take next step
-        # NOTE(deh): we assume the thing to simplify is on the left
-        step = self.get_proof_step()
-        print("STEP", step)
-        res = self.top.sendone(step)
+        step_det = self.policy.next_proof_step(AstOp().copy(left_c))
+        print("STEP", step_det)
+
+        step_infer = self.get_proof_step(AstOp().copy(left_c))
+        print("PREDICTED STEP", step_infer)
+
+        # res = self.top.sendone(step_det)
+        # self._log(res)
+        # if self.is_success(res):
+        #     self.proof += [step_det]
+        # else:
+        #     assert False
+
+        res = self.top.sendone(step_infer)
         self._log(res)
         if self.is_success(res):
-            self.proof += [step]
+            self.proof += [step_infer]
         else:
-            step = self.policy.next_proof_step(left_c)
-            print("STEP", step)
-            res = self.top.sendone(step)
-            self._log(res)
-            self.proof += [step]
+            self.bad_steps += 1
+            self.bad_points.add(num_steps)
+            self.proof += [step_det]
+            res = self.top.sendone(step_det)
+
+
+        # # 2. Compute and take next step
+        # # NOTE(deh): we assume the thing to simplify is on the left
+        
+        
+        # res = self.top.sendone(step)
+        # self._log(res)
+
+        # # 3. Prepare for next iteration
+        # # self.load_tcoq_result(res)
+        # # self.replace_const(self.decoder.decoded)
+        # # self.trainer.tacst_folder[0].tactr.decoder = self.decoder
+        # # print("HERE", self.decoder.decoded.keys())
+
+        # # 4. Check?
+        # if self.is_success(res):
+        #     self.proof += [step]
+        # else:
+        #     # goal_c = self.decoder.decode_exp_by_key(self.concl_idx)
+        #     # print("DETERMINISTIC DOING", self.policy._pp(goal_c))
+        #     # left_c, right_c = self.sep_eq_goal(goal_c)
+        #     step = self.policy.next_proof_step(left_c)
+        #     print("DETERMINISTIC STEP", step)
+        #     res = self.top.sendone(step)
+        #     self._log(res)
+        #     self.proof += [step]
+
+        # # 3. Prepare for next iteration
+        # self.load_tcoq_result(res)
+        # self.replace_const(self.decoder.decoded)
+        # self.trainer.tacst_folder[0].tactr.decoder = self.decoder
         
         # 3. Prepare for next iteration
-        self.load_tcoq_result()
+        self.load_tcoq_result(res)
+        self.trainer.tacst_folder[0].tactr.decoder = self.decoder
+        # self.trainer.tacst_folder[0].tactr.decoder.decoded = self.replace_const(self.decoder.decoded)
         # self._dump_ctx()
         
         return self.is_success(res)
@@ -552,6 +662,8 @@ class DiffAst(object):
         self.pos = 0
         self.found = False
         self._diff_ast(c1, c2)
+        if not self.found:
+            assert False
         return self.pos        
 
     def _diff_ast(self, c1, c2):
@@ -573,9 +685,28 @@ class DiffAst(object):
             return self.pos
 
 
-def to_goalattn_dataset(poseval_dataset):
+def get_lemmas(lemma_ids):
+    # foobar = ["rewrite_eq_{}".format(lemid) for lemid in lemma_ids]
+
+    lemmas = {}
+    with open("{}.v".format(FILE), 'r') as f:
+        for line in f:
+            line = line.strip()
+            if "Lemma rewrite_eq" in line:
+                idx = line.find(':')
+                lemma2 = line[6:idx]
+                for lemid in lemma_ids:
+                    if "rewrite_eq_{}".format(lemid) == lemma2:
+                        lemmas[lemid] = line
+                        break
+    print("LEMMAS", lemma_ids.difference(set(lemmas.keys())))
+    return lemmas
+
+
+def to_goalattn_dataset(poseval_dataset):    
     def clean(orig):
         dataset = []
+        positions = [0 for _ in range(20)]
         for tactr_id, pt in orig:
             # Item 3 contains [TacEdge]
             tac = pt.tacst[3][-1]
@@ -588,25 +719,79 @@ def to_goalattn_dataset(poseval_dataset):
                 # print("DIFF", pos, orig_ast, rw_ast)
                 # Put the tactic in tac_bin
                 # Put the position of the ast in the subtr_bin
-                if "theorems.id_r" in tac.ftac.gids:
+                positions[pos] += 1
+                if "{}.id_r".format(FILE) in tac.ftac.gids:
                     pt.tac_bin = 0
                     pt.subtr_bin = pos
                     dataset += [(tactr_id, pt)]
-                elif "theorems.id_l" in tac.ftac.gids:
+                elif "{}.id_l".format(FILE) in tac.ftac.gids:
                     pt.tac_bin = 1
                     pt.subtr_bin = pos
                     dataset += [(tactr_id, pt)]
+        print(positions)
         return dataset
     train = clean(poseval_dataset.train)
     test = clean(poseval_dataset.test)
+    seen = set()
+    for tactr_id, pt in test:
+        seen.add(tactr_id)
+    print("TEST", len(seen), seen)
+    test_lemmas = get_lemmas(seen)
     val = clean(poseval_dataset.val)
-    return Dataset(train, test, val)
+    seen = set()
+    for tactr_id, pt in val:
+        seen.add(tactr_id)
+    print("VALID", len(seen), seen)
+    val_lemmas = get_lemmas(seen)
+    print("LEN", len(val_lemmas))
+    return Dataset(train, test, val), test_lemmas, val_lemmas
 
 
 # LEMMA = "Lemma rewrite_eq_0: forall b, ( e <+> ( ( ( ( b ) <+> m ) <+> m ) <+> m ) ) <+> m = b."
 # LEMMA = "Lemma rewrite_eq_0: forall b: G, ((b <+> m) <+> (m <+> ((e <+> (m <+> m)) <+> (e <+> ((e <+> e) <+> m))))) = b."
 # LEMMA = "Lemma rewrite_eq_0: forall b: G, ((e <+> (b <+> (e <+> m))) <+> m) = b."
 # LEMMA = "Lemma rewrite_eq_49: forall b: G, (b <+> (((e <+> e) <+> (e <+> e)) <+> m)) <+> (e <+> m) = b."
+# LEMMA = "Lemma rewrite_eq_0: forall b: G, (b <+> (m <+> (e <+> (e <+> ((e <+> e) <+> m))))) = b."
+# LEMMA = "Lemma rewrite_eq_432: forall b: G, (((e <+> m) <+> ((e <+> m) <+> m)) <+> (((e <+> m) <+> b) <+> (e <+> m))) = b."
+
+# LEMMA = "Lemma rewrite_eq_191: forall b: G, ((e <+> m) <+> ((e <+> (e <+> e)) <+> (e <+> ((e <+> m) <+> (b <+> m))))) = b."
+LEMMA = "Lemma rewrite_eq_259: forall b: G, ((((e <+> m) <+> e) <+> (e <+> e)) <+> ((e <+> m) <+> ((e <+> m) <+> b))) = b."
+
+
+def run(trainer, test_lemmas, val_lemmas):
+    # try:
+    #     rewriter = PyCoqAlgTrainedProver(RandAlgPolicy(), LEMMA, trainer)
+    #     rewriter.attempt_proof()
+    #     print("BAD STEPS", rewriter.bad_steps)
+    #     print("TOTAL STEPS", rewriter.num_steps)
+    #     print("POSOFPRED", rewriter.pos_of_pred)
+    # except:
+    #     print("FAILURE")
+    #     print(rewriter.last_res)
+    #     print("POSOFPRED", rewriter.pos_of_pred)
+
+    stats = {}
+    bad = set()
+    cnt = 0
+    for lem_id, lemma in val_lemmas.items():
+        try:
+            rewriter = PyCoqAlgTrainedProver(RandAlgPolicy(), lemma, trainer)
+            rewriter.attempt_proof()
+            print("BAD STEPS", rewriter.bad_steps)
+            print("TOTAL STEPS", rewriter.num_steps)
+            stats[lem_id] = {"lemma": lemma, "bad": rewriter.bad_steps, "total": rewriter.num_steps, "badpoints": list(rewriter.bad_points)}
+            assert rewriter.num_steps == 9
+        except:
+            bad.add(lemma)
+            cnt += 1
+            stats[lem_id] = {"lemma": lemma, "bad": rewriter.bad_steps, "total": rewriter.num_steps, "badpoints": list(rewriter.bad_points)}
+
+    with open('mllogs/simprw.log', 'w') as f:
+        f.write(json.dumps([v for k, v in stats.items()]))
+
+    print(len(bad), bad, len(val_lemmas.items()))
+    print(len(bad), cnt)
+
 
 """
 1. [X] Generate a bunch of lemmas
@@ -628,29 +813,85 @@ random.seed(0)
 # ((f (f e (f b (f e m))) m))
 # ((f (f e (f b m)) m))
 
+
+# b + (e + m) -> b m
+
+
+"""
+1. Percentage of rewrites that are doable
+2. Percentage of test lemmas that lead to a complete proof / locally stuck state
+3. Try smaller lemmas
+4. Try larger lemmas
+
+b + (m + e)
+b + (m + (e + m))
+b + (m + m)
+b + m
+b
+"""
+
+
+def test_this():
+    # ui = UniverseInstance([])
+    f = GRef(ConstRef("Top.f"), [])
+    e = GRef(ConstRef("Top.e"), [])
+    m = GRef(ConstRef("Top.m"), [])
+    b = GVar("b")
+    em = GApp(f, [e, m])
+    bem = GApp(f, [b, em])
+    ebem = GApp(f, [e, bem])
+    bm = GApp(f, [b, m])
+    ebm = GApp(f, [e, bm])
+    print("DIFF", DiffAst().diff_ast(bem, bm))
+    print("DIFF", DiffAst().diff_ast(bm, bem))
+    print("DIFF", DiffAst().diff_ast(ebem, ebm))
+    print("DIFF", DiffAst().diff_ast(ebm, ebem))
+    
+    ui = UniverseInstance([])
+    f2 = ConstExp(Name("Top.f"), ui)
+    e2 = ConstExp(Name("Top.e"), ui)
+    m2 = ConstExp(Name("Top.m"), ui)
+    b2 = VarExp("b")
+    em2 = AppExp(f2, [e2, m2])
+    bem2 = AppExp(f2, [b2, em2])
+    ebem2 = AppExp(f2, [e2, bem2])
+    bm2 = AppExp(f2, [b2, m2])
+    ebm2 = AppExp(f2, [e2, bm2])
+    print("REWRITE", AstOp().rewrite(3, 0, bem2))
+    print("REWRITE", AstOp().rewrite(3, 1, bem2))
+
+
 if __name__ == "__main__":
-    num_theorems = 5
+    num_theorems = 500
     sent_len = 10
+
+    # test_this()
 
     # lemma = GenAlgExpr().gen_lemma(sent_len)
     # print(lemma)
+    
     # policy = RandAlgPolicy()
     # rewriter = PyCoqAlgProver(policy, LEMMA)
     # rewriter.attempt_proof()
     # print(rewriter.extract_proof())
 
-    with open('theorems2.v', 'w') as f:
+    with open('{}.v'.format(FILE), 'w') as f:
         f.write(PREFIX)
         gen = GenAlgExpr()
-        for i in range(num_theorems):
+        seen = set()
+        while True:
+            if len(seen) == num_theorems:
+                break
             lemma = gen.gen_lemma(sent_len)
             print(lemma)
-            policy = RandAlgPolicy()
-            rewriter = PyCoqAlgProver(policy, lemma)
-            rewriter.attempt_proof()
-            print(rewriter.extract_proof())
-            f.write(rewriter.extract_proof())
-            f.write('\n\n')
+            if lemma not in seen:
+                seen.add(lemma)
+                policy = RandAlgPolicy()
+                rewriter = PyCoqAlgProver(policy, lemma)
+                rewriter.attempt_proof()
+                print(rewriter.extract_proof())
+                f.write(rewriter.extract_proof())
+                f.write('\n\n')
 
 
 """

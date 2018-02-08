@@ -239,7 +239,7 @@ class TacTreeBuilder(object):
             #     tac.ftac.lids = tac.ftac.lids.union(fvs.fvs_glob_constr(sexp_gc))
             #     tac.ftac.gids = tac.ftac.gids.union(fvs.globs)
             # foo = [str(ParseSexpr().parse_glob_constr(sexpdata.loads(gc))) for gc in tac.constrs]
-            # print("HERE", len(tac.constrs), tac.constrs, foo)
+            print("HERE", tac.name, len(tac.constrs), tac.constrs)
             edges = self._mk_edge(tac, tac.bf_decl, tac.af_decls[0])
             self._add_edges(edges)
             return

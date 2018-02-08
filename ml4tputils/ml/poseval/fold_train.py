@@ -141,18 +141,26 @@ class PosEvalTrainer(object):
             loss = self.loss_fn(logits, targets)
             loss2 = self.loss_fn(logits2, targets2)
             loss = loss + loss2
+
+            preds = torch.max(logits, dim=-1)[1]  # 0-th is max values, 1-st is max location
+            correct = torch.sum(torch.eq(preds, targets).cpu())
+            accuracy = float(correct.data) / float(np.prod(preds.shape))
+
+            preds2 = torch.max(logits2, dim=-1)[1]  # 0-th is max values, 1-st is max location
+            correct2 = torch.sum(torch.eq(preds2, targets2).cpu())
+            accuracy2 = float(correct2.data) / float(np.prod(preds2.shape))
         else:
             res = self.folder.apply(all_logits)
             logits = res[0]
             targets = autograd.Variable(self.torch.LongTensor(all_targets), requires_grad=False)
             assert logits.shape == torch.Size([n_batch, 3])  # , folded_logits[0].shape
             loss = self.loss_fn(logits, targets)
-        preds = torch.max(logits, dim=-1)[1]  # 0-th is max values, 1-st is max location
-        correct = torch.sum(torch.eq(preds, targets).cpu())
-        accuracy = float(correct.data) / float(np.prod(preds.shape))
+            preds = torch.max(logits, dim=-1)[1]  # 0-th is max values, 1-st is max location
+            correct = torch.sum(torch.eq(preds, targets).cpu())
+            accuracy = float(correct.data) / float(np.prod(preds.shape))
 
         if self.f_twoway:
-            return (logits, logits2), loss, accuracy, astsizes
+            return (logits, logits2), loss, (accuracy, accuracy2), astsizes
         else:
             return logits, loss, accuracy, astsizes
 
@@ -203,7 +211,7 @@ class PosEvalTrainer(object):
             print(k, v)
 
         # Train
-        smooth_acc = None
+        smooth_acc = None; smooth_acc2 = None
         smooth_loss = None
         while self.epochs < self.max_epochs:
             testart = time()
@@ -215,14 +223,21 @@ class PosEvalTrainer(object):
                     self.model.zero_grad()
 
                     # Forward pass
-                    _, loss, accuracy, astsizes = self.forward(minibatch)
+                    if self.f_twoway:
+                        _, loss, (accuracy, accuracy2), astsizes = self.forward(minibatch)
+                    else:
+                        _, loss, accuracy, astsizes = self.forward(minibatch)
 
                     # Metrics
                     if not smooth_acc:
                         smooth_acc = accuracy
+                        if self.f_twoway:
+                            smooth_acc2 = accuracy2
                         smooth_loss = loss.data
                     else:
                         smooth_acc = 0.01 * accuracy + 0.99 * smooth_acc
+                        if self.f_twoway:
+                            smooth_acc2 = 0.01 * accuracy2 + 0.99 * smooth_acc
                         smooth_loss = 0.01 * loss.data + 0.99 * smooth_loss
 
                     # Backward pass
@@ -242,7 +257,10 @@ class PosEvalTrainer(object):
                             sgrads[name] = "0.0"
 
                 self.updates += 1
-                tqdm.write("Update %d Loss %.4f Accuracy %0.4f SmAccuracy %.4f Interval %.4f AstSizes %d TpN %0.4f TpE %0.4f" % (self.updates, loss.data, accuracy, smooth_acc, t.interval, astsizes, t.interval*1e3 / astsizes, t.interval / n_batch))
+                if self.f_twoway:
+                    tqdm.write("Update %d Loss %.4f Accuracy %0.4f SmAccuracy %.4f Accuracy2 %0.4f SmAccuracy2 %.4f Interval %.4f AstSizes %d TpN %0.4f TpE %0.4f" % (self.updates, loss.data, accuracy, smooth_acc, accuracy2, smooth_acc2, t.interval, astsizes, t.interval*1e3 / astsizes, t.interval / n_batch))
+                else:
+                    tqdm.write("Update %d Loss %.4f Accuracy %0.4f SmAccuracy %.4f Interval %.4f AstSizes %d TpN %0.4f TpE %0.4f" % (self.updates, loss.data, accuracy, smooth_acc, t.interval, astsizes, t.interval*1e3 / astsizes, t.interval / n_batch))
                 self.logger.log(epoch=self.epochs, updates=self.updates, loss="%0.4f" % loss.data, acc="%0.4f" % accuracy, smooth_loss = "%0.4f" % smooth_loss, smooth_acc = "%0.4f" % smooth_acc, **grads)
                     # if idx % 10 == 0:
                     #     cpuStats()
@@ -272,19 +290,27 @@ class PosEvalTrainer(object):
         n_batch = self.args.valbatch
         n_train = len(data)
         losses = []
-        accuracies = []
+        accuracies = []; accuracies2 = []
         for minibatch in tqdm(iter_data(data, shuffle = False, size = n_batch), total = n_train // n_batch, ncols = 80, leave = False):
             with Timer() as t:
-                _, loss, accuracy, astsizes = self.forward(minibatch)
+                if self.f_twoway:
+                    _, loss, (accuracy, accuracy2), astsizes = self.forward(minibatch)
+                else:
+                    _, loss, accuracy, astsizes = self.forward(minibatch)
             losses.append(loss.data)
             accuracies.append(accuracy)
             tqdm.write("Update %d Loss %.4f Accuracy %0.4f Interval %.4f TpE %0.4f" %
                            (updates, loss.data, accuracy, t.interval, t.interval / len(minibatch)))
         loss = float(np.mean(losses))
         accuracy = float(np.mean(accuracies))
+        if self.f_twoway:
+            accuracy2 = float(np.mean(accuracies2))
         self.best_loss = min(self.best_loss, loss)
         self.best_accuracy = max(self.best_accuracy, accuracy)
-        tqdm.write("Epoch %d Updates %d Loss %0.4f Accuracy %0.4f" % (self.epochs, self.updates, loss, accuracy))
+        if self.f_twoway:
+            tqdm.write("Epoch %d Updates %d Loss %0.4f Accuracy %0.4f Accuracy2 %0.4f" % (self.epochs, self.updates, loss, accuracy, accuracy2))
+        else:
+            tqdm.write("Epoch %d Updates %d Loss %0.4f Accuracy %0.4f" % (self.epochs, self.updates, loss, accuracy))
         self.vallogger.log(epoch=epochs, updates=updates, loss="%0.4f" % loss, acc = "%0.4f" % accuracy, best_loss = "%0.4f" % self.best_loss, best_acc = "%0.4f" % self.best_accuracy)
         self.save(accuracy, loss)
 

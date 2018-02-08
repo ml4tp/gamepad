@@ -551,6 +551,7 @@ class TacStParser(object):
         while not h_head.peek_line().startswith(TOK_END_INC):
             k, v = self._parse_table_entry()
             self.constr_share[int(k)] = v
+        # print("I HAVE KEYS", self.constr_share.keys())
         h_head.consume_line()
 
     def parse_partial_lemma(self):
