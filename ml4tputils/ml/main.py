@@ -94,9 +94,11 @@ if __name__ == "__main__":
     #with launch_ipdb_on_exception():
     if not args.orig:
         if args.end2end:
-            model = PosEvalModel(*tokens_to_idx, ln=args.ln, treelstm=args.treelstm, lstm=args.lstm, dropout=args.dropout, attention=args.attention, heads=args.heads, D = args.state, state = args.state, weight_dropout=args.weight_dropout, variational=args.variational, conclu_pos=args.conclu_pos, f_twoway=args.end2end, outsize=20)
             dataset, test_lemmas, val_lemmas = to_goalattn_dataset(poseval_dataset)
-            trainer = PosEvalTrainer(model, tactrs, dataset, args, f_twoway=True)
+            # model = PosEvalModel(*tokens_to_idx, ln=args.ln, treelstm=args.treelstm, lstm=args.lstm, dropout=args.dropout, attention=args.attention, heads=args.heads, D = args.state, state = args.state, weight_dropout=args.weight_dropout, variational=args.variational, conclu_pos=args.conclu_pos, f_twoway=args.end2end, outsize=20)
+            # trainer = PosEvalTrainer(model, tactrs, dataset, args, f_twoway=True)
+            model = PosEvalModel(*tokens_to_idx, ln=args.ln, treelstm=args.treelstm, lstm=args.lstm, dropout=args.dropout, attention=args.attention, heads=args.heads, D = args.state, state = args.state, weight_dropout=args.weight_dropout, variational=args.variational, conclu_pos=args.conclu_pos, outsize=40)
+            trainer = PosEvalTrainer(model, tactrs, dataset, args)
             if args.validate:
                 # trainer.validate()
                 run(trainer, test_lemmas, val_lemmas)

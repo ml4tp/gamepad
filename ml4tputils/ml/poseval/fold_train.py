@@ -153,7 +153,7 @@ class PosEvalTrainer(object):
             res = self.folder.apply(all_logits)
             logits = res[0]
             targets = autograd.Variable(self.torch.LongTensor(all_targets), requires_grad=False)
-            assert logits.shape == torch.Size([n_batch, 3])  # , folded_logits[0].shape
+            assert logits.shape == torch.Size([n_batch, self.model.outsize])  # , folded_logits[0].shape
             loss = self.loss_fn(logits, targets)
             preds = torch.max(logits, dim=-1)[1]  # 0-th is max values, 1-st is max location
             correct = torch.sum(torch.eq(preds, targets).cpu())
@@ -299,8 +299,13 @@ class PosEvalTrainer(object):
                     _, loss, accuracy, astsizes = self.forward(minibatch)
             losses.append(loss.data)
             accuracies.append(accuracy)
-            tqdm.write("Update %d Loss %.4f Accuracy %0.4f Interval %.4f TpE %0.4f" %
-                           (updates, loss.data, accuracy, t.interval, t.interval / len(minibatch)))
+            if self.f_twoway:
+                accuracies2.append(accuracy2)
+                tqdm.write("Update %d Loss %.4f Accuracy %0.4f Accuracy2 %0.4f Interval %.4f TpE %0.4f" %
+                               (updates, loss.data, accuracy, accuracy2, t.interval, t.interval / len(minibatch)))
+            else:
+                tqdm.write("Update %d Loss %.4f Accuracy %0.4f Interval %.4f TpE %0.4f" %
+                               (updates, loss.data, accuracy, t.interval, t.interval / len(minibatch)))
         loss = float(np.mean(losses))
         accuracy = float(np.mean(accuracies))
         if self.f_twoway:

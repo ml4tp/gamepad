@@ -348,9 +348,9 @@ class TacStFolder(object):
 
     def fold_const_name(self, const):
         """Override Me"""
-        print("LOOKING UP", const)
-        for k in self.model.const_to_idx.keys():
-            print(k)
+        # print("LOOKING UP", const)
+        # for k in self.model.const_to_idx.keys():
+        #     print(k)
         id = self.model.fix_id('const', self.model.const_to_idx[const])
         return self.lookup(id)
 
@@ -420,6 +420,7 @@ class PosEvalModel(nn.Module):
         # Dimensions
         self.D = D            # Dimension of embeddings
         self.state = state    # Dimension of GRU/LSTM/TreeLSTM state. For LSTM's, each of hidden state and cell state has that size
+        self.outsize = outsize
 
         table_names = ['sort', 'const', 'ind', 'conid', 'evar', 'fix', 'fixbody']
         tables = [sort_to_idx, const_to_idx, ind_to_idx, conid_to_idx, evar_to_idx, fix_to_idx, fix_to_idx]

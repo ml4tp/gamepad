@@ -124,15 +124,21 @@ class PosEvalDataset(object):
             self.data[tactr_id].append(pt)
             self.tac_hist[pt.tac_bin] += 1
 
-    def split_by_lemma(self, f_rec=True):
+    def split_by_lemma(self, f_rec=True, num_train=None, num_test=None):
         if self.data == {}:
             self.mk_tactrs()
-        strain, sval, stest = 0.8, 0.1, 0.1
+
         tlen = len(self.tactrs)
         perm = np.random.permutation(tlen)
-        s1 = int(tlen*strain) + 1
-        s2 = s1 + int(tlen*sval)
-        train, val, test = perm[:s1], perm[s1:s2], perm[s2:]
+        if num_train == None and num_test == None:
+            strain, sval, stest = 0.8, 0.1, 0.1
+            s1 = int(tlen*strain) + 1
+            s2 = s1 + int(tlen*sval)
+            train, val, test = perm[:s1], perm[s1:s2], perm[s2:]
+        else:
+            s1 = num_train
+            s2 = num_train + num_test
+            train, val, test = perm[:s1], perm[s1:s2], perm[s2:]
         if len(train) + len(val) + len(test) != tlen:
             raise NameError("Train={}, Valid={}, Test={} must sum to {}".format(len(train), len(val), len(test), tlen))
 
@@ -195,7 +201,7 @@ if __name__ == "__main__":
     else:
         poseval = PosEvalDataset(TACTICS_EQUIV, tactrs)
     if args.simprw:
-        poseval_dataset = poseval.split_by_lemma(f_rec=False)
+        poseval_dataset = poseval.split_by_lemma(f_rec=False, num_train=400, num_test=50)
     else:
         poseval_dataset = poseval.split_by_lemma()
 

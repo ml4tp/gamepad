@@ -231,7 +231,7 @@ class AstOp(object):
         return [self._staple(c, pos, c_subst) for c in cs]
 
     def rewrite(self, pos, rw_dir, c):
-        print("REWRITING POS", pos, c)
+        print("REWRITING POS", pos, "DIR", rw_dir, "EXP", c)
         self.pos = 0
         self.found = False
         rw_c = self._rewrite(pos, rw_dir, c)
@@ -251,10 +251,12 @@ class AstOp(object):
         elif typ is AppExp:
             if self.pos == pos:
                 if rw_dir == 0:
+                    # use id_r
                     self.pos += 1
                     self.found = True
                     return c.cs[0]
                 else:
+                    # use id_l
                     self.pos += 1
                     self.found = True
                     return c.cs[1]
@@ -537,6 +539,7 @@ class PyCoqAlgTrainedProver(PyCoqAlgProver):
         for k in range(20):
             self.pos_of_pred[k] = 0
         self.bad_steps = 0
+        self.bad_ast = 0
 
     def replace_const(self, decoded):
         acc = {}
@@ -554,6 +557,7 @@ class PyCoqAlgTrainedProver(PyCoqAlgProver):
         edge = FakeTacEdge("rewrite")
         poseval_pt = PosEvalPt(0, self.ctx, self.concl_idx, [edge], 0, 0, 0)
         poseval_pt.tac_bin = 0
+
         (pos_logits, dir_logits), _, _, _ = self.trainer.forward([(0, poseval_pt)])
         print("Pos logits", pos_logits)
         print("Dir logits", dir_logits)
@@ -569,6 +573,8 @@ class PyCoqAlgTrainedProver(PyCoqAlgProver):
             if rw_c != None:
                 self.pos_of_pred[idx] += 1
                 break
+            else:
+                return None
         # print("REWRITING", self.policy._pp(goal_c), self.policy._pp(rw_c))
         # assert False
         if dir_indices.data[0] == 0:
@@ -576,6 +582,31 @@ class PyCoqAlgTrainedProver(PyCoqAlgProver):
         else:
             rw_dir = "id_l"
         return "surgery {} ({}) ({}).".format(rw_dir, self.policy._pp(goal_c), self.policy._pp(rw_c))
+
+    def get_proof_step2(self, goal_c):
+        edge = FakeTacEdge("rewrite")
+        poseval_pt = PosEvalPt(0, self.ctx, self.concl_idx, [edge], 0, 0, 0)
+        poseval_pt.tac_bin = 0
+
+        posdir_logits, _, _, _ = self.trainer.forward([(0, poseval_pt)])
+        posdir_values, posdir_indices = posdir_logits[0].max(0)
+        np_posdir_logits = posdir_logits[0].data.numpy()
+        posdir_pred = np_posdir_logits.argsort()[::-1]
+
+        for idx, posdir in enumerate(posdir_pred):
+            if posdir % 2 == 0:
+                pos = int(posdir / 2)
+                rw_dir = "id_r"
+                rw_c = AstOp().rewrite(pos, 0, goal_c)
+            else:
+                pos = int((posdir - 1) / 2)
+                rw_dir = "id_l"
+                rw_c = AstOp().rewrite(pos, 1, goal_c)
+
+            if rw_c == None:
+                return None
+            else:
+                return "surgery {} ({}) ({}).".format(rw_dir, self.policy._pp(goal_c), self.policy._pp(rw_c))
 
     def attempt_proof_step(self):
         self.num_steps += 1
@@ -589,7 +620,7 @@ class PyCoqAlgTrainedProver(PyCoqAlgProver):
         step_det = self.policy.next_proof_step(AstOp().copy(left_c))
         print("STEP", step_det)
 
-        step_infer = self.get_proof_step(AstOp().copy(left_c))
+        step_infer = self.get_proof_step2(AstOp().copy(left_c))
         print("PREDICTED STEP", step_infer)
 
         # res = self.top.sendone(step_det)
@@ -599,15 +630,21 @@ class PyCoqAlgTrainedProver(PyCoqAlgProver):
         # else:
         #     assert False
 
-        res = self.top.sendone(step_infer)
-        self._log(res)
-        if self.is_success(res):
-            self.proof += [step_infer]
-        else:
-            self.bad_steps += 1
-            self.bad_points.add(num_steps)
+        if step_infer == None:
+            self.bad_ast += 1
+            self.bad_points.add(self.num_steps)
             self.proof += [step_det]
             res = self.top.sendone(step_det)
+        else:
+            res = self.top.sendone(step_infer)
+            self._log(res)
+            if self.is_success(res):
+                self.proof += [step_infer]
+            else:
+                self.bad_steps += 1
+                self.bad_points.add(self.num_steps)
+                self.proof += [step_det]
+                res = self.top.sendone(step_det)
 
 
         # # 2. Compute and take next step
@@ -728,16 +765,49 @@ def to_goalattn_dataset(poseval_dataset):
                     pt.tac_bin = 1
                     pt.subtr_bin = pos
                     dataset += [(tactr_id, pt)]
+                else:
+                    assert False
         print(positions)
         return dataset
-    train = clean(poseval_dataset.train)
-    test = clean(poseval_dataset.test)
+
+    def clean2(orig):
+        dataset = []
+        positions = [0 for _ in range(40)]
+        for tactr_id, pt in orig:
+            # Item 3 contains [TacEdge]
+            tac = pt.tacst[3][-1]
+            if tac.name.startswith("surgery"):
+                args = tac.ftac.tac_args
+                rw_dir = ParseSexpr().parse_glob_constr(args[0])
+                orig_ast = ParseSexpr().parse_glob_constr(args[1])
+                rw_ast = ParseSexpr().parse_glob_constr(args[2])
+                pos = DiffAst().diff_ast(orig_ast, rw_ast)
+                # print("DIFF", pos, orig_ast, rw_ast)
+                # Put the tactic in tac_bin
+                # Put the position of the ast in the subtr_bin
+                if "{}.id_r".format(FILE) in tac.ftac.gids:
+                    pt.tac_bin = 0
+                    pt.subtr_bin = 2 * pos
+                    positions[2 * pos] += 1
+                    dataset += [(tactr_id, pt)]
+                elif "{}.id_l".format(FILE) in tac.ftac.gids:
+                    pt.tac_bin = 1
+                    pt.subtr_bin = 2 * pos + 1
+                    positions[2 * pos + 1] += 1
+                    dataset += [(tactr_id, pt)]
+                else:
+                    assert False
+        print(positions)
+        return dataset
+
+    train = clean2(poseval_dataset.train)
+    test = clean2(poseval_dataset.test)
     seen = set()
     for tactr_id, pt in test:
         seen.add(tactr_id)
     print("TEST", len(seen), seen)
     test_lemmas = get_lemmas(seen)
-    val = clean(poseval_dataset.val)
+    val = clean2(poseval_dataset.val)
     seen = set()
     for tactr_id, pt in val:
         seen.add(tactr_id)
@@ -755,7 +825,9 @@ def to_goalattn_dataset(poseval_dataset):
 # LEMMA = "Lemma rewrite_eq_432: forall b: G, (((e <+> m) <+> ((e <+> m) <+> m)) <+> (((e <+> m) <+> b) <+> (e <+> m))) = b."
 
 # LEMMA = "Lemma rewrite_eq_191: forall b: G, ((e <+> m) <+> ((e <+> (e <+> e)) <+> (e <+> ((e <+> m) <+> (b <+> m))))) = b."
-LEMMA = "Lemma rewrite_eq_259: forall b: G, ((((e <+> m) <+> e) <+> (e <+> e)) <+> ((e <+> m) <+> ((e <+> m) <+> b))) = b."
+# LEMMA = "Lemma rewrite_eq_259: forall b: G, ((((e <+> m) <+> e) <+> (e <+> e)) <+> ((e <+> m) <+> ((e <+> m) <+> b))) = b."
+# LEMMA = "Lemma rewrite_eq_83: forall b: G, ((e <+> (b <+> m)) <+> (((e <+> m) <+> (e <+> m)) <+> (m <+> (m <+> m)))) = b."
+LEMMA = "Lemma rewrite_eq_4: forall b: G, (((e <+> (e <+> (((e <+> m) <+> m) <+> (m <+> m)))) <+> m) <+> (e <+> b)) = b."
 
 
 def run(trainer, test_lemmas, val_lemmas):
@@ -774,17 +846,17 @@ def run(trainer, test_lemmas, val_lemmas):
     bad = set()
     cnt = 0
     for lem_id, lemma in val_lemmas.items():
-        try:
-            rewriter = PyCoqAlgTrainedProver(RandAlgPolicy(), lemma, trainer)
-            rewriter.attempt_proof()
-            print("BAD STEPS", rewriter.bad_steps)
-            print("TOTAL STEPS", rewriter.num_steps)
-            stats[lem_id] = {"lemma": lemma, "bad": rewriter.bad_steps, "total": rewriter.num_steps, "badpoints": list(rewriter.bad_points)}
-            assert rewriter.num_steps == 9
-        except:
-            bad.add(lemma)
-            cnt += 1
-            stats[lem_id] = {"lemma": lemma, "bad": rewriter.bad_steps, "total": rewriter.num_steps, "badpoints": list(rewriter.bad_points)}
+        #try:
+        rewriter = PyCoqAlgTrainedProver(RandAlgPolicy(), lemma, trainer)
+        rewriter.attempt_proof()
+        print("BAD STEPS", rewriter.bad_steps)
+        print("TOTAL STEPS", rewriter.num_steps)
+        stats[lem_id] = {"lemma": lemma, "bad": rewriter.bad_steps, "total": rewriter.num_steps, "badpoints": list(rewriter.bad_points), "ast": rewriter.bad_ast}
+        assert rewriter.num_steps == 9
+        # except:
+        #     bad.add(lemma)
+        #     cnt += 1
+        #     stats[lem_id] = {"lemma": lemma, "bad": rewriter.bad_steps, "total": rewriter.num_steps, "badpoints": list(rewriter.bad_points), "ast": rewriter.bad_ast}
 
     with open('mllogs/simprw.log', 'w') as f:
         f.write(json.dumps([v for k, v in stats.items()]))
