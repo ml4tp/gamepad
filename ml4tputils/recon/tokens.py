@@ -1,5 +1,7 @@
 """
-[Note] Contains tokens for proof format.
+[Note]
+
+Contains tokens for proof format.
 """
 
 

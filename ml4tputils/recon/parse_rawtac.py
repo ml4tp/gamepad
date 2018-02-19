@@ -1,19 +1,20 @@
-from enum import Enum
 import sexpdata
 
 from coq.tactics_util import FvsTactic
 from coq.tactics import TacKind
 from lib.gensym import GenSym
 from lib.myiter import MyIter
-from lib.myutil import pp_tab, inc_update
+from lib.myutil import pp_tab
 from recon.tokens import *
 from recon.parse_raw import TacStDecl, LemTacSt
+
 
 """
 [Note]
 
 parse_rawtacs: [TacStDecl] -> [RawTac]
 
+Collects a sequence of tactic state declarations into the effect of a single raw tactic.
 bf body af af
 bf body af
 """
@@ -23,6 +24,10 @@ bf body af
 # Data structures
 
 class RawTac(object):
+    """
+    A RawTac collects all "after" declarations belonging to a single "before" declaration.
+    It is also appropriately nested in the sense that it captures the Ltac call stack.
+    """
     def __init__(self, uid, name, tkind, ftac, bf_decl, af_decls, body, constrs):
         assert isinstance(uid, int)
         assert isinstance(name, str)
@@ -42,8 +47,7 @@ class RawTac(object):
         self.body = body           # Raw tactics in the body
         self.constrs = constrs     # Expressions in scope (for Ltac substitution)?
 
-        # NOTE(deh): sigh*, need to change to substitued arguments
-        # instead of formal parameters
+        # Need to change to substitued arguments instead of formal parameters
         if self.constrs:
             self.ftac.pp_tac = self.name
             self.ftac.lids = set()
@@ -76,6 +80,9 @@ class RawTac(object):
 # Parsing
 
 class RawTacParser(object):
+    """
+    Collects a sequence of tactic state declarations into the effect of a single raw tactic.
+    """
     def __init__(self, lemma, f_log=False):
         assert isinstance(lemma, LemTacSt)
 
@@ -99,32 +106,6 @@ class RawTacParser(object):
     def _fresh_uid(self):
         return self.gensym.gensym()
 
-    # def parse_name_call(self):
-    #     # Internal
-    #     it = self.it
-    #     self._mylog("@parse_name_call:before<{}>".format(it.peek()))
-
-    #     # Parse before
-    #     befores = []
-    #     start_decl = it.peek()
-    #     while (it.peek().hdr.mode == TOK_BEFORE and
-    #            it.peek().hdr.callid == start_decl.hdr.callid):
-    #         befores += [next(it)]
-
-    #     # Parse after
-    #     afters = []
-    #     while (it.has_next() and
-    #            is_after(it.peek().hdr.mode) and
-    #            it.peek().hdr.callid == start_decl.hdr.callid):
-    #         afters += [next(it)]
-
-    #     rawtacs = []
-    #     for bf_decl, af_decl in zip(befores, afters):
-    #         rawtacs += [RawTac(self._fresh_uid(), start_decl.hdr.tac,
-    #                            TacKind.NAME, start_decl.hdr.ftac,
-    #                            bf_decl, [af_decl], [])]
-    #     return rawtacs
-
     def parse_constr(self):
         # Internal
         it = self.it
@@ -133,12 +114,10 @@ class RawTacParser(object):
         constrs = []
         while it.has_next() and it.peek().hdr.kind.startswith("Constr("):
             decl = next(it)
-            # Constr(stuff), fucking '
+            # Constr(stuff), the literal ' throws us off
             str_gc = decl.hdr.kind[7:-1].replace('\'', '!@#')
-            # print("DOING", str_gc)
             sexp_gc = sexpdata.loads(str_gc)
             constrs += [sexp_gc]
-            # print("CONSUMING", constr)
         return constrs
 
     def rec_parse_rawtac(self):
@@ -182,14 +161,11 @@ class RawTacParser(object):
         while it.has_next():
             decl = it.peek()
 
-            # Simple cases
             if decl.hdr.mode == TOK_BEFORE and decl.hdr.kind == TOK_NAME:
                 acc += self.parse_nested(TacKind.NAME)
-                # acc += self.parse_name_call()
             elif is_after(decl.hdr.mode) and decl.hdr.kind == TOK_NAME:
                 return acc, constrs
 
-            # Nested cases
             elif decl.hdr.mode == TOK_BEFORE and decl.hdr.kind == TOK_NOTATION:
                 acc += self.parse_nested(TacKind.NOTATION)
             elif is_after(decl.hdr.mode) and decl.hdr.kind == TOK_NOTATION:

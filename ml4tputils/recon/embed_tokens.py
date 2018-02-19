@@ -4,6 +4,7 @@
 Convert "tokens" in dataset into unique integers for embeddings.
 """
 
+
 class EmbedTokens(object):
     """
     Collect all tokens in the data-set.

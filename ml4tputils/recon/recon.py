@@ -1,5 +1,3 @@
-import os.path as op
-
 from recon.build_tactr import TacTreeBuilder
 from recon.embed_tokens import EmbedTokens
 from recon.parse_raw import TacStParser
@@ -10,10 +8,6 @@ from recon.parse_rawtac import RawTacParser
 [Note]
 
 Reconstruct tactic trees from tcoq dump files.
-
-parse_raw     : Dump -> [TacStDecl]
-parse_rawtac  : [TacStDecl] -> [RawTac]
-build_tactr   : [RawTac] -> TacTree
 """
 
 
@@ -60,6 +54,18 @@ FILES = ["BGsection1.v.dump",
 # Reconstructing
 
 class Recon(object):
+    """
+    [Note]
+
+    Reconstruct tactic trees from tcoq dump files.
+    It proceeds in 3 steps:
+    1. Convert raw dump into list of declarations.
+        parse_raw     : Dump -> [TacStDecl]
+    2. Group declarations into the tactics that produce the declarations.
+        parse_rawtac  : [TacStDecl] -> [RawTac]
+    3. Build the tactic tree.
+        build_tactr   : [RawTac] -> TacTree
+    """
     def __init__(self, f_token=True):
         self.f_token = f_token
         self.embed_tokens = EmbedTokens()
@@ -75,7 +81,7 @@ class Recon(object):
         while not ts_parser.exhausted:
             # Coq output file to [TacStDecl] tokens
             lemma = ts_parser.parse_lemma()
-            tactr = self._recon_lemma(file, lemma)
+            tactr = self._recon_lemma(lemma)
             tactrs += [tactr]
 
         self.tactrs += tactrs
@@ -96,18 +102,17 @@ class Recon(object):
             # print(lemma.pp())
             print("<<<<<<<<<<<<<<<<<<<<<")
 
-        tactr = self._recon_lemma(file, lemma)
+        tactr = self._recon_lemma(lemma)
         self.tactrs += [tactr]
         return tactr
 
-    def _recon_lemma(self, file, lemma):
+    def _recon_lemma(self, lemma):
         # [TacStDecl] tokens to [RawTac]
         tr_parser = RawTacParser(lemma, f_log=False)
         tacs, _ = tr_parser.parse_rawtacs()
 
         # [RawTac] to tactic tree
-        tr_builder = TacTreeBuilder(lemma.name, tacs, lemma.get_tacst_info(),
-                                    {}, lemma.decoder,  False)
+        tr_builder = TacTreeBuilder(lemma.name, tacs, lemma.get_tacst_info(), {}, lemma.decoder,  False)
         tr_builder.build_tacs()
         tactr = tr_builder.get_tactree()
 

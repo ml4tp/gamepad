@@ -1,4 +1,3 @@
-from enum import Enum
 import sexpdata
 
 from lib.myfile import MyFile
@@ -6,6 +5,7 @@ from lib.myutil import pp_tab
 from coq.decode import *
 from recon.tokens import *
 from coq.tactics_util import FvsTactic
+
 
 """
 [Note]
@@ -117,7 +117,7 @@ class TacStDecl(object):
 
     def pp(self, ctx_prtyps, ctx_prgls, tab=0):
         s1 = self.hdr.pp(tab) + "\n"
-        s2 = "\n".join([pp_tab(tab + 2, "{}: {}".format(x, ctx_prtyps[ident]))
+        s2 = "\n".join([pp_tab(tab + 2, "{}: {}".format(ident, ctx_prtyps[ident]))
                         for ident in self.ctx.idents()]) + "\n"
         s3 = pp_tab(tab + 2, "=====================\n")
         if self.concl_idx == -1:
@@ -133,6 +133,8 @@ class TacStDecl(object):
             s_mode = "A"
         elif self.hdr.mode == TOK_DEAD:
             s_mode = "E"
+        else:
+            raise NameError("Mode {} not expected".format(self.hdr.mode))
         info = s_mode, self.hdr.callid, self.hdr.gid, self.hdr.tac, self.hdr.ftac, self.hdr.loc
         return "{}(callid={}, gid={}, tac={}, ftac={}, loc={})".format(*info)
 
@@ -195,10 +197,10 @@ class TacStParser(object):
         self.f_log = f_log
         self.exhausted = False
 
-        # Lemma-sepcific state
+        # Lemma-specific state
         self.decls = []          # Accumlated decls in lemma
 
-        # Lemma-sepcific decoding low-level Coq expressions
+        # Lemma-specific decoding low-level Coq expressions
         self.constr_share = {}   # Dict[int, string], exp idx to unparsed string
         self.ctx_prtyps = {}     # Dict[int, str], typ ident to pretty
         self.ctx_prbods = {}     # Dict[int, str], exp ident to pretty
@@ -274,30 +276,24 @@ class TacStParser(object):
             pp_tac = toks[1].strip()
             ast_ftac = toks[2].strip()
             if ast_ftac:
-                # print("PARSING", pp_tac, "AST", ast_ftac)
-                # TODO(deh): need to handle this shit properly
+                # Literal ' in identifier messes up sexpression parsing. Sigh*
                 ast_ftac = ast_ftac.replace('\'', '!@#')
                 try:
                     sexp_ftac = sexpdata.loads(ast_ftac, true="true", false="false")
                     fvs = FvsTactic()
                     tac_lids = fvs.fvs_tac(sexp_ftac)
                     tac_gids = fvs.globs
-                    # print("LIDS", tac_lids, "GIDS", tac_gids)
                     ftac = FullTac(pp_tac, sexp_ftac, tac_lids, tac_gids)
                 except:
+                    print(ast_ftac)
                     raise NameError("Sexpr parsing failed in {}".format(self.filename))
             else:
                 ftac = FullTac(pp_tac)
-            # TODO(deh): get rid of grefs? toks[3]
-            # TODO(deh): get rid of lrefs? toks[3]
             gid = int(toks[3].strip())
 
             # Unpack (note that we handle error and success here)
             hdr = TacStHdr(callid, mode, tac, kind, ftac, gid, ngs, loc)
             ctx, concl_idx = self.parse_decl_body()
-            # self.h_head.consume_line()
-            # ctx = TacStCtx([])
-            # concl_idx = -1
         else:
             raise NameError("Parsing error @line{}: {}".format(
                             h_head.line, h_head.peek_line()))
@@ -361,7 +357,7 @@ class TacStParser(object):
         kind = toks[4].strip()
         loc = toks[5].strip()
 
-        return (callid, mode, tac, kind, loc)
+        return callid, mode, tac, kind, loc
 
     def parse_endtacst(self):
         # Internal
@@ -551,7 +547,6 @@ class TacStParser(object):
         while not h_head.peek_line().startswith(TOK_END_INC):
             k, v = self._parse_table_entry()
             self.constr_share[int(k)] = v
-        # print("I HAVE KEYS", self.constr_share.keys())
         h_head.consume_line()
 
     def parse_partial_lemma(self):
