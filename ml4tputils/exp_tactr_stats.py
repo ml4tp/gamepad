@@ -12,7 +12,7 @@ from coq.util import COQEXP_HIST
 # Utility
 
 def load_tactr_stats(filename):
-    stats = {}
+    my_stats = {}
     unique = {'const': 0, 'ind': 0, 'conid': 0}
     with open(filename, 'r') as f:
         for line in f:
@@ -41,8 +41,8 @@ def load_tactr_stats(filename):
             else:
                 line = line.strip()
                 x = json.loads(line)
-                stats[x['lemma']] = x['info']
-    return stats, unique
+                my_stats[x['lemma']] = x['info']
+    return my_stats, unique
 
 
 class DepthMode(Enum):
@@ -113,24 +113,24 @@ class TacTrStats(object):
 
     def gather_term_path_lens(self):
         """Histogram of terminal path-length vs count"""
-        MAX_LEN = 100
+        max_len = 100
         term_path_lens = []
         for lemma, info in self.stats.items():
-            hist = [0 for _ in range(MAX_LEN)]
+            hist = [0 for _ in range(max_len)]
             for l in info['term_path_lens']:
-                if l < MAX_LEN:
+                if l < max_len:
                     hist[l] += 1
             term_path_lens += [hist]
         return term_path_lens
 
     def gather_err_path_lens(self):
         """Histogram of error path-length vs count"""
-        MAX_LEN = 100
+        max_len = 100
         err_path_lens = []
         for lemma, info in self.stats.items():
-            hist = [0 for _ in range(MAX_LEN)]
+            hist = [0 for _ in range(max_len)]
             for l in info['err_path_lens']:
-                if l < MAX_LEN:
+                if l < max_len:
                     hist[l] += 1
             err_path_lens += [hist]
         return err_path_lens
@@ -142,7 +142,7 @@ class TacTrStats(object):
         for lemma, info in self.stats.items():
             hinfos = info['have_info']
             for hinfo in hinfos:
-                ftac = hinfo[0]
+                # ftac = hinfo[0]
                 size_ftac = hinfo[1]
                 size_path = len(hinfo[2])
                 acc_size_ftac += [size_ftac]
@@ -167,18 +167,18 @@ class TacTrStats(object):
         else:
             raise NameError("Mode {} not supported".format(mode))
 
-        MAX_DEPTH = max([max([depth for depth, _ in projfn(info)]) for _, info in self.stats.items()]) + 1
+        max_depth = max([max([depth for depth, _ in projfn(info)]) for _, info in self.stats.items()]) + 1
         hist = {}
-        for depth in range(MAX_DEPTH):
+        for depth in range(max_depth):
             hist[depth] = 0
 
-        norm = [0 for _ in range(0, MAX_DEPTH)]
+        norm = [0 for _ in range(0, max_depth)]
         for lemma, info in self.stats.items():
             for depth, dsize in projfn(info):
                 hist[depth] += dsize
                 norm[depth] += 1
 
-        for depth in range(1, MAX_DEPTH):
+        for depth in range(1, max_depth):
             hist[depth] /= norm[depth]
         del hist[0]
         return hist
