@@ -4,12 +4,16 @@ from plotly.graph_objs import *
 
 from coq.ast import *
 from lib.gensym import GenSym
-from lib.myhist import MyHist
+
 
 """
 [Note]
 
 Utility functions on Coq expressions.
+1. Check that Coq expressions are well-formed.
+2. Compute size of Coq expressions.
+3. Get tokens seen in a Coq expression.
+4. Visualize a Coq expression.
 """
 
 
@@ -419,6 +423,9 @@ class VisualizeCoqExp(object):
         # Dict[int, Exp]
         self.decoded = decoded
 
+        self.graph = None
+        self.gs = None
+
     def visualize_by_key(self, key):
         return self.visualize(self.decoded[key])
 
@@ -426,13 +433,13 @@ class VisualizeCoqExp(object):
         self.graph = nx.DiGraph()
         self.gs = GenSym()
         self.mkgraph(c)
-        G = self.graph
-        pos = nx.drawing.layout.kamada_kawai_layout(G)
+        g = self.graph
+        pos = nx.drawing.layout.kamada_kawai_layout(g)
 
         # Edges
         edge_trace = Scatter(x=[], y=[], line=Line(width=0.5, color='#888'),
                              hoverinfo=None, mode='lines')
-        for edge in G.edges():
+        for edge in g.edges():
             x0, y0 = pos[edge[0]]
             x1, y1 = pos[edge[1]]
             edge_trace['x'] += [x0, x1, None]
@@ -443,7 +450,7 @@ class VisualizeCoqExp(object):
                         color=[], size=10, line=dict(width=2))
         node_trace = Scatter(x=[], y=[], text=[], mode='markers',
                              hoverinfo='text', marker=marker)
-        for node in G.nodes():
+        for node in g.nodes():
             x, y = pos[node]
             node_trace['x'].append(x)
             node_trace['y'].append(y)
@@ -490,8 +497,8 @@ class VisualizeCoqExp(object):
             return self._add_node("Meta({})".format(c.mv))
         elif isinstance(c, EvarExp):
             node = self._add_node("Evar({})".format(c.exk))
-            node_cs = self.visualizes(c.cs)
-            self._add_edges(node_cs)
+            node_cs = self.mkgraphs(c.cs)
+            self._add_edges(node, node_cs)
             return node
         elif isinstance(c, SortExp):
             node = self._add_node("Sort({})".format(c.sort))
@@ -550,11 +557,13 @@ class VisualizeCoqExp(object):
             return node
         elif isinstance(c, FixExp):
             node = self._add_node("Fix({})".format(c.tag))
-            for name, node_ty, node_c in zip(names, node_tys, node_cs):
+            node_cs = self.mkgraphs(c.cs)
+            node_tys = self.mkgraphs(c.tys)
+            for name, node_ty, node_c in zip(c.names, node_tys, node_cs):
                 node_nm = str(name)
-                self.add_edge(node, node_nm)
-                self.add_edge(node_nm, node_ty)
-                self.add_edge(node_nm, node_c)
+                self._add_edge(node, node_nm)
+                self._add_edge(node_nm, node_ty)
+                self._add_edge(node_nm, node_c)
             return node
         elif isinstance(c, CoFixExp):
             # TODO(deh)
@@ -563,7 +572,7 @@ class VisualizeCoqExp(object):
         elif isinstance(c, ProjExp):
             node = self._add_node("Proj({})".format(c.tag))
             node_c = self.mkgraph(c.c)
-            self.add_edge(node, str(self.proj))
+            self._add_edge(node, str(c.proj))
             self._add_edge(node, node_c)
             return node
         else:

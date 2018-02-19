@@ -15,8 +15,8 @@ class ImplmentMe(Exception):
         self.msg = msg
 
 
-def pp_tab(tab, str):
-    return tab * " " + str
+def pp_tab(tab, s):
+    return tab * " " + s
 
 
 def inc_update(hist, key, value):
