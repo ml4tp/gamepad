@@ -1,5 +1,4 @@
 import argparse
-import math
 import time
 
 import numpy as np
@@ -14,14 +13,7 @@ import pytorch_tools.torchfold as ptf
 """
 [Note]:
 
-Goal is to test out pytorch_tools.torchfold tool
-
-1. A Fold() takes a tree-like structure and accumulates nodes
-2. A Model works on Variable and tensor exclusively
-3. Fold().apply(model, [node, label]) runs the nodes 
-
-Options:
--s n    number of minibatches to run before reseting sharing
+Goal is to test out pytorch_tools.torchfold tool and mini-batching
 """
 
 

@@ -4,7 +4,13 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
-import numpy as np
+
+"""
+[Note]:
+
+Goal is to test out pytorch dynamic graphs for ASTs (STLC).
+"""
+
 
 # ---------------------------------------------------------
 # Types
@@ -24,7 +30,6 @@ class ArrTyp(Typ):
         assert isinstance(ty2, Typ)
         self.ty1 = ty1
         self.ty2 = ty2
-
 
 
 # ---------------------------------------------------------
@@ -76,6 +81,7 @@ class AppExp(Exp):
         assert isinstance(e2, Exp)
         self.e1 = e1
         self.e2 = e2
+
 
 # ---------------------------------------------------------
 # Enumerate expressions
@@ -220,11 +226,11 @@ class MyModel(nn.Module):
         self.embedder = EmbedExp(const_to_idx, self.const_evs, GenSym(), self.local_evs)
 
     def forward(self, e):
-        ev =self.embedder.embed_exp(Env(), e)
+        ev = self.embedder.embed_exp(Env(), e)
         out = F.relu(self.linear1(ev))
         out = self.linear2(out)
-        log_probs = F.log_softmax(out)
-        return log_probs.view(1, 3)
+        log_probs2 = F.log_softmax(out)
+        return log_probs2.view(1, 3)
 
 
 # ---------------------------------------------------------
