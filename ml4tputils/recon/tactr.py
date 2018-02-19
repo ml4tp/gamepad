@@ -4,7 +4,6 @@ import networkx as nx
 import numpy as np
 import plotly
 from plotly.graph_objs import *
-import re
 
 from coq.ast import Name
 from coq.decode import DecodeCoqExp
@@ -15,9 +14,11 @@ from lib.myenv import MyEnv
 from lib.myutil import dict_ls_app
 from recon.parse_raw import FullTac 
 
+
 """
 [Note]
 
+Contains data-structures of tactic trees.
 A reconstructed tactic tree. Contains methods for computing statistics.
 
 Right now, we do not distinguish the same goal identifier that has
@@ -29,74 +30,50 @@ is represented as
 
 
 # -------------------------------------------------
-# Helper
-
-def parse_full_tac(tac_str):
-    return tac_str
-    # tokens = re.findall(r'\[[^}]*?\]|\([^}]*?\)|\S+', tac_str)
-    # name = tokens[0]
-    # if name == 'apply':
-    #     return 'apply', tokens[1:]
-    # elif name == 'rewrite':
-    #     return 'rewrite', tokens[1:]
-    # elif name == 'case':
-    #     return 'case', tokens[1:]
-    # elif name == 'have':
-    #     idx = tokens[1].find(':')
-    #     tokens[1] = tokens[1][:idx].strip()
-    #     return 'have', tokens[1:]
-    # else:
-    #     return tokens[0], [' '.join(tokens[1:])]
-
-
-# -------------------------------------------------
 # Data structures
 
 class TacStKind(IntEnum):
-    LIVE = 0
-    TERM = 1
-    DEAD = 2
+    LIVE = 0    # Live proof state (i.e., in-progress)
+    TERM = 1    # Terminal proof state
+    DEAD = 2    # Dead proof state (i.e., cannot progress)
 
 
 class TacTrNode(object):
+    """
+    The node of a tactic tree. It contains the Coq goal identifier and the kind
+    of node it is.
+    """
     def __init__(self, uid, gid, kind, order=None):
         assert isinstance(kind, TacStKind)
         self.uid = uid        # Unique identifier
         self.gid = gid        # Goal identifier
         self.kind = kind      # live/dead/terminal
-        self.order = order    # TODO(deh): use to disambiguate self-edges?
+        self.order = order    # TODO(deh): deprecate me?
         # self._uid()           # Tactic state identifier
 
-    def _uid(self):
-        if self.order != None:
-            x = "{}-{}".format(self.gid, self.order)
-        else:
-            x = str(self.gid)
-
-        if self.kind == TacStKind.TERM:
-            self.uid = "T{}".format(x)
-        elif self.kind == TacStKind.DEAD:
-            self.uid = "E{}".format(x)
-        else:
-            self.uid = x
+    # def _uid(self):
+    #     if self.order is not None:
+    #         x = "{}-{}".format(self.gid, self.order)
+    #     else:
+    #         x = str(self.gid)
+    #
+    #     if self.kind == TacStKind.TERM:
+    #         self.uid = "T{}".format(x)
+    #     elif self.kind == TacStKind.DEAD:
+    #         self.uid = "E{}".format(x)
+    #     else:
+    #         self.uid = x
 
     def __eq__(self, other):
-        # return isinstance(other, TacTrNode) and self.uid == other.uid
         return (isinstance(other, TacTrNode) and
                 self.gid == other.gid and
                 self.kind == other.kind)
-        """
-        return (isinstance(other, TacTrNode) and self.gid == other.gid and
-                self.kind == other.kind and self.order == other.order)
-        """
 
     def __hash__(self):
-        # return self.uid
         return self.gid
-        # return hash(self.uid)
 
     def __str__(self):
-        if self.order != None:
+        if self.order is not None:
             x = "{}-{}".format(self.gid, self.order)
         else:
             x = "{}(uid={})".format(self.gid, self.uid)
@@ -111,13 +88,12 @@ class TacTrNode(object):
 
 
 class TacEdge(object):
-    def __init__(self, eid, tid, name, tkind, ftac, src, tgt,
-                 isbod=False):
-        """
-        An edge identifier uniquely identifies the edge. A single tactic
-        invocation can emit multiple tactic edges, which corresponds to
-        creating multiple sub-goals.
-        """
+    """
+    An edge identifier uniquely identifies the edge. A single tactic
+    invocation can emit multiple tactic edges, which corresponds to
+    creating multiple sub-goals.
+    """
+    def __init__(self, eid, tid, name, tkind, ftac, src, tgt, isbod=False):
         assert isinstance(src, TacTrNode)
         assert isinstance(tgt, TacTrNode)
         assert isinstance(ftac, FullTac)
@@ -152,10 +128,19 @@ class TacEdge(object):
 # Tactic Tree
 
 class TacTree(object):
+    """
+    A reconstructed tactic tree. Also contains methods for computing statistics.
+
+    Right now, we do not distinguish the same goal identifier that has
+    multiple tactics applied to it. For example,
+    14 -[tac1] -> 14 -[tac2] -> 14
+    is represented as
+    14 [tac1, tac2]
+    """
     def __init__(self, name, edges, graph, tacst_info, gid_tactic, decoder):
         assert isinstance(decoder, DecodeCoqExp)
 
-        # Input
+        # Internal state
         self.name = name               # Lemma name
         self.edges = edges             # [TacEdge]
         self.graph = graph             # nx.MultDiGraph[TacStId, TacStId]
@@ -167,8 +152,11 @@ class TacTree(object):
 
         # Root and create flattened view
         self._root()
-        assert self.root
+        assert self.root, "Reconstructed tactic tree has no root."
         self._flatten_view()
+
+    # -------------------------------------------
+    # Initialization methods
 
     def _root(self):
         self.root = None
@@ -197,6 +185,9 @@ class TacTree(object):
             except nx.exception.NetworkXNoPath:
                 pass
             seen.add(edge.tid)
+
+    # -------------------------------------------
+    # Tactic tree API
 
     def goals(self):
         return self.graph.nodes()
@@ -249,9 +240,6 @@ class TacTree(object):
                 acc += [('OPEN', src_gid.gid, pp_ctx, pp_goal, ctx,
                          concl_idx, self.gid_tactic[src_gid])]
                 seen.add(src_gid.gid)
-            # elif (tgt_gid.kind == TacStKind.DEAD or
-            #       tgt_gid.kind == TacStKind.TERM):
-            #     acc += [('STOP', tgt_gid, self.gid_tactic[src_gid.gid])]
         return acc
 
     def bfs_traverse(self):
@@ -298,8 +286,7 @@ class TacTree(object):
     def view_tactic_hist(self, f_compress=False):
         hist = TACTIC_HIST.empty()
         for k, tacs in self.tactics().items():
-            # TODO(deh): Is this correct? I should iterate over all
-            # tactics right?
+            # TODO(deh): Also need atomic tactics for non-ssreflect developments
             tac = tacs[0]
             if tac.tkind == TacKind.ML:
                 tac_name = tac.name.split()[0]
@@ -412,7 +399,6 @@ class TacTree(object):
         return static_full_comp, static_sh_comp, cbname_comp
 
     def stats(self):
-        hce = HistCoqExp(self.decoder.decoded)
         term_path_lens = [len(path) for path in self.view_term_paths()]
         err_path_lens = [len(path) for path in self.view_err_paths()]
         avg_depth_ctx_items = [(k, np.mean(v)) for k, v in
@@ -458,15 +444,15 @@ class TacTree(object):
     def dump(self):
         print(">>>>>>>>>>>>>>>>>>>>")
         print("Root:", self.root)
-        print("Goals: ", "[{}]".format(",".join([str(g) for g in self.goals])))
+        print("Goals: ", "[{}]".format(",".join([str(g) for g in self.goals()])))
         print("Tactics:", self.tactics())
-        for gid in self.goals:
+        for gid in self.goals():
             s1 = ", ".join([str(x) for x in self.in_edge(gid)])
             print("In edge for {}:".format(gid), s1)
             s2 = ", ".join([str(x) for x in self.out_edges(gid)])
             print("Out edges for {}:".format(gid), s2)
         print("Terminal states:", "[{}]".format(",".join([str(g) for g in self.term_goals()])))
-        print("Error states:", "[{}]".format(",".join([str(g) for g in self.err_goals()])))
+        print("Error states:", "[{}]".format(",".join([str(g) for g in self.dead_goals()])))
         print("Terminal path lengths:", self.view_term_paths())
         print("Error path lengths:", self.view_err_paths())
         print("<<<<<<<<<<<<<<<<<<<<")
@@ -476,33 +462,33 @@ class TacTree(object):
         ccs = list(nx.algorithms.components.connected.connected_components(ug))
         n = len(ccs)
         if f_verbose:
-            print("notok: {}, total: {}".format(len(self.notok), self.numtacs))
+            print("notok: {}, total: {}".format(len(self.notok), len(self.tactics())))
             print("# connected components: {}".format(n))
         return n == 1, n
 
-    def show(self):
-        if self.graph.edges:
-            nx.drawing.nx_pylab.draw_kamada_kawai(self.graph, with_labels=True)
-            plt.show()
+    # def show(self):
+    #     if self.graph.edges:
+    #         nx.drawing.nx_pylab.draw_kamada_kawai(self.graph, with_labels=True)
+    #         plt.show()
 
     def show_jupyter(self):
-        G = self.graph
-        pos = nx.drawing.layout.kamada_kawai_layout(G)
+        """
+        Draws the tactic tree in a Jupyter notebook. (This is required for plotly to work.)
+        """
+        g = self.graph
+        pos = nx.drawing.layout.kamada_kawai_layout(g)
 
         # Edges
-        edge_trace = Scatter(x=[], y=[], line=Line(width=0.5, color='#888'),
-                             hoverinfo=None, mode='lines')
-        for edge in G.edges():
+        edge_trace = Scatter(x=[], y=[], line=Line(width=0.5, color='#888'), hoverinfo=None, mode='lines')
+        for edge in g.edges():
             x0, y0 = pos[edge[0]]
             x1, y1 = pos[edge[1]]
             edge_trace['x'] += [x0, x1, None]
             edge_trace['y'] += [y0, y1, None]
 
         # Edge info
-        marker = Marker(showscale=True, colorscale='YIGnBu', reversescale=True,
-                        color=[], size=5, line=dict(width=2))
-        einfo_trace = Scatter(x=[], y=[], text=[], mode='markers',
-                              hoverinfo='text', marker=marker)
+        marker = Marker(showscale=True, colorscale='YIGnBu', reversescale=True, color=[], size=5, line=dict(width=2))
+        einfo_trace = Scatter(x=[], y=[], text=[], mode='markers', hoverinfo='text', marker=marker)
         for edge in self.edges:
             x0, y0 = pos[edge.src]
             x1, y1 = pos[edge.tgt]
@@ -512,11 +498,9 @@ class TacTree(object):
             einfo_trace['text'].append(einfo)
 
         # Nodes
-        marker = Marker(showscale=True, colorscale='YIGnBu', reversescale=True,
-                        color=[], size=10, line=dict(width=2))
-        node_trace = Scatter(x=[], y=[], text=[], mode='markers',
-                             hoverinfo='text', marker=marker)
-        for node in G.nodes():
+        marker = Marker(showscale=True, colorscale='YIGnBu', reversescale=True, color=[], size=10, line=dict(width=2))
+        node_trace = Scatter(x=[], y=[], text=[], mode='markers', hoverinfo='text', marker=marker)
+        for node in g.nodes():
             x, y = pos[node]
             node_trace['x'].append(x)
             node_trace['y'].append(y)
@@ -537,15 +521,16 @@ class TacTree(object):
                         showlegend=False,
                         hovermode='closest',
                         margin=dict(b=20, l=5, r=5, t=40),
-                        xaxis=XAxis(showgrid=False, zeroline=False,
-                                    showticklabels=False),
-                        yaxis=YAxis(showgrid=False, zeroline=False,
-                                    showticklabels=False))
+                        xaxis=XAxis(showgrid=False, zeroline=False, showticklabels=False),
+                        yaxis=YAxis(showgrid=False, zeroline=False, showticklabels=False))
         fig = Figure(data=Data([edge_trace, node_trace, einfo_trace]),
                      layout=layout)
         plotly.offline.init_notebook_mode(connected=True)
         plotly.offline.iplot(fig, filename='networkx')
 
     def visualize_exp_by_key(self, key):
+        """
+        Draws an ast in a Jupyter notebook. (This is required for plotly to work.)
+        """
         vis = VisualizeCoqExp(self.decoder.decoded)
         vis.visualize_by_key(key)
