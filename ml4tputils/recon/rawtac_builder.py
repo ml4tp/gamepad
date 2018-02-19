@@ -6,7 +6,7 @@ from lib.gensym import GenSym
 from lib.myiter import MyIter
 from lib.myutil import pp_tab
 from recon.tokens import *
-from recon.parse_raw import TacStDecl, LemTacSt
+from recon.tacst_parser import TacStDecl, LemTacSt
 
 
 """

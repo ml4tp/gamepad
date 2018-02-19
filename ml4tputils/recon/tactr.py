@@ -12,7 +12,7 @@ from coq.tactics import TacKind, TACTIC_HIST
 from coq.constr_util import SizeConstr, HistConstr, TokenConstr, VisualizeConstr, COQEXP_HIST
 from lib.myenv import MyEnv
 from lib.myutil import dict_ls_app
-from recon.parse_raw import FullTac 
+from recon.tacst_parser import FullTac
 
 
 """

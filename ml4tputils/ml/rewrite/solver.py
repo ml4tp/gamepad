@@ -7,7 +7,7 @@ from coq.constr import *
 from coq.glob_constr import *
 from lib.myfile import MyFile
 from pycoqtop.coqtop import CoqTop
-from recon.parse_raw import TacStParser, FullTac
+from recon.tacst_parser import TacStParser, FullTac
 from ml.tacst_prep import PosEvalPt, Dataset
 from coq.glob_constr_parser import GlobConstrParser
 
