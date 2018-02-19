@@ -1,40 +1,27 @@
-import sys
-import gc
-import psutil
-import os
+from time import time
 
-import numpy as np
 import torch
 import torch.autograd as autograd
 import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
-torch.manual_seed(0)
 
 from coq.constr import *
-from coq.constr_decode import DecodeConstr
 from lib.myenv import MyEnv
 from lib.myutil import NotFound
-
-from coq.constr_util import SizeConstr
-from time import time
-
 from ml.utils import ResultLogger
 
-logger = ResultLogger('mllogs/embedv1.0.jsonl')
 
 """
 [Note]
 
 Create embedding of Coq Tactic Trees into R^D vectors.
 Where to put model and training code?
-
-NOTE(deh):
-We are still missing some idents. 
-[FIXED] 1. Why is this happening?? Because we aren't alpha-converting the rest of the
-context. Fixing this with new version of proof format.
-[FIXED] 2. Rel is because Prod is Dependent Product so its a binding form.
 """
+
+
+logger = ResultLogger('mllogs/embedv1.0.jsonl')
+torch.manual_seed(0)
+
 
 def gru_embed(xs, cell, init):
     hidden = init
@@ -42,6 +29,7 @@ def gru_embed(xs, cell, init):
         #print("GRU Embed ",i, x.shape)
         out, hidden = cell(x.view(1, 1, -1), hidden)
     return hidden
+
 
 # -------------------------------------------------
 # Embed Expressions
@@ -189,7 +177,6 @@ class EmbedCoqExp(object):
     # -------------------------------------------
     # Global embedding initialization
 
-        # Global constant folding
     def lookup(self, lt):
         return self.model.embed_table(autograd.Variable(torch.LongTensor([lt])))
 
@@ -457,22 +444,6 @@ class MyModel(nn.Module):
         # raise NotImplementedError
 
 
-# def memReport():
-#     for obj in gc.get_objects():
-#         if torch.is_tensor(obj) or (hasattr(obj, 'data') and torch.is_tensor(obj.data)):
-#             print(type(obj), obj.size())
-
-
-def cpuStats():
-    print(sys.version)
-    print(psutil.cpu_percent())
-    print(psutil.virtual_memory())  # physical memory usage
-    pid = os.getpid()
-    py = psutil.Process(pid)
-    memoryUse = py.memory_info()[0] / 2. ** 30  # memory use in GB...I think
-    print('memory GB:', memoryUse)
-
-
 # -------------------------------------------------
 # Training
 
@@ -507,9 +478,6 @@ class PosEvalTrainer(object):
                 tend = time()
                 print("Loss %.4f %.4f" % (loss.data, tend - tstart))
                 logger.log(n_epochs = epoch, niters = idx, loss = "%0.4f" % loss.data)
-                # if idx % 10 == 0:
-                #     cpuStats()
-                    # memReport()
                 if tactr_id == 6:
                     print("Epoch Time with sh2 %.4f Loss %.4f" % (time() - testart, total_loss))
                     assert False
