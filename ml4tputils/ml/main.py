@@ -7,6 +7,7 @@ from ml.poseval.fold_model import PosEvalModel
 from ml.poseval.fold_train import PosEvalTrainer
 # from ipdb import launch_ipdb_on_exception
 from ml.rewrite.solver import to_goalattn_dataset, run
+from ml.tacst_prep import Dataset, PosEvalPt
 
 """
 [Note]
@@ -100,7 +101,7 @@ if __name__ == "__main__":
         trainer.logger.close()
         trainer.vallogger.close()
     else:
-        from ml.embed import MyModel, PosEvalTrainer
+        from ml.poseval.embed import MyModel, PosEvalTrainer
 
         print("Original")
         model = MyModel(*tokens_to_idx)

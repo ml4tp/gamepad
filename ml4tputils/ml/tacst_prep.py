@@ -5,7 +5,6 @@ from recon.embed_tokens import EmbedTokens
 from coq.tactics import TACTICS_EQUIV
 from coq.constr_util import SizeConstr
 import numpy as np
-np.random.seed(7)
 
 
 """
@@ -15,6 +14,12 @@ Prepare data for:
 1. Position evaluation
 2. Tactic prediction (can just truncate)
 """
+
+
+# -------------------------------------------------
+# Seeding
+
+np.random.seed(7)
 
 
 # -------------------------------------------------

@@ -676,8 +676,8 @@ class FvsTactic(object):
             # let f ((loc, id), targ) = Printf.sprintf "(%s, %s)" (show_id id) (show_tactic_arg targ) in
             # Printf.sprintf "Let(%b, %s, %s)" rf (brackets (show_ls f ", " bindings)) (show_tac tac)
             # TODO(deh): solved?
-            bnd = self.fvs_ls(lambda x, targ: self.fvs_id(x), body[1])
-            fvs1 = self.fvs_ls(lambda x, targ: self.fvs_tactic_arg(targ), body[1])
+            bnd = self.fvs_ls(lambda x: self.fvs_id(x[0]), body[1])
+            fvs1 = self.fvs_ls(lambda x: self.fvs_tactic_arg(x[1]), body[1])
             fvs2 = self.fvs_tac(body[2])
             return fvs1.union(fvs2.difference(bnd))
         elif tag == "Match":
