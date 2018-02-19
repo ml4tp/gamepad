@@ -1,34 +1,13 @@
-import sexpdata
-
 from coq.glob_ast import *
+
 
 """
 [Note]
-
-TODO
-1. [ish] Write Python ast
-2. [ish] write parser
-3. Traverse AST to get positions
 
 Ideally have ctx/conclusion in GAst (TODO later)
 Hmm, train on kernel or GAST???
 """
 
-
-"""
-and show_predicate_pattern (n, m_args) =
-  let f (loc, (mutind, i), ns) = Printf.sprintf "(%s %d %s)" (Names.MutInd.to_string mutind) i (show_sexpr_ls show_name ns) in
-  Printf.sprintf "(%s %s)" (show_name n) (show_maybe f m_args)
-and show_tomatch_tuple (gc, pp) =
-  Printf.sprintf "(%s %s)" (show_glob_constr gc) (show_predicate_pattern pp)
-and show_tomatch_tuples tmts =
-  show_sexpr_ls show_tomatch_tuple tmts
-
-and show_case_clause (loc, ids, cps, gc) = 
-  Printf.sprintf "(%s %s %s)" (show_sexpr_ls show_id ids) (show_sexpr_ls show_cases_pattern cps) (show_glob_constr gc)
-and show_case_clauses ccs =
-  show_sexpr_ls show_case_clause ccs
-"""
 
 class ParseSexpr(object):
     def __init__(self):

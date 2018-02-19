@@ -1,58 +1,13 @@
 """
-and glob_decl = Name.t * binding_kind * glob_constr option * glob_constr
+[Note]
 
-and fix_recursion_order =
-  | GStructRec
-  | GWfRec of glob_constr
-  | GMeasureRec of glob_constr * glob_constr option
-
-and fix_kind =
-  | GFix of ((int option * fix_recursion_order) array * int)
-  | GCoFix of int
+Contains Coq glob_constr AST (almost kernel, but no type inference).
+This AST is used for tactic arguments.
 """
 
-"""
-let rec show_intro_pattern_expr show ipe =
-  match ipe with
-  | IntroForthcoming b -> Printf.sprintf "(F %b)" b
-  | IntroNaming ipne -> Printf.sprintf "(N %s)" (show_intro_pattern_naming_expr ipne)
-  | IntroAction ipae -> Printf.sprintf "(A %s)" (show_intro_pattern_action_expr show ipae)
-and show_intro_pattern_naming_expr ipne =
-  match ipne with
-  | IntroIdentifier id -> Printf.sprintf "(I %s)" (show_id id)
-  | IntroFresh id -> Printf.sprintf "(F %s)" (show_id id)
-  | IntroAnonymous -> "A"
-and show_intro_pattern_action_expr show ipae =
-  match ipae with
-  | IntroWildcard -> "W"
-  | IntroOrAndPattern oaipe ->
-      Printf.sprintf "(O %s)" (show_or_and_intro_pattern_expr show oaipe)
-  | IntroInjection ls ->
-      Printf.sprintf "(I %s)" (show_sexpr_ls (fun (loc, ipe) -> show_intro_pattern_expr show ipe) ls)
-  | IntroApplyOn (a, (loc, ipe)) ->
-      Printf.sprintf "(A %s %s)" (show a) (show_intro_pattern_expr show ipe)
-  | IntroRewrite b ->
-      Printf.sprintf "(R %b)" b
-and show_or_and_intro_pattern_expr show oaipe = 
-  match oaipe with
-  | IntroOrPattern ls ->
-      Printf.sprintf "(I %s)" (show_sexpr_ls (fun ls' -> show_sexpr_ls (fun (loc, ipe) -> show_intro_pattern_expr show ipe) ls') ls)
-  | IntroAndPattern ls ->
-      Printf.sprintf "(A %s)" (show_sexpr_ls (fun (loc, ipe) -> show_intro_pattern_expr show ipe) ls)
-"""
 
-"""
-let rec show_global_reference gr =
-  match gr with
-  | VarRef v ->
-      Printf.sprintf "(VR %s)" (show_id v)
-  | ConstRef v ->
-      Printf.sprintf "(CR %s)" (Names.Constant.to_string v)
-  | IndRef (mi, i) ->
-      Printf.sprintf "(IR %s %d)" (Names.MutInd.to_string mi) i
-  | ConstructRef ((mi, i), j) ->
-      Printf.sprintf "(TR %s %d %d)" (Names.MutInd.to_string mi) i j
-"""
+# -------------------------------------------------
+# Global Reference
 
 class GlobalReference(object):
     pass
@@ -65,12 +20,14 @@ class VarRef(object):
     def __str__(self):
         return self.x
 
+
 class ConstRef(object):
     def __init__(self, const):
         self.const = const
 
     def __str__(self):
         return self.const
+
 
 class IndRef(object):
     def __init__(self, mutind, i):
@@ -98,9 +55,6 @@ class GExp(object):
     def __init__(self):
         self.tag = None
 
-    def __hash__(self):
-        raise NotImplementedError
-
 
 class PredicatePattern(object):
     def __init__(self, name, m_ind_and_names):
@@ -124,7 +78,6 @@ class CasesClause(object):
         self.g = g
 
 
-
 class GRef(GExp):
     """| GRef of (Loc.t * global_reference * glob_level list option)
       (** An identifier that represents a reference to an object defined
@@ -138,6 +91,7 @@ class GRef(GExp):
     def __str__(self):
         return str(self.gref)
 
+
 class GVar(GExp):
     """| GVar of (Loc.t * Id.t)
       (** An identifier that cannot be regarded as "GRef".
@@ -150,6 +104,7 @@ class GVar(GExp):
 
     def __str__(self):
         return self.x
+
 
 class GEvar(GExp):
     """| GEvar of Loc.t * existential_name * (Id.t * glob_constr) list
@@ -183,6 +138,7 @@ class GApp(GExp):
 
     def __str__(self):
         return "({} {})".format(str(self.g), " ".join([str(g) for g in self.gs]))
+
 
 class GLambda(GExp):
     """| GLambda of Loc.t * Name.t * binding_kind *  glob_constr * glob_constr
@@ -286,23 +242,61 @@ class GHole(GExp):
     """| GHole of (Loc.t * Evar_kinds.t * intro_pattern_naming_expr * Genarg.glob_generic_argument option)
     """
     def __init__(self, ek, ipne, m_ga):
+        super().__init__()
         self.ek = ek
         self.ipne = ipne
         self.m_ga = m_ga
 
 
-"""
-let show_cast_type show ct = 
-  match ct with
-  | CastConv a -> Printf.sprintf "(C %s)" (show a)
-  | CastVM a -> Printf.sprintf "(VM %s)" (show a)
-  | CastCoerce -> Printf.sprintf "O"
-  | CastNative a -> Printf.sprintf "(N %s)" (show a)
-"""
 class GCast(GExp):
     """| GCast of Loc.t * glob_constr * glob_constr cast_type
     """
     def __init__(self, g, g_cty):
         assert isinstance(g, GExp)
+        super().__init__()
         self.g = g
         self.g_cty = g_cty
+
+
+"""
+and glob_decl = Name.t * binding_kind * glob_constr option * glob_constr
+
+and fix_recursion_order =
+  | GStructRec
+  | GWfRec of glob_constr
+  | GMeasureRec of glob_constr * glob_constr option
+
+and fix_kind =
+  | GFix of ((int option * fix_recursion_order) array * int)
+  | GCoFix of int
+"""
+
+"""
+let rec show_intro_pattern_expr show ipe =
+  match ipe with
+  | IntroForthcoming b -> Printf.sprintf "(F %b)" b
+  | IntroNaming ipne -> Printf.sprintf "(N %s)" (show_intro_pattern_naming_expr ipne)
+  | IntroAction ipae -> Printf.sprintf "(A %s)" (show_intro_pattern_action_expr show ipae)
+and show_intro_pattern_naming_expr ipne =
+  match ipne with
+  | IntroIdentifier id -> Printf.sprintf "(I %s)" (show_id id)
+  | IntroFresh id -> Printf.sprintf "(F %s)" (show_id id)
+  | IntroAnonymous -> "A"
+and show_intro_pattern_action_expr show ipae =
+  match ipae with
+  | IntroWildcard -> "W"
+  | IntroOrAndPattern oaipe ->
+      Printf.sprintf "(O %s)" (show_or_and_intro_pattern_expr show oaipe)
+  | IntroInjection ls ->
+      Printf.sprintf "(I %s)" (show_sexpr_ls (fun (loc, ipe) -> show_intro_pattern_expr show ipe) ls)
+  | IntroApplyOn (a, (loc, ipe)) ->
+      Printf.sprintf "(A %s %s)" (show a) (show_intro_pattern_expr show ipe)
+  | IntroRewrite b ->
+      Printf.sprintf "(R %b)" b
+and show_or_and_intro_pattern_expr show oaipe = 
+  match oaipe with
+  | IntroOrPattern ls ->
+      Printf.sprintf "(I %s)" (show_sexpr_ls (fun ls' -> show_sexpr_ls (fun (loc, ipe) -> show_intro_pattern_expr show ipe) ls') ls)
+  | IntroAndPattern ls ->
+      Printf.sprintf "(A %s)" (show_sexpr_ls (fun (loc, ipe) -> show_intro_pattern_expr show ipe) ls)
+"""

@@ -5,6 +5,7 @@ import re
 from coq.ast import *
 from coq.util import ChkCoqExp
 
+
 """
 [Note]
 
@@ -46,20 +47,20 @@ class DecodeCoqExp(object):
         self.names = {}
 
         # Lex raw-ast and build dependency graph
-        G = nx.DiGraph()
+        g = nx.DiGraph()
         for key, entry in self.constr_share.items():
-            G.add_node(key)
+            g.add_node(key)
             self._parse_rawast(key, entry)
-        G.add_edges_from(self.edges)
+        g.add_edges_from(self.edges)
         if f_display:
-            nx.drawing.nx_pylab.draw_kamada_kawai(G, with_labels=True)
+            nx.drawing.nx_pylab.draw_kamada_kawai(g, with_labels=True)
             plt.show()
 
         # Use topological sort of dependencies to decode ast
-        cycles = list(nx.simple_cycles(G))
+        cycles = list(nx.simple_cycles(g))
         if len(cycles) > 0:
             raise NameError("Cycles detected in shared representation", cycles)
-        keys = list(nx.algorithms.dag.topological_sort(G))
+        keys = list(nx.algorithms.dag.topological_sort(g))
         for key in keys:
             c = self._decode_ast(key)
             self._mkcon(key, c)
@@ -207,7 +208,7 @@ class DecodeCoqExp(object):
             self.rawasts[key] = ("CF", idx, names, ty_idxs, cs_idxs)
             self._add_edges(key, ty_idxs + cs_idxs)
         elif kind == "PJ":
-            proj = self.decode_rawname(toks[1].strip())
+            proj = self._parse_rawname(toks[1].strip())
             c_idx = int(toks[2].strip())
 
             self.rawasts[key] = ("PJ", proj, c_idx)
@@ -275,7 +276,6 @@ class DecodeCoqExp(object):
             return self._mkcon(key, VarExp(x))
         elif kind == "M":
             # M %d
-            idx = int(toks[1].strip())
             return self._mkcon(key, MetaExp(rest[0]))
         elif kind == "E":
             # E %d [%s]

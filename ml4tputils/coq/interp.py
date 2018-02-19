@@ -3,8 +3,11 @@ from coq.util import SizeCoqExp
 from lib.myenv import MyEnv
 from lib.myutil import NotFound
 
+
 """
 [Note]
+
+I don't think we use this anymore
 
 4 levels of `compression`
 
@@ -211,8 +214,8 @@ class InterpCBName(object):
             v_c = self.interp(env, c.c)
             v_cs = self.interps(env, c.cs)
             if isinstance(v_c, CloVal) and (isinstance(v_c.c, LambdaExp) or isinstance(v_c.c, LambdaExp)):
+                env_p = v_c.env
                 for v in v_cs:
-                    env_p = v_c.env
                     env_p = env_p.extend(v_c.c.name, v)
                 return self.interp(env_p, v_c.c.c)
             else:
@@ -255,7 +258,7 @@ class SizeCoqVal(object):
         if isinstance(v, BaseVal):
             return self.sce.size(v.c)
         elif isinstance(v, EvarVal):
-            return 1 + self.sizes(v.v_cs)
+            return 1 + self.sizes(v.vs)
         elif isinstance(v, CastVal):
             return 1 + self.size(v.v_c) + self.size(v.v_ty)
         elif isinstance(v, CloVal):
@@ -266,7 +269,7 @@ class SizeCoqVal(object):
             return (1 + self.size(v.ret) + self.size(v.match) +
                     self.sizes(v.cases))
         elif isinstance(v, ProjVal):
-            return 1 + self.size(v.v_c)
+            return 1 + self.size(v.v)
         else:
             raise NameError("Kind {} not supported".format(v))
 

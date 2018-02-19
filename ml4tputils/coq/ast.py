@@ -2,13 +2,15 @@ from enum import Enum
 
 from lib.myhist import MyHist
 
+
 """
 [Note]
 
-Python representation of Coq ASTs
+Python representation of Coq's Kernel AST
 
-TODO(deh): check hashes
-TODO(deh): what to do with names?
+Notes:
+1. Check hashes (but we aren't using them currently)
+2. Currently, not using hierarchical names
 """
 
 
@@ -33,29 +35,6 @@ class Name(object):
             return "{}.{}".format(self.base, str(self.hierch))
         else:
             return self.base
-
-
-"""
-class DecodeName(object):
-    def __init__(self):
-        self.names = {}
-
-    def _hcons(self, tok):
-        if tok in self.names:
-
-    def str_to_name(self, s):
-        toks = s.split('.')
-        if len(toks) == 0:
-            raise NameError("Cannot convert empty string {}".format(s))
-        elif len(toks) == 1:
-            return Name(toks[0])
-        else:
-            name = Name(toks[-1])
-            toks = toks[:-1]
-            for tok in toks[::-1]:
-                name = Name(tok, name)
-        return name
-"""
 
 
 class UniverseInstance(object):
@@ -96,7 +75,7 @@ class CaseInfo(object):
         assert isinstance(ind, Inductive)
         assert isinstance(npar, int)
 
-        # NOTE(deh): Comment taken from Coq 8.6.1 source-code
+        # Note(deh): Comment taken from Coq 8.6.1 source-code
         # inductive type to which belongs the value that is being matched
         self.ind = ind
         # number of parameters of the above inductive type
@@ -117,8 +96,8 @@ class CaseInfo(object):
     def __str__(self):
         s_cstr_ndecls = ",".join([str(x) for x in self.cstr_ndecls])
         s_cstr_nargs = ",".join([str(x) for x in self.cstr_nargs])
-        x = self.mutind, self.pos, self.npar, s_cstr_ndecls, s_cstr_nargs
-        return "{}; {}; {}; [{}]; [{}]".format(*x)
+        x = self.ind, self.npar, s_cstr_ndecls, s_cstr_nargs
+        return "{}; {}; [{}]; [{}]".format(*x)
 
 
 # -------------------------------------------------
@@ -172,7 +151,6 @@ class MetaExp(Exp):
     A variable in the meta-language. Should not be referenced.
     """
     def __init__(self, mv):
-        assert False
         assert isinstance(mv, int)
         super().__init__()
         self.mv = mv
@@ -237,7 +215,7 @@ class CastExp(Exp):
         self.ty = ty
 
     def __hash__(self):
-        return hash(self.c) + sum([hash(c) for c in self.cs])
+        return hash(self.c) + hash(self.ty)
 
     def __str__(self):
         return "CA({}, {}, {})".format(str(self.c), self.ck, str(self.ty))
@@ -356,7 +334,7 @@ class IndExp(Exp):
         self.ui = ui
 
     def __hash__(self):
-        return hash(self.mutind) + self.pos
+        return hash(self.ind)
 
     def __str__(self):
         return "I({}, {})".format(self.ind, self.ui)
@@ -375,7 +353,7 @@ class ConstructExp(Exp):
         self.ui = ui
 
     def __hash__(self):
-        return hash(self.ind) + self.pos + self.conid
+        return hash(self.ind) + self.conid
 
     def __str__(self):
         return "CO({}, {}, {})".format(self.ind, self.conid, self.ui)
@@ -439,7 +417,7 @@ class FixExp(Exp):
         for c_p in cs:
             assert isinstance(c_p, Exp)
 
-        # NOTE(deh): Comment taken from Coq 8.6.1 source-code
+        # Note(deh): Comment taken from Coq 8.6.1 source-code
         # [recindxs = [|i1,...in|]]
         # [funnames = [|f1,.....fn|]]
         # [typarray = [|t1,...tn|]]
@@ -546,3 +524,29 @@ COQEXP = ['RelExp',
 
 
 COQEXP_HIST = MyHist(COQEXP)
+
+
+# -------------------------------------------------
+# Junk
+
+"""
+class DecodeName(object):
+    def __init__(self):
+        self.names = {}
+
+    def _hcons(self, tok):
+        if tok in self.names:
+
+    def str_to_name(self, s):
+        toks = s.split('.')
+        if len(toks) == 0:
+            raise NameError("Cannot convert empty string {}".format(s))
+        elif len(toks) == 1:
+            return Name(toks[0])
+        else:
+            name = Name(toks[-1])
+            toks = toks[:-1]
+            for tok in toks[::-1]:
+                name = Name(tok, name)
+        return name
+"""

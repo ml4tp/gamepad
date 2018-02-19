@@ -1,9 +1,11 @@
 from coq.ast import *
 
+
 """
 [Note]
 
 Alpha-convert a Coq expression.
+I don't think this is currently used?
 """
 
 

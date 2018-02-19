@@ -6,6 +6,8 @@ from lib.myhist import MyHist
 """
 [Note]
 
+Contains information on tactics.
+
 str s.mltac_plugin ++ str "::" ++ str s.mltac_tactic ++ str "@" ++ int i
 """
 
@@ -93,15 +95,41 @@ TACTICS = [info[0] for info in TACTIC_INFO]
 TACTIC_HIST = MyHist(TACTICS)
 
 
+def is_tclintros_intern(tac):
+    """
+    ml4tp.SI      ssr internal intros inside tclintros
+    ml4tp.SC      ssr internal clear inside tclintros
+    ml4tp.SPS     ssr internal simpl pattern
+    ml4tp.SPC2    ssr internal intros on case pattern
+    """
+    return (tac.name == "ml4tp.SI" or    # intro part of tclintros
+            tac.name == "ml4tp.SC" or    # clear part of tclintros
+            tac.name == "ml4tp.SPS" or   # simpl pattern
+            tac.name == "ml4tp.SPC2")    # case pattern
 
-"""
-[Note]
 
-ml4tp.SI      ssr internal intros inside tclintros
-ml4tp.SC      ssr internal clear inside tclintros
-ml4tp.SPS     ssr internal simpl pattern
-ml4tp.SPC2    ssr internal intros on case pattern
-"""
+def is_tclintros_all(tac):
+    return (tac.name == "ml4tp.SIO" or  # original tactic wrapped by tclintros
+            is_tclintros_intern(tac))
+
+
+def parse_full_tac(tac_str):
+    return tac_str
+    # tokens = re.findall(r'\[[^}]*?\]|\([^}]*?\)|\S+', tac_str)
+    # name = tokens[0]
+    # if name == 'apply':
+    #     return 'apply', tokens[1:]
+    # elif name == 'rewrite':
+    #     return 'rewrite', tokens[1:]
+    # elif name == 'case':
+    #     return 'case', tokens[1:]
+    # elif name == 'have':
+    #     idx = tokens[1].find(':')
+    #     tokens[1] = tokens[1][:idx].strip()
+    #     return 'have', tokens[1:]
+    # else:
+    #     return tokens[0], [' '.join(tokens[1:])]
+
 
 TACTICS_INFO_EQUIV = [[("<coretactics::intro@0>", Type.COQ_ML), ("intros", Type.ATOM), ("<ssreflect_plugin::ssrtclintros@0>", Type.SSR_ML), ("ml4tp.SI", Type.SSR_AUX), ("ml4tp.SPC2", Type.SSR_AUX)],
                       [("ml4tp.MYDONE", Type.SSR_AUX), ("<coretactics::assumption@0>", Type.COQ_ML), ("<g_auto::trivial@0>", Type.COQ_ML), ("<coretactics::reflexivity@0>", Type.COQ_ML), ("<extratactics::discriminate@0>", Type.COQ_ML), ("<extratactics::contradiction@0>", Type.COQ_ML)],
@@ -125,10 +153,7 @@ TACTICS_INFO_EQUIV = [[("<coretactics::intro@0>", Type.COQ_ML), ("intros", Type.
                       [("<ssreflect_plugin::ssrrewrite@0>", Type.SSR_ML), ("rewrite", Type.ATOM)],
                       [("<ssreflect_plugin::ssrset@0>", Type.SSR_ML)],
                       [("<ssreflect_plugin::ssrsuff@0>", Type.SSR_ML), ("<ssreflect_plugin::ssrsuffices@0>", Type.SSR_ML)],
-                      [("<ssreflect_plugin::ssrtcldo@0>", Type.SSR_ML)], # TODO(deh): GET RID OF ME
-                      # [("ml4tp.SPC", Type.SSR_AUX)], # TODO(deh): GET RID OF ME
-                      # [("<ssreflect_plugin::ssrtclseq@0>", Type.SSR_ML)],
-                      # [("<ssreflect_plugin::ssrtclby@0>", Type.SSR_ML)],
+                      [("<ssreflect_plugin::ssrtcldo@0>", Type.SSR_ML)],  # Note(deh): do beginning part
                       [("<ssreflect_plugin::ssrwithoutloss@0>", Type.SSR_ML), ("<ssreflect_plugin::ssrwithoutlossss@0>", Type.SSR_ML), ("<ssreflect_plugin::ssrwlog@0>", Type.SSR_ML), ("<ssreflect_plugin::ssrwlogs@0>", Type.SSR_ML), ("<ssreflect_plugin::ssrwlogss@0>", Type.SSR_ML)],
                       ]
 
