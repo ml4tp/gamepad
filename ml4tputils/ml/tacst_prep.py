@@ -1,10 +1,10 @@
 import argparse
+import numpy as np
 import pickle
 
-from recon.embed_tokens import EmbedTokens
 from coq.tactics import TACTICS_EQUIV
 from coq.constr_util import SizeConstr
-import numpy as np
+from recon.embed_tokens import EmbedTokens
 
 
 """
