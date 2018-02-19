@@ -5,6 +5,8 @@
 | odd-order-build12 | cd34e1ab88adb8 | Compressed format                  |
 | odd-order-build14 | 10381cbddcc75f | See Note-Build-14                  |
 | odd-order-build15 | 1eae82d6672fed | See Note-Build-15                  |
+| odd-order-build-ta4 |               | Tactic arguments                  |
+| odd-order-build-ta5 |               | Tactic arguments + fixes          |
 
 Notes:
 - odd-order-build6 technically between 4dda4fd309826e and 3700f3d0074338

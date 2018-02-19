@@ -223,7 +223,7 @@ class TacTreeBuilder(object):
                                            tac.uid, tac.name, tac.tkind,
                                            parse_full_tac(tac.ftac),
                                            bf_node, af_node)
-                            # Note(deh): handling self-edges by keeping track of multiple tactics
+                            # Handling self-edges by keeping track of multiple tactics
                             if edge.src in self.gid_tactic:
                                 self.gid_tactic[edge.src] += [edge]
                             else:
