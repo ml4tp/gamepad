@@ -1,6 +1,15 @@
 import argparse
 
 
+"""
+[Note]
+
+Chunk a build.log by file
+
+python ml4tputils/chunk.py <path/to/odd-order-build.log> <path/to/chunked>
+"""
+
+
 if __name__ == "__main__":
     # Set up command line
     argparser = argparse.ArgumentParser()
@@ -30,5 +39,3 @@ if __name__ == "__main__":
                 out.write(line)
             else:
                 pass
-                # print("Skipping")
-                # out.write(line)
