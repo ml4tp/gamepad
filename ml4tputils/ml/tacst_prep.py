@@ -1,12 +1,12 @@
 import argparse
-import os.path as op
 import pickle
 
 from recon.embed_tokens import EmbedTokens
-from coq.tactics import TACTIC_INFO, TACTICS_EQUIV
+from coq.tactics import TACTICS_EQUIV
 from coq.constr_util import SizeConstr
 import numpy as np
 np.random.seed(7)
+
 
 """
 [Note]
@@ -15,24 +15,6 @@ Prepare data for:
 1. Position evaluation
 2. Tactic prediction (can just truncate)
 """
-
-
-def one_hot_lid(ctx, lids):
-    vec = [0 for _ in ctx]
-    for idx, (ident, _) in enumerate(ctx):
-        if ident in lids:
-            vec[idx] = 1
-            break
-    return vec
-
-
-def one_hot_gid(tokens_to_idx, gids):
-    vec = [0 for _ in tokens_to_idx]
-    for idx, (k, v) in enumerate(tokens_to_idx.items()):
-        if k in gids:
-            vec[idx] = 1
-            break
-    return vec
 
 
 # -------------------------------------------------
@@ -68,11 +50,13 @@ class SizeSubTr(object):
                 size += self.size(child)
         return size
 
+
 class Dataset(object):
     def __init__(self, train, val, test):
         self.train = train
         self.val = val
         self.test = test
+
 
 class PosEvalDataset(object):
     def __init__(self, tactics_equiv, tactrs):
@@ -130,10 +114,10 @@ class PosEvalDataset(object):
 
         tlen = len(self.tactrs)
         perm = np.random.permutation(tlen)
-        if num_train == None and num_test == None:
+        if num_train is None and num_test is None:
             strain, sval, stest = 0.8, 0.1, 0.1
-            s1 = int(tlen*strain) + 1
-            s2 = s1 + int(tlen*sval)
+            s1 = int(tlen * strain) + 1
+            s2 = s1 + int(tlen * sval)
             train, val, test = perm[:s1], perm[s1:s2], perm[s2:]
         else:
             s1 = num_train
@@ -159,22 +143,6 @@ class PosEvalDataset(object):
                 if (p - 64.5)**2 > (66 - 64.5)**2:
                     return self.split_by_lemma()
         return Dataset(data_train, data_val, data_test)
-
-
-# -------------------------------------------------
-# Tactic Prediction
-
-class TacPredPt(object):
-    def __init__(self, tacst):
-        # (gid, ctx, concl_idx, tac)
-        self.tacst = tacst
-
-
-def poseval_to_tacpred(dataset):
-    acc = []
-    for tactrid, pt in dataset:
-        acc += [(tactrid, TacPredPt(pt.tacst))]
-    return acc
 
 
 if __name__ == "__main__":
@@ -212,10 +180,6 @@ if __name__ == "__main__":
     with open(args.poseval, 'wb') as f:
         pickle.dump((poseval_dataset, tokens_to_idx), f)
 
-    # tacpred_dataset = poseval_to_tacpred(poseval_dataset)
-    # with open(args.tacpred, 'wb') as f:
-    #     pickle.dump(tacpred_dataset, f)
-
     if args.verbose:
         with open(args.poseval, 'rb') as f:
             dataset, _ = pickle.load(f)
@@ -226,3 +190,34 @@ if __name__ == "__main__":
             dataset, _ = pickle.load(f)
             for tactr_id, pt in dataset:
                 print(tactr_id, pt)
+
+
+# class TacPredPt(object):
+#     def __init__(self, tacst):
+#         # (gid, ctx, concl_idx, tac)
+#         self.tacst = tacst
+#
+#
+# def poseval_to_tacpred(dataset):
+#     acc = []
+#     for tactrid, pt in dataset:
+#         acc += [(tactrid, TacPredPt(pt.tacst))]
+#     return acc
+
+
+# def one_hot_lid(ctx, lids):
+#     vec = [0 for _ in ctx]
+#     for idx, (ident, _) in enumerate(ctx):
+#         if ident in lids:
+#             vec[idx] = 1
+#             break
+#     return vec
+#
+#
+# def one_hot_gid(tokens_to_idx, gids):
+#     vec = [0 for _ in tokens_to_idx]
+#     for idx, (k, v) in enumerate(tokens_to_idx.items()):
+#         if k in gids:
+#             vec[idx] = 1
+#             break
+#     return vec
