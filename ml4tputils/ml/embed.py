@@ -11,12 +11,12 @@ import torch.nn.functional as F
 import torch.optim as optim
 torch.manual_seed(0)
 
-from coq.ast import *
-from coq.decode import DecodeCoqExp
+from coq.constr import *
+from coq.constr_decode import DecodeConstr
 from lib.myenv import MyEnv
 from lib.myutil import NotFound
 
-from coq.util import SizeCoqExp
+from coq.constr_util import SizeConstr
 from time import time
 
 from ml.utils import ResultLogger

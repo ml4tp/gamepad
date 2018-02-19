@@ -12,7 +12,7 @@ import os
 # -------------------------------------------------
 # Helper
 from ml.poseval.fold_model import TacStFolder, Folder
-from ml.utils import ResultLogger, cpuStats, Timer, currTS, torch_summarize_df, flatten
+from ml.utils import ResultLogger, cpu_stats, Timer, curr_timestamp, torch_summarize_df, flatten
 
 # -------------------------------------------------
 # Training
@@ -76,7 +76,7 @@ class PosEvalTrainer(object):
 
 
     def save(self, accuracy = 0.0, loss = np.inf):
-        self.ts = currTS()
+        self.ts = curr_timestamp()
         savepath = self.savepath.format(self.ts)
         print("Saving at", savepath)
         checkpoint = {

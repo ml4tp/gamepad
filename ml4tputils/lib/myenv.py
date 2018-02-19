@@ -1,4 +1,4 @@
-from coq.ast import Name
+from coq.constr import Name
 from lib.myutil import NotFound
 
 

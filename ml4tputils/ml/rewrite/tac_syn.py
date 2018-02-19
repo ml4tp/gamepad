@@ -3,7 +3,7 @@ import random
 
 import torch
 
-from coq.ast import *
+from coq.constr import *
 from lib.myfile import MyFile
 from ml.poseval.fold_model import PosEvalModel
 from ml.poseval.fold_train import PosEvalTrainer

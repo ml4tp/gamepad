@@ -1,36 +1,33 @@
-import gc
+import datetime
 import json
 import os
 import psutil
-import sys
-# from time import time
 import time
-import datetime
-import torch
-import pandas as pd
+import sys
+
 import numpy as np
+import pandas as pd
+import torch
+
+
+"""
+[Note]
+
+ML utility classes functions
+"""
+
 
 class ResultLogger(object):
     def __init__(self, path, *args, **kwargs):
         self.f_log = open(path, 'w')
-        self.f_log.write(json.dumps(kwargs)+'\n')
+        self.f_log.write(json.dumps(kwargs) + '\n')
 
     def log(self, **kwargs):
-        self.f_log.write(json.dumps(kwargs)+'\n')
+        self.f_log.write(json.dumps(kwargs) + '\n')
         self.f_log.flush()
 
     def close(self):
         self.f_log.close()
-
-
-def cpuStats():
-    print(sys.version)
-    print(psutil.cpu_percent())
-    print(psutil.virtual_memory())  # physical memory usage
-    pid = os.getpid()
-    py = psutil.Process(pid)
-    memoryUse = py.memory_info()[0] / 2. ** 30  # memory use in GB...I think
-    print('memory GB:', memoryUse)
 
 
 class Timer(object):
@@ -42,11 +39,26 @@ class Timer(object):
         self.end = time.clock()
         self.interval = self.end - self.start
 
-# current timestamp
-def currTS():
-	ts = datetime.datetime.now().isoformat()
-	ts = ts.replace(":","")
-	return ts
+
+def cpu_stats():
+    # TODO(prafulla): @prafulla where did you get this from?
+    print(sys.version)
+    print(psutil.cpu_percent())
+    print(psutil.virtual_memory())  # physical memory usage
+    pid = os.getpid()
+    py = psutil.Process(pid)
+    memory_use = py.memory_info()[0] / 2. ** 30  # memory use in GB...I think
+    print('memory GB:', memory_use)
+
+
+def curr_timestamp():
+    ts = datetime.datetime.now().isoformat()
+    ts = ts.replace(":", "")
+    return ts
+
+
+def flatten(lst):
+    return [e for l in lst for e in l]
 
 
 def torch_summarize_df(model, show_weights=True, show_parameters=True):
@@ -102,6 +114,3 @@ def torch_summarize_df(model, show_weights=True, show_parameters=True):
     df = df[['key', 'type', 'parameters', 'weights', 'layer_name']]
     df.index.name = 'layer'
     return df
-
-def flatten(lst):
-    return [e for l in lst for e in l]

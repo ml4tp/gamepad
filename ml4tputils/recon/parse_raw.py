@@ -2,7 +2,7 @@ import sexpdata
 
 from lib.myfile import MyFile
 from lib.myutil import pp_tab
-from coq.decode import *
+from coq.constr_decode import *
 from recon.tokens import *
 from coq.tactics_util import FvsTactic
 
@@ -153,7 +153,7 @@ class LemTacSt(object):
         self.decls = decls             # List of TacStDecl "tokens"
 
         # Decode low-level Coq expression
-        self.decoder = DecodeCoqExp(constr_share)
+        self.decoder = DecodeConstr(constr_share)
         self.ctx_prtyps = ctx_prtyps   # Dict[int, pp_str]
         self.ctx_prbods = ctx_prbods   # Dict[int, pp_str]
         self.ctx_prgls = ctx_prgls     # Dict[int, pp_str]

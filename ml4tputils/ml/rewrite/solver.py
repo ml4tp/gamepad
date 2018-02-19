@@ -3,13 +3,13 @@ import random
 import json
 import torch
 
-from coq.ast import *
-from coq.glob_ast import *
+from coq.constr import *
+from coq.glob_constr import *
 from lib.myfile import MyFile
 from pycoqtop.coqtop import CoqTop
 from recon.parse_raw import TacStParser, FullTac
 from ml.tacst_prep import PosEvalPt, Dataset
-from coq.parse_sexpr import ParseSexpr
+from coq.glob_constr_parser import GlobConstrParser
 
 
 """
@@ -749,9 +749,9 @@ def to_goalattn_dataset(poseval_dataset):
             tac = pt.tacst[3][-1]
             if tac.name.startswith("surgery"):
                 args = tac.ftac.tac_args
-                rw_dir = ParseSexpr().parse_glob_constr(args[0])
-                orig_ast = ParseSexpr().parse_glob_constr(args[1])
-                rw_ast = ParseSexpr().parse_glob_constr(args[2])
+                rw_dir = GlobConstrParser().parse_glob_constr(args[0])
+                orig_ast = GlobConstrParser().parse_glob_constr(args[1])
+                rw_ast = GlobConstrParser().parse_glob_constr(args[2])
                 pos = DiffAst().diff_ast(orig_ast, rw_ast)
                 # print("DIFF", pos, orig_ast, rw_ast)
                 # Put the tactic in tac_bin
@@ -778,9 +778,9 @@ def to_goalattn_dataset(poseval_dataset):
             tac = pt.tacst[3][-1]
             if tac.name.startswith("surgery"):
                 args = tac.ftac.tac_args
-                rw_dir = ParseSexpr().parse_glob_constr(args[0])
-                orig_ast = ParseSexpr().parse_glob_constr(args[1])
-                rw_ast = ParseSexpr().parse_glob_constr(args[2])
+                rw_dir = GlobConstrParser().parse_glob_constr(args[0])
+                orig_ast = GlobConstrParser().parse_glob_constr(args[1])
+                rw_ast = GlobConstrParser().parse_glob_constr(args[2])
                 pos = DiffAst().diff_ast(orig_ast, rw_ast)
                 # print("DIFF", pos, orig_ast, rw_ast)
                 # Put the tactic in tac_bin

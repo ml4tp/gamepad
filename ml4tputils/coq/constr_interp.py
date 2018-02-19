@@ -1,5 +1,5 @@
-from coq.ast import *
-from coq.util import SizeCoqExp
+from coq.constr import *
+from coq.constr_util import SizeConstr
 from lib.myenv import MyEnv
 from lib.myutil import NotFound
 
@@ -252,7 +252,7 @@ class InterpCBName(object):
 class SizeCoqVal(object):
     def __init__(self, concr_ast):
         self.concr_ast = concr_ast
-        self.sce = SizeCoqExp(self.concr_ast)
+        self.sce = SizeConstr(self.concr_ast)
 
     def size(self, v):
         if isinstance(v, BaseVal):

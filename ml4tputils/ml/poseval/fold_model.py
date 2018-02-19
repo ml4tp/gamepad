@@ -13,12 +13,12 @@ from torch.nn import Parameter
 
 import numpy as np
 
-from coq.ast import *
-from coq.decode import DecodeCoqExp
+from coq.constr import *
+from coq.constr_decode import DecodeConstr
 from lib.myenv import FastEnv
 from lib.myutil import NotFound
 
-from coq.util import SizeCoqExp
+from coq.constr_util import SizeConstr
 
 from ml.utils import ResultLogger
 

@@ -5,11 +5,11 @@ import numpy as np
 import plotly
 from plotly.graph_objs import *
 
-from coq.ast import Name
-from coq.decode import DecodeCoqExp
-from coq.interp import InterpCBName, SizeCoqVal
+from coq.constr import Name
+from coq.constr_decode import DecodeConstr
+from coq.constr_interp import InterpCBName, SizeCoqVal
 from coq.tactics import TacKind, TACTIC_HIST
-from coq.util import SizeCoqExp, HistCoqExp, TokenCoqExp, VisualizeCoqExp, COQEXP_HIST
+from coq.constr_util import SizeConstr, HistConstr, TokenConstr, VisualizeConstr, COQEXP_HIST
 from lib.myenv import MyEnv
 from lib.myutil import dict_ls_app
 from recon.parse_raw import FullTac 
@@ -138,7 +138,7 @@ class TacTree(object):
     14 [tac1, tac2]
     """
     def __init__(self, name, edges, graph, tacst_info, gid_tactic, decoder):
-        assert isinstance(decoder, DecodeCoqExp)
+        assert isinstance(decoder, DecodeConstr)
 
         # Internal state
         self.name = name               # Lemma name
@@ -357,7 +357,7 @@ class TacTree(object):
         return hist
 
     def hist_coqexp(self):
-        hce = HistCoqExp(self.decoder.decoded)
+        hce = HistConstr(self.decoder.decoded)
         acc = []
         seen = set()
         for _, _, _, _, ctx, concl_idx, _ in self.flatview:
@@ -373,7 +373,7 @@ class TacTree(object):
         return COQEXP_HIST.merges(acc)
 
     def tokenize(self):
-        tce = TokenCoqExp(self.decoder.decoded)
+        tce = TokenConstr(self.decoder.decoded)
         return tce.tokenize()
 
     def view_comp(self, sce_full, sce_sh):
@@ -407,8 +407,8 @@ class TacTree(object):
                               self.view_depth_ctx_size().items()]
         avg_depth_goal_size = [(k, np.mean(tysz)) for k, tysz in
                                self.view_depth_goal_size().items()]
-        sce_full = SizeCoqExp(self.decoder.decoded, f_shared=False)
-        sce_sh = SizeCoqExp(self.decoder.decoded, f_shared=True)
+        sce_full = SizeConstr(self.decoder.decoded, f_shared=False)
+        sce_sh = SizeConstr(self.decoder.decoded, f_shared=True)
         avg_depth_astctx_size = [(k, np.mean(v)) for k, v in
                                  self.view_depth_astctx_size(sce_full).items()]
         avg_depth_astgoal_size = [(k, np.mean(tysz)) for k, tysz in
@@ -532,5 +532,5 @@ class TacTree(object):
         """
         Draws an ast in a Jupyter notebook. (This is required for plotly to work.)
         """
-        vis = VisualizeCoqExp(self.decoder.decoded)
+        vis = VisualizeConstr(self.decoder.decoded)
         vis.visualize_by_key(key)

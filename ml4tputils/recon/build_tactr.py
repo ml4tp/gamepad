@@ -1,6 +1,6 @@
 import networkx as nx
 
-from coq.decode import DecodeCoqExp
+from coq.constr_decode import DecodeConstr
 from coq.tactics import parse_full_tac, is_tclintros_intern, is_tclintros_all
 from recon.parse_rawtac import *
 from recon.tactr import TacStKind, TacTrNode, TacEdge, TacTree
@@ -24,7 +24,7 @@ class TacTreeBuilder(object):
                  gs_nodeid=GenSym(), gs_edgeid=GenSym(), gs_deadid=GenSym(), gs_termid=GenSym(), f_log=False):
         for rawtac in rawtacs:
             assert isinstance(rawtac, RawTac)
-        assert isinstance(decoder, DecodeCoqExp)
+        assert isinstance(decoder, DecodeConstr)
 
         # Internal state
         self.f_log = f_log

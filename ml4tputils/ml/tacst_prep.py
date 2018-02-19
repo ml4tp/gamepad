@@ -4,7 +4,7 @@ import pickle
 
 from recon.embed_tokens import EmbedTokens
 from coq.tactics import TACTIC_INFO, TACTICS_EQUIV
-from coq.util import SizeCoqExp
+from coq.constr_util import SizeConstr
 import numpy as np
 np.random.seed(7)
 
@@ -112,7 +112,7 @@ class PosEvalDataset(object):
                 for edge in tactr.gid_tactic[node]:
                     self.tactics.add(edge.name)
         # print("TACTICS", self.tactics)
-        sce = SizeCoqExp(tactr.decoder.decoded)
+        sce = SizeConstr(tactr.decoder.decoded)
         tacst_size = 0
         for _, gid, _, _, ctx, concl_idx, tac in tactr.bfs_traverse():
             tacst_size += sce.decode_size(concl_idx)

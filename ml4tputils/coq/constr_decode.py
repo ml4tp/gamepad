@@ -2,8 +2,8 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import re
 
-from coq.ast import *
-from coq.util import ChkCoqExp
+from coq.constr import *
+from coq.constr_util import ChkConstr
 
 
 """
@@ -27,7 +27,7 @@ Note that we share the ASTs.
 # -------------------------------------------------
 # Decoding low-level expressions
 
-class DecodeCoqExp(object):
+class DecodeConstr(object):
     def __init__(self, constr_share):
         # Internal state
         self.constr_share = constr_share   # Dict[int, string]
@@ -35,7 +35,7 @@ class DecodeCoqExp(object):
         # Shared representation
         self.decoded = {}                  # Dict[int, Exp]
         self._decode_constrs()
-        ChkCoqExp(self.decoded).chk_decoded()
+        ChkConstr(self.decoded).chk_decoded()
 
     def decode_exp_by_key(self, key):
         return self.decoded[key]
