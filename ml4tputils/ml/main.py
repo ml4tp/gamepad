@@ -101,7 +101,7 @@ if __name__ == "__main__":
         trainer.logger.close()
         trainer.vallogger.close()
     else:
-        from ml.poseval.embed import MyModel, PosEvalTrainer
+        from ml.poseval.orig_model import MyModel, PosEvalTrainer
 
         print("Original")
         model = MyModel(*tokens_to_idx)
