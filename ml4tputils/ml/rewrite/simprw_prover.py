@@ -1,39 +1,7 @@
 from coq.constr import *
 from ml.rewrite.pycoq_prover import PyCoqProver
-from ml.tacst_prep import PosEvalPt, Dataset
-from ml.rewrite.utils import IdLaw, SimpRWPP, SimpRWRewriter
-
-
-SIMPRW_PRELUDE = """Require Import mathcomp.ssreflect.ssreflect.
-
-(* The set of the group. *)
-Axiom G : Set.
-
-(* The left identity for +. *)
-Axiom e : G.
-
-(* The right identity for +. *)
-Axiom m : G.
-
-(* + binary operator. *)
-Axiom f : G -> G -> G.
-
-(* For readability, we use infix <+> to stand for the binary operator. *)
-Infix "<+>" := f (at level 50).
-
-(* [m] is the right-identity for all elements [a] *)
-Axiom id_r : forall a, a <+> m = a.
-
-(* [e] is the left-identity for all elements [a] *)
-Axiom id_l : forall a, e <+> a = a.
-
-Ltac surgery dir e1 e2 :=
-  match goal with
-  | [ |- _ ] =>
-    let H := fresh in
-    (have H : e1 = e2 by repeat (rewrite dir); reflexivity); rewrite H; clear H
-  end.
-"""
+from ml.tacst_prep import PosEvalPt
+from ml.rewrite.utils import IdLaw, SimpRWPP, SimpRWRewriter, SIMPRW_PRELUDE
 
 
 class FakeTacEdge(object):

@@ -93,8 +93,8 @@ class PyCoqProver(object):
         goal_c = self.decoder.decode_exp_by_key(self.concl_idx)
         left_c, right_c = self.sep_eq_goal(goal_c)
 
-        # 2. Compute and take next step
-        #    We assume the expression to simplify is on the left
+        # 2. Compute and take next step.
+        #    We assume the expression to simplify is on the left.
         step = self.policy.next_proof_step(left_c)
         res = self.top.sendone(step)
         self._log(res)
@@ -103,7 +103,7 @@ class PyCoqProver(object):
         else:
             return None
 
-        # 3. Prepare for next iteration
+        # 3. Prepare for next iteration.
         self._load_tcoq_result(res)
 
         return self._is_success(res)
