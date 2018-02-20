@@ -107,20 +107,40 @@ class Exp(object):
     def __init__(self):
         self.tag = None
 
+    def __eq__(self, other):
+        raise NotImplementedError
+
     def __hash__(self):
+        raise NotImplementedError
+
+    def _tag(self, c):
+        c.tag = self.tag
+
+    def copy(self):
         raise NotImplementedError
 
 
 class RelExp(Exp):
-    """R %d
-    A DeBruijn index. (Starts at 1 ...)
-    fun x -> x        =  fun 1
-    fun x -> fun -> y y x  =  fun fun 1 2
+    """AST for a debruin-index referenced variable.
+
+    Low-level format:
+        R %d
+
+    Coq:
+        A -> B
+
+    Notes:
+        A DeBruijn index. (Starts at 1 ...)
+        fun x => x             =  fun 1
+        fun x => fun => y y x  =  fun fun 1 2
     """
     def __init__(self, idx):
         assert isinstance(idx, int) and idx >= 1
         super().__init__()
         self.idx = idx
+
+    def __eq__(self, other):
+        return isinstance(other, RelExp) and self.idx == other.idx
 
     def __hash__(self):
         return self.idx
@@ -128,16 +148,26 @@ class RelExp(Exp):
     def __str__(self):
         return "R({})".format(self.idx)
 
+    def copy(self):
+        return self._tag(RelExp(self.idx))
+
 
 class VarExp(Exp):
-    """V %s
-    A named representation for a bound variable.
-    fun x -> x
+    """AST for named variable.
+
+    Low-level format:
+        V %s
+
+    Coq:
+        x
     """
     def __init__(self, x):
         assert isinstance(x, str)
         super().__init__()
         self.x = x
+
+    def __eq__(self, other):
+        return isinstance(other, VarExp) and self.x == other.x
 
     def __hash__(self):
         return hash(self.x)
@@ -145,15 +175,26 @@ class VarExp(Exp):
     def __str__(self):
         return "V({})".format(self.x)
 
+    def copy(self):
+        return self._tag(VarExp(self.x))
+
 
 class MetaExp(Exp):
-    """M %d
-    A variable in the meta-language. Should not be referenced.
+    """AST for variable in the meta-language. Should never occur.
+
+    Low-level format:
+        M %d
+
+    Coq:
+        should not occur
     """
     def __init__(self, mv):
         assert isinstance(mv, int)
         super().__init__()
         self.mv = mv
+
+    def __eq__(self, other):
+        return isinstance(other, MetaExp) and self.mv == other.mv
 
     def __hash__(self):
         return self.mv
@@ -161,13 +202,18 @@ class MetaExp(Exp):
     def __str__(self):
         return "M({})".format(self.mv)
 
+    def copy(self):
+        return self._tag(MetaExp(self.mv))
+
 
 class EvarExp(Exp):
-    """E %d [%s]
-    An existential variable in the object-language. For example,
-    ?1 + 2 = 4 : nat
-    means that ?1 is an existential variable such that
-    it plus 2 is 4 at type nat.
+    """AST for an existential variable.
+
+    Low-level format:
+        E %d [%s]
+
+    Coq:
+        ?x1
     """
     def __init__(self, exk, cs):
         assert isinstance(exk, int)
@@ -177,22 +223,38 @@ class EvarExp(Exp):
         self.exk = exk
         self.cs = cs
 
+    def __eq__(self, other):
+        return (isinstance(other, EvarExp) and self.exk == other.exk and
+                all([c1 == c2 for c1, c2 in zip(self.cs, other.cs)]))
+
     def __hash__(self):
         return sum([hash(c) for c in self.cs])
 
     def __str__(self):
-        return "E({}, {})".format(self.exk,
-                                  ",".join([str(c) for c in self.cs]))
+        return "E({}, {})".format(self.exk, ",".join([str(c) for c in self.cs]))
+
+    def copy(self):
+        return self._tag(EvarExp(self.exk, [c.copy() for c in self.cs]))
 
 
 class SortExp(Exp):
-    """S %s
-    The kind of a term, i.e., Set/Prop, or Type-0, Type-1, ...
+    """AST for the kind of a term, i.e., Set/Prop, or Type-0, Type-1, ...
+
+    Low-level format:
+        S %s
+
+    Coq:
+        Set
+        Prop
+        Type (level is not shown)
     """
     def __init__(self, sort):
         assert isinstance(sort, str)
         super().__init__()
         self.sort = sort
+
+    def __eq__(self, other):
+        return isinstance(other, SortExp) and self.sort == other.sort
 
     def __hash__(self):
         return hash(self.sort)
@@ -200,10 +262,18 @@ class SortExp(Exp):
     def __str__(self):
         return "S({})".format(self.sort)
 
+    def copy(self):
+        return self._tag(SortExp(self.sort))
+
 
 class CastExp(Exp):
-    """CA %d %s %d
-    Cast an expression <c> to the type <ty>.
+    """AST for casting an expression <c> to the type <ty>.
+
+    Low-level format:
+        CA %d %s %d
+
+    Coq:
+        ??
     """
     def __init__(self, c, ck, ty):
         assert isinstance(c, Exp)
@@ -214,16 +284,27 @@ class CastExp(Exp):
         self.ck = ck
         self.ty = ty
 
+    def __eq__(self, other):
+        return isinstance(other, CastExp) and self.c == other.c and self.ck == other.ck and self.ty == other.ty
+
     def __hash__(self):
         return hash(self.c) + hash(self.ty)
 
     def __str__(self):
         return "CA({}, {}, {})".format(str(self.c), self.ck, str(self.ty))
 
+    def copy(self):
+        return self._tag(CastExp(self.c.copy(), self.ck, self.ty.copy()))
+
 
 class ProdExp(Exp):
-    """P %s %d %d
-    A dependent product type of Pi <name>: <ty1>. <ty2>.
+    """AST for dependent product type of Pi <name>: <ty1>. <ty2>.
+
+    Low-level format:
+        P %s %d %d
+
+    Coq:
+        \forall x: c1. c2
     """
     def __init__(self, name, ty1, ty2):
         assert isinstance(name, Name)
@@ -234,16 +315,28 @@ class ProdExp(Exp):
         self.ty1 = ty1
         self.ty2 = ty2
 
+    def __eq__(self, other):
+        return (isinstance(other, ProdExp) and self.name == other.name and
+                self.ty1 == other.ty1 and self.ty2 == other.ty2)
+
     def __hash__(self):
         return hash(self.ty1) + hash(self.ty2)
 
     def __str__(self):
         return "P({}, {}, {})".format(self.name, str(self.ty1), str(self.ty2))
 
+    def copy(self):
+        return self._tag(ProdExp(self.name, self.ty1.copy(), self.ty2.copy()))
+
 
 class LambdaExp(Exp):
-    """L %s %d %d
-    \name : ty. c
+    """AST for Lambda expression.
+
+    Low-level format:
+        L %s %d %d
+
+    Coq:
+        fun (name : ty) => c
     """
     def __init__(self, name, ty, c):
         assert isinstance(name, Name)
@@ -254,16 +347,28 @@ class LambdaExp(Exp):
         self.ty = ty
         self.c = c
 
+    def __eq__(self, other):
+        return (isinstance(other, LambdaExp) and self.name == other.name and
+                self.ty == other.ty and self.c == other.c)
+
     def __hash__(self):
         return hash(self.ty) + hash(self.c)
 
     def __str__(self):
         return "L({}, {}, {})".format(self.name, str(self.ty), str(self.c))
 
+    def copy(self):
+        return self._tag(LambdaExp(self.name, self.ty.copy(), self.c.copy()))
+
 
 class LetInExp(Exp):
-    """LI %s %d %d %d
-    let x = c1 in c2
+    """AST for Let expression.
+
+    Low-level format:
+        LI %s %d %d %d
+
+    Coq:
+        let x = c1 in c2
     """
     def __init__(self, name, c1, ty, c2):
         assert isinstance(name, Name)
@@ -276,17 +381,28 @@ class LetInExp(Exp):
         self.ty = ty
         self.c2 = c2
 
+    def __eq__(self, other):
+        return (isinstance(other, LetInExp) and self.name == other.name and
+                self.c1 == other.c1 and self.ty == other.ty and self.c2 == other.c2)
+
     def __hash__(self):
         return hash(self.c1) + hash(self.ty) + hash(self.c2)
 
     def __str__(self):
-        return "LI({}, {}, {}, {})".format(self.name, str(self.c1),
-                                           str(self.ty), str(self.c2))
+        return "LI({}, {}, {}, {})".format(self.name, str(self.c1), str(self.ty), str(self.c2))
+
+    def copy(self):
+        return self._tag(LetInExp(self.name, self.c1.copy(), self.ty.copy(), self.c2.copy()))
 
 
 class AppExp(Exp):
-    """A %d [%s]
-    c [c1 ... cn]
+    """AST for application expression.
+
+    Low-level format:
+        A %d [%s]
+
+    Coq:
+        S (S (S O))     (equal to the number 3)
     """
     def __init__(self, c, cs):
         assert isinstance(c, Exp)
@@ -296,17 +412,28 @@ class AppExp(Exp):
         self.c = c
         self.cs = cs
 
+    def __eq__(self, other):
+        return (isinstance(other, AppExp) and self.c == other .c and
+                all([c1 == c2 for c1, c2 in zip(self.cs, other.cs)]))
+
     def __hash__(self):
         return hash(self.c) + sum([hash(c) for c in self.cs])
 
     def __str__(self):
-        return "A({}, {})".format(str(self.c),
-                                  ",".join([str(c) for c in self.cs]))
+        return "A({}, {})".format(str(self.c), ",".join([str(c) for c in self.cs]))
+
+    def copy(self):
+        return self._tag(AppExp(self.c.copy(), [c.copy() for c in self.cs]))
 
 
 class ConstExp(Exp):
-    """C %s [%s]
-    A constant expression with global identifier <const>.
+    """AST for constant expression with global identifier <const>.
+
+    Low-level format:
+        C %s [%s]
+
+    Coq:
+        Coq.logic.eq_refl
     """
     def __init__(self, const, ui):
         assert isinstance(const, Name)  # TODO(deh): Name.Constant?
@@ -315,16 +442,27 @@ class ConstExp(Exp):
         self.const = const
         self.ui = ui
 
+    def __eq__(self, other):
+        return isinstance(other, ConstExp) and self.const == other.const and self.ui == other.ui
+
     def __hash__(self):
         return hash(self.const)
 
     def __str__(self):
         return "C({}, {})".format(self.const, self.ui)
 
+    def copy(self):
+        return self._tag(ConstExp(self.const, self.ui))
+
 
 class IndExp(Exp):
-    """I %s %d [%s]
-    An inductive type with name and position <ind>.
+    """AST for an inductive type with name and position <ind>.
+
+    Low-level format:
+        I %s %d [%s]
+
+    Coq:
+        Inductive nat : Set := O | S : nat -> nat.
     """
     def __init__(self, ind, ui):
         assert isinstance(ind, Inductive)
@@ -333,16 +471,28 @@ class IndExp(Exp):
         self.ind = ind   # Name of the inductive type
         self.ui = ui
 
+    def __eq__(self, other):
+        return isinstance(other, IndExp) and self.ind == other.ind and self.ui == other.ui
+
     def __hash__(self):
         return hash(self.ind)
 
     def __str__(self):
         return "I({}, {})".format(self.ind, self.ui)
 
+    def copy(self):
+        return self._tag(IndExp(self.ind, self.ui))
+
 
 class ConstructExp(Exp):
-    """CO %s %d %d [%s]
-    A constructor <conid> of an inductive type <ind>.
+    """AST for constructor <conid> of an inductive type <ind>.
+
+    Low-level format:
+        CO %s %d %d [%s]
+
+    Coq:
+        Inductive nat : Set := O | S : nat -> nat.
+        O or S are constructors
     """
     def __init__(self, ind, conid, ui):
         assert isinstance(conid, int)
@@ -352,29 +502,40 @@ class ConstructExp(Exp):
         self.conid = conid     # Constructor number (1-indexing)
         self.ui = ui
 
+    def __eq__(self, other):
+        return (isinstance(other, ConstructExp) and self.ind == other.ind and
+                self.conid == other.conid and self.ui == other.ui)
+
     def __hash__(self):
         return hash(self.ind) + self.conid
 
     def __str__(self):
         return "CO({}, {}, {})".format(self.ind, self.conid, self.ui)
 
+    def copy(self):
+        return self._tag(ConstructExp(self.ind, self.conid, self.ui))
+
 
 class CaseExp(Exp):
-    """CS [%s] %d %d [%s]
-    case <match> return <ret> of
-      <c1>
-      ...
-      <cn>
+    """AST for case expression.
+
+    Low-level format:
+        CS [%s] %d %d [%s]
+
+    Coq:
+        match c return e' with
+        | pat1 => c1
+        | ...
+        | patn => cn
     """
     def __init__(self, ci, ret, match, cases):
-        # TODO(deh): case info?
         assert isinstance(ci, CaseInfo)
         assert isinstance(ret, Exp)
         assert isinstance(match, Exp)
         for c_p in cases:
             assert isinstance(c_p, Exp)
         super().__init__()
-        # NOTE(deh): Comment taken from Coq 8.6.1 source-code
+        # Note(deh): Comment taken from Coq 8.6.1 source-code
         # [mkCase ci p c ac] stands for
         # match [c] as [x] in [I args] return [p] with [ac]
         # presented as describe in [ci].
@@ -383,28 +544,38 @@ class CaseExp(Exp):
         self.match = match    # what you match on
         self.cases = cases    # cases
 
+    def __eq__(self, other):
+        return (isinstance(other, CaseExp) and self.ci == other.ci and self.ret == other.ret and
+                self.match == other.match and all([c1 == c2 for c1, c2 in zip(self.cases, other.cases)]))
+
     def __hash__(self):
-        return (hash(self.ret) + hash(self.match) +
-                sum([hash(c) for c in self.cases]))
+        return hash(self.ret) + hash(self.match) + sum([hash(c) for c in self.cases])
 
     def __str__(self):
         s_cases = ",".join([str(c) for c in self.cases])
-        return "CS({}, {}, {}, {})".format(self.ci, str(self.ret),
-                                           str(self.match), s_cases)
+        return "CS({}, {}, {}, {})".format(self.ci, str(self.ret), str(self.match), s_cases)
+
+    def copy(self):
+        return self._tag(CaseExp(self.ci, self.ret.copy(), self.match.copy(), [c.copy() for c in self.cases]))
 
 
 class FixExp(Exp):
-    """F [%s] %d [%s] [%s] [%s]
-    For example,
-      Fix even n :=
-        match n with
-        | O => True
-        | S n => odd n
-      and odd n :=
-        match n with
-        | O => False
-        | S n => even n
-    Fix [even, odd] [nat -> bool, nat -> bool] [c1, c2]
+    """AST for a fixpoint expression.
+
+    Low-level fomrat:
+        F [%s] %d [%s] [%s] [%s]
+
+    Coq:
+        Fix even n :=
+          match n with
+          | O => True
+          | S n => odd n
+        and odd n :=
+          match n with
+          | O => False
+          | S n => even n
+
+        Fix [even, odd] [nat -> bool, nat -> bool] [c1, c2]
     """
     def __init__(self, iarr, idx, names, tys, cs):
         for i in iarr:
@@ -438,9 +609,15 @@ class FixExp(Exp):
         self.tys = tys
         self.cs = cs
 
+    def __eq__(self, other):
+        return (isinstance(other, FixExp) and self.idx == other.idx and
+                all([i1 == i2 for i1, i2 in zip(self.iarr, other.iarr)]) and
+                all([name1 == name2 for name1, name2 in zip(self.names, other.names)]) and
+                all([ty1 == ty2 for ty1, ty2 in zip(self.tys, other.tys)]) and
+                all([c1 == c2 for c1, c2 in zip(self.cs, other.cs)]))
+
     def __hash__(self):
-        return (sum([hash(c) for c in self.cs]) +
-                sum([hash(ty) for ty in self.tys]))
+        return sum([hash(c) for c in self.cs]) + sum([hash(ty) for ty in self.tys])
 
     def __str__(self):
         s1 = ",".join([name for name in self.names])
@@ -448,10 +625,19 @@ class FixExp(Exp):
         s3 = ",".join([str(c) for c in self.cs])
         return "F({}, {}, {}, {}, {})".format(self.iarr, self.idx, s1, s2, s3)
 
+    def copy(self):
+        return self._tag(FixExp(self.iarr, self.idx, self.names,
+                                [ty.copy() for ty in self.tys], [c.copy() for c in self.cs]))
+
 
 class CoFixExp(Exp):
-    """CF %d [%s] [%s] [%s]
-    Same as Fix but must be productive.
+    """AST for cofixpoint expression.
+
+    Low-level format:
+        CF %d [%s] [%s] [%s]
+
+    Coq:
+        Same as Fix but must be productive.
     """
     def __init__(self, idx, names, tys, cs):
         assert isinstance(idx, int)
@@ -467,9 +653,14 @@ class CoFixExp(Exp):
         self.tys = tys
         self.cs = cs
 
+    def __eq__(self, other):
+        return (isinstance(other, CoFixExp) and self.idx == other.idx and
+                all([name1 == name2 for name1, name2 in zip(self.names, other.names)]) and
+                all([ty1 == ty2 for ty1, ty2 in zip(self.tys, other.tys)]) and
+                all([c1 == c2 for c1, c2 in zip(self.cs, other.cs)]))
+
     def __hash__(self):
-        return (sum([hash(c) for c in self.cs]) +
-                sum([hash(ty) for ty in self.tys]))
+        return sum([hash(c) for c in self.cs]) + sum([hash(ty) for ty in self.tys])
 
     def __str__(self):
         s1 = ",".join([name for name in self.names])
@@ -477,10 +668,18 @@ class CoFixExp(Exp):
         s3 = ",".join([str(c) for c in self.cs])
         return "CF({}, {}, {}, {})".format(self.idx, s1, s2, s3)
 
+    def copy(self):
+        return self._tag(CoFixExp(self.idx, self.names, [ty.copy() for ty in self.tys], [c.copy() for c in self.cs]))
+
 
 class ProjExp(Exp):
-    """PJ %s %d
-    Projection from a record.
+    """AST for record projection expression.
+
+    Low-level format:
+        PJ %s %d
+
+    Coq:
+        x.proj
     """
     def __init__(self, proj, c):
         assert isinstance(proj, Name)  # TODO(deh): Name.Projection?
@@ -489,11 +688,17 @@ class ProjExp(Exp):
         self.proj = proj
         self.c = c
 
+    def __eq__(self, other):
+        return isinstance(other, ProjExp) and self.proj == other.proj and self.c == other.c
+
     def __hash__(self):
         return hash(self.proj) + hash(self.c)
 
     def __str__(self):
         return "PJ({}, {})".format(self.proj, str(self.c))
+
+    def copy(self):
+        return self._tag(ProjExp(self.proj, self.c.copy()))
 
 
 # -------------------------------------------------
@@ -529,24 +734,22 @@ COQEXP_HIST = MyHist(COQEXP)
 # -------------------------------------------------
 # Junk
 
-"""
-class DecodeName(object):
-    def __init__(self):
-        self.names = {}
-
-    def _hcons(self, tok):
-        if tok in self.names:
-
-    def str_to_name(self, s):
-        toks = s.split('.')
-        if len(toks) == 0:
-            raise NameError("Cannot convert empty string {}".format(s))
-        elif len(toks) == 1:
-            return Name(toks[0])
-        else:
-            name = Name(toks[-1])
-            toks = toks[:-1]
-            for tok in toks[::-1]:
-                name = Name(tok, name)
-        return name
-"""
+# class DecodeName(object):
+#     def __init__(self):
+#         self.names = {}
+#
+#     def _hcons(self, tok):
+#         if tok in self.names:
+#
+#     def str_to_name(self, s):
+#         toks = s.split('.')
+#         if len(toks) == 0:
+#             raise NameError("Cannot convert empty string {}".format(s))
+#         elif len(toks) == 1:
+#             return Name(toks[0])
+#         else:
+#             name = Name(toks[-1])
+#             toks = toks[:-1]
+#             for tok in toks[::-1]:
+#                 name = Name(tok, name)
+#         return name
