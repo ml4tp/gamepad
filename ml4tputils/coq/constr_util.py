@@ -22,6 +22,8 @@ Utility functions on Coq expressions.
 # Check the decoded representation
 
 class ChkConstr(object):
+    """Checks that the low-level format has been parsed properly.
+    """
     def __init__(self, decoded):
         self.decoded = decoded   # Dict[int, Exp]
 
@@ -132,6 +134,8 @@ class ChkConstr(object):
 # Computing sizes of coq-expressions efficiently
 
 class SizeConstr(object):
+    """Computes the size of a constr.
+    """
     def __init__(self, decoded, f_shared=False):
         self.decoded = decoded
         # ChkCoqExp(decoded).chk_decoded()
@@ -209,6 +213,8 @@ class SizeConstr(object):
 # Computing histogram of Coq Constr
 
 class HistConstr(object):
+    """Computes a histogram of the AST kinds used in a decoded table.
+    """
     def __init__(self, decoded):
         # Dict[int, Exp]
         self.decoded = decoded
@@ -305,6 +311,8 @@ class HistConstr(object):
 # Computing tokens in Coq Constr
 
 class TokenConstr(object):
+    """Computes the unique tokens used in a decoded table.
+    """
     def __init__(self, decoded):
         # Dict[int, Exp]
         self.decoded = decoded
@@ -420,6 +428,8 @@ class VisAstNode(object):
 
 
 class VisualizeConstr(object):
+    """Draws an AST given a decoded table.
+    """
     def __init__(self, decoded):
         # Dict[int, Exp]
         self.decoded = decoded
@@ -587,6 +597,8 @@ class VisualizeConstr(object):
 # Alpha-convert Constr
 
 class AlphaConstr(object):
+    """Alpha-converts a Coq constr.
+    """
     def __init__(self, concr_ast):
         self.concr_ast = concr_ast
         self.seen = set()
@@ -609,7 +621,7 @@ class AlphaConstr(object):
     def _fresh(self, name):
         self.seen.add(name)
         while True:
-            t = gs.gensym()
+            t = self.gs.gensym()
             if t not in self.seen:
                 return t
 
@@ -620,12 +632,12 @@ class AlphaConstr(object):
         if isinstance(c, RelExp):
             return self._alpha_cons(c)
         elif isinstance(c, VarExp):
-            return self._alpha_cons(VarExp(self._alpha_var(c.x)))
+            return self._alpha_cons(VarExp(self._alpha_var(env, c.x)))
         elif isinstance(c, MetaExp):
             return self._alpha_cons(c)
         elif isinstance(c, EvarExp):
-            cs_p = self.alphas(env, self.cs)
-            return self._alpha_cons(EVarExp(c.exk, cs_p))
+            cs_p = self.alphas(env, c.cs)
+            return self._alpha_cons(EvarExp(c.exk, cs_p))
         elif isinstance(c, SortExp):
             return self._alpha_cons(c)
         elif isinstance(c, CastExp):
@@ -635,16 +647,16 @@ class AlphaConstr(object):
         elif isinstance(c, ProdExp):
             ty1_p = self.alpha(env, c.ty1)
             ty2_p = self.alpha(env, c.ty2)
-            return self._alpha_cons(ProdExp(self._alpha_var(c.name), ty1_p, ty2_p))
+            return self._alpha_cons(ProdExp(self._alpha_var(env, c.name), ty1_p, ty2_p))
         elif isinstance(c, LambdaExp):
-            name_p = self._fresh()
+            name_p = self._fresh(c.name)
             ty_p = self.alpha(env, c.ty)
             c_p = self.alpha(env.insert(c.name, name_p), c.c)
             return self._alpha_cons(LambdaExp(name_p, ty_p, c_p))
         elif isinstance(c, LetInExp):
             c1_p = self.alpha(env, c.c1)
             ty_p = self.alpha(env, c.ty)
-            name_p = self._fresh()
+            name_p = self._fresh(c.name)
             c2_p = self.alpha(env.insert(c.name, name_p), c.c2)
             return self._alpha_cons(LetInExp(name_p, c1_p, ty_p, c2_p))
         elif isinstance(c, AppExp):
@@ -678,3 +690,82 @@ class AlphaConstr(object):
 
     def alphas(self, env, cs):
         return [self.alpha(env, c) for c in cs]
+
+
+# -------------------------------------------------
+# Pre-order traversal
+
+class PreOrder(object):
+    """Performs a pre-order traversal of an AST.
+    """
+    def __init__(self):
+        self.acc = []
+
+    def traverse(self, c):
+        self.acc = []
+        self._traverse(c)
+        return self.acc
+
+    def _traverse(self, c):
+        typ = type(c)
+        if typ is VarExp:
+            self.acc += [c]
+        elif typ is ConstExp:
+            self.acc += [c]
+        elif typ is AppExp:
+            self.acc += [c]
+            self._traverse(c.c)
+            self._traverses(c.cs)
+        elif typ is EvarExp:
+            pass
+        elif typ is SortExp:
+            self.acc += [c]
+        elif typ is CastExp:
+            self.acc += [c]
+            self._traverse(c.c)
+            self._traverse(c.ty)
+        elif typ is ProdExp:
+            self.acc += [c]
+            self._traverse(c.ty1)
+            self._traverse(c.ty2)
+        elif typ is LambdaExp:
+            self.acc += [c]
+            self._traverse(c.ty)
+            self._traverse(c.c)
+        elif typ is LetInExp:
+            self.acc += [c]
+            self._traverse(c.c1)
+            self._traverse(c.ty)
+            self._traverse(c.c2)
+        elif typ is AppExp:
+            self.acc += [c]
+            self._traverse(c.c)
+            self._traverses(c.cs)
+        elif typ is ConstExp:
+            self.acc += [c]
+        elif typ is IndExp:
+            self.acc += [c]
+        elif typ is ConstructExp:
+            self.acc += [c]
+        elif typ is CaseExp:
+            self.acc += [c]
+            self._traverse(c.ret)
+            self._traverse(c.match)
+            self._traverses(c.cases)
+        elif typ is FixExp:
+            self.acc += [c]
+            self._traverse(c.tys)
+            self._traverse(c.cs)
+        elif typ is CoFixExp:
+            self.acc += [c]
+            self._traverse(c.tys)
+            self._traverse(c.cs)
+        elif typ is ProjExp:
+            self.acc += [c]
+            self._traverse(c.c)
+        else:
+            raise NameError("Shouldn't happen {}".format(c))
+
+    def _traverses(self, cs):
+        for c in cs:
+            self._traverse(c)

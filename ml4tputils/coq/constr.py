@@ -25,7 +25,7 @@ class Name(object):
         self.hierch = hierch
 
     def __eq__(self, other):
-        return self.base == other.base and self.hierch == other.hierch
+        return isinstance(other, Name) and self.base == other.base and self.hierch == other.hierch
 
     def __hash__(self):
         return 3 * hash(self.base) + hash(self.hierch)
@@ -44,7 +44,7 @@ class UniverseInstance(object):
         self.univs = univs
 
     def __eq__(self, other):
-        return all([u1 == u2 for u1, u2 in zip(self.univs, other.univs)])
+        return isinstance(other, UniverseInstance) and all([u1 == u2 for u1, u2 in zip(self.univs, other.univs)])
 
     def __hash__(self):
         return hash("".join(self.univs))
@@ -61,7 +61,7 @@ class Inductive(object):
         self.pos = pos            # Position of the inductive type
 
     def __eq__(self, other):
-        return self.mutind == other.mutind and self.pos == other.pos
+        return isinstance(other, Inductive) and self.mutind == other.mutind and self.pos == other.pos
 
     def __hash__(self):
         return hash(self.mutind) + hash(self.pos)
@@ -93,6 +93,9 @@ class CaseInfo(object):
         # from the count
         self.cstr_nargs = cstr_nargs
 
+    def __eq__(self, other):
+        return isinstance(other, CaseInfo) and self.ind == other.ind
+
     def __str__(self):
         s_cstr_ndecls = ",".join([str(x) for x in self.cstr_ndecls])
         s_cstr_nargs = ",".join([str(x) for x in self.cstr_nargs])
@@ -117,6 +120,9 @@ class Exp(object):
         c.tag = self.tag
 
     def copy(self):
+        raise NotImplementedError
+
+    def is_leaf(self):
         raise NotImplementedError
 
 
@@ -151,6 +157,9 @@ class RelExp(Exp):
     def copy(self):
         return self._tag(RelExp(self.idx))
 
+    def is_leaf(self):
+        return True
+
 
 class VarExp(Exp):
     """AST for named variable.
@@ -178,6 +187,9 @@ class VarExp(Exp):
     def copy(self):
         return self._tag(VarExp(self.x))
 
+    def is_leaf(self):
+        return True
+
 
 class MetaExp(Exp):
     """AST for variable in the meta-language. Should never occur.
@@ -204,6 +216,9 @@ class MetaExp(Exp):
 
     def copy(self):
         return self._tag(MetaExp(self.mv))
+
+    def is_leaf(self):
+        return True
 
 
 class EvarExp(Exp):
@@ -236,6 +251,10 @@ class EvarExp(Exp):
     def copy(self):
         return self._tag(EvarExp(self.exk, [c.copy() for c in self.cs]))
 
+    def is_leaf(self):
+        # TODO(deh): hmmm ...
+        return False
+
 
 class SortExp(Exp):
     """AST for the kind of a term, i.e., Set/Prop, or Type-0, Type-1, ...
@@ -264,6 +283,9 @@ class SortExp(Exp):
 
     def copy(self):
         return self._tag(SortExp(self.sort))
+
+    def is_leaf(self):
+        return True
 
 
 class CastExp(Exp):
@@ -295,6 +317,9 @@ class CastExp(Exp):
 
     def copy(self):
         return self._tag(CastExp(self.c.copy(), self.ck, self.ty.copy()))
+
+    def is_leaf(self):
+        return False
 
 
 class ProdExp(Exp):
@@ -328,6 +353,9 @@ class ProdExp(Exp):
     def copy(self):
         return self._tag(ProdExp(self.name, self.ty1.copy(), self.ty2.copy()))
 
+    def is_leaf(self):
+        return False
+
 
 class LambdaExp(Exp):
     """AST for Lambda expression.
@@ -359,6 +387,9 @@ class LambdaExp(Exp):
 
     def copy(self):
         return self._tag(LambdaExp(self.name, self.ty.copy(), self.c.copy()))
+
+    def is_leaf(self):
+        return False
 
 
 class LetInExp(Exp):
@@ -394,6 +425,9 @@ class LetInExp(Exp):
     def copy(self):
         return self._tag(LetInExp(self.name, self.c1.copy(), self.ty.copy(), self.c2.copy()))
 
+    def is_leaf(self):
+        return False
+
 
 class AppExp(Exp):
     """AST for application expression.
@@ -425,6 +459,9 @@ class AppExp(Exp):
     def copy(self):
         return self._tag(AppExp(self.c.copy(), [c.copy() for c in self.cs]))
 
+    def is_leaf(self):
+        return False
+
 
 class ConstExp(Exp):
     """AST for constant expression with global identifier <const>.
@@ -454,6 +491,9 @@ class ConstExp(Exp):
     def copy(self):
         return self._tag(ConstExp(self.const, self.ui))
 
+    def is_leaf(self):
+        return True
+
 
 class IndExp(Exp):
     """AST for an inductive type with name and position <ind>.
@@ -482,6 +522,9 @@ class IndExp(Exp):
 
     def copy(self):
         return self._tag(IndExp(self.ind, self.ui))
+
+    def is_leaf(self):
+        return True
 
 
 class ConstructExp(Exp):
@@ -514,6 +557,9 @@ class ConstructExp(Exp):
 
     def copy(self):
         return self._tag(ConstructExp(self.ind, self.conid, self.ui))
+
+    def is_leaf(self):
+        return True
 
 
 class CaseExp(Exp):
@@ -557,6 +603,9 @@ class CaseExp(Exp):
 
     def copy(self):
         return self._tag(CaseExp(self.ci, self.ret.copy(), self.match.copy(), [c.copy() for c in self.cases]))
+
+    def is_leaf(self):
+        return False
 
 
 class FixExp(Exp):
@@ -629,6 +678,9 @@ class FixExp(Exp):
         return self._tag(FixExp(self.iarr, self.idx, self.names,
                                 [ty.copy() for ty in self.tys], [c.copy() for c in self.cs]))
 
+    def is_leaf(self):
+        return False
+
 
 class CoFixExp(Exp):
     """AST for cofixpoint expression.
@@ -671,6 +723,9 @@ class CoFixExp(Exp):
     def copy(self):
         return self._tag(CoFixExp(self.idx, self.names, [ty.copy() for ty in self.tys], [c.copy() for c in self.cs]))
 
+    def is_leaf(self):
+        return False
+
 
 class ProjExp(Exp):
     """AST for record projection expression.
@@ -699,6 +754,9 @@ class ProjExp(Exp):
 
     def copy(self):
         return self._tag(ProjExp(self.proj, self.c.copy()))
+
+    def is_leaf(self):
+        return False
 
 
 # -------------------------------------------------
