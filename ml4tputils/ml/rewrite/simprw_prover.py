@@ -4,10 +4,18 @@ from ml.tacst_prep import PosEvalPt
 from ml.rewrite.utils import IdLaw, SimpRWPP, SimpRWRewriter, SIMPRW_PRELUDE
 
 
+# -------------------------------------------------
+# Auxiliary
+
 class FakeTacEdge(object):
+    """Inference-time fake tactic edge.
+    """
     def __init__(self, name):
         self.name = name
 
+
+# -------------------------------------------------
+# Prover that uses pre-trained model
 
 class PyCoqTrainedProver(PyCoqProver):
     """A PyCoq Prover for the simple-rewrite problem that uses a pre-trained model to perform inference.
@@ -21,7 +29,7 @@ class PyCoqTrainedProver(PyCoqProver):
 
         # Inferred proof step statistics
         self.num_bad_ast = 0       # The inferred proof step produced an ill-formed AST
-        self.num_bad_steps = 0     # The inferred proof step cannot be taken
+        self.num_bad_infer = 0     # The inferred proof step cannot be taken
 
         # Module shenanigans
         acc = {}
@@ -76,7 +84,7 @@ class PyCoqTrainedProver(PyCoqProver):
         if step_infer is None:
             # Case A: The inferred step produced a bad AST.
             self.num_bad_ast += 1
-            self.bad_points.add(self.num_steps)
+            self.bad_steps.add(self.num_steps)
 
             # Take the deterministic solver step.
             self.proof += [step_det]
@@ -92,8 +100,8 @@ class PyCoqTrainedProver(PyCoqProver):
                 self.proof += [step_infer]
             else:
                 # Case B2: The inferred step was successful.
-                self.num_bad_steps += 1
-                self.bad_points.add(self.num_steps)
+                self.num_bad_infer += 1
+                self.bad_steps.add(self.num_steps)
 
                 # Take the deterministic solver step.
                 self.proof += [step_det]

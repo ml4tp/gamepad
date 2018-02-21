@@ -22,7 +22,7 @@ class PyCoqProver(object):
         self.proof = ["intros."]
         self.good_choices = 0
         self.num_steps = 0
-        self.bad_points = set()
+        self.bad_steps = set()
 
         # Intializing CoqTop and send the prelude (if any)
         self.top = CoqTop()

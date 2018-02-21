@@ -6,7 +6,9 @@ import numpy as np
 from ml.poseval.fold_model import PosEvalModel
 from ml.poseval.fold_train import PosEvalTrainer
 # from ipdb import launch_ipdb_on_exception
-from ml.rewrite.solver import to_goalattn_dataset, run
+# from ml.rewrite.solver import to_goalattn_dataset, run
+from ml.rewrite.simprw import run_end2end
+from ml.rewrite.dataset_prep import to_goalattn_dataset
 from ml.tacst_prep import Dataset, PosEvalPt
 
 """
@@ -75,7 +77,7 @@ if __name__ == "__main__":
     # with launch_ipdb_on_exception():
     if not args.orig:
         if args.end2end:
-            dataset, test_lemmas, val_lemmas = to_goalattn_dataset(poseval_dataset)
+            dataset, test_lemmas, val_lemmas = to_goalattn_dataset("theorems", poseval_dataset)
             # model = PosEvalModel(*tokens_to_idx, ln=args.ln, treelstm=args.treelstm, lstm=args.lstm, dropout=args.dropout, attention=args.attention, heads=args.heads, D = args.state, state = args.state, weight_dropout=args.weight_dropout, variational=args.variational, conclu_pos=args.conclu_pos, f_twoway=args.end2end, outsize=20)
             # trainer = PosEvalTrainer(model, tactrs, dataset, args, f_twoway=True)
             model = PosEvalModel(*tokens_to_idx, ln=args.ln, treelstm=args.treelstm, lstm=args.lstm,
@@ -85,7 +87,8 @@ if __name__ == "__main__":
             trainer = PosEvalTrainer(model, tactrs, dataset, args)
             if args.validate:
                 # trainer.validate()
-                run(trainer, test_lemmas, val_lemmas)
+                # run(trainer, test_lemmas, val_lemmas)
+                run_end2end(trainer, test_lemmas, val_lemmas)
             else:
                 trainer.train()
         else:
