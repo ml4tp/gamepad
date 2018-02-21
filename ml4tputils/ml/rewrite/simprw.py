@@ -5,7 +5,7 @@ import random
 
 from ml.rewrite.pycoq_prover import PyCoqProver
 from ml.rewrite.simprw_prover import PyCoqTrainedProver
-from ml.rewrite.utils import SIMPRW_PRELUDE, SimpRWGen, SimpRWSolver
+from ml.rewrite.utils import SIMPRW_PRELUDE, SimpRWGen, SimpRWSolver, SolverStuckError
 from ml.utils import curr_timestamp
 
 
@@ -73,16 +73,16 @@ def run_end2end_one(trainer, lemma):
 def run_end2end(trainer, test_lemmas, val_lemmas):
     mystats = {}
     for lem_id, lemma in val_lemmas.items():
+        print("DOING", lemma)
         prover = PyCoqTrainedProver(SimpRWSolver(), lemma, trainer)
         prover.attempt_proof()
+        assert prover.num_steps == 9
         mystats[lem_id] = {"lemma": lemma,
                            "num_steps": prover.num_steps,
                            "bad_steps": list(prover.bad_steps),
                            "bad_infer": prover.num_bad_infer,
                            "bad_ast": prover.num_bad_ast}
-
         print("Statistics", mystats[lem_id])
-        assert prover.num_steps == 9
 
     with open('mllogs/simprw-{}.log'.format(curr_timestamp()), 'w') as f:
         f.write(json.dumps([v for k, v in mystats.items()]))

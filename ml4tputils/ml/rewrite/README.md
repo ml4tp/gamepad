@@ -36,3 +36,33 @@
     python ml4tputils/ml/main.py --end2end --validate --mload <path/to/mllogs/file>
     ```
 
+
+## Experiments
+
+ICML version:
+
+1. Command
+    python ml4tputils/ml/main.py --end2end --validate --mload mllogs/state_128_lr_0.001_conclu_pos_0_ln_False_drop_0.0_wd_0.0_v_False_attn_False_heads_1_m__r_/2018-02-08T165821.717116.pth
+
+2. Log file
+    simprw.log
+
+3. Stats
+    fully-solved            : 15/50 (bad > 0)
+    relaxed fully-solved    : 50/50 (num_steps in everything is 9)
+    avg. ratio of bad steps : 0.12 (~1/9, or 1 step)
+
+
+Refactored version:
+
+1. Command
+    python ml4tputils/ml/main.py --end2end --validate --mload mllogs/state_128_lr_0.001_conclu_pos_0_ln_False_drop_0.0_wd_0.0_v_False_attn_False_heads_1_m__r_/2018-02-20T224422.836121.pth
+
+2. Log file
+    simprw-2018-02-20T225947.445922.log
+
+3. Stats
+    fully-solved             :  13/50 (bad_steps > 0)
+    relaxed fully-solved     :  50/50 (num_steps in everything is 9)
+    Avg. ratio of bad steps  :  0.12 (~1/9, or 1 step)
+

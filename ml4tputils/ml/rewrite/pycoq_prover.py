@@ -5,7 +5,7 @@ from recon.tacst_parser import TacStParser
 class PyCoqProver(object):
     """A Python prover that constructs simple Coq proofs.
     """
-    def __init__(self, policy, lemma, prelude="", tcoq_dump_path="/tmp/tcoq.log", f_log=False):
+    def __init__(self, policy, lemma, prelude, tcoq_dump_path="/tmp/tcoq.log", f_log=True):
         # Internal state
         self.policy = policy
         self.lemma = lemma
@@ -55,6 +55,7 @@ class PyCoqProver(object):
     def _load_tcoq_result(self, res):
         # Update result
         self.last_res = res
+        print("AT THE", res)
 
         # TODO(deh): can optimize to not read whole file
         # Parse and update AST decoder
@@ -67,6 +68,8 @@ class PyCoqProver(object):
             decl = lemma.decls[-1]
             self.ctx = decl.ctx.traverse()
             self.concl_idx = decl.concl_idx
+            self._dump_ctx()
+
 
     # -------------------------------------------------
     # API

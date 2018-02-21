@@ -20,8 +20,8 @@ class FakeTacEdge(object):
 class PyCoqTrainedProver(PyCoqProver):
     """A PyCoq Prover for the simple-rewrite problem that uses a pre-trained model to perform inference.
     """
-    def __init__(self, policy, lemma, trainer, train_module="theorems", tcoq_dump_path="/tmp/tcoq.log", f_log=False):
-        super().__init__(policy, lemma, prelude=SIMPRW_PRELUDE, tcoq_dump_path=tcoq_dump_path, f_log=f_log)
+    def __init__(self, policy, lemma, trainer, train_module="theorems", tcoq_dump_path="/tmp/tcoq.log", f_log=True):
+        super().__init__(policy, lemma, SIMPRW_PRELUDE, tcoq_dump_path=tcoq_dump_path, f_log=f_log)
 
         # Internal state
         self.trainer = trainer     # PosEvalTrainer
@@ -76,6 +76,9 @@ class PyCoqTrainedProver(PyCoqProver):
         left_c, right_c = self.sep_eq_goal(goal_c)
 
         # 2. Get step from deterministic solver and inferred step.
+        print("GOAL", goal_c)
+        print("LEFT", left_c)
+        print("LEFT COPY", left_c.copy())
         step_det = self.policy.next_proof_step(left_c.copy())
         self._log("Deterministic step  : {}".format(step_det))
         step_infer = self.infer_proof_step(left_c.copy())

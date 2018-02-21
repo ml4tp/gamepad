@@ -118,6 +118,7 @@ class Exp(object):
 
     def _tag(self, c):
         c.tag = self.tag
+        return c
 
     def copy(self):
         raise NotImplementedError

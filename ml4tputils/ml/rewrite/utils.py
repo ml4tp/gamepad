@@ -49,6 +49,7 @@ Ltac surgery dir e1 e2 :=
     let H := fresh in
     (have H : e1 = e2 by repeat (rewrite dir); reflexivity); rewrite H; clear H
   end.
+
 """
 
 
@@ -204,6 +205,14 @@ class SimpRWPP(object):
 # -------------------------------------------------
 # Simple rewrite solver
 
+class SolverStuckError(Exception):
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return repr(self.value)
+
+
 class SimpRWSolver(object):
     """A solver for the simple-rewrite problem.
 
@@ -323,4 +332,4 @@ class SimpRWSolver(object):
         elif self.elim_m:
             return "id_r", c_p
         else:
-            raise NameError("Shouldn't happen")
+            raise SolverStuckError("Cannot simplify {}".format(self.simprw_printer.pp(c)))
