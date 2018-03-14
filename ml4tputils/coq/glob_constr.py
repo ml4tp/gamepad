@@ -183,10 +183,10 @@ class GCases(GExp):
       (** [GCases(l,style,r,tur,cc)] = "match 'tur' return 'r' with 'cc'" (in [MatchStyle]) *)
     """
     def __init__(self, csty, m_g, tmts, ccs):
-        for tmt in tmts:
-            assert isinstance(tmt, TomatchTuple)
-        for cc in ccs:
-            assert isinstance(cc, CasesClause)
+        # for tmt in tmts:
+        #     assert isinstance(tmt, TomatchTuple)
+        # for cc in ccs:
+        #     assert isinstance(cc, CasesClause)
         super().__init__()
         self.csty = csty
         self.m_g = m_g
@@ -226,8 +226,17 @@ class GRec(GExp):
     """| GRec of Loc.t * fix_kind * Id.t array * glob_decl list array *
       glob_constr array * glob_constr array
     """
-    # TODO(deh): FML why so many fucking asts
-    pass
+    def __init__(self, fix_kind, ids, gdecl_args, gc_tys, gc_bods):
+        for gc in gc_tys:
+            assert isinstance(gc, GExp)
+        for gc in gc_bods:
+            assert isinstance(gc, GExp)
+        super().__init__()
+        self.fix_kind = fix_kind       # TODO(deh): fix_kind?
+        self.ids = ids
+        self.gdecl_args = gdecl_args   # TODO(deh): glob_decl?
+        self.gc_tys = gc_tys
+        self.gc_bods = gc_bods
 
 
 class GSort(GExp):
@@ -256,47 +265,3 @@ class GCast(GExp):
         super().__init__()
         self.g = g
         self.g_cty = g_cty
-
-
-"""
-and glob_decl = Name.t * binding_kind * glob_constr option * glob_constr
-
-and fix_recursion_order =
-  | GStructRec
-  | GWfRec of glob_constr
-  | GMeasureRec of glob_constr * glob_constr option
-
-and fix_kind =
-  | GFix of ((int option * fix_recursion_order) array * int)
-  | GCoFix of int
-"""
-
-"""
-let rec show_intro_pattern_expr show ipe =
-  match ipe with
-  | IntroForthcoming b -> Printf.sprintf "(F %b)" b
-  | IntroNaming ipne -> Printf.sprintf "(N %s)" (show_intro_pattern_naming_expr ipne)
-  | IntroAction ipae -> Printf.sprintf "(A %s)" (show_intro_pattern_action_expr show ipae)
-and show_intro_pattern_naming_expr ipne =
-  match ipne with
-  | IntroIdentifier id -> Printf.sprintf "(I %s)" (show_id id)
-  | IntroFresh id -> Printf.sprintf "(F %s)" (show_id id)
-  | IntroAnonymous -> "A"
-and show_intro_pattern_action_expr show ipae =
-  match ipae with
-  | IntroWildcard -> "W"
-  | IntroOrAndPattern oaipe ->
-      Printf.sprintf "(O %s)" (show_or_and_intro_pattern_expr show oaipe)
-  | IntroInjection ls ->
-      Printf.sprintf "(I %s)" (show_sexpr_ls (fun (loc, ipe) -> show_intro_pattern_expr show ipe) ls)
-  | IntroApplyOn (a, (loc, ipe)) ->
-      Printf.sprintf "(A %s %s)" (show a) (show_intro_pattern_expr show ipe)
-  | IntroRewrite b ->
-      Printf.sprintf "(R %b)" b
-and show_or_and_intro_pattern_expr show oaipe = 
-  match oaipe with
-  | IntroOrPattern ls ->
-      Printf.sprintf "(I %s)" (show_sexpr_ls (fun ls' -> show_sexpr_ls (fun (loc, ipe) -> show_intro_pattern_expr show ipe) ls') ls)
-  | IntroAndPattern ls ->
-      Printf.sprintf "(A %s)" (show_sexpr_ls (fun (loc, ipe) -> show_intro_pattern_expr show ipe) ls)
-"""

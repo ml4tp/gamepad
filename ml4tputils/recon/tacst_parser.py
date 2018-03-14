@@ -4,6 +4,7 @@ from lib.myfile import MyFile
 from lib.myutil import pp_tab
 from coq.constr_decode import *
 from recon.tokens import *
+from coq.glob_constr_parser import GlobConstrParser, GlobConstrDecoder
 from coq.tactics_util import FvsTactic
 
 
@@ -91,8 +92,8 @@ class TacStHdr(object):
 
 class TacStCtx(object):
     def __init__(self, ctx):
-        # List of idenfitier, type index, and optional body index
-        self.ctx = ctx   # [(ident, int, int option)]
+        # List of idenfitier, type kernel index, and type middle index
+        self.ctx = ctx   # [(ident, int, int)]
 
     def traverse(self):
         return [(ldecl[0], ldecl[1]) for ldecl in self.ctx]
@@ -105,25 +106,27 @@ class TacStCtx(object):
 
 
 class TacStDecl(object):
-    def __init__(self, hdr, ctx, concl_idx):
+    def __init__(self, hdr, ctx, concl_kdx, concl_mdx):
         assert isinstance(hdr, TacStHdr)
         assert isinstance(ctx, TacStCtx)
-        assert isinstance(concl_idx, int)
+        assert isinstance(concl_kdx, int)
+        assert isinstance(concl_mdx, int)
 
         # Data
         self.hdr = hdr               # tactic state header
-        self.ctx = ctx               # ctx as [(id, typ idx, body idx)]
-        self.concl_idx = concl_idx   # conclusion expression as index
+        self.ctx = ctx               # ctx as [(id, typ kern idx, typ mid idx)]
+        self.concl_kdx = concl_kdx   # conclusion kernel expression as index
+        self.concl_mdx = concl_mdx   # conclusion middle expression as index
 
     def pp(self, ctx_prtyps, ctx_prgls, tab=0):
         s1 = self.hdr.pp(tab) + "\n"
         s2 = "\n".join([pp_tab(tab + 2, "{}: {}".format(ident, ctx_prtyps[ident]))
                         for ident in self.ctx.idents()]) + "\n"
         s3 = pp_tab(tab + 2, "=====================\n")
-        if self.concl_idx == -1:
+        if self.concl_kdx == -1:
             s4 = pp_tab(tab + 2, "SOLVED")
         else:
-            s4 = pp_tab(tab + 2, ctx_prgls[self.concl_idx])
+            s4 = pp_tab(tab + 2, ctx_prgls[self.concl_kdx])
         return s1 + s2 + s3 + s4
 
     def __str__(self):
@@ -143,8 +146,7 @@ class LemTacSt(object):
     """
     Contains the lemma and the sequence of tactic states associated with it.
     """
-    def __init__(self, name, decls, ctx_prtyps, ctx_prbods,
-                 ctx_prgls, constr_share):
+    def __init__(self, name, decls, ctx_prtyps, ctx_prbods, ctx_prgls, constr_share, mid_share):
         assert isinstance(name, str)
         for decl in decls:
             assert isinstance(decl, TacStDecl)
@@ -154,6 +156,7 @@ class LemTacSt(object):
 
         # Decode low-level Coq expression
         self.decoder = DecodeConstr(constr_share)
+        self.mid_decoder = GlobConstrDecoder(mid_share)
         self.ctx_prtyps = ctx_prtyps   # Dict[int, pp_str]
         self.ctx_prbods = ctx_prbods   # Dict[int, pp_str]
         self.ctx_prgls = ctx_prgls     # Dict[int, pp_str]
@@ -167,12 +170,18 @@ class LemTacSt(object):
                 pp_ctx = {}
                 for ident, typ_idx in decl.ctx.traverse():
                     pp_ctx[ident] = self.ctx_prtyps[typ_idx]
-                if decl.concl_idx == -1:
+                if decl.concl_kdx == -1:
                     pp_concl = "SOLVED"
+                elif decl.concl_kdx in self.ctx_prgls:
+                    pp_concl = self.ctx_prgls[decl.concl_kdx]
+                elif decl.concl_kdx in self.ctx_prtyps:
+                    # NOTE(deh): due to an optimization in dumping,
+                    # the conclusion may be stored in the context if it is seen in the
+                    # context before it seen in the conclusion position.
+                    pp_concl = self.ctx_prtyps[decl.concl_kdx]
                 else:
-                    pp_concl = self.ctx_prgls[decl.concl_idx]
-                tacst_info[gid] = (pp_ctx, pp_concl, decl.ctx.traverse(),
-                                   decl.concl_idx)
+                    raise NameError("Shouldn't happen")
+                tacst_info[gid] = (pp_ctx, pp_concl, decl.ctx.traverse(), decl.concl_kdx)
         return tacst_info
 
     def pp(self, tab=0):
@@ -202,6 +211,7 @@ class TacStParser(object):
 
         # Lemma-specific decoding low-level Coq expressions
         self.constr_share = {}   # Dict[int, string], exp idx to unparsed string
+        self.mid_share = {}      # Dict[int, sexpr], exp idx to sexpr
         self.ctx_prtyps = {}     # Dict[int, str], typ ident to pretty
         self.ctx_prbods = {}     # Dict[int, str], exp ident to pretty
         self.ctx_prgls = {}      # Dict[int, str], gidx to pretty
@@ -216,6 +226,7 @@ class TacStParser(object):
     def _reset(self):
         self.decls = []
         self.constr_share = {}
+        self.mid_share = {}
         self.ctx_prtyps = {}
         self.ctx_prbods = {}
         self.ctx_prgls = {}
@@ -228,7 +239,10 @@ class TacStParser(object):
         line = h_head.consume_line()
         toks = line.split(TOK_SEP)
         s_ctx = toks[0].strip()
-        concl_idx = int(toks[1].strip())
+        # concl_idx = int(toks[1].strip())
+        concl = toks[1].strip().split()
+        kern_idx = int(concl[0].strip())
+        mid_idx = int(concl[1].strip())
 
         if s_ctx == "":
             ctx = []
@@ -237,15 +251,18 @@ class TacStParser(object):
             for ldecl in s_ctx.split(","):
                 toks_p = ldecl.strip().split()
                 ident = toks_p[0].strip()
-                typ_idx = int(toks_p[1].strip())
-                if len(toks_p) == 3:
-                    body_idx = int(toks_p[2].strip())
-                    ctx += [(ident, typ_idx, body_idx)]
-                else:
-                    ctx += [(ident, typ_idx)]
+                typ_kern_idx = int(toks_p[1].strip())
+                typ_mid_idx = int(toks_p[2].strip())
+                ctx += [(ident, typ_kern_idx, typ_mid_idx)]
+                # if len(toks_p) == 3:
+                #     body_idx = int(toks_p[2].strip())
+                #     ctx += [(ident, typ_idx, body_idx)]
+                # else:
+                #     ctx += [(ident, typ_idx)]
         # TODO(deh): Fix coq dump to print in reverse order?
         ctx.reverse()
-        return TacStCtx(ctx), concl_idx
+        # return TacStCtx(ctx), concl_idx
+        return TacStCtx(ctx), kern_idx, mid_idx
 
     def parse_decl(self, callid, mode, tac, kind, loc):
         # Internal
@@ -262,7 +279,9 @@ class TacStParser(object):
             # Unpack
             hdr = TacStHdr(callid, mode, tac, kind, FullTac(""), GID_SOLVED, 0, loc)
             ctx = TacStCtx([])
-            concl_idx = -1
+            # concl_idx = -1
+            kern_idx = -1
+            mid_idx = -1
         elif TOK_SEP in h_head.peek_line():
             # Parse *live* or *dead* goal state
             # Parse rest of header
@@ -293,11 +312,12 @@ class TacStParser(object):
 
             # Unpack (note that we handle error and success here)
             hdr = TacStHdr(callid, mode, tac, kind, ftac, gid, ngs, loc)
-            ctx, concl_idx = self.parse_decl_body()
+            # ctx, concl_idx = self.parse_decl_body()
+            ctx, kern_idx, mid_idx = self.parse_decl_body()
         else:
-            raise NameError("Parsing error @line{}: {}".format(
-                            h_head.line, h_head.peek_line()))
-        return TacStDecl(hdr, ctx, concl_idx)
+            raise NameError("Parsing error @line{}: {}".format(h_head.line, h_head.peek_line()))
+        # return TacStDecl(hdr, ctx, concl_idx)
+        return TacStDecl(hdr, ctx, kern_idx, mid_idx)
 
     def parse_begin_pf(self):
         # Internal
@@ -455,7 +475,27 @@ class TacStParser(object):
         h_head = self.h_head
         self._mylog("ignore_constr_inc<{}>".format(h_head.peek_line()))
 
-        # Ignore for whole dump files
+        # Parse glob_constr table for whole dump files
+        # gc_parser = GlobConstrParser()
+        # h_head.consume_line()
+        # while not h_head.peek_line().startswith("Constrs"):
+        #     k, s_gc = self._parse_table_entry()
+        #     s_gc = s_gc.replace('\'', '!@#')
+        #     sexp_gc = sexpdata.loads(s_gc, true="true", false="false")
+        #     self.ctx_gc[int(k)] = gc_parser.parse_glob_constr(sexp_gc)
+
+        h_head.consume_line()
+        while not h_head.peek_line().startswith("Constrs"):
+            k, s_gc = self._parse_table_entry()
+            s_gc = s_gc.replace('\'', '!@#')
+            if s_gc.startswith("A") or s_gc.startswith("I"):
+                # TODO(deh): kludge because printing is wrong
+                sexp_gc = sexpdata.loads("({})".format(s_gc), true="true", false="false")
+            else:
+                sexp_gc = sexpdata.loads(s_gc, true="true", false="false")
+            self.mid_share[int(k)] = sexp_gc
+
+        # Ignore incremental constr table for whole dump files
         h_head.consume_line()
         while not h_head.peek_line().startswith(TOK_END_INC):
             h_head.consume_line()
@@ -486,7 +526,7 @@ class TacStParser(object):
                 lem_name = lemname_stk.pop()
                 lemma = LemTacSt(lem_name, self.decls, self.ctx_prtyps,
                                  self.ctx_prbods, self.ctx_prgls,
-                                 self.constr_share)
+                                 self.constr_share, self.mid_share)
                 self.lems.append(lemma)
                 if h_head.raw_peek_line() == "":
                     self.exhausted = True
@@ -574,7 +614,7 @@ class TacStParser(object):
                 lem_name = lemname_stk.pop()
                 lemma = LemTacSt(lem_name, self.decls, self.ctx_prtyps,
                                  self.ctx_prbods, self.ctx_prgls,
-                                 self.constr_share)
+                                 self.constr_share, self.mid_share)
                 self.lems.append(lemma)
                 if h_head.raw_peek_line() == "":
                     self.exhausted = True
@@ -607,4 +647,4 @@ class TacStParser(object):
         lem_name = lemname_stk.pop()
         return LemTacSt(lem_name, self.decls, self.ctx_prtyps,
                         self.ctx_prbods, self.ctx_prgls,
-                        self.constr_share)
+                        self.constr_share, self.mid_share)
