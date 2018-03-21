@@ -422,6 +422,9 @@ class TacStFolder(object):
         else:
             raise NameError("Kind {} not supported".format(gc))
 
+    def _fold_mids(self, env, gcs):
+        return [self._fold_ast(env, x) for x in gcs]
+
     # -------------------------------------------
     # Global constant folding
     def lookup(self, lt):
