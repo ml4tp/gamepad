@@ -186,15 +186,11 @@ class TacStFolder(object):
     # -------------------------------------------
     # Tactic state folding
 
-    def fold_tacst(self, tacst, f_attn_goal=False):
+    def fold_tacst(self, tacst):
         """Top-level fold function"""
         gid, ctx, concl_idx, tac = tacst
-        if f_attn_goal:
-            env, foldeds = self.fold_ctx(gid, ctx)
-            folded = self.fold_concl(gid, env, concl_idx)
-        else:
-            env, foldeds = self.fold_ctx(gid, ctx)
-            folded = self.fold_concl(gid, env, concl_idx)
+        env, foldeds = self.fold_ctx(gid, ctx)
+        folded = self.fold_concl(gid, env, concl_idx)
         return self.model.pred(self.folder, folded, *foldeds)
 
     def fold_ctx(self, gid, ctx):
@@ -340,9 +336,10 @@ class TacStFolder(object):
     # -------------------------------------------
     # Mid-level AST folding
 
-    def fold_gref(self, env, gref):
+    def _gref_args(self, env, gref):
         ty = type(gref)
         if ty is VarRef:
+            # TODO(deh): wtf is this?
             ev_x = env.lookup_id(Name(gref.x))
             return [self.model.gref_var, ev_x]
         elif ty is ConstRef:
@@ -359,18 +356,18 @@ class TacStFolder(object):
             raise NameError("Gref {} not supported".format(gc))
 
     def _fold_mid(self, env, gc):
-        key = c.tag
+        key = gc.tag
         if key in self.folded:
             return self.folded[key]
 
         ty = type(gc)
         if ty is GRef:
-            return self._fold(key, self.fold_gref(env, gc.gref))
+            return self._fold(key, self._gref_args(env, gc.gref))
         elif ty is GVar:
             ev_x = env.lookup_id(Name(gc.x))
             return self._fold(key, [self.model.gvar, ev_x])
         elif ty is GEvar:
-            ev_ek = self.fold_evar_name(c.ev)
+            ev_ek = self.fold_evar_name(gc.ev)
             return self._fold(key, [self.model.gevar, ev_ek])
         elif ty is GPatVar:
             ev_pv = env.lookup_id(gc.pv)
