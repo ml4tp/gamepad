@@ -1,3 +1,7 @@
+from coq.constr import Name, Inductive
+from lib.myhist import MyHist
+
+
 """
 [Note]
 
@@ -70,6 +74,29 @@ class TomatchTuple(object):
         self.pp = pp
 
 
+class CasesPattern(object):
+    pass
+
+
+class PatVar(CasesPattern):
+    def __init__(self, name):
+        assert isinstance(name, Name)
+        self.name = name
+
+
+class PatCstr(CasesPattern):
+    def __init__(self, ind, j, cps, name):
+        assert isinstance(ind, Inductive)
+        assert isinstance(j, int)
+        for cp in cps:
+            assert isinstance(cp, CasesPattern)
+        assert isinstance(name, Name)
+        self.ind = ind
+        self.j = j
+        self.cps = cps
+        self.name = name
+
+
 class CasesClause(object):
     def __init__(self, ids, cps, g):
         assert isinstance(g, GExp)
@@ -84,6 +111,7 @@ class GRef(GExp):
           either in the (global) environment or in the (local) context. *)
     """
     def __init__(self, gref, levs):
+        assert isinstance(gref, GlobalReference)
         super().__init__()
         self.gref = gref
         self.levs = levs
@@ -169,13 +197,13 @@ class GProd(GExp):
 class GLetIn(GExp):
     """| GLetIn of Loc.t * Name.t * glob_constr * glob_constr
     """
-    def __init__(self, name, g_ty, g_bod):
-        assert isinstance(g_ty, GExp)
-        assert isinstance(g_bod, GExp)
+    def __init__(self, name, g1, g2):
+        assert isinstance(g1, GExp)
+        assert isinstance(g2, GExp)
         super().__init__()
         self.name = name
-        self.g_ty = g_ty
-        self.g_bod = g_bod
+        self.g1 = g1
+        self.g2 = g2
 
 
 class GCases(GExp):
@@ -183,10 +211,10 @@ class GCases(GExp):
       (** [GCases(l,style,r,tur,cc)] = "match 'tur' return 'r' with 'cc'" (in [MatchStyle]) *)
     """
     def __init__(self, csty, m_g, tmts, ccs):
-        # for tmt in tmts:
-        #     assert isinstance(tmt, TomatchTuple)
-        # for cc in ccs:
-        #     assert isinstance(cc, CasesClause)
+        for tmt in tmts:
+            assert isinstance(tmt, TomatchTuple)
+        for cc in ccs:
+            assert isinstance(cc, CasesClause)
         super().__init__()
         self.csty = csty
         self.m_g = m_g
@@ -265,3 +293,13 @@ class GCast(GExp):
         super().__init__()
         self.g = g
         self.g_cty = g_cty
+
+
+# -------------------------------------------------
+# Other
+
+COQGC = ['GRef', 'GVar', 'GEvar', 'GPatVar', 'GApp', 'GLambda', 'GProd', 'GLetIn', 'GCases',
+         'GLetTuple', 'GIf', 'GRec', 'GSort', 'GHole', 'GCast']
+
+
+COQGC_HIST = MyHist(COQGC)

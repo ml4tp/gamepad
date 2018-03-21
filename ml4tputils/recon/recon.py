@@ -112,7 +112,8 @@ class Recon(object):
         tacs, _ = tr_parser.parse_rawtacs()
 
         # [RawTac] to tactic tree
-        tr_builder = TacTreeBuilder(lemma.name, tacs, lemma.get_tacst_info(), {}, {}, lemma.decoder, False)
+        tr_builder = TacTreeBuilder(lemma.name, tacs, lemma.get_tacst_info(), {}, {},
+                                    lemma.decoder, lemma.mid_decoder, False)
         tr_builder.build_tacs()
         tactr = tr_builder.get_tactree()
 

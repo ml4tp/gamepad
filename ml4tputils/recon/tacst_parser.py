@@ -96,7 +96,7 @@ class TacStCtx(object):
         self.ctx = ctx   # [(ident, int, int)]
 
     def traverse(self):
-        return [(ldecl[0], ldecl[1]) for ldecl in self.ctx]
+        return [(ldecl[0], ldecl[1], ldecl[2]) for ldecl in self.ctx]
 
     def idents(self):
         return [ldecl[0] for ldecl in self.ctx]
@@ -168,7 +168,7 @@ class LemTacSt(object):
             if gid not in tacst_info:
                 # TODO(deh): can be optimized
                 pp_ctx = {}
-                for ident, typ_idx in decl.ctx.traverse():
+                for ident, typ_idx, _ in decl.ctx.traverse():
                     pp_ctx[ident] = self.ctx_prtyps[typ_idx]
                 if decl.concl_kdx == -1:
                     pp_concl = "SOLVED"
@@ -181,7 +181,7 @@ class LemTacSt(object):
                     pp_concl = self.ctx_prtyps[decl.concl_kdx]
                 else:
                     raise NameError("Shouldn't happen")
-                tacst_info[gid] = (pp_ctx, pp_concl, decl.ctx.traverse(), decl.concl_kdx)
+                tacst_info[gid] = (pp_ctx, pp_concl, decl.ctx.traverse(), (decl.concl_kdx, decl.concl_mdx))
         return tacst_info
 
     def pp(self, tab=0):

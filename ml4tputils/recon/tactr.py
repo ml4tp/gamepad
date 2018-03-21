@@ -10,6 +10,7 @@ from coq.constr_decode import DecodeConstr
 from coq.constr_interp import InterpCBName, SizeCoqVal
 from coq.tactics import TacKind, TACTIC_HIST
 from coq.constr_util import SizeConstr, HistConstr, TokenConstr, VisualizeConstr, COQEXP_HIST
+from coq.glob_constr_util import HistGlobConstr
 from lib.myenv import MyEnv
 from lib.myutil import dict_ls_app
 from recon.tacst_parser import FullTac
@@ -330,7 +331,7 @@ class TacTree(object):
         for depth, _, _, _, ctx, _, _ in self.flatview:
             if ctx:
                 ls = []
-                for ident, typ_idx in ctx:
+                for ident, typ_idx, _ in ctx:
                     size = sce_full.decode_size(typ_idx)
                     ls += [size]
                 v = np.sum(ls)
@@ -342,8 +343,8 @@ class TacTree(object):
     def view_depth_astgoal_size(self, sce_full):
         """Returns Dict[depth, [total ast typ size]]"""
         hist = {}
-        for depth, _, _, _, _, concl_idx, _ in self.flatview:
-            dict_ls_app(hist, depth, sce_full.decode_size(concl_idx))
+        for depth, _, _, _, _, (concl_kdx, _), _ in self.flatview:
+            dict_ls_app(hist, depth, sce_full.decode_size(concl_kdx))
         return hist
 
     def view_depth_tactic_hist(self):
@@ -360,15 +361,15 @@ class TacTree(object):
         hce = HistConstr(self.decoder.decoded)
         acc = []
         seen = set()
-        for _, _, _, _, ctx, concl_idx, _ in self.flatview:
+        for _, _, _, _, ctx, (concl_kdx, _), _ in self.flatview:
             for ldecl in ctx:
                 typ_idx = ldecl[1]
                 if typ_idx not in seen:
                     acc += [hce.decode_hist(typ_idx)]
                     seen.add(typ_idx)
-            if concl_idx not in seen:
-                acc += [hce.decode_hist(concl_idx)]
-                seen.add(concl_idx)
+            if concl_kdx not in seen:
+                acc += [hce.decode_hist(concl_kdx)]
+                seen.add(concl_kdx)
 
         return COQEXP_HIST.merges(acc)
 
@@ -382,9 +383,9 @@ class TacTree(object):
         static_sh_comp = {}
         cbname_comp = {}
         scv = SizeCoqVal(self.decoder.decoded)
-        for _, _, _, _, ctx, concl_idx, _ in self.flatview:
+        for _, _, _, _, ctx, _, _ in self.flatview:
             env = MyEnv({}, [])
-            for ident, typ_idx in ctx:
+            for ident, typ_idx, _ in ctx:
                 if ident in vals:
                     v = vals[ident]
                 else:

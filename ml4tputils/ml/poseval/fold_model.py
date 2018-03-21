@@ -219,7 +219,7 @@ class TacStFolder(object):
         return self.fold_ast(env, c)
 
     # -------------------------------------------
-    # AST folding
+    # Kernel-level AST folding
 
     def fold_ast(self, env, c):
         return self._fold_ast(env, Kind.TERM, c)
@@ -335,6 +335,58 @@ class TacStFolder(object):
     def _fold_asts(self, env, kind, cs):
         # TODO(deh): may need to fix this for fold to work
         return [self._fold_ast(env, kind, c) for c in cs]
+
+    # -------------------------------------------
+    # Mid-level AST folding
+
+    def fold_gref(self, gref):
+        raise NameError("TODO")
+        # ty = type(gref)
+        # if ty is VarRef:
+        #     pass
+        # elif ty is ConstRef:
+        #     ev_const = self.fold_ind_name(c.ind)
+        # elif ty is IndRef:
+        #     ev_ind = self.fold_ind_name(c.ind)
+        # elif ty is ConstructRef:
+        #     pass
+        # else:
+        #     raise NameError("Gref {} not supported".format(gc))
+
+    def fold_mid(self):
+        ty = type(gc)
+        if ty is GRef:
+            return self.fold_gref(gc.gref)
+        elif ty is GVar:
+            raise NameError("TODO")
+        elif ty is GEvar:
+            raise NameError("TODO")
+        elif ty is GPatVar:
+            raise NameError("TODO")
+        elif ty is GApp:
+            raise NameError("TODO")
+        elif ty is GLambda:
+            raise NameError("TODO")
+        elif ty is GProd:
+            raise NameError("TODO")
+        elif ty is GLetIn:
+            raise NameError("TODO")
+        elif ty is GCases:
+            raise NameError("TODO")
+        elif ty is GLetTuple:
+            raise NameError("TODO")
+        elif ty is GIf:
+            raise NameError("TODO")
+        elif ty is GRec:
+            raise NameError("TODO")
+        elif ty is GSort:
+            raise NameError("TODO")
+        elif ty is GHole:
+            raise NameError("TODO")
+        elif ty is GCast:
+            raise NameError("TODO")
+        else:
+            raise NameError("Kind {} not supported".format(gc))
 
     # -------------------------------------------
     # Global constant folding

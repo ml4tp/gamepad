@@ -1,13 +1,13 @@
 import sexpdata
 
 from coq.glob_constr import *
+from coq.constr import Name, Inductive
 
 
 """
 [Note]
 
-Ideally have ctx/conclusion in GAst (TODO later)
-Hmm, train on kernel or GAST???
+Parse/Decode glob_constr (mid-level) AST.
 """
 
 
@@ -49,6 +49,9 @@ class GlobConstrParser(object):
         else:
             raise NameError("Tag {} not supported".format(tag))
 
+    def parse_ls(self, parse, ls):
+        return [parse(x) for x in ls]
+
     def parse_global_reference(self, gr):
         tag, body = sexpr_unpack(gr)
         if tag == "VR":
@@ -78,6 +81,47 @@ class GlobConstrParser(object):
         # TODO(deh): change me
         return cty
 
+    def parse_predicate_pattern(self, pp):
+        name = sexpr_strify(pp[0])
+
+        def f(x):
+            ind = Inductive(Name(sexpr_strify(x[0])), int(x[1]))
+            names = self.parse_ls(sexpr_strify, x[2])
+            return ind, names
+
+        m_ind_and_names = self.parse_maybe(f, pp[1])
+        return PredicatePattern(name, m_ind_and_names)
+
+    def parse_tomatch_tuple(self, parse_gc, tmt):
+        gc = parse_gc(tmt[0])
+        pp = self.parse_predicate_pattern(tmt[1])
+        return TomatchTuple(gc, pp)
+
+    def parse_tomatch_tuples(self, parse_gc, tmts):
+        return [self.parse_tomatch_tuple(parse_gc, tmt) for tmt in tmts]
+
+    def parse_cases_pattern(self, cp):
+        tag, body = sexpr_unpack(cp)
+        if tag == "V":
+            return PatVar(Name(sexpr_strify(body[0])))
+        elif tag == "C":
+            ind = Inductive(Name(sexpr_strify(body[0])), int(body[1]))
+            j = int(body[2])
+            cps = self.parse_ls(self.parse_cases_pattern, body[3])
+            name = sexpr_strify(body[4])
+            return PatCstr(ind, j, cps, name)
+        else:
+            raise NameError("Tag {} not supported.".format(tag))
+
+    def parse_case_clause(self, parse_gc, cc):
+        ids = self.parse_ls(lambda x: x, cc[0])
+        cps = cc[1]
+        gc = parse_gc(cc[2])
+        return CasesClause(ids, cps, gc)
+
+    def parse_case_clauses(self, parse_gc, ccs):
+        return [self.parse_case_clause(parse_gc, cc) for cc in ccs]
+
     def parse_glob_constr(self, c):
         tag, body = sexpr_unpack(c)
         if tag == "!":
@@ -85,7 +129,6 @@ class GlobConstrParser(object):
         elif tag == "V":
             return GVar(sexpr_strify(body[0]))
         elif tag == "E":
-            # TODO(deh): sigh* strify 4tw
             return GEvar(sexpr_strify(body[0]), body[1])
         elif tag == "PV":
             return GPatVar(bool(body[0]), sexpr_strify(body[1]))
@@ -100,8 +143,11 @@ class GlobConstrParser(object):
         elif tag == "LI":
             return GLetIn(sexpr_strify(body[0]), self.parse_glob_constr(body[1]), self.parse_glob_constr(body[2]))
         elif tag == "C":
-            # TODO(deh): sigh* strify 4tw
-            return GCases(body[0], body[1], body[2], body[3])
+            csty = sexpr_strify(body[0])
+            m_gc = self.parse_maybe(self.parse_glob_constr, body[1])
+            tmts = self.parse_tomatch_tuples(self.parse_glob_constr, body[2])
+            ccs = self.parse_case_clauses(self.parse_glob_constr, body[3])
+            return GCases(csty, m_gc, tmts, ccs)
         elif tag == "LT":
             n = sexpr_strify(body[1][0])
             m_gc = self.parse_maybe(self.parse_glob_constr, body[1][1])
@@ -113,11 +159,14 @@ class GlobConstrParser(object):
         elif tag == "R":
             ids = [sexpr_strify(x) for x in body[1]]
             # gdecl_args = [[sexpr_strify(x) for x in xs] for xs in body[2]]   # TODO(deh): sigh* strify 4tw
-            return GRec(body[0], ids, body[2],
-                        self.parse_glob_constrs(body[3]), self.parse_glob_constrs(body[4]))
-            # raise NameError("TODO")
+            return GRec(body[0], ids, body[2], self.parse_glob_constrs(body[3]), self.parse_glob_constrs(body[4]))
         elif tag == "S":
             return GSort(self.parse_glob_sort(body[0]))
+        elif tag == "H":
+            ek = body[0]
+            ipne = body[1]
+            m_ga = body[2]
+            return GHole(ek, ipne, m_ga)
         elif tag == "T":
             return GCast(self.parse_glob_constr(body[0]), self.parse_cast_type(body[1]))
         else:
@@ -193,10 +242,11 @@ class GlobConstrDecoder(object):
             gc_bod = self.decode_glob_constr(body[2])
             return self._mkcon(key, GLetIn(name, gc_ty, gc_bod))
         elif tag == "C":
-            csty = body[0]
-            m_gc = body[1]
-            tmts = body[2]
-            ccs = body[3]    # TODO(deh): this is where the cases are
+            # print("SAW CASES IN DECODE", body)
+            csty = sexpr_strify(body[0])
+            m_gc = self.parser.parse_maybe(self.decode_glob_constr, body[1])
+            tmts = self.parser.parse_tomatch_tuples(self.decode_glob_constr, body[2])
+            ccs = self.parser.parse_case_clauses(self.decode_glob_constr, body[3])
             return self._mkcon(key, GCases(csty, m_gc, tmts, ccs))
         elif tag == "LT":
             names = [sexpr_strify(x) for x in body[0]]
@@ -223,6 +273,11 @@ class GlobConstrDecoder(object):
         elif tag == "S":
             gsort = self.parser.parse_glob_sort(body[0])
             return self._mkcon(key, GSort(gsort))
+        elif tag == "H":
+            ek = body[0]
+            ipne = body[1]
+            m_ga = body[2]
+            return self._mkcon(key, GHole(ek, ipne, m_ga))
         elif tag == "T":
             gc = self.decode_glob_constr(body[0])
             ty_gc = self.parser.parse_cast_type(body[1])

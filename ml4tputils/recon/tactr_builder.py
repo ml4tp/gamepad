@@ -20,7 +20,7 @@ class TacTreeBuilder(object):
     """
     Build a tactic tree from a list of RawTacs.
     """
-    def __init__(self, name, rawtacs, tacst_info, gid_node, gid_tactic, decoder, ftac_inscope=None,
+    def __init__(self, name, rawtacs, tacst_info, gid_node, gid_tactic, decoder, mid_decoder, ftac_inscope=None,
                  gs_nodeid=GenSym(), gs_edgeid=GenSym(), gs_deadid=GenSym(), gs_termid=GenSym(), f_log=False):
         for rawtac in rawtacs:
             assert isinstance(rawtac, RawTac)
@@ -34,7 +34,8 @@ class TacTreeBuilder(object):
         # Lemma-specific state
         self.name = name                    # Name of the lemma
         self.tacst_info = tacst_info        # Dict[int, tacst]
-        self.decoder = decoder              # Expression decoder for lemma
+        self.decoder = decoder              # Kern-level expression decoder for lemma
+        self.mid_decoder = mid_decoder      # Mid-level expression decoder for lemma
 
         # Reconstruction state
         self.rawtacs = rawtacs              # Raw tactics to process (List[RawTac])
@@ -145,7 +146,7 @@ class TacTreeBuilder(object):
 
     def _launch_rec(self, rawtacs, ftac_inscope):
         tr_builder = TacTreeBuilder(self.name, rawtacs, self.tacst_info,
-                                    self.gid_node, self.gid_tactic, self.decoder,
+                                    self.gid_node, self.gid_tactic, self.decoder, self.mid_decoder,
                                     ftac_inscope=ftac_inscope,
                                     gs_nodeid=self.gs_nodeid,
                                     gs_edgeid=self.gs_edgeid,
@@ -282,10 +283,12 @@ class TacTreeBuilder(object):
         # Yay, dynamic-typing is great ... (Goes up in flames.)
         for _, gid, _, _, ctx, concl_idx, tacs in tactr.bfs_traverse():
             assert isinstance(gid, int)
-            for ident, idx in ctx:
+            for ident, ty_kdx, ty_mdx in ctx:
                 assert isinstance(ident, str)
-                assert isinstance(idx, int)
-            assert isinstance(concl_idx, int)
+                assert isinstance(ty_kdx, int)
+                assert isinstance(ty_mdx, int)
+            assert isinstance(concl_idx[0], int)
+            assert isinstance(concl_idx[1], int)
             for tac in tacs:
                 assert isinstance(tac, TacEdge)
 
