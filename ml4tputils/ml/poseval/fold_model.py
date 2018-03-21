@@ -190,8 +190,8 @@ class TacStFolder(object):
         """Top-level fold function"""
         gid, ctx, concl_idx, tac = tacst
         if f_attn_goal:
-            folded = self.fold_concl(gid, env, concl_idx)
             env, foldeds = self.fold_ctx(gid, ctx)
+            folded = self.fold_concl(gid, env, concl_idx)
         else:
             env, foldeds = self.fold_ctx(gid, ctx)
             folded = self.fold_concl(gid, env, concl_idx)
@@ -358,14 +358,14 @@ class TacStFolder(object):
         else:
             raise NameError("Gref {} not supported".format(gc))
 
-    def _fold_mid(self, gc):
+    def _fold_mid(self, env, gc):
         key = c.tag
         if key in self.folded:
             return self.folded[key]
 
         ty = type(gc)
         if ty is GRef:
-            return self._fold(key, self.fold_gref(gc.gref))
+            return self._fold(key, self.fold_gref(env, gc.gref))
         elif ty is GVar:
             ev_x = env.lookup_id(Name(gc.x))
             return self._fold(key, [self.model.gvar, ev_x])
