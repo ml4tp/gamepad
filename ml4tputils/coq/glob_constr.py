@@ -17,7 +17,7 @@ class GlobalReference(object):
     pass
 
 
-class VarRef(object):
+class VarRef(GlobalReference):
     def __init__(self, x):
         self.x = x
 
@@ -25,27 +25,28 @@ class VarRef(object):
         return self.x
 
 
-class ConstRef(object):
+class ConstRef(GlobalReference):
     def __init__(self, const):
+        assert isinstance(const, Name)
         self.const = const
 
     def __str__(self):
         return self.const
 
 
-class IndRef(object):
-    def __init__(self, mutind, i):
-        self.mutind = mutind
-        self.i = i
+class IndRef(GlobalReference):
+    def __init__(self, ind):
+        assert isinstance(ind, Inductive)
+        self.ind = ind
 
     def __str__(self):
         return "{}.{}".format(self.mutind, self.i)
 
 
-class ConstructRef(object):
-    def __init__(self, mutind, i, j):
-        self.mutind = mutind
-        self.i = i
+class ConstructRef(GlobalReference):
+    def __init__(self, ind, j):
+        assert isinstance(ind, Inductive)
+        self.ind = ind
         self.j = j
 
     def __str__(self):

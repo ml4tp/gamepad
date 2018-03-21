@@ -14,6 +14,7 @@ from torch.nn import Parameter
 import numpy as np
 
 from coq.constr import *
+from coq.glob_constr import *
 from coq.constr_decode import DecodeConstr
 from lib.myenv import FastEnv
 from lib.myutil import NotFound
@@ -339,52 +340,85 @@ class TacStFolder(object):
     # -------------------------------------------
     # Mid-level AST folding
 
-    def fold_gref(self, gref):
-        raise NameError("TODO")
-        # ty = type(gref)
-        # if ty is VarRef:
-        #     pass
-        # elif ty is ConstRef:
-        #     ev_const = self.fold_ind_name(c.ind)
-        # elif ty is IndRef:
-        #     ev_ind = self.fold_ind_name(c.ind)
-        # elif ty is ConstructRef:
-        #     pass
-        # else:
-        #     raise NameError("Gref {} not supported".format(gc))
+    def fold_gref(self, env, gref):
+        ty = type(gref)
+        if ty is VarRef:
+            ev_x = env.lookup_id(Name(gref.x))
+            return [self.model.gref_var, ev_x]
+        elif ty is ConstRef:
+            ev_const = self.fold_const_name(gref.const)
+            return [self.model.gref_const, ev_const]
+        elif ty is IndRef:
+            ev_ind = self.fold_ind_name(gref.ind)
+            return [self.model.gref_ind, ev_ind]
+        elif ty is ConstructRef:
+            ev_ind = self.fold_ind_name(gref.ind)
+            ev_conid = self.fold_conid_name((gref.ind, gref.conid))
+            return [self.model.gref_construct, ev_ind, ev_conid]
+        else:
+            raise NameError("Gref {} not supported".format(gc))
 
-    def fold_mid(self):
+    def _fold_mid(self, gc):
+        key = c.tag
+        if key in self.folded:
+            return self.folded[key]
+
         ty = type(gc)
         if ty is GRef:
-            return self.fold_gref(gc.gref)
+            return self._fold(key, self.fold_gref(gc.gref))
         elif ty is GVar:
-            raise NameError("TODO")
+            ev_x = env.lookup_id(Name(gc.x))
+            return self._fold(key, [self.model.gvar, ev_x])
         elif ty is GEvar:
-            raise NameError("TODO")
+            ev_ek = self.fold_evar_name(c.ev)
+            return self._fold(key, [self.model.gevar, ev_ek])
         elif ty is GPatVar:
-            raise NameError("TODO")
+            ev_pv = env.lookup_id(gc.pv)
+            return self._fold(key, [self.model.gpatvar, ev_pv])
         elif ty is GApp:
-            raise NameError("TODO")
+            ev_gc = self._fold_mid(env, gc.g)
+            ev_gcs = self._fold_mids(env, gc.gs)
+            return self._fold(key, [self.model.gapp, ev_gc, ev_gcs])
         elif ty is GLambda:
-            raise NameError("TODO")
+            ev_x = self.fold_local_var(gc.g_ty)
+            ev_ty = self._fold_mid(env, gc.g_ty)
+            ev_c = self._fold_mid(env.local_extend(gc.name, ev_x), gc.c)
+            return self._fold(key, [self.model.glambda, ev_ty, ev_c])
         elif ty is GProd:
-            raise NameError("TODO")
+            ev_x = self.fold_local_var(gc.g_ty)
+            ev_ty = self._fold_mid(env, gc.g_ty)
+            ev_c = self._fold_mid(env.local_extend(gc.name, ev_x), gc.c)
+            return self._fold(key, [self.model.gprod, ev_ty, ev_c])
         elif ty is GLetIn:
-            raise NameError("TODO")
+            ev_g1 = self._fold_mid(env, gc.g1)
+            ev_g2 = self._fold_mid(env.local_extend(gc.name, ev_g1), gc.g2)
+            return self._fold(key, [self.model.gletin, ev_g1, ev_g2])
         elif ty is GCases:
-            raise NameError("TODO")
+            acc = []
+            for cc in gc.ccs:
+                acc += [self._fold_mid(env, cc.g)]
+            return self._fold(key, [self.model.gcases, acc])
         elif ty is GLetTuple:
-            raise NameError("TODO")
+            # ev_g1 = self._fold_mid(env, gc.g1)
+            # ev_g2 = self._fold_mid(env.local_extend(gc.name, ev_g1), gc.g2)
+            raise NameError("TODO LET TUPLE")
         elif ty is GIf:
-            raise NameError("TODO")
+            ev_g1 = self._fold_mid(env, gc.g1)
+            ev_g2 = self._fold_mid(env, gc.g2)
+            ev_g3 = self._fold_mid(env, gc.g3)
+            return self._fold(key, [self.model.gif, ev_g1, ev_g2, ev_g3])
         elif ty is GRec:
-            raise NameError("TODO")
+            ev_tys = self._fold_mids(env, gc.gc_tys)
+            ev_bods = self._fold_mids(env, gc.gc_bods)
+            return self._fold(key, [self.model.grec, ev_tys, ev_bods])
         elif ty is GSort:
-            raise NameError("TODO")
+            ev_sort = self.fold_sort_name(gc.gsort)
+            return self._fold(key, [self.model.gsort, ev_sort])
         elif ty is GHole:
-            raise NameError("TODO")
+            raise NameError("Not in dataset")
         elif ty is GCast:
-            raise NameError("TODO")
+            ev_g = self._fold_mid(env, gc.g)
+            return self._fold(key, [self.model.gcast, ev_g])
         else:
             raise NameError("Kind {} not supported".format(gc))
 

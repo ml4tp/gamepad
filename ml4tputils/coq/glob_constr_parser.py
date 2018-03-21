@@ -57,11 +57,16 @@ class GlobConstrParser(object):
         if tag == "VR":
             return VarRef(sexpr_strify(body[0]))
         elif tag == "CR":
-            return ConstRef(sexpr_strify(body[0]))
+            const = Name(sexpr_strify(body[0]))
+            return ConstRef(const)
         elif tag == "IR":
-            return IndRef(sexpr_strify(body[0]), int(body[1]))
+            mutind = Name(sexpr_strify(body[0]))
+            pos = int(body[1])
+            return IndRef(Inductive(mutind, pos))
         elif tag == "TR":
-            return ConstructRef(sexpr_strify(body[0]), int(body[1]), int(body[2]))
+            mutind = Name(sexpr_strify(body[0]))
+            pos = int(body[1])
+            return ConstructRef(Inductive(mutind, pos), int(body[2]))
         else:
             raise NameError("Tag {} not supported.".format(tag))
 
