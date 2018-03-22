@@ -41,6 +41,14 @@ class PosEvalPt(object):
         #     if tac[-1].name.startswith(tac_p):
         #         self.tac_bin = idx
 
+    def kern_tacst(self):
+        gid, ctx, (concl_kdx, _), tac = self.tacst
+        return gid, [(ty, kdx) for ty, kdx, _ in ctx], concl_kdx, tac
+
+    def mid_tacst(self):
+        gid, ctx, (_, concl_mdx), tac = self.tacst
+        return gid, [(ty, mdx) for ty, _, mdx in ctx], concl_mdx, tac
+
 
 class SizeSubTr(object):
     def __init__(self, tactr):
@@ -64,13 +72,12 @@ class Dataset(object):
 
 
 class PosEvalDataset(object):
-    def __init__(self, tactics_equiv, tactrs, f_mid=False):
+    def __init__(self, tactics_equiv, tactrs):
         self.tactrs = tactrs
         self.data = {}
         self.tactics = set()
         self.tactics_equiv = tactics_equiv
         self.tac_hist = [0 for _ in tactics_equiv]
-        self.f_mid = f_mid
 
     def mk_tactrs(self):
         self.data = {}
@@ -110,12 +117,7 @@ class PosEvalDataset(object):
                 tacst_size += sce.decode_size(kdx)
 
             tac_bin = self.tac_bin(tac)
-            if self.f_mid:
-                pt = PosEvalPt(gid, [(ty, mdx) for ty, _, mdx in ctx], concl_mdx, tac, tacst_size, subtr_size[gid],
-                               tac_bin)
-            else:
-                pt = PosEvalPt(gid, [(ty, kdx) for ty, kdx, _ in ctx], concl_kdx, tac, tacst_size, subtr_size[gid],
-                               tac_bin)
+            pt = PosEvalPt(gid, ctx, (concl_kdx, concl_mdx), tac, tacst_size, subtr_size[gid], tac_bin)
             self.data[tactr_id].append(pt)
             self.tac_hist[pt.tac_bin] += 1
 
@@ -166,7 +168,6 @@ if __name__ == "__main__":
                            type=str, help="Pickle file to save to")
     argparser.add_argument("-v", "--verbose", action="store_true")
     argparser.add_argument("--simprw", action="store_true")
-    argparser.add_argument("--mid", default=False, action="store_true")
     args = argparser.parse_args()
 
     with open(args.load, 'rb') as f:
@@ -177,9 +178,9 @@ if __name__ == "__main__":
 
     if args.simprw:
         tactics_equiv = [["intros"], ["surgery"], ["<coretactics::reflexivity@0>"]]
-        poseval = PosEvalDataset(tactics_equiv, tactrs, f_mid=self.mid)
+        poseval = PosEvalDataset(tactics_equiv, tactrs)
     else:
-        poseval = PosEvalDataset(TACTICS_EQUIV, tactrs, f_mid=self.mid)
+        poseval = PosEvalDataset(TACTICS_EQUIV, tactrs)
     if args.simprw:
         poseval_dataset = poseval.split_by_lemma(f_rec=False, num_train=400, num_test=50)
     else:

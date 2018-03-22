@@ -42,6 +42,12 @@ class PosEvalTrainer(object):
             self.model.cuda()
             self.torch = torch.cuda
 
+        # Select whether we want mid-level or kernel-level AST
+        if self.model.f_mid:
+            self.get_tacst = lambda pt: pt.mid_tacst()
+        else:
+            self.get_tacst = lambda pt: pt.kern_tacst()
+
         # Optimizer
         self.loss_fn =  nn.CrossEntropyLoss()
         self.opt = optim.Adam(self.model.parameters(), lr=args.lr)
@@ -122,7 +128,7 @@ class PosEvalTrainer(object):
             astsizes += poseval_pt.tacst_size
             # Apply forward pass
 
-            pred = tacst_folder.fold_tacst(poseval_pt.tacst)
+            pred = tacst_folder.fold_tacst(self.get_tacst(poseval_pt))
             all_logits += [pred]
             all_targets += [poseval_pt.subtr_bin]
 
