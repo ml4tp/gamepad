@@ -373,10 +373,13 @@ class TacTree(object):
 
         return COQEXP_HIST.merges(acc)
 
-    def tokenize(self):
+    def tokenize_kern(self):
         tce = TokenConstr(self.decoder.decoded)
-        tce2 = TokenGlobConstr(self.mid_decoder.decoded)
-        return tce.tokenize(), tce2.tokenize()
+        return tce.tokenize()
+
+    def tokenize_mid(self):
+        tce = TokenGlobConstr(self.mid_decoder.decoded)
+        return tce.tokenize()
 
     def view_comp(self, sce_full, sce_sh):
         vals = {}

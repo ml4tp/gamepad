@@ -71,7 +71,11 @@ if __name__ == "__main__":
 
     print("Loading poseval dataset ...")
     with open(args.poseval, 'rb') as f:
-        poseval_dataset, tokens_to_idx = pickle.load(f)
+        poseval_dataset, kern_tokens_to_idx, mid_tokens_to_idx = pickle.load(f)
+        if args.midlvl:
+            tokens_to_idx = mid_tokens_to_idx
+        else:
+            tokens_to_idx = kern_tokens_to_idx
 
     print("Points Train={} Val={} Test={}".format(len(poseval_dataset.train), len(poseval_dataset.val),
                                                   len(poseval_dataset.test)))

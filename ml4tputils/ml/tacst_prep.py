@@ -186,12 +186,16 @@ if __name__ == "__main__":
     else:
         poseval_dataset = poseval.split_by_lemma()
 
-    embed_tokens = EmbedTokens()
-    embed_tokens.tokenize_tactrs(tactrs)
-    tokens_to_idx = embed_tokens.tokens_to_idx()
+    kern_embed_tokens = EmbedTokens(f_mid=False)
+    kern_embed_tokens.tokenize_tactrs(tactrs)
+    kern_tokens_to_idx = kern_embed_tokens.tokens_to_idx()
+
+    mid_embed_tokens = EmbedTokens(f_mid=True)
+    mid_embed_tokens.tokenize_tactrs(tactrs)
+    mid_tokens_to_idx = mid_embed_tokens.tokens_to_idx()
 
     with open(args.poseval, 'wb') as f:
-        pickle.dump((poseval_dataset, tokens_to_idx), f)
+        pickle.dump((poseval_dataset, kern_tokens_to_idx, mid_tokens_to_idx), f)
 
     if args.verbose:
         with open(args.poseval, 'rb') as f:

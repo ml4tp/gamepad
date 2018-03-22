@@ -9,13 +9,15 @@ class EmbedTokens(object):
     """
     Collect all tokens in the data-set.
     """
-    def __init__(self):
+    def __init__(self, f_mid=False):
         self.unique_sort = set()
         self.unique_const = set()
         self.unique_ind = set()
         self.unique_conid = set()
         self.unique_evar = set()
         self.unique_fix = set()
+
+        self.f_mid = f_mid
 
     def _tokens_to_idx(self, unique):
         ls = list(unique)
@@ -36,7 +38,10 @@ class EmbedTokens(object):
                 conid_to_idx, evar_to_idx, fix_to_idx)
 
     def tokenize_tactr(self, tactr):
-        tokens = tactr.tokenize()
+        if self.f_mid:
+            tokens = tactr.tokenize_mid()
+        else:
+            tokens = tactr.tokenize_kern()
         self.unique_sort = self.unique_sort.union(tokens[0])
         self.unique_const = self.unique_const.union(tokens[1])
         self.unique_ind = self.unique_ind.union(tokens[2])

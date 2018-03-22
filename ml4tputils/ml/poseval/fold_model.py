@@ -146,7 +146,7 @@ class TacStFolder(object):
         self.f_save = False
 
         if self.model.f_mid:
-            self.fold_ast = lambda env, gc: self._fold_mid(env, c)
+            self.fold_ast = lambda env, gc: self._fold_mid(env, gc)
             self.decode = lambda idx: tactr.mid_decoder.decode_exp_by_key(idx)
         else:
             self.fold_ast = lambda env, c: self._fold_ast(env, Kind.TERM, c)
