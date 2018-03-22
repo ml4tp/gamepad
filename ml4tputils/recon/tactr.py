@@ -10,6 +10,7 @@ from coq.constr_decode import DecodeConstr
 from coq.constr_interp import InterpCBName, SizeCoqVal
 from coq.tactics import TacKind, TACTIC_HIST
 from coq.constr_util import SizeConstr, HistConstr, TokenConstr, VisualizeConstr, COQEXP_HIST
+from coq.glob_constr_parser import GlobConstrDecoder
 from coq.glob_constr_util import TokenGlobConstr
 from lib.myenv import MyEnv
 from lib.myutil import dict_ls_app
@@ -138,16 +139,18 @@ class TacTree(object):
     is represented as
     14 [tac1, tac2]
     """
-    def __init__(self, name, edges, graph, tacst_info, gid_tactic, decoder):
+    def __init__(self, name, edges, graph, tacst_info, gid_tactic, decoder, mid_decoder):
         assert isinstance(decoder, DecodeConstr)
+        assert isinstance(mid_decoder, GlobConstrDecoder)
 
         # Internal state
-        self.name = name               # Lemma name
-        self.edges = edges             # [TacEdge]
-        self.graph = graph             # nx.MultDiGraph[TacStId, TacStId]
-        self.tacst_info = tacst_info   # Dict[gid, (ctx, goal, ctx_e, goal_e)]
-        self.gid_tactic = gid_tactic   # Dict[int, TacEdge]
-        self.decoder = decoder         # Decode asts
+        self.name = name                # Lemma name
+        self.edges = edges              # [TacEdge]
+        self.graph = graph              # nx.MultDiGraph[TacStId, TacStId]
+        self.tacst_info = tacst_info    # Dict[gid, (ctx, goal, ctx_e, goal_e)]
+        self.gid_tactic = gid_tactic    # Dict[int, TacEdge]
+        self.decoder = decoder          # Decode asts
+        self.mid_decoder = mid_decoder  # Decode mid-level ast
 
         self.notok = []
 
@@ -287,7 +290,7 @@ class TacTree(object):
     def view_tactic_hist(self, f_compress=False):
         hist = TACTIC_HIST.empty()
         for k, tacs in self.tactics().items():
-            # TODO(deh): Also need atomic tactics for non-ssreflect developments
+            # TODO(deh): Check that we have atomic tactics for non-ssreflect developments
             tac = tacs[0]
             if tac.tkind == TacKind.ML:
                 tac_name = tac.name.split()[0]

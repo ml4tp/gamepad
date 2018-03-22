@@ -1,7 +1,6 @@
-import sexpdata
-
 from coq.glob_constr import *
 from coq.constr import Name, Inductive
+from lib.mysexpr import *
 
 
 """
@@ -12,29 +11,7 @@ Parse/Decode glob_constr (mid-level) AST.
 
 
 # -------------------------------------------------
-# TODO(deh): MOVE ME
-
-def sexpr_strify(sexpr):
-    if isinstance(sexpr, sexpdata.Symbol):
-        return sexpr._val
-    elif isinstance(sexpr, float):
-        # NOTE(deh): wtf, inF -> inf as a floating point ...
-        return str(sexpr)
-    else:
-        raise NameError("Cannot strify {}".format(sexpr))
-
-
-def sexpr_unpack(sexpr):
-    try:
-        tag = sexpr[0]
-        body = sexpr[1:]
-        return tag._val, body
-    except:
-        return sexpr._val, None
-
-
-# -------------------------------------------------
-# Parsing Full Asts?
+# Parsing glob_constr
 
 class GlobConstrParser(object):
     def __init__(self):
@@ -71,15 +48,6 @@ class GlobConstrParser(object):
             raise NameError("Tag {} not supported.".format(tag))
 
     def parse_glob_sort(self, gsort):
-        # tag, body = self._unpack(gsort)
-        # if tag == "P":
-        #     pass
-        # elif tag == "S":
-        #     pass
-        # elif tag == "T":
-        #     pass
-        # else:
-        #     raise NameError("Tag {} not supported.".format(tag))
         return gsort
 
     def parse_cast_type(self, parse, cty):

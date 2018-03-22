@@ -40,7 +40,7 @@ def is_after(mode):
 
 
 # -------------------------------------------------
-# TODO(deh): where to put me?
+# Random goal stuff
 
 GID_SOLVED = -1
 GID_FAILED = -2

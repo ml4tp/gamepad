@@ -207,7 +207,7 @@ class InterpCBName(object):
             return CloVal(env, c)
         elif isinstance(c, LetInExp):
             v_c1 = self.interp(env, c.c1)
-            v_ty = self.interp(env, c.ty)
+            # v_ty = self.interp(env, c.ty)
             v_c2 = self.interp(env.extend(c.name, v_c1), c.c2)
             return v_c2
         elif isinstance(c, AppExp):

@@ -10,6 +10,12 @@ This AST is used for tactic arguments.
 """
 
 
+class GExp(object):
+    """Base glob_constr expression"""
+    def __init__(self):
+        self.tag = None
+
+
 # -------------------------------------------------
 # Global Reference
 
@@ -40,7 +46,7 @@ class IndRef(GlobalReference):
         self.ind = ind
 
     def __str__(self):
-        return "{}.{}".format(self.mutind, self.i)
+        return "{}".format(self.ind)
 
 
 class ConstructRef(GlobalReference):
@@ -50,30 +56,11 @@ class ConstructRef(GlobalReference):
         self.j = j
 
     def __str__(self):
-        return "{}.{}.{}".format(self.mutind, self.i, self.j)
+        return "{}.{}".format(self.ind, self.j)
 
 
 # -------------------------------------------------
-# Expressions
-
-class GExp(object):
-    def __init__(self):
-        self.tag = None
-
-
-class PredicatePattern(object):
-    def __init__(self, name, m_ind_and_names):
-        self.name = name
-        self.m_ind_and_names = m_ind_and_names
-
-
-class TomatchTuple(object):
-    def __init__(self, g, pp):
-        assert isinstance(g, GExp)
-        assert isinstance(pp, PredicatePattern)
-        self.g = g
-        self.pp = pp
-
+# CasesPattern
 
 class CasesPattern(object):
     pass
@@ -98,6 +85,23 @@ class PatCstr(CasesPattern):
         self.name = name
 
 
+# -------------------------------------------------
+# Other auxilliary data-structures
+
+class PredicatePattern(object):
+    def __init__(self, name, m_ind_and_names):
+        self.name = name
+        self.m_ind_and_names = m_ind_and_names
+
+
+class TomatchTuple(object):
+    def __init__(self, g, pp):
+        assert isinstance(g, GExp)
+        assert isinstance(pp, PredicatePattern)
+        self.g = g
+        self.pp = pp
+
+
 class CasesClause(object):
     def __init__(self, ids, cps, g):
         assert isinstance(g, GExp)
@@ -112,6 +116,9 @@ class CastType(object):
         self.kind = kind
         self.m_gc = m_gc
 
+
+# -------------------------------------------------
+# Expressions
 
 class GRef(GExp):
     """| GRef of (Loc.t * global_reference * glob_level list option)

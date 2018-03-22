@@ -353,6 +353,7 @@ class TacStFolder(object):
             ev_ek = self.fold_evar_name(gc.ev)
             return self._fold(key, [self.model.gevar, ev_ek])
         elif ty is GPatVar:
+            # TODO(deh): I expect this to be an issue
             ev_pv = env.lookup_id(gc.pv)
             return self._fold(key, [self.model.gpatvar, ev_pv])
         elif ty is GApp:
@@ -374,6 +375,8 @@ class TacStFolder(object):
             ev_g2 = self._fold_mid(env.local_extend(gc.name, ev_g1), gc.g2)
             return self._fold(key, [self.model.gletin, ev_g1, ev_g2])
         elif ty is GCases:
+            # TODO(deh): I expect this to be an issue, need to
+            # extend env probably
             acc = []
             for cc in gc.ccs:
                 acc += [self._fold_mid(env, cc.g)]

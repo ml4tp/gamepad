@@ -4,7 +4,7 @@ from lib.myfile import MyFile
 from lib.myutil import pp_tab
 from coq.constr_decode import *
 from recon.tokens import *
-from coq.glob_constr_parser import GlobConstrParser, GlobConstrDecoder
+from coq.glob_constr_parser import GlobConstrDecoder
 from coq.tactics_util import FvsTactic
 
 
@@ -33,16 +33,16 @@ class DeclMode(Enum):
     DEADEND = 2
 
     def __str__(self):
-        if isinstance(self, DeclMode.BEFORE):
+        if self is DeclMode.BEFORE:
             return "B"
-        elif isinstance(self, DeclMode.AFTER):
+        elif self is DeclMode.AFTER:
             return "A"
         else:
             return "E"
 
 
 class FullTac(object):
-    def __init__(self, pp_tac, sexp_tac=None, lids=set(), gids=set(), tac_args=[]):
+    def __init__(self, pp_tac, sexp_tac=None, lids=set(), gids=set(), tac_args=None):
         assert isinstance(pp_tac, str)
         assert isinstance(lids, set)
         assert isinstance(gids, set)
@@ -51,7 +51,10 @@ class FullTac(object):
         self.sexp_tac = sexp_tac  # Tactic as sexpression
         self.lids = lids          # Local identifiers mentioned by tactic
         self.gids = gids          # Global identifiers mentioned by tactic
-        self.tac_args = tac_args  # Args
+        if tac_args:
+            self.tac_args = tac_args  # Args
+        else:
+            self.tac_args = []        # Args
 
     def __str__(self):
         return "({} | lids={}, gids={})".format(self.pp_tac, self.lids, self.gids)
@@ -239,7 +242,6 @@ class TacStParser(object):
         line = h_head.consume_line()
         toks = line.split(TOK_SEP)
         s_ctx = toks[0].strip()
-        # concl_idx = int(toks[1].strip())
         concl = toks[1].strip().split()
         kern_idx = int(concl[0].strip())
         mid_idx = int(concl[1].strip())
@@ -254,14 +256,7 @@ class TacStParser(object):
                 typ_kern_idx = int(toks_p[1].strip())
                 typ_mid_idx = int(toks_p[2].strip())
                 ctx += [(ident, typ_kern_idx, typ_mid_idx)]
-                # if len(toks_p) == 3:
-                #     body_idx = int(toks_p[2].strip())
-                #     ctx += [(ident, typ_idx, body_idx)]
-                # else:
-                #     ctx += [(ident, typ_idx)]
-        # TODO(deh): Fix coq dump to print in reverse order?
         ctx.reverse()
-        # return TacStCtx(ctx), concl_idx
         return TacStCtx(ctx), kern_idx, mid_idx
 
     def parse_decl(self, callid, mode, tac, kind, loc):
@@ -536,11 +531,11 @@ class TacStParser(object):
 
                 return lemma
             elif line.startswith(TOK_BEG_SUB_PF):
+                # Not keeping track of this
                 self.parse_begsubpf()
-                # TODO(deh): keep track of this?
             elif line.startswith(TOK_END_SUB_PF):
+                # Not keeping track of this
                 self.parse_endsubpf()
-                # TODO(deh): keep track of this?
             elif line.startswith(TOK_BEG_TAC_ST):
                 callid, mode, tac, kind, loc = self.parse_begtacst()
                 decl = self.parse_decl(callid, mode, tac, kind, loc)
@@ -624,11 +619,11 @@ class TacStParser(object):
 
                 return lemma
             elif line.startswith(TOK_BEG_SUB_PF):
+                # Not keeping track of this
                 self.parse_begsubpf()
-                # TODO(deh): keep track of this?
             elif line.startswith(TOK_END_SUB_PF):
+                # Not keeping track of this
                 self.parse_endsubpf()
-                # TODO(deh): keep track of this?
             elif line.startswith(TOK_BEG_TAC_ST):
                 callid, mode, tac, kind, loc = self.parse_begtacst()
                 decl = self.parse_decl(callid, mode, tac, kind, loc)

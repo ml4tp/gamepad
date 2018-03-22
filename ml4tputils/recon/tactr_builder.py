@@ -278,7 +278,8 @@ class TacTreeBuilder(object):
         """
         Get tactic tree after building it.
         """
-        tactr = TacTree(self.name, self.edges, self.graph, self.tacst_info, self.gid_tactic, self.decoder)
+        tactr = TacTree(self.name, self.edges, self.graph, self.tacst_info, self.gid_tactic,
+                        self.decoder, self.mid_decoder)
 
         # Yay, dynamic-typing is great ... (Goes up in flames.)
         for _, gid, _, _, ctx, concl_idx, tacs in tactr.bfs_traverse():
