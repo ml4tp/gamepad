@@ -1,29 +1,22 @@
 import gc
-import os
-import psutil
-import sys
-from time import time
+import numpy as np
 
 import torch
 import torch.autograd as autograd
 import torch.nn as nn
 import torch.nn.functional as F
-import torch.optim as optim
 from torch.nn import Parameter
-
-import numpy as np
 
 from coq.constr import *
 from coq.glob_constr import *
-from coq.constr_decode import DecodeConstr
 from lib.myenv import FastEnv
-from lib.myutil import NotFound
-
-from coq.constr_util import SizeConstr
-
-from ml.utils import ResultLogger
-
 import ml.torchfold as ptf
+
+import torch.optim as optim
+from coq.constr_decode import DecodeConstr
+from lib.myutil import NotFound
+from coq.constr_util import SizeConstr
+from ml.utils import ResultLogger
 
 
 """
@@ -35,6 +28,7 @@ Version that uses torchfold
     close, medium, far
 """
 
+
 # -------------------------------------------------
 # Helper
 
@@ -42,6 +36,7 @@ def get_other(l, index):
     # return (item at index, all items in list other than at index). Handles negative indexes too
     index = index % len(l)
     return l[index], l[:index] + l[index+1:]
+
 
 def seq_embed(name, folder, xs, init, get_hiddens, ln, input_dropout, conclu_pos):
     # Preprocess for fold
@@ -67,6 +62,7 @@ def seq_embed(name, folder, xs, init, get_hiddens, ln, input_dropout, conclu_pos
     else:
         return hidden
 
+
 def seq_sigmoid_attn_embed(folder, xs, sv_init, ln, input_dropout, conclu_pos):
     if input_dropout:
         for i, x in enumerate(xs):
@@ -82,32 +78,9 @@ def seq_sigmoid_attn_embed(folder, xs, sv_init, ln, input_dropout, conclu_pos):
     return sv
 
 
-
-# def ast_embed(folder, xs, init, ln):
-#     hidden = init
-#     for i, x in enumerate(xs):
-#         #print("GRU Embed ",i, x.shape)
-#         hidden = folder.add('ast_cell_f', x, hidden) #cell(x.view(1, -1, 128), hidden)
-#     #print("hidden shape", hidden.shape)
-#     if ln:
-#         #print("using ln")
-#         hidden = folder.add('ast_ln_f', hidden)
-#     return hidden
-#
-# def ctx_embed(folder, xs, init, ln):
-#     hidden = folder.add('ctx_identity', init)
-#     for i, x in enumerate(xs):
-#         #print("GRU Embed ",i, x.shape)
-#         hidden = folder.add('ctx_cell_f', x, hidden) #cell(x.view(1, -1, 128), hidden)
-#     #print("hidden shape", hidden.shape)
-#     if ln:
-#         # Weird version of Layernorm
-#         #print("using ln")
-#         hidden = folder.add('ctx_ln_f', hidden)
-#     return hidden
-
 # -------------------------------------------------
 # Fold over anything
+
 class Folder(object):
     def __init__(self, model, foldy, cuda):
         # Folding state
@@ -135,10 +108,10 @@ class Folder(object):
     def reset(self):
         """Reset folding state"""
         if self.foldy:
-            #print("Folding")
+            # print("Folding")
             self._folder = ptf.Fold(max_batch_ops = self.max_batch_ops)
         else:
-            #print("Not folding")
+            # print("Not folding")
             self._folder = ptf.Unfold(self.model)
         if self.cuda:
             self._folder.cuda()
@@ -153,10 +126,12 @@ class Folder(object):
     def __str__(self):
         return str(self._folder)
 
+
+# -------------------------------------------------
 # Fold over tactic state
 
 class TacStFolder(object):
-    def __init__(self, model, tactr, folder):
+    def __init__(self, model, tactr, folder, f_mid=False):
         self.model = model    # Only used to access embeddings
         self.tactr = tactr    # Corresponding tactic tree
 
@@ -171,6 +146,13 @@ class TacStFolder(object):
         self.goal_ast = {}
         self.f_save = False
 
+        if f_mid:
+            self.fold_ast = lambda env, gc: self._fold_mid(env, c)
+            self.decode = lambda idx: tactr.mid_decoder.decode_exp_by_key(idx)
+        else:
+            self.fold_ast = lambda env, c: self._fold_ast(env, Kind.TERM, c)
+            self.decode = lambda idx: tactr.decoder.decode_exp_by_key(idx)
+
     def reset(self):
         self.folded = {}
 
@@ -184,7 +166,7 @@ class TacStFolder(object):
         self.goal_ast[idx] = c
 
     # -------------------------------------------
-    # Tactic state folding
+    # Tactic state folding (Kernel)
 
     def fold_tacst(self, tacst):
         """Top-level fold function"""
@@ -204,22 +186,24 @@ class TacStFolder(object):
 
     def fold_ctx_ident(self, gid, env, typ_idx):
         # NOTE(deh): Do not need context sharing because of AST sharing
-        c = self.tactr.decoder.decode_exp_by_key(typ_idx)
+        # c = self.tactr.decoder.decode_exp_by_key(typ_idx)
+        c = self.decode(concl_idx)
         return self.fold_ast(env, c)
 
     def fold_concl(self, gid, env, concl_idx):
         # NOTE(deh): Do not need conclusion sharing because of AST sharing
         self.f_save = True
         self.reset_ast()
-        c = self.tactr.decoder.decode_exp_by_key(concl_idx)
+        # c = self.tactr.decoder.decode_exp_by_key(concl_idx)
+        c = self.decode(concl_idx)
         self.f_save = False
         return self.fold_ast(env, c)
 
     # -------------------------------------------
     # Kernel-level AST folding
 
-    def fold_ast(self, env, c):
-        return self._fold_ast(env, Kind.TERM, c)
+    # def fold_ast(self, env, c):
+    #     return self._fold_ast(env, Kind.TERM, c)
 
     def _fold(self, key, args):
         # for i,arg in enumerate(args):
@@ -481,19 +465,8 @@ class TreeLSTM(nn.Module):
         c = (a.tanh() * i.sigmoid() + f1.sigmoid() * left_c + f2.sigmoid() * right_c)
         h = o.sigmoid() * c.tanh()
         return h,c
-#
-# class TreeGRU(nn.Module):
-#     def __init__(self, state):
-#         super().__init__()
-#         self.whx = nn.Linear(state * 2, state * 3)
-#         self.
-#
-#     def forward(self, right_h, left_h):  # takes x as first arg, h as second
-#         z, r1, r2 = self.whx(torch.cat([left_h, right_h], dim=-1)).chunk(3, -1)
-#
-#         c = (a.tanh() * i.sigmoid() + r1.sigmoid() * left_c + r2.sigmoid() * right_c)
-#         h = o.sigmoid() * c.tanh()
-#         return h, c
+
+
 # -------------------------------------------------
 # Model
 
@@ -615,8 +588,6 @@ class PosEvalModel(nn.Module):
         # Extra vars
         self.register_buffer('concl_id', torch.ones([1,1]))
         self.register_buffer('state_id', torch.zeros([1,1]))
-
-
 
     # Folder forward functions
     def attn_identity(self, x):
@@ -806,3 +777,42 @@ class WeightDrop(torch.nn.Module):
     def forward(self, *args):
         self._setweights()
         return self.module.forward(*args)
+
+
+# def ast_embed(folder, xs, init, ln):
+#     hidden = init
+#     for i, x in enumerate(xs):
+#         #print("GRU Embed ",i, x.shape)
+#         hidden = folder.add('ast_cell_f', x, hidden) #cell(x.view(1, -1, 128), hidden)
+#     #print("hidden shape", hidden.shape)
+#     if ln:
+#         #print("using ln")
+#         hidden = folder.add('ast_ln_f', hidden)
+#     return hidden
+#
+# def ctx_embed(folder, xs, init, ln):
+#     hidden = folder.add('ctx_identity', init)
+#     for i, x in enumerate(xs):
+#         #print("GRU Embed ",i, x.shape)
+#         hidden = folder.add('ctx_cell_f', x, hidden) #cell(x.view(1, -1, 128), hidden)
+#     #print("hidden shape", hidden.shape)
+#     if ln:
+#         # Weird version of Layernorm
+#         #print("using ln")
+#         hidden = folder.add('ctx_ln_f', hidden)
+#     return hidden
+
+
+#
+# class TreeGRU(nn.Module):
+#     def __init__(self, state):
+#         super().__init__()
+#         self.whx = nn.Linear(state * 2, state * 3)
+#         self.
+#
+#     def forward(self, right_h, left_h):  # takes x as first arg, h as second
+#         z, r1, r2 = self.whx(torch.cat([left_h, right_h], dim=-1)).chunk(3, -1)
+#
+#         c = (a.tanh() * i.sigmoid() + r1.sigmoid() * left_c + r2.sigmoid() * right_c)
+#         h = o.sigmoid() * c.tanh()
+#         return h, c

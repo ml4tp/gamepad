@@ -95,7 +95,7 @@ if __name__ == "__main__":
             model = PosEvalModel(*tokens_to_idx, ln=args.ln, treelstm=args.treelstm, lstm=args.lstm,
                                  dropout=args.dropout, attention=args.attention, heads=args.heads, D=args.state,
                                  state=args.state, weight_dropout=args.weight_dropout, variational=args.variational,
-                                 conclu_pos=args.conclu_pos, f_twoway=args.end2end)
+                                 conclu_pos=args.conclu_pos)
             trainer = PosEvalTrainer(model, tactrs, poseval_dataset, args)
             if args.validate:
                 trainer.validate()
