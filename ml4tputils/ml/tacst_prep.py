@@ -121,7 +121,7 @@ class PosEvalDataset(object):
             self.data[tactr_id].append(pt)
             self.tac_hist[pt.tac_bin] += 1
 
-    def split_by_lemma(self, f_rec=True, num_train=None, num_test=None):
+    def split_by_lemma(self, f_balance = True, num_train=None, num_test=None):
         if self.data == {}:
             self.mk_tactrs()
 
@@ -151,10 +151,13 @@ class PosEvalDataset(object):
         print("Split Tactrs Train={} Valid={} Test={}".format(len(data_train), len(data_val), len(data_test)))
         ps = [len(data_train) / len(train), len(data_val) / len(val), len(data_test) / len(test)]
         print("ps ", ps)
-        if f_rec:
+        if f_balance:
+            # Balance to make sure that splits are roughly equal in numebr of tacsts too
+            mean = sum(ps) / len(ps)
+            threshold = 1.5**2
             for p in ps:
-                if (p - 64.5)**2 > (66 - 64.5)**2:
-                    return self.split_by_lemma()
+                if (p - mean)**2 > threshold:
+                    return self.split_by_lemma(f_balance, num_train, num_test)
         return Dataset(data_train, data_val, data_test)
 
 
@@ -182,7 +185,7 @@ if __name__ == "__main__":
     else:
         poseval = PosEvalDataset(TACTICS_EQUIV, tactrs)
     if args.simprw:
-        poseval_dataset = poseval.split_by_lemma(f_rec=False, num_train=400, num_test=50)
+        poseval_dataset = poseval.split_by_lemma(f_balance=False, num_train=400, num_test=50)
     else:
         poseval_dataset = poseval.split_by_lemma()
 

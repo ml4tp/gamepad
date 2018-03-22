@@ -90,7 +90,7 @@ class GlobConstrParser(object):
             return CastType("VM", parse(body[0]))
         elif tag == "O":
             return CastType("O", None)
-        elif tag == "N"
+        elif tag == "N":
             return CastType("N", parse(body[0]))
         else:
             raise NameError("Tag {} not supported.".format(tag))
