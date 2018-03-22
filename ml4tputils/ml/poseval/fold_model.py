@@ -149,7 +149,7 @@ class TacStFolder(object):
             self.fold_ast = lambda env, gc: self._fold_mid(env, gc)
             self.decode = lambda idx: tactr.mid_decoder.decode_exp_by_key(idx)
         else:
-            self.fold_ast = lambda env, c: self._fold_ast(env, Kind.TERM, c)
+            self.fold_ast = lambda env, c: self._fold_ast(env, Kind.TYPE, c)
             self.decode = lambda idx: tactr.decoder.decode_exp_by_key(idx)
 
     def reset(self):
@@ -186,7 +186,7 @@ class TacStFolder(object):
     def fold_ctx_ident(self, gid, env, typ_idx):
         # NOTE(deh): Do not need context sharing because of AST sharing
         # c = self.tactr.decoder.decode_exp_by_key(typ_idx)
-        c = self.decode(concl_idx)
+        c = self.decode(typ_idx)
         return self.fold_ast(env, c)
 
     def fold_concl(self, gid, env, concl_idx):
