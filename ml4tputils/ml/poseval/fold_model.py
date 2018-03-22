@@ -102,7 +102,6 @@ class Folder(object):
             # FC calls
             self.max_batch_ops['proj_f'] = 32
             self.max_batch_ops['final_f'] = 32
-            self.max_batch_ops['final_f2'] = 32
         self.reset()
 
     def reset(self):
@@ -131,7 +130,7 @@ class Folder(object):
 # Fold over tactic state
 
 class TacStFolder(object):
-    def __init__(self, model, tactr, folder, f_mid=False):
+    def __init__(self, model, tactr, folder):
         self.model = model    # Only used to access embeddings
         self.tactr = tactr    # Corresponding tactic tree
 
@@ -146,7 +145,7 @@ class TacStFolder(object):
         self.goal_ast = {}
         self.f_save = False
 
-        if f_mid:
+        if self.model.f_mid:
             self.fold_ast = lambda env, gc: self._fold_mid(env, c)
             self.decode = lambda idx: tactr.mid_decoder.decode_exp_by_key(idx)
         else:
@@ -471,9 +470,9 @@ class TreeLSTM(nn.Module):
 # Model
 
 class PosEvalModel(nn.Module):
-    def __init__(self, sort_to_idx, const_to_idx, ind_to_idx,
-                 conid_to_idx, evar_to_idx, fix_to_idx,
-                 D=128, state=128, outsize=3, eps=1e-6, ln = False, treelstm = False, lstm = False, dropout = 0.0, attention = False, heads = 1, weight_dropout = 0.0, variational = False, conclu_pos = 0, f_twoway = False):
+    def __init__(self, sort_to_idx, const_to_idx, ind_to_idx, conid_to_idx, evar_to_idx, fix_to_idx,
+                 D=128, state=128, outsize=3, eps=1e-6, ln=False, treelstm=False, lstm=False, dropout=0.0,
+                 attention=False, heads=1, weight_dropout=0.0, variational=False, conclu_pos=0, f_mid=False):
         super().__init__()
 
         # Dimensions
@@ -579,9 +578,7 @@ class PosEvalModel(nn.Module):
         self.proj = nn.Linear(state + 1, state)
         self.final = nn.Linear(heads*state, outsize)
         # For two way classification
-        self.f_twoway = f_twoway
-        if self.f_twoway:
-            self.final2 = nn.Linear(heads*state, 2)
+        self.f_mid = f_mid
         
         self.loss_fn = nn.CrossEntropyLoss()
 
@@ -691,12 +688,6 @@ class PosEvalModel(nn.Module):
             x = x.chunk(2,-1)[0]
         return self.final(x)
 
-    def final_f2(self, x):
-        if self.tup:
-            # Only apply final to hidden
-            x = x.chunk(2,-1)[0]
-        return self.final2(x)        
-
     def proj_f(self, *xs):
         if self.tup:
             # Only apply proj to hidden
@@ -727,11 +718,7 @@ class PosEvalModel(nn.Module):
         x = self.ctx_emb_func(folder, xs)
         # Final layer for logits
         pred1 = folder.add('final_f', x)
-        if self.f_twoway:
-            pred2 = folder.add('final_f2', x)
-            return pred1, pred2
-        else:
-            return pred1
+        return pred1
 
 
 class WeightDrop(torch.nn.Module):
