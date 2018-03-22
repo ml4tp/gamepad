@@ -106,6 +106,13 @@ class CasesClause(object):
         self.g = g
 
 
+class CastType(object):
+    def __init__(self, kind, m_gc):
+        assert m_gc is None or isinstance(m_gc, GExp)
+        self.kind = kind
+        self.m_gc = m_gc
+
+
 class GRef(GExp):
     """| GRef of (Loc.t * global_reference * glob_level list option)
       (** An identifier that represents a reference to an object defined
@@ -291,6 +298,7 @@ class GCast(GExp):
     """
     def __init__(self, g, g_cty):
         assert isinstance(g, GExp)
+        assert isinstance(g_cty, CastType)
         super().__init__()
         self.g = g
         self.g_cty = g_cty

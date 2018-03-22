@@ -82,9 +82,18 @@ class GlobConstrParser(object):
         #     raise NameError("Tag {} not supported.".format(tag))
         return gsort
 
-    def parse_cast_type(self, cty):
-        # TODO(deh): change me
-        return cty
+    def parse_cast_type(self, parse, cty):
+        tag, body = sexpr_unpack(cty)
+        if tag == "C":
+            return CastType("C", parse(body[0]))
+        elif tag == "VM":
+            return CastType("VM", parse(body[0]))
+        elif tag == "O":
+            return CastType("O", None)
+        elif tag == "N"
+            return CastType("N", parse(body[0]))
+        else:
+            raise NameError("Tag {} not supported.".format(tag))
 
     def parse_predicate_pattern(self, pp):
         name = sexpr_strify(pp[0])
@@ -173,7 +182,9 @@ class GlobConstrParser(object):
             m_ga = body[2]
             return GHole(ek, ipne, m_ga)
         elif tag == "T":
-            return GCast(self.parse_glob_constr(body[0]), self.parse_cast_type(body[1]))
+            gc = self.parse_glob_constr(body[0])
+            g_cty = self.parse_cast_type(self.parse_glob_constr, body[1])
+            return GCast(gc, g_cty)
         else:
             raise NameError("Tag {} not supported.".format(tag))
 
@@ -285,7 +296,7 @@ class GlobConstrDecoder(object):
             return self._mkcon(key, GHole(ek, ipne, m_ga))
         elif tag == "T":
             gc = self.decode_glob_constr(body[0])
-            ty_gc = self.parser.parse_cast_type(body[1])
+            ty_gc = self.parser.parse_cast_type(self.decode_glob_constr, body[1])
             return self._mkcon(key, GCast(gc, ty_gc))
         else:
             raise NameError("Tag {} not supported.".format(tag))

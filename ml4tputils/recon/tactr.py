@@ -10,7 +10,7 @@ from coq.constr_decode import DecodeConstr
 from coq.constr_interp import InterpCBName, SizeCoqVal
 from coq.tactics import TacKind, TACTIC_HIST
 from coq.constr_util import SizeConstr, HistConstr, TokenConstr, VisualizeConstr, COQEXP_HIST
-from coq.glob_constr_util import HistGlobConstr
+from coq.glob_constr_util import TokenGlobConstr
 from lib.myenv import MyEnv
 from lib.myutil import dict_ls_app
 from recon.tacst_parser import FullTac
@@ -375,7 +375,8 @@ class TacTree(object):
 
     def tokenize(self):
         tce = TokenConstr(self.decoder.decoded)
-        return tce.tokenize()
+        tce2 = TokenGlobConstr(self.mid_decoder.decoded)
+        return tce.tokenize(), tce2.tokenize()
 
     def view_comp(self, sce_full, sce_sh):
         vals = {}
