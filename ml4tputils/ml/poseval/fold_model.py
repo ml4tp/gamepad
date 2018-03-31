@@ -11,6 +11,7 @@ from coq.constr import *
 from coq.glob_constr import *
 from lib.myenv import FastEnv
 import ml.torchfold as ptf
+from lib.mysexpr import sexpr_unpack
 
 import torch.optim as optim
 from coq.constr_decode import DecodeConstr
@@ -333,7 +334,7 @@ class TacStFolder(object):
             return [self.model.gref_ind, ev_ind]
         elif ty is ConstructRef:
             ev_ind = self.fold_ind_name(gref.ind)
-            ev_conid = self.fold_conid_name((gref.ind, gref.conid))
+            ev_conid = self.fold_conid_name((gref.ind, gref.j))
             return [self.model.gref_construct, ev_ind, ev_conid]
         else:
             raise NameError("Gref {} not supported".format(gc))
@@ -359,28 +360,29 @@ class TacStFolder(object):
         elif ty is GApp:
             ev_gc = self._fold_mid(env, gc.g)
             ev_gcs = self._fold_mids(env, gc.gs)
-            return self._fold(key, [self.model.gapp, ev_gc, ev_gcs])
+            return self._fold(key, [self.model.gapp, ev_gc, *ev_gcs])
         elif ty is GLambda:
             ev_x = self.fold_local_var(gc.g_ty)
             ev_ty = self._fold_mid(env, gc.g_ty)
-            ev_c = self._fold_mid(env.local_extend(gc.name, ev_x), gc.c)
+            # TODO(deh): Remove Name when you refactor
+            ev_c = self._fold_mid(env.local_extend(Name(gc.name), ev_x), gc.g_bod)
             return self._fold(key, [self.model.glambda, ev_ty, ev_c])
         elif ty is GProd:
             ev_x = self.fold_local_var(gc.g_ty)
             ev_ty = self._fold_mid(env, gc.g_ty)
-            ev_c = self._fold_mid(env.local_extend(gc.name, ev_x), gc.c)
+            ev_c = self._fold_mid(env.local_extend(Name(gc.name), ev_x), gc.g_bod)
             return self._fold(key, [self.model.gprod, ev_ty, ev_c])
         elif ty is GLetIn:
             ev_g1 = self._fold_mid(env, gc.g1)
-            ev_g2 = self._fold_mid(env.local_extend(gc.name, ev_g1), gc.g2)
+            ev_g2 = self._fold_mid(env.local_extend(Name(gc.name), ev_g1), gc.g2)
             return self._fold(key, [self.model.gletin, ev_g1, ev_g2])
         elif ty is GCases:
             # TODO(deh): I expect this to be an issue, need to
             # extend env probably
-            acc = []
+            ccs = []
             for cc in gc.ccs:
-                acc += [self._fold_mid(env, cc.g)]
-            return self._fold(key, [self.model.gcases, acc])
+                ccs += [self._fold_mid(env, cc.g)]
+            return self._fold(key, [self.model.gcases, *ccs])
         elif ty is GLetTuple:
             # ev_g1 = self._fold_mid(env, gc.g1)
             # ev_g2 = self._fold_mid(env.local_extend(gc.name, ev_g1), gc.g2)
@@ -393,9 +395,11 @@ class TacStFolder(object):
         elif ty is GRec:
             ev_tys = self._fold_mids(env, gc.gc_tys)
             ev_bods = self._fold_mids(env, gc.gc_bods)
-            return self._fold(key, [self.model.grec, ev_tys, ev_bods])
+            return self._fold(key, [self.model.grec, *ev_tys, *ev_bods])
         elif ty is GSort:
-            ev_sort = self.fold_sort_name(gc.gsort)
+            # TODO(deh): Fix GSort
+            tag, body = sexpr_unpack(gc.gsort)
+            ev_sort = self.fold_sort_name(tag)
             return self._fold(key, [self.model.gsort, ev_sort])
         elif ty is GHole:
             raise NameError("Not in dataset")
@@ -406,7 +410,7 @@ class TacStFolder(object):
             raise NameError("Kind {} not supported".format(gc))
 
     def _fold_mids(self, env, gcs):
-        return [self._fold_ast(env, x) for x in gcs]
+        return [self._fold_mid(env, x) for x in gcs]
 
     # -------------------------------------------
     # Global constant folding
@@ -482,6 +486,7 @@ class PosEvalModel(nn.Module):
         self.D = D            # Dimension of embeddings
         self.state = state    # Dimension of GRU/LSTM/TreeLSTM state. For LSTM's, each of hidden state and cell state has that size
         self.outsize = outsize
+        self.f_mid = f_mid
 
         table_names = ['sort', 'const', 'ind', 'conid', 'evar', 'fix', 'fixbody']
         tables = [sort_to_idx, const_to_idx, ind_to_idx, conid_to_idx, evar_to_idx, fix_to_idx, fix_to_idx]
@@ -507,22 +512,20 @@ class PosEvalModel(nn.Module):
 
         # Embeddings for constants
         self.sort_to_idx = sort_to_idx
-        # self.sort_embed = nn.Embedding(len(sort_to_idx), D)
         self.const_to_idx = const_to_idx
-        # self.const_embed = nn.Embedding(len(const_to_idx), D)
         self.ind_to_idx = ind_to_idx
-        # self.ind_embed = nn.Embedding(len(ind_to_idx), D)
         self.conid_to_idx = conid_to_idx
-        # self.conid_embed = nn.Embedding(len(conid_to_idx), D)
         self.evar_to_idx = evar_to_idx
-        # self.evar_embed = nn.Embedding(len(evar_to_idx), D)
         self.fix_to_idx = fix_to_idx
-        # self.fix_embed = nn.Embedding(len(fix_to_idx), D)
-        # self.fixbody_embed = nn.Embedding(len(fix_to_idx), D)
 
-        for attr in ["rel", "var", "evar", "sort", "cast", "prod",
-                     "lam", "letin", "app", "const", "ind", "construct",
-                     "case", "fix", "cofix", "proj1"]:
+
+        if self.f_mid:
+            attrs = ["gref_var", "gref_const", "gref_ind", "gref_construct", "gvar", "gevar", "gpatvar", "gapp",
+                     "glambda", "gprod", "gletin", "gcases", "glettuple", "gif", "grec", "gsort", "gcast"]
+        else:
+            attrs = ["rel", "var", "evar", "sort", "cast", "prod", "lam", "letin", "app", "const", "ind", "construct",
+                     "case", "fix", "cofix", "proj1"]
+        for attr in attrs:
             self.__setattr__(attr, nn.Parameter(torch.randn(1, self.init_state)))
 
         # Conclusion position
@@ -580,8 +583,6 @@ class PosEvalModel(nn.Module):
         self.pred = self.ctx_func
         self.proj = nn.Linear(state + 1, state)
         self.final = nn.Linear(heads*state, outsize)
-        # For two way classification
-        self.f_mid = f_mid
         
         self.loss_fn = nn.CrossEntropyLoss()
 

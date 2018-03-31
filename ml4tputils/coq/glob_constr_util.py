@@ -1,5 +1,5 @@
 from coq.glob_constr import *
-
+from lib.mysexpr import sexpr_unpack, sexpr_strify
 
 # -------------------------------------------------
 # Computing histogram of Coq glob_constr
@@ -121,14 +121,14 @@ class TokenGlobConstr(object):
                 self.unique_ind.add(gref.ind.mutind)
             elif ty2 is ConstructRef:
                 self.unique_ind.add(gref.ind.mutind)
-                self.unique_conid.add((gref.ind.mutind, gref.conid))
+                self.unique_conid.add((gref.ind.mutind, gref.j))
             else:
                 raise NameError("Not supported", gref)
             return self._seen(gc)
         elif ty is GVar:
             return self._seen(gc)
         elif ty is GEvar:
-            self.unique_evar.add(gc.ek)
+            self.unique_evar.add(gc.ev)
             return self._seen(gc)
         elif ty is GPatVar:
             return self._seen(gc)
@@ -153,12 +153,14 @@ class TokenGlobConstr(object):
                 self.token(cc.g)
             return self._seen(gc)
         elif ty is GLetTuple:
-            self.token(gc.m_name_and_ty[1])
+            if gc.m_name_and_ty[1]:
+                self.token(gc.m_name_and_ty[1])
             self.token(gc.g1)
             self.token(gc.g2)
         elif ty is GIf:
             self.token(gc.g1)
-            self.token(gc.m_name_and_ty[1])
+            if gc.m_name_and_ty[1]:
+                self.token(gc.m_name_and_ty[1])
             self.token(gc.g2)
             self.token(gc.g3)
             return self._seen(gc)
@@ -167,14 +169,23 @@ class TokenGlobConstr(object):
             self.tokens(gc.gc_bods)
             return self._seen(gc)
         elif ty is GSort:
-            self.unique_sort.add(gc.gsort)
+            # TODO(deh): Fix parsing to stirfy
+            tag, body = sexpr_unpack(gc.gsort)
+            if tag == "P":
+                self.unique_sort.add("P")
+            elif tag == "S":
+                self.unique_sort.add("S")
+            elif tag == "T":
+                self.unique_sort.add("T")
+            else:
+                raise NameError("Tag {} not supported".format(tag))
             return self._seen(gc)
         elif ty is GHole:
             return self._seen(gc)
         elif ty is GCast:
             self.token(gc.g)
-            if gc.g_cty:
-                self.token(gc.g_cty)
+            if gc.g_cty.m_gc:
+                self.token(gc.g_cty.m_gc)
             return self._seen(gc)
         else:
             raise NameError("Kind {} not supported".format(gc))

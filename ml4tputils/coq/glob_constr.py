@@ -50,14 +50,15 @@ class IndRef(GlobalReference):
 
 
 class ConstructRef(GlobalReference):
-    def __init__(self, ind, conid):
+    def __init__(self, ind, j):
+        #TODO(deh): Refactor j to conid
         assert isinstance(ind, Inductive)
-        assert isinstance(conid, int)
+        assert isinstance(j, int)
         self.ind = ind
-        self.conid = conid
+        self.j = j
 
     def __str__(self):
-        return "{}.{}".format(self.ind, self.conid)
+        return "{}.{}".format(self.ind, self.j)
 
 
 # -------------------------------------------------
@@ -189,6 +190,8 @@ class GLambda(GExp):
     """| GLambda of Loc.t * Name.t * binding_kind *  glob_constr * glob_constr
     """
     def __init__(self, name, bk, g_ty, g_bod):
+        # TODO(deh): Fix parsing to parse name
+        assert isinstance(name, Name)
         assert isinstance(g_ty, GExp)
         assert isinstance(g_bod, GExp)
         super().__init__()
@@ -202,6 +205,7 @@ class GProd(GExp):
     """| GProd of Loc.t * Name.t * binding_kind * glob_constr * glob_constr
     """
     def __init__(self, name, bk, g_ty, g_bod):
+        assert isinstance(name, Name)
         assert isinstance(g_ty, GExp)
         assert isinstance(g_bod, GExp)
         super().__init__()
@@ -215,6 +219,7 @@ class GLetIn(GExp):
     """| GLetIn of Loc.t * Name.t * glob_constr * glob_constr
     """
     def __init__(self, name, g1, g2):
+        assert isinstance(name, Name)
         assert isinstance(g1, GExp)
         assert isinstance(g2, GExp)
         super().__init__()
