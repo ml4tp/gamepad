@@ -120,8 +120,8 @@ class TokenGlobConstr(object):
             elif ty2 is IndRef:
                 self.unique_ind.add(gref.ind.mutind)
             elif ty2 is ConstructRef:
-                self.unique_ind.add(c.ind.mutind)
-                self.unique_conid.add((c.ind.mutind, c.conid))
+                self.unique_ind.add(gref.ind.mutind)
+                self.unique_conid.add((gref.ind.mutind, gref.conid))
             else:
                 raise NameError("Not supported", gref)
             return self._seen(gc)

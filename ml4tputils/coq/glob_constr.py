@@ -50,13 +50,14 @@ class IndRef(GlobalReference):
 
 
 class ConstructRef(GlobalReference):
-    def __init__(self, ind, j):
+    def __init__(self, ind, conid):
         assert isinstance(ind, Inductive)
+        assert isinstance(conid, int)
         self.ind = ind
-        self.j = j
+        self.conid = conid
 
     def __str__(self):
-        return "{}.{}".format(self.ind, self.j)
+        return "{}.{}".format(self.ind, self.conid)
 
 
 # -------------------------------------------------
