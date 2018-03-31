@@ -104,6 +104,16 @@ class GlobConstrParser(object):
     def parse_case_clauses(self, parse_gc, ccs):
         return [self.parse_case_clause(parse_gc, cc) for cc in ccs]
 
+    def parse_imp_arg(self, iarg):
+        return self.parse_maybe(lambda x: x[0], iarg)
+
+    def parse_imp_args(self, iargs):
+        # NOTE(deh): list of lists? take first one ...
+        if iargs:
+            return [self.parse_imp_arg(iarg) for iarg in iargs[0]]
+        else:
+            return []
+
     def parse_glob_constr(self, c):
         tag, body = sexpr_unpack(c)
         if tag == "!":
@@ -115,7 +125,10 @@ class GlobConstrParser(object):
         elif tag == "PV":
             return GPatVar(bool(body[0]), sexpr_strify(body[1]))
         elif tag == "A":
-            return GApp(self.parse_glob_constr(body[0]), self.parse_glob_constrs(body[1]))
+            gc = self.parse_glob_constr(body[0])
+            gcs = self.parse_glob_constrs(body[1])
+            iargs = self.parse_imp_args(body[2])
+            return GApp(gc, gcs, iargs)
         elif tag == "L":
             return GLambda(sexpr_strify(body[0]), sexpr_strify(body[1]),
                            self.parse_glob_constr(body[2]), self.parse_glob_constr(body[3]))
@@ -207,7 +220,8 @@ class GlobConstrDecoder(object):
         elif tag == "A":
             gc = self.decode_glob_constr(body[0])
             gcs = self.decode_glob_constrs(body[1])
-            return self._mkcon(key, GApp(gc, gcs))
+            iargs = self.parser.parse_imp_args(body[2])
+            return self._mkcon(key, GApp(gc, gcs, iargs))
         elif tag == "L":
             name = sexpr_strify(body[0])
             bk = sexpr_strify(body[1])

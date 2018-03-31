@@ -171,13 +171,14 @@ class GPatVar(GExp):
 class GApp(GExp):
     """| GApp of Loc.t * glob_constr * glob_constr list
     """
-    def __init__(self, g, gs):
+    def __init__(self, g, gs, iargs):
         assert isinstance(g, GExp)
         for g_p in gs:
             assert isinstance(g_p, GExp)
         super().__init__()
         self.g = g
         self.gs = gs
+        self.iargs = iargs
 
     def __str__(self):
         return "({} {})".format(str(self.g), " ".join([str(g) for g in self.gs]))

@@ -1,4 +1,4 @@
-import sexpdata
+from lib.mysexpr import *
 
 
 """
@@ -6,7 +6,7 @@ import sexpdata
 
 Get the free variables in a tactic.
 
-WARNING(deh): experimental, need to check
+WARNING(deh): experimental
 """
 
 
@@ -18,26 +18,11 @@ class FvsTactic(object):
         # print(msg)
         pass
 
-    def _unpack(self, sexpr):
-        try:
-            tag = sexpr[0]
-            body = sexpr[1:]
-            return tag._val, body
-        except:
-            return sexpr._val, None
-
-    def _conv(self, obj):
-        if isinstance(obj, sexpdata.Symbol):
-            return obj._val
-        elif isinstance(obj, float):
-            # NOTE(deh): wtf, inF -> inf as a floating point ...
-            return str(obj)
-
     # -------------------------------------------------
     # utility
 
     def fvs_maybe(self, fvs, sexpr):
-        tag, body = self._unpack(sexpr)
+        tag, body = sexpr_unpack(sexpr)
         if tag == "N":
             return set()
         elif tag == "S":
@@ -55,22 +40,22 @@ class FvsTactic(object):
     # glob_constr
 
     def fvs_or_var(self, fvs, ov):
-        tag, body = self._unpack(ov)
+        tag, body = sexpr_unpack(ov)
         if tag == "A":
             return fvs(body[0])
         elif tag == "V":
-            return {self._conv(body[0])}
+            return {sexpr_strify(body[0])}
         else:
             raise NameError("Tag {} not supported".format(tag))
 
     def fvs_g_reference(self, gref):
-        return self.fvs_or_var(lambda x: {self._conv(x)}, gref)
+        return self.fvs_or_var(lambda x: {sexpr_strify(x)}, gref)
 
     def fvs_gname(self, gnm):
-        return {self._conv(gnm)}
+        return {sexpr_strify(gnm)}
 
     def fvs_intro_pattern_expr(self, fvs, ipe):
-        tag, body = self._unpack(ipe)
+        tag, body = sexpr_unpack(ipe)
         self._log("@fvs_intro_pattern_expr | tag={}; raw={}".format(tag, ipe))
         if tag == "F":
             # Printf.sprintf "F(%b)" b
@@ -85,7 +70,7 @@ class FvsTactic(object):
             raise NameError("Tag {} not supported".format(tag))
 
     def fvs_intro_pattern_naming_expr(self, ipne):
-        tag, body = self._unpack(ipne)
+        tag, body = sexpr_unpack(ipne)
         self._log("@fvs_intro_pattern_naming_expr | tag={}; raw={}".format(tag, ipne))
         if tag == "I":
             # Printf.sprintf "I(%s)" (show_id id)
@@ -100,7 +85,7 @@ class FvsTactic(object):
             raise NameError("Tag {} not supported".format(tag))
 
     def fvs_intro_pattern_action_expr(self, fvs, ipae):
-        tag, body = self._unpack(ipae)
+        tag, body = sexpr_unpack(ipae)
         
         if tag == "W":
             # "W()"
@@ -123,29 +108,29 @@ class FvsTactic(object):
             raise NameError("Tag {} not supported".format(tag))
 
     def fvs_or_and_intro_pattern_expr(self, oaipe):
-        tag, body = self._unpack(oaipe)
+        tag, body = sexpr_unpack(oaipe)
         if tag == "I":
             return self.fvs_ls(self.fvs_intro_pattern_expr, body[0])
         elif tag == "A":
-            return self.fvs_ls(self.show_intro_pattern_expr, body[0])
+            return self.fvs_ls(self.fvs_intro_pattern_expr, body[0])
         else:
             raise NameError("Tag {} not supported".format(tag))
 
     def fvs_cases_pattern(self, cp):
-        tag, body = self._unpack(cp)
+        tag, body = sexpr_unpack(cp)
         if tag == "V":
             # Printf.sprintf "V(%s)" (show_name n)
             return self.fvs_name(body[0])
         elif tag == "C":
-            self.globs.add(self._conv(body[0]))
+            self.globs.add(sexpr_strify(body[0]))
             fvs3 = self.fvs_ls(self.fvs_cases_pattern, body[3])
-            fvs4 = self.fvs_name(body[4])  # set([self._conv(body[4])])
+            fvs4 = self.fvs_name(body[4])  # set([sexpr_strify(body[4])])
             return fvs3.union(fvs4)
         else:
             raise NameError("Tag {} not supported".format(tag))
 
     def fvs_cast_type(self, ct):
-        tag, body = self._unpack(ct)
+        tag, body = sexpr_unpack(ct)
         if tag == "C":
             return self.fvs_glob_constr(body[0])
         elif tag == "VM":
@@ -158,7 +143,7 @@ class FvsTactic(object):
             raise NameError("Tag {} not supported".format(tag))
 
     def fvs_glob_constr(self, gc):
-        tag, body = self._unpack(gc)
+        tag, body = sexpr_unpack(gc)
         self._log("@fvs_glob_constr | tag={}; raw={}".format(tag, gc))
         if tag == "!":
             # Printf.sprintf "!(%s)" (show_global_reference gr)
@@ -169,11 +154,9 @@ class FvsTactic(object):
         elif tag == "E":
             # let f (id, gc) = Printf.sprintf "(%s, %s)" (show_id id) (show_glob_constr gc) in
             # Printf.sprintf "(E %s %s)" (show_id en) (show_sexpr_ls f args)
-            # TODO(deh): fixed?
             fvs0 = self.fvs_id(body[0])
             fvs1 = self.fvs_glob_constrs(body[1])
             return fvs0.union(fvs1)
-            return self.fvs_id(body[0])
         elif tag == "PV":
             # Printf.sprintf "(PV %b %s)" b (show_id pv)
             return self.fvs_id(body[1])
@@ -210,14 +193,12 @@ class FvsTactic(object):
             # let f (name, m_gc) = Printf.sprintf "(%s %s)" (show_name name) (show_maybe show_glob_constr m_gc) in
             # Printf.sprintf "(LT %s %s %s %s)" (show_sexpr_ls show_name ns) (f arg) (show_glob_constr gc1)
             # (show_glob_constr gc2)
-            # TODO(deh): fixed?
-            bnd0 = self.fvs_ls(lambda x: self._conv(x), body[0])
+            bnd0 = self.fvs_ls(lambda x: sexpr_strify(x), body[0])
             fvs2 = self.fvs_glob_constr(body[2])
             fvs3 = self.fvs_glob_constr(body[3])
             return fvs2.union(fvs3.difference(bnd0))
         elif tag == "I":
             # Printf.sprintf "(I %s %s %s)" (show_glob_constr gc) (show_glob_constr gc2) (show_glob_constr gc3)
-            # TODO(deh): fixed?
             fvs0 = self.fvs_glob_constr(body[0])
             fvs1 = self.fvs_glob_constr(body[1])
             fvs2 = self.fvs_glob_constr(body[2])
@@ -225,7 +206,6 @@ class FvsTactic(object):
         elif tag == "R":
             # Printf.sprintf "R(%s, %s, %s, %s, %s)" "MEH" (brackets (show_arr show_id ", " ids)) "MEH"
             # (show_glob_constr_arr gcs1) (show_glob_constr_arr gcs2)
-            # TODO(deh): fixed?
             bnd = self.fvs_ls(self.fvs_id, body[1])
             fvs3 = self.fvs_glob_constrs(body[3])
             fvs4 = self.fvs_glob_constrs(body[4])
@@ -251,19 +231,19 @@ class FvsTactic(object):
         return self.fvs_glob_constr(gtrm)
 
     def fvs_id(self, x):
-        return {self._conv(x)}
+        return {sexpr_strify(x)}
 
     def fvs_predicate_pattern(self, parg):
         # let f (loc, (mutind, i), ns) = Printf.sprintf "(%s, %d, %s)" (Names.MutInd.to_string mutind) i
         # (brackets (show_ls show_name ", " ns)) in
         # Printf.sprintf "(%s, %s)" (show_name n) (show_maybe f m_args)
-        fvs0 = {self._conv(parg[0])}
-        tag, body = self._unpack(parg[1])
+        fvs0 = {sexpr_strify(parg[0])}
+        tag, body = sexpr_unpack(parg[1])
         if tag == "N":
             fvs1 = set()
         elif tag == "S":
             body = body[0]
-            self.globs.add(self._conv(body[0]))
+            self.globs.add(sexpr_strify(body[0]))
             fvs1 = set(self.fvs_ls(self.fvs_id, body[2]))
         else:
             raise NameError("Tag {} not supported".format(tag))
@@ -295,7 +275,7 @@ class FvsTactic(object):
     # Tactics
 
     def fvs_occurrences_gen(self, fvs, og):
-        tag, body = self._unpack(og)
+        tag, body = sexpr_unpack(og)
         if tag == "A":
             return set()
         elif tag == "B":
@@ -306,7 +286,6 @@ class FvsTactic(object):
             return self.fvs_ls(fvs, body[0])
 
     def fvs_occurrences_expr(self, oe):
-        # TODO(deh): check
         # return self.fvs_occurrences_gen(lambda x: set(), oe)
         return set()
 
@@ -326,7 +305,7 @@ class FvsTactic(object):
         return fvs0.union(fvs1)
 
     def fvs_quantified_hypothesis(self, qhyp):
-        return set([self._conv(qhyp)])
+        return {sexpr_strify(qhyp)}
 
     def fvs_explicit_binding(self, fvs, eb):
         fvs0 = self.fvs_quantified_hypothesis(eb[0])
@@ -334,7 +313,7 @@ class FvsTactic(object):
         return fvs0.union(fvs1)
 
     def fvs_bindings(self, fvs, b):
-        tag, body = self._unpack(b)
+        tag, body = sexpr_unpack(b)
         if tag == "I":
             return self.fvs_ls(fvs, body[0])
         elif tag == "E":
@@ -353,21 +332,21 @@ class FvsTactic(object):
         return self.fvs_with_bindings(fvs, ba[1])
 
     def fvs_global_reference(self, gref):
-        tag, body = self._unpack(gref)
+        tag, body = sexpr_unpack(gref)
         if tag == "VR":
-            self.globs.add(self._conv(body[0]))
+            self.globs.add(sexpr_strify(body[0]))
         elif tag == "CR":
-            self.globs.add(self._conv(body[0]))
+            self.globs.add(sexpr_strify(body[0]))
         elif tag == "IR":
-            self.globs.add(self._conv(body[0]))
+            self.globs.add(sexpr_strify(body[0]))
         elif tag == "TR":
-            self.globs.add(self._conv(body[0]))
+            self.globs.add(sexpr_strify(body[0]))
         else:
             raise NameError("Tag {} not supported".format(tag))
         return set()
 
     def fvs_match_rule(self, fvs_pat, fvs_tac, mrule):
-        tag, body = self._unpack(mrule)
+        tag, body = sexpr_unpack(mrule)
         if tag == "P":
             fvs0 = self.fvs_ls(lambda x: self.fvs_match_context_hyps(fvs_pat, x), body[0])
             fvs1 = self.fvs_match_pattern(fvs_pat, body[1])
@@ -380,11 +359,9 @@ class FvsTactic(object):
 
     def fvs_match_rules(self, fvs_pat, fvs_tac, mrules):
         return self.fvs_ls(lambda x: self.fvs_match_rule(fvs_pat, fvs_tac, x), mrules)
-        # TODO(deh): UNCOMMENT ME
-        # return set()
 
     def fvs_match_pattern(self, fvs_pat, mp):
-        tag, body = self._unpack(mp)
+        tag, body = sexpr_unpack(mp)
         if tag == "T":
             return fvs_pat(body[0])
         elif tag == "S":
@@ -395,13 +372,13 @@ class FvsTactic(object):
             raise NameError("Tag {} not supported".format(tag))
 
     def fvs_match_context_hyps(self, fvs_pat, hyps):
-        tag, body = self._unpack(hyps)
+        tag, body = sexpr_unpack(hyps)
         if tag == "H":
-            fvs0 = {self._conv(body[0])}
+            fvs0 = {sexpr_strify(body[0])}
             fvs1 = self.fvs_match_pattern(fvs_pat, body[1])
             return fvs0.union(fvs1)
         elif tag == "D":
-            fvs0 = {self._conv(body[0])}
+            fvs0 = {sexpr_strify(body[0])}
             fvs1 = self.fvs_match_pattern(fvs_pat, body[1])
             fvs2 = self.fvs_match_pattern(fvs_pat, body[2])
             return fvs0.union(fvs1).union(fvs2)
@@ -409,7 +386,7 @@ class FvsTactic(object):
             raise NameError("Tag {} not supported".format(tag))
 
     def fvs_message_token(self, mtok):
-        tag, body = self._unpack(mtok)
+        tag, body = sexpr_unpack(mtok)
         if tag == "S":
             return set()
         elif tag == "I":
@@ -418,7 +395,7 @@ class FvsTactic(object):
             return self.fvs_gname(body[0])
 
     def fvs_generic_arg(self, garg):
-        tag, body = self._unpack(garg)
+        tag, body = sexpr_unpack(garg)
         self._log("@fvs_generic_arg | tag={}; raw={}".format(tag, garg))
         if tag == "L":
             return self.fvs_ls(self.fvs_generic_arg, body[0])
@@ -429,7 +406,7 @@ class FvsTactic(object):
             fvs1 = self.fvs_generic_arg(body[1])
             return fvs0.union(fvs1)
         elif tag == "E":
-            method = getattr(self, "fvs_{}".format(self._conv(body[0])))
+            method = getattr(self, "fvs_{}".format(sexpr_strify(body[0])))
             return method(body[1])
         else:
             if (tag == "auto_using" or
@@ -446,7 +423,7 @@ class FvsTactic(object):
                 raise NameError("Tag {} not supported".format(tag))
 
     def fvs_tactic_arg(self, targ):
-        tag, body = self._unpack(targ)
+        tag, body = sexpr_unpack(targ)
         self._log("@fvs_tactic_arg | tag={}; raw={}".format(tag, targ))
         if tag == "G":
             # Printf.sprintf "(G %s)" (show_generic_arg ga)
@@ -481,7 +458,7 @@ class FvsTactic(object):
         return self.fvs_ls(self.fvs_tactic_arg, targs)
 
     def fvs_atomic_tac(self, atac):
-        tag, body = self._unpack(atac)
+        tag, body = sexpr_unpack(atac)
         self._log("@fvs_atomic_tac | tag={}; raw={}".format(tag, atac))
         if tag == "IntroPattern":
             # let f (loc, ipe) = show_intro_pattern_expr show_gtrm ipe in
@@ -529,7 +506,6 @@ class FvsTactic(object):
             # let f (wo, name) = Printf.sprintf "(%s, %s)" (show_with_occurrences show_gtrm wo) (show_name name) in
             # Printf.sprintf "Generalize(%s)" (brackets (show_ls f ", " ls))
             f = lambda wo, name: self.fvs_with_occurrences(self.fvs_gtrm, wo).union(self.fvs_name(name))
-            # TODO(deh): solved?
             return self.fvs_ls(f, body[0])
         elif tag == "LetTac":
             # let f (loc, ipne) = show_intro_pattern_naming_expr ipne in
@@ -541,7 +517,6 @@ class FvsTactic(object):
             return fvs1.union(fvs2).union(fvs3).difference(self.fvs_name(body[0]))
         elif tag == "InductionDestruct":
             # Printf.sprintf "InductionDestruct(%b, %b, %s)" rf ef (show_induction_clause_list ics)
-            # TODO(deh): solved?
             return self.fvs_induction_clause_list(body[2])
         elif tag == "Reduce":
             # Printf.sprintf "Reduce(%s, %s)" "MEH" (show_clause_expr ce)
@@ -553,7 +528,6 @@ class FvsTactic(object):
             fvs0 = self.fvs_maybe(self.fvs_pattern, body[0])
             fvs1 = self.fvs_gtrm(body[1])
             fvs2 = self.fvs_clause_expr(body[2])
-            # TODO(deh): solved?
             return fvs0.union(fvs1).union(fvs2)
         elif tag == "Rewrite":
             # let f (b, m, barg) = Printf.sprintf "(%b %s %s)" b (show_multi m) (show_with_bindings_arg show_gtrm barg)
@@ -565,7 +539,6 @@ class FvsTactic(object):
             return fvs1.union(fvs2).union(fvs3)
         elif tag == "Inversion":
             # Printf.sprintf "(Inversion %s %s)" (show_inversion_strength is) (show_quantified_hypothesis qhyp)
-            # TODO(deh): solved?
             return self.fvs_quantified_hypothesis(body[1])
         else:
             raise NameError("Tag {} not supported".format(tag))
@@ -573,7 +546,7 @@ class FvsTactic(object):
     def fvs_tac(self, tac):
         if tac is None:
             return set()
-        tag, body = self._unpack(tac)
+        tag, body = sexpr_unpack(tac)
         self._log("@fvs_tac | tag={}; raw={}".format(tag, tac))
         if tag == "Atom":
             # Printf.sprintf "(Atom %s)" (show_atomic_tac atac)
@@ -675,7 +648,6 @@ class FvsTactic(object):
         elif tag == "Let":
             # let f ((loc, id), targ) = Printf.sprintf "(%s, %s)" (show_id id) (show_tactic_arg targ) in
             # Printf.sprintf "Let(%b, %s, %s)" rf (brackets (show_ls f ", " bindings)) (show_tac tac)
-            # TODO(deh): solved?
             bnd = self.fvs_ls(lambda x: self.fvs_id(x[0]), body[1])
             fvs1 = self.fvs_ls(lambda x: self.fvs_tactic_arg(x[1]), body[1])
             fvs2 = self.fvs_tac(body[2])
@@ -705,7 +677,6 @@ class FvsTactic(object):
             # fvs1 = self.fvs_goal_selector(body[0])
             fvs2 = self.fvs_tac(body[1])
             # return fvs1.union(fvs2)
-            # TODO(deh): is this correct?
             return fvs2
         elif tag == "ML":
             # Printf.sprintf "ML(%s, %s)" (show_ml_tactic_entry mlen) (show_tactic_args targs)
@@ -726,7 +697,7 @@ class FvsTactic(object):
         return self.fvs_glob_constr(cpat)
 
     def fvs_pattern(self, pat):
-        tag, body = self._unpack(pat)
+        tag, body = sexpr_unpack(pat)
         self._log("@fvs_pattern | tag={}; raw={}".format(tag, pat))
         if tag == "T":
             return self.fvs_term(body[0])
@@ -772,16 +743,16 @@ class FvsTactic(object):
 
     def fvs_ssrhyp(self, hyp):
         # Pml4tp.show_id id
-        # return set([self._conv(hyp)])
+        # return set([sexpr_strify(hyp)])
         return self.fvs_id(hyp)
 
     def fvs_ssrhyprep(self, hyp):
         # Pml4tp.show_id id
-        # return set([self._conv(hyp)])
+        # return set([sexpr_strify(hyp)])
         return self.fvs_id(hyp)
 
     def fvs_ssrhoirep(self, hoirep):
-        tag, body = self._unpack(hoirep)
+        tag, body = sexpr_unpack(hoirep)
         if tag == "H":
             return self.fvs_ssrhyp(body[0])
         elif tag == "I":
@@ -836,7 +807,7 @@ class FvsTactic(object):
         return set()
 
     def fvs_ssrdocc(self, docc):
-        tag, body = self._unpack(docc)
+        tag, body = sexpr_unpack(docc)
         if tag == "N":
             return self.fvs_ssrocc(body[0])
         elif tag == "S":
@@ -848,7 +819,7 @@ class FvsTactic(object):
         return self.fvs_ls(self.fvs_glob_constr, view)
 
     def fvs_ssripat(self, ipat):
-        tag, body = self._unpack(ipat)
+        tag, body = sexpr_unpack(ipat)
         if tag == "I":
             return self.fvs_id(body[0])
             # return set()
@@ -960,7 +931,7 @@ class FvsTactic(object):
         return fvs0.union(fvs1)
 
     def fvs_ssrrule(self, rule):
-        tag, body = self._unpack(rule)
+        tag, body = sexpr_unpack(rule)
         if tag == "R":
             return self.fvs_ssrsimpl(body[0])
         elif tag == "D":
@@ -986,13 +957,13 @@ class FvsTactic(object):
         return self.fvs_ls(self.fvs_ssrrwarg, rwargs)
 
     def fvs_ssrfwdid(self, fwdid):
-        return {self._conv(fwdid)}
+        return {sexpr_strify(fwdid)}
 
     def fvs_name(self, name):
-        return {self._conv(name)}
+        return {sexpr_strify(name)}
 
     def fvs_binder(self, b):
-        tag, body = self._unpack(b)
+        tag, body = sexpr_unpack(b)
         if tag == "V":
             return self.fvs_name(body[0])
         elif tag == "DC":
@@ -1089,5 +1060,5 @@ class FvsTactic(object):
         return self.fvs_ssripat(rpat)
 
     def fvs_ssrfixfwd(self, fwd):
-        # TODO(deh): sigh*...
+        # TODO(deh): huh?
         return set()

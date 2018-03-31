@@ -115,20 +115,6 @@ def is_tclintros_all(tac):
 
 def parse_full_tac(tac_str):
     return tac_str
-    # tokens = re.findall(r'\[[^}]*?\]|\([^}]*?\)|\S+', tac_str)
-    # name = tokens[0]
-    # if name == 'apply':
-    #     return 'apply', tokens[1:]
-    # elif name == 'rewrite':
-    #     return 'rewrite', tokens[1:]
-    # elif name == 'case':
-    #     return 'case', tokens[1:]
-    # elif name == 'have':
-    #     idx = tokens[1].find(':')
-    #     tokens[1] = tokens[1][:idx].strip()
-    #     return 'have', tokens[1:]
-    # else:
-    #     return tokens[0], [' '.join(tokens[1:])]
 
 
 TACTICS_INFO_EQUIV = [[("<coretactics::intro@0>", Type.COQ_ML), ("intros", Type.ATOM), ("<ssreflect_plugin::ssrtclintros@0>", Type.SSR_ML), ("ml4tp.SI", Type.SSR_AUX), ("ml4tp.SPC2", Type.SSR_AUX)],
