@@ -324,7 +324,14 @@ class TacStFolder(object):
         ty = type(gref)
         if ty is VarRef:
             # TODO(deh): wtf is this?
-            ev_x = env.lookup_id(Name(gref.x))
+            # TODO(deh): Unsanitise after sexexpr parsing is complete
+            x = gref.x.replace("!@#", "'")
+            try: ev_x = env.lookup_id(Name(x))
+            except:
+                try: ev_x = env.lookup_id(Name(gref.x))
+                except:
+                    print("Lookup error", gref.x, env)
+                    ev_x = self.fold_local_var(None)
             return [self.model.gref_var, ev_x]
         elif ty is ConstRef:
             ev_const = self.fold_const_name(gref.const)
@@ -348,7 +355,14 @@ class TacStFolder(object):
         if ty is GRef:
             return self._fold(key, self._gref_args(env, gc.gref))
         elif ty is GVar:
-            ev_x = env.lookup_id(Name(gc.x))
+            # TODO(deh): Unsanitise after sexexpr parsing is complete
+            x = gc.x.replace("!@#", "'")
+            try: ev_x = env.lookup_id(Name(x))
+            except:
+                try: ev_x = env.lookup_id(Name(gc.x))
+                except:
+                    print("Lookup error", gc.x, env)
+                    ev_x = self.fold_local_var(None)
             return self._fold(key, [self.model.gvar, ev_x])
         elif ty is GEvar:
             ev_ek = self.fold_evar_name(gc.ev)
@@ -381,6 +395,10 @@ class TacStFolder(object):
             # extend env probably
             ccs = []
             for cc in gc.ccs:
+                # TODO(deh): Uncomment this
+                # for cp in cc.cps:
+                #     ev_x = self.fold_local_var(None)
+                #     env = env.local_extend(cp.name, ev_x)
                 ccs += [self._fold_mid(env, cc.g)]
             return self._fold(key, [self.model.gcases, *ccs])
         elif ty is GLetTuple:
