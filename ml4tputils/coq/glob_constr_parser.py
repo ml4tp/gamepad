@@ -48,7 +48,8 @@ class GlobConstrParser(object):
             raise NameError("Tag {} not supported.".format(tag))
 
     def parse_glob_sort(self, gsort):
-        return gsort
+        tag, body = sexpr_unpack(gsort)
+        return tag
 
     def parse_cast_type(self, parse, cty):
         tag, body = sexpr_unpack(cty)
@@ -90,14 +91,15 @@ class GlobConstrParser(object):
             ind = Inductive(Name(sexpr_strify(body[0])), int(body[1]))
             j = int(body[2])
             cps = self.parse_ls(self.parse_cases_pattern, body[3])
-            name = sexpr_strify(body[4])
+            name = Name(sexpr_strify(body[4]))
             return PatCstr(ind, j, cps, name)
         else:
             raise NameError("Tag {} not supported.".format(tag))
 
     def parse_case_clause(self, parse_gc, cc):
         ids = self.parse_ls(lambda x: x, cc[0])
-        cps = cc[1]
+        # [x] TODO(deh): parse_cases_pattern
+        cps = self.parse_ls(self.parse_cases_pattern, cc[1])
         gc = parse_gc(cc[2])
         return CasesClause(ids, cps, gc)
 
@@ -130,13 +132,22 @@ class GlobConstrParser(object):
             iargs = self.parse_imp_args(body[2])
             return GApp(gc, gcs, iargs)
         elif tag == "L":
-            return GLambda(sexpr_strify(body[0]), sexpr_strify(body[1]),
-                           self.parse_glob_constr(body[2]), self.parse_glob_constr(body[3]))
+            name = Name(sexpr_strify(body[0]))
+            bk = sexpr_strify(body[1])
+            g_ty = self.parse_glob_constr(body[2])
+            g_bod = self.parse_glob_constr(body[3])
+            return GLambda(name, bk, g_ty, g_bod)
         elif tag == "P":
-            return GProd(sexpr_strify(body[0]), sexpr_strify(body[1]),
-                         self.parse_glob_constr(body[2]), self.parse_glob_constr(body[3]))
+            name = Name(sexpr_strify(body[0]))
+            bk = sexpr_strify(body[1])
+            g_ty = self.parse_glob_constr(body[2])
+            g_bod = self.parse_glob_constr(body[3])
+            return GProd(name, bk, g_ty, g_bod)
         elif tag == "LI":
-            return GLetIn(sexpr_strify(body[0]), self.parse_glob_constr(body[1]), self.parse_glob_constr(body[2]))
+            name = Name(sexpr_strify(body[0]))
+            gc1 = self.parse_glob_constr(body[1])
+            gc2 = self.parse_glob_constr(body[2])
+            return GLetIn(name, gc1, gc2)
         elif tag == "C":
             csty = sexpr_strify(body[0])
             m_gc = self.parse_maybe(self.parse_glob_constr, body[1])
@@ -144,10 +155,12 @@ class GlobConstrParser(object):
             ccs = self.parse_case_clauses(self.parse_glob_constr, body[3])
             return GCases(csty, m_gc, tmts, ccs)
         elif tag == "LT":
-            n = sexpr_strify(body[1][0])
+            names = [Name(sexpr_strify(x)) for x in body[0]]
+            name = Name(sexpr_strify(body[1][0]))
             m_gc = self.parse_maybe(self.parse_glob_constr, body[1][1])
-            return GLetTuple([sexpr_strify(x) for x in body[0]], (n, m_gc),
-                             self.parse_glob_constr(body[2]), self.parse_glob_constr(body[3]))
+            gc1 = self.parse_glob_constr(body[2])
+            gc2 = self.parse_glob_constr(body[3])
+            return GLetTuple(names, (name, m_gc), gc1, gc2)
         elif tag == "I":
             return GIf(self.parse_glob_constr(body[0]), None, self.parse_glob_constr(body[1]),
                        self.parse_glob_constr(body[2]))
@@ -223,39 +236,38 @@ class GlobConstrDecoder(object):
             iargs = self.parser.parse_imp_args(body[2])
             return self._mkcon(key, GApp(gc, gcs, iargs))
         elif tag == "L":
-            name = sexpr_strify(body[0])
+            name = Name(sexpr_strify(body[0]))
             bk = sexpr_strify(body[1])
             gc_ty = self.decode_glob_constr(body[2])
             gc_bod = self.decode_glob_constr(body[3])
             return self._mkcon(key, GLambda(name, bk, gc_ty, gc_bod))
         elif tag == "P":
-            name = sexpr_strify(body[0])
+            name = Name(sexpr_strify(body[0]))
             bk = sexpr_strify(body[1])
             gc_ty = self.decode_glob_constr(body[2])
             gc_bod = self.decode_glob_constr(body[3])
             return self._mkcon(key, GProd(name, bk, gc_ty, gc_bod))
         elif tag == "LI":
-            name = sexpr_strify(body[0])
+            name = Name(sexpr_strify(body[0]))
             gc_ty = self.decode_glob_constr(body[1])
             gc_bod = self.decode_glob_constr(body[2])
             return self._mkcon(key, GLetIn(name, gc_ty, gc_bod))
         elif tag == "C":
-            # print("SAW CASES IN DECODE", body)
             csty = sexpr_strify(body[0])
             m_gc = self.parser.parse_maybe(self.decode_glob_constr, body[1])
             tmts = self.parser.parse_tomatch_tuples(self.decode_glob_constr, body[2])
             ccs = self.parser.parse_case_clauses(self.decode_glob_constr, body[3])
             return self._mkcon(key, GCases(csty, m_gc, tmts, ccs))
         elif tag == "LT":
-            names = [sexpr_strify(x) for x in body[0]]
-            n = sexpr_strify(body[1][0])
+            names = [Name(sexpr_strify(x)) for x in body[0]]
+            name = Name(sexpr_strify(body[1][0]))
             m_gc = self.parser.parse_maybe(self.decode_glob_constr, body[1][1])
             gc1 = self.decode_glob_constr(body[2])
             gc2 = self.decode_glob_constr(body[3])
-            return self._mkcon(key, GLetTuple(names, (n, m_gc), gc1, gc2))
+            return self._mkcon(key, GLetTuple(names, (name, m_gc), gc1, gc2))
         elif tag == "I":
             gc1 = self.decode_glob_constr(body[0])
-            name = sexpr_strify(body[1][0])
+            name = Name(sexpr_strify(body[1][0]))
             m_ty = self.parser.parse_maybe(self.decode_glob_constr, body[1][1])
             gc2 = self.decode_glob_constr(body[2])
             gc3 = self.decode_glob_constr(body[3])

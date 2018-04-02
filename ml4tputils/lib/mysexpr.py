@@ -4,7 +4,7 @@ import sexpdata
 def sexpr_strify(sexpr):
     ty = type(sexpr)
     if ty is sexpdata.Symbol:
-        return sexpr._val
+        return sexpr._val.replace("!@#", "'")
     elif ty is float:
         # NOTE(deh): wtf, inF -> inf as a floating point ...
         return str(sexpr)

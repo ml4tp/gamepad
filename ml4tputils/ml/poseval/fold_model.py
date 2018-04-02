@@ -324,14 +324,11 @@ class TacStFolder(object):
         ty = type(gref)
         if ty is VarRef:
             # TODO(deh): wtf is this?
-            # TODO(deh): Unsanitise after sexexpr parsing is complete
-            x = gref.x.replace("!@#", "'")
-            try: ev_x = env.lookup_id(Name(x))
+            try:
+                ev_x = env.lookup_id(Name(gref.x))
             except:
-                try: ev_x = env.lookup_id(Name(gref.x))
-                except:
-                    print("Lookup error", gref.x, env)
-                    ev_x = self.fold_local_var(None)
+                print("Lookup error", gc.x, env)
+                ev_x = self.fold_local_var(None)
             return [self.model.gref_var, ev_x]
         elif ty is ConstRef:
             ev_const = self.fold_const_name(gref.const)
@@ -341,7 +338,7 @@ class TacStFolder(object):
             return [self.model.gref_ind, ev_ind]
         elif ty is ConstructRef:
             ev_ind = self.fold_ind_name(gref.ind)
-            ev_conid = self.fold_conid_name((gref.ind, gref.j))
+            ev_conid = self.fold_conid_name((gref.ind, gref.conid))
             return [self.model.gref_construct, ev_ind, ev_conid]
         else:
             raise NameError("Gref {} not supported".format(gc))
@@ -356,13 +353,18 @@ class TacStFolder(object):
             return self._fold(key, self._gref_args(env, gc.gref))
         elif ty is GVar:
             # TODO(deh): Unsanitise after sexexpr parsing is complete
-            x = gc.x.replace("!@#", "'")
-            try: ev_x = env.lookup_id(Name(x))
+            # x = gc.x.replace("!@#", "'")
+            # try: ev_x = env.lookup_id(Name(x))
+            # except:
+            #     try: ev_x = env.lookup_id(Name(gc.x))
+            #     except:
+            #         print("Lookup error", gc.x, env)
+            #         ev_x = self.fold_local_var(None)
+            try:
+                ev_x = env.lookup_id(Name(gc.x))
             except:
-                try: ev_x = env.lookup_id(Name(gc.x))
-                except:
-                    print("Lookup error", gc.x, env)
-                    ev_x = self.fold_local_var(None)
+                print("Lookup error", gc.x, env)
+                ev_x = self.fold_local_var(None)
             return self._fold(key, [self.model.gvar, ev_x])
         elif ty is GEvar:
             ev_ek = self.fold_evar_name(gc.ev)
@@ -378,17 +380,19 @@ class TacStFolder(object):
         elif ty is GLambda:
             ev_x = self.fold_local_var(gc.g_ty)
             ev_ty = self._fold_mid(env, gc.g_ty)
-            # TODO(deh): Remove Name when you refactor
-            ev_c = self._fold_mid(env.local_extend(Name(gc.name), ev_x), gc.g_bod)
+            # [x] TODO(deh): Remove Name when you refactor
+            ev_c = self._fold_mid(env.local_extend(gc.name, ev_x), gc.g_bod)
             return self._fold(key, [self.model.glambda, ev_ty, ev_c])
         elif ty is GProd:
             ev_x = self.fold_local_var(gc.g_ty)
             ev_ty = self._fold_mid(env, gc.g_ty)
-            ev_c = self._fold_mid(env.local_extend(Name(gc.name), ev_x), gc.g_bod)
+            # [x] TODO(deh): Remove Name when you refactor
+            ev_c = self._fold_mid(env.local_extend(gc.name, ev_x), gc.g_bod)
             return self._fold(key, [self.model.gprod, ev_ty, ev_c])
         elif ty is GLetIn:
             ev_g1 = self._fold_mid(env, gc.g1)
-            ev_g2 = self._fold_mid(env.local_extend(Name(gc.name), ev_g1), gc.g2)
+            # [x] TODO(deh): Remove Name when you refactor
+            ev_g2 = self._fold_mid(env.local_extend(gc.name, ev_g1), gc.g2)
             return self._fold(key, [self.model.gletin, ev_g1, ev_g2])
         elif ty is GCases:
             # TODO(deh): I expect this to be an issue, need to
@@ -396,9 +400,11 @@ class TacStFolder(object):
             ccs = []
             for cc in gc.ccs:
                 # TODO(deh): Uncomment this
-                # for cp in cc.cps:
-                #     ev_x = self.fold_local_var(None)
-                #     env = env.local_extend(cp.name, ev_x)
+                for cp in cc.cps:
+                    for name in cp.get_names():
+                        print("ADDING", name)
+                        ev_x = self.fold_local_var(None)
+                        env = env.local_extend(name, ev_x)
                 ccs += [self._fold_mid(env, cc.g)]
             return self._fold(key, [self.model.gcases, *ccs])
         elif ty is GLetTuple:
@@ -415,9 +421,11 @@ class TacStFolder(object):
             ev_bods = self._fold_mids(env, gc.gc_bods)
             return self._fold(key, [self.model.grec, *ev_tys, *ev_bods])
         elif ty is GSort:
-            # TODO(deh): Fix GSort
-            tag, body = sexpr_unpack(gc.gsort)
-            ev_sort = self.fold_sort_name(tag)
+            # [x] TODO(deh): Fix GSort
+            # tag, body = sexpr_unpack(gc.gsort)
+            # return self.fold_local_var(None)
+            # TODO(deh): uncomment after fixing
+            ev_sort = self.fold_sort_name(gc.gsort)
             return self._fold(key, [self.model.gsort, ev_sort])
         elif ty is GHole:
             raise NameError("Not in dataset")

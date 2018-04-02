@@ -1,5 +1,6 @@
 from coq.glob_constr import *
-from lib.mysexpr import sexpr_unpack, sexpr_strify
+# from lib.mysexpr import sexpr_unpack, sexpr_strify
+
 
 # -------------------------------------------------
 # Computing histogram of Coq glob_constr
@@ -121,7 +122,7 @@ class TokenGlobConstr(object):
                 self.unique_ind.add(gref.ind.mutind)
             elif ty2 is ConstructRef:
                 self.unique_ind.add(gref.ind.mutind)
-                self.unique_conid.add((gref.ind.mutind, gref.j))
+                self.unique_conid.add((gref.ind.mutind, gref.conid))
             else:
                 raise NameError("Not supported", gref)
             return self._seen(gc)
@@ -169,16 +170,17 @@ class TokenGlobConstr(object):
             self.tokens(gc.gc_bods)
             return self._seen(gc)
         elif ty is GSort:
-            # TODO(deh): Fix parsing to stirfy
-            tag, body = sexpr_unpack(gc.gsort)
-            if tag == "P":
-                self.unique_sort.add("P")
-            elif tag == "S":
-                self.unique_sort.add("S")
-            elif tag == "T":
-                self.unique_sort.add("T")
-            else:
-                raise NameError("Tag {} not supported".format(tag))
+            # [x] TODO(deh): Fix parsing to stirfy
+            # tag, body = sexpr_unpack(gc.gsort)
+            # if tag == "P":
+            #     self.unique_sort.add("P")
+            # elif tag == "S":
+            #     self.unique_sort.add("S")
+            # elif tag == "T":
+            #     self.unique_sort.add("T")
+            # else:
+            #     raise NameError("Tag {} not supported".format(tag))
+            self.unique_sort.add(gc.gsort)
             return self._seen(gc)
         elif ty is GHole:
             return self._seen(gc)

@@ -50,22 +50,22 @@ class IndRef(GlobalReference):
 
 
 class ConstructRef(GlobalReference):
-    def __init__(self, ind, j):
-        #TODO(deh): Refactor j to conid
+    def __init__(self, ind, conid):
         assert isinstance(ind, Inductive)
-        assert isinstance(j, int)
+        assert isinstance(conid, int)
         self.ind = ind
-        self.j = j
+        self.conid = conid
 
     def __str__(self):
-        return "{}.{}".format(self.ind, self.j)
+        return "{}.{}".format(self.ind, self.conid)
 
 
 # -------------------------------------------------
 # CasesPattern
 
 class CasesPattern(object):
-    pass
+    def get_names(self):
+        raise NotImplementedError
 
 
 class PatVar(CasesPattern):
@@ -73,6 +73,8 @@ class PatVar(CasesPattern):
         assert isinstance(name, Name)
         self.name = name
 
+    def get_names(self):
+        return [self.name]
 
 class PatCstr(CasesPattern):
     def __init__(self, ind, j, cps, name):
@@ -85,6 +87,12 @@ class PatCstr(CasesPattern):
         self.j = j
         self.cps = cps
         self.name = name
+
+    def get_names(self):
+        acc = []
+        for cp in self.cps:
+            acc += cp.get_names()
+        return acc
 
 
 # -------------------------------------------------
@@ -106,6 +114,8 @@ class TomatchTuple(object):
 
 class CasesClause(object):
     def __init__(self, ids, cps, g):
+        for cp in cps:
+            assert isinstance(cp, CasesPattern)
         assert isinstance(g, GExp)
         self.ids = ids
         self.cps = cps
@@ -249,8 +259,12 @@ class GLetTuple(GExp):
       glob_constr * glob_constr
     """
     def __init__(self, names, m_name_and_ty, g1, g2):
+        for name in names:
+            assert isinstance(name, Name)
         assert isinstance(g1, GExp)
         assert isinstance(g2, GExp)
+        assert isinstance(m_name_and_ty[0], Name)
+        assert m_name_and_ty[1] is None or isinstance(m_name_and_ty[1], GExp)
         super().__init__()
         self.names = names
         self.m_name_and_ty = m_name_and_ty
@@ -265,6 +279,8 @@ class GIf(GExp):
         assert isinstance(g1, GExp)
         assert isinstance(g2, GExp)
         assert isinstance(g3, GExp)
+        assert isinstance(m_name_and_ty[0], Name)
+        assert m_name_and_ty[1] is None or isinstance(m_name_and_ty[1], GExp)
         super().__init__()
         self.g1 = g1
         self.m_name_and_ty = m_name_and_ty

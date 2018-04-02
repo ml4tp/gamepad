@@ -470,24 +470,11 @@ class TacStParser(object):
         h_head = self.h_head
         self._mylog("ignore_constr_inc<{}>".format(h_head.peek_line()))
 
-        # Parse glob_constr table for whole dump files
-        # gc_parser = GlobConstrParser()
-        # h_head.consume_line()
-        # while not h_head.peek_line().startswith("Constrs"):
-        #     k, s_gc = self._parse_table_entry()
-        #     s_gc = s_gc.replace('\'', '!@#')
-        #     sexp_gc = sexpdata.loads(s_gc, true="true", false="false")
-        #     self.ctx_gc[int(k)] = gc_parser.parse_glob_constr(sexp_gc)
-
         h_head.consume_line()
         while not h_head.peek_line().startswith("Constrs"):
             k, s_gc = self._parse_table_entry()
             s_gc = s_gc.replace('\'', '!@#')
-            if s_gc.startswith("A") or s_gc.startswith("I"):
-                # TODO(deh): kludge because printing is wrong
-                sexp_gc = sexpdata.loads("({})".format(s_gc), true="true", false="false")
-            else:
-                sexp_gc = sexpdata.loads(s_gc, true="true", false="false")
+            sexp_gc = sexpdata.loads(s_gc, true="true", false="false")
             self.mid_share[int(k)] = sexp_gc
 
         # Ignore incremental constr table for whole dump files
