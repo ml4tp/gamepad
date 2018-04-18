@@ -81,8 +81,11 @@ class PosEvalDataset(object):
 
     def mk_tactrs(self):
         self.data = {}
+        self.sum_tacst_size = 0
+        self.num_tacst = 0
         for tactr_id, tactr in enumerate(self.tactrs):
             self.mk_tactr(tactr_id, tactr)
+        print("tacsts {} avg_size {}".format(self.num_tacst, self.sum_tacst_size / self.num_tacst))
         print("TACTICS", self.tactics)
         print("TACHIST")
         for idx, eq_tacs in enumerate(self.tactics_equiv):
@@ -110,8 +113,8 @@ class PosEvalDataset(object):
                     self.tactics.add(edge.name)
         # print("TACTICS", self.tactics)
         sce = SizeConstr(tactr.decoder.decoded)
-        tacst_size = 0
         for _, gid, _, _, ctx, (concl_kdx, concl_mdx), tac in tactr.bfs_traverse():
+            tacst_size = 0
             tacst_size += sce.decode_size(concl_kdx)
             for ident, kdx, mdx in ctx:
                 tacst_size += sce.decode_size(kdx)
@@ -120,6 +123,8 @@ class PosEvalDataset(object):
             pt = PosEvalPt(gid, ctx, (concl_kdx, concl_mdx), tac, tacst_size, subtr_size[gid], tac_bin)
             self.data[tactr_id].append(pt)
             self.tac_hist[pt.tac_bin] += 1
+            self.num_tacst += 1
+            self.sum_tacst_size += tacst_size
 
     def split_by_lemma(self, f_balance = True, num_train=None, num_test=None):
         if self.data == {}:
