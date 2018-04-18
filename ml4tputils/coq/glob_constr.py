@@ -76,6 +76,7 @@ class PatVar(CasesPattern):
     def get_names(self):
         return [self.name]
 
+
 class PatCstr(CasesPattern):
     def __init__(self, ind, j, cps, name):
         assert isinstance(ind, Inductive)

@@ -136,11 +136,12 @@ class ChkConstr(object):
 class SizeConstr(object):
     """Computes the size of a constr.
     """
-    def __init__(self, decoded, f_shared=False):
+    def __init__(self, decoded, f_shared=False, f_cnttyp=False):
         self.decoded = decoded
         # ChkCoqExp(decoded).chk_decoded()
         self.size_ast = {}
         self.f_shared = f_shared
+        self.f_cnttyp = f_cnttyp
 
     def _sizecon(self, key, size):
         self.size_ast[key] = size

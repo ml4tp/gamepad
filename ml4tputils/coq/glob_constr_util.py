@@ -9,6 +9,8 @@ class HistGlobConstr(object):
     def __init__(self, decoded):
         self.decoded = decoded
         self.hist_ast = {}
+        self.num_iargs = 0
+        self.num_args = 0
 
     def _histcon(self, key, hist):
         self.hist_ast[key] = hist
@@ -33,6 +35,11 @@ class HistGlobConstr(object):
         elif ty is GPatVar:
             return self._histcon(key, COQGC_HIST.delta('GPatVar'))
         elif ty is GApp:
+            # Compute proportion of implicit arguments
+            for arg in gc.iargs:
+                if arg is not None:
+                    self.num_iargs += 1
+            self.num_args += len(gc.iargs)
             hist = COQGC_HIST.merges([self.hist(gc.g), self.hists(gc.gs),
                                       COQGC_HIST.delta('GApp')])
             return self._histcon(key, hist)
@@ -49,7 +56,7 @@ class HistGlobConstr(object):
                                       COQGC_HIST.delta('GLetIn')])
             return self._histcon(key, hist)
         elif ty is GCases:
-            pass
+            return self._histcon(key, COQGC_HIST.delta('GCases'))
         elif ty is GLetTuple:
             hist = COQGC_HIST.merges([self.hist(gc.g1), self.hist(gc.g2),
                                       COQGC_HIST.delta('GLetTuple')])
@@ -59,7 +66,7 @@ class HistGlobConstr(object):
                                       COQGC_HIST.delta('GIf')])
             return self._histcon(key, hist)
         elif ty is GRec:
-            hist = COQGC_HIST.merges([self.hists(gc.gc_tys), self.hist(gc.gc_bods),
+            hist = COQGC_HIST.merges([self.hists(gc.gc_tys), self.hists(gc.gc_bods),
                                       COQGC_HIST.delta('GRec')])
             return self._histcon(key, hist)
         elif ty is GSort:
@@ -98,9 +105,6 @@ class TokenGlobConstr(object):
             self.token(gc)
         return (self.unique_sort, self.unique_const, self.unique_ind,
                 self.unique_conid, self.unique_evar, self.unique_fix)
-
-    def decode_hist(self, key):
-        return self.hist(self.decoded[key])
 
     def _seen(self, gc):
         self.seen.add(gc.tag)

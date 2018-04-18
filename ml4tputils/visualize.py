@@ -33,6 +33,8 @@ class Visualize(object):
         self.tactr_file = tactr_file
         self.h_tactr_file = open(tactr_file, 'w')
         self.h_tactr_file.write("LEMMA INFO\n")
+        self.num_iargs = 0
+        self.num_args = 0
 
     def finalize(self):
         self.h_tactr_file.write("TOTAL: {} WERID: {}\n".format(
@@ -49,6 +51,8 @@ class Visualize(object):
                                 len(self.recon.embed_tokens.unique_evar)))
         self.h_tactr_file.write("UNIQUE-FIX: {}\n".format(
                                 len(self.recon.embed_tokens.unique_fix)))
+        self.h_tactr_file.write("NUM_IARGS: {}\n".format(self.num_iargs))
+        self.h_tactr_file.write("NUM_ARGS: {}\n".format(self.num_args))
         self.h_tactr_file.close()
 
     def save_tactrs(self):
@@ -73,7 +77,11 @@ class Visualize(object):
                 print("FAILED", tactr.name, ncc)
                 self.failed += [(file, tactr.name, ncc, len(tactr.notok))]
 
-            tactr.log_stats(self.h_tactr_file)
+            info = tactr.log_stats(self.h_tactr_file)
+            self.num_iargs += info['hist_gc'][1]
+            self.num_args += info['hist_gc'][2]
+            print("iargs / args = {} / {}".format(self.num_iargs, self.num_args))
+
 
     def visualize_lemma(self, file, lemma):
         tactr = self.recon.recon_lemma(file, lemma, not self.f_jupyter)

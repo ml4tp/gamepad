@@ -10,8 +10,9 @@ from coq.constr_decode import DecodeConstr
 from coq.constr_interp import InterpCBName, SizeCoqVal
 from coq.tactics import TacKind, TACTIC_HIST
 from coq.constr_util import SizeConstr, HistConstr, TokenConstr, VisualizeConstr, COQEXP_HIST
+from coq.glob_constr import COQGC_HIST
 from coq.glob_constr_parser import GlobConstrDecoder
-from coq.glob_constr_util import TokenGlobConstr
+from coq.glob_constr_util import TokenGlobConstr, HistGlobConstr
 from lib.myenv import MyEnv
 from lib.myutil import dict_ls_app
 from recon.tacst_parser import FullTac
@@ -376,6 +377,23 @@ class TacTree(object):
 
         return COQEXP_HIST.merges(acc)
 
+    def hist_gc(self):
+        hgc = HistGlobConstr(self.mid_decoder.decoded)
+        acc = []
+        seen = set()
+        for _, _, _, _, ctx, (_, concl_mdx), _ in self.flatview:
+            for ldecl in ctx:
+                typ_idx = ldecl[2]
+                if typ_idx not in seen:
+                    acc += [hgc.decode_hist(typ_idx)]
+                    seen.add(typ_idx)
+            if concl_mdx not in seen:
+                acc += [hgc.decode_hist(concl_mdx)]
+                seen.add(concl_mdx)
+
+        print("HERE", hgc.num_iargs, hgc.num_args)
+        return COQGC_HIST.merges(acc), hgc.num_iargs, hgc.num_args
+
     def tokenize_kern(self):
         tce = TokenConstr(self.decoder.decoded)
         return tce.tokenize()
@@ -436,6 +454,7 @@ class TacTree(object):
                 'avg_depth_astctx_size': avg_depth_astctx_size,
                 'avg_depth_astgoal_size': avg_depth_astgoal_size,
                 'hist_coqexp': self.hist_coqexp(),
+                'hist_gc': self.hist_gc(),
                 'static_full_comp': [v for _, v in static_full_comp.items()],
                 'static_sh_comp': [v for _, v in static_sh_comp.items()],
                 'cbname_comp': [v for _, v in cbname_comp.items()],
