@@ -3,6 +3,11 @@ from coq.glob_constr import *
 
 
 # -------------------------------------------------
+# Computing size of Coq glob_constr
+
+
+
+# -------------------------------------------------
 # Computing histogram of Coq glob_constr
 
 class HistGlobConstr(object):
@@ -56,7 +61,9 @@ class HistGlobConstr(object):
                                       COQGC_HIST.delta('GLetIn')])
             return self._histcon(key, hist)
         elif ty is GCases:
-            return self._histcon(key, COQGC_HIST.delta('GCases'))
+            gs = [cc.g for cc in gc.ccs]
+            hist = COQGC_HIST.merges([self.hists(gs), COQGC_HIST.delta('GCases')])
+            return self._histcon(key, hist)
         elif ty is GLetTuple:
             hist = COQGC_HIST.merges([self.hist(gc.g1), self.hist(gc.g2),
                                       COQGC_HIST.delta('GLetTuple')])
@@ -158,6 +165,8 @@ class TokenGlobConstr(object):
                 self.token(cc.g)
             return self._seen(gc)
         elif ty is GLetTuple:
+            self.unique_const.add(Name("Coq.Init.Datatypes.fst"))
+            self.unique_const.add(Name("Coq.Init.Datatypes.snd"))
             if gc.m_name_and_ty[1]:
                 self.token(gc.m_name_and_ty[1])
             self.token(gc.g1)

@@ -352,7 +352,7 @@ class TacStFolder(object):
         if ty is GRef:
             return self._fold(key, self._gref_args(env, gc.gref))
         elif ty is GVar:
-            # TODO(deh): Unsanitise after sexexpr parsing is complete
+            # [x] TODO(deh): Unsanitise after sexexpr parsing is complete
             # x = gc.x.replace("!@#", "'")
             # try: ev_x = env.lookup_id(Name(x))
             # except:
@@ -375,31 +375,31 @@ class TacStFolder(object):
             return self._fold(key, [self.model.gpatvar, ev_pv])
         elif ty is GApp:
             ev_gc = self._fold_mid(env, gc.g)
-            ev_gcs = self._fold_mids(env, gc.gs)
+            # ev_gcs = self._fold_mids(env, gc.gs)
+            # Use implicit args
+            ev_gcs = []
+            for gc_p, iarg in zip(gc.gs, gc.iargs):
+                if iarg is None:
+                    ev_gcs += [self._fold_mid(env, gc_p)]
             return self._fold(key, [self.model.gapp, ev_gc, *ev_gcs])
         elif ty is GLambda:
             ev_x = self.fold_local_var(gc.g_ty)
             ev_ty = self._fold_mid(env, gc.g_ty)
-            # [x] TODO(deh): Remove Name when you refactor
             ev_c = self._fold_mid(env.local_extend(gc.name, ev_x), gc.g_bod)
             return self._fold(key, [self.model.glambda, ev_ty, ev_c])
         elif ty is GProd:
             ev_x = self.fold_local_var(gc.g_ty)
             ev_ty = self._fold_mid(env, gc.g_ty)
-            # [x] TODO(deh): Remove Name when you refactor
             ev_c = self._fold_mid(env.local_extend(gc.name, ev_x), gc.g_bod)
             return self._fold(key, [self.model.gprod, ev_ty, ev_c])
         elif ty is GLetIn:
             ev_g1 = self._fold_mid(env, gc.g1)
-            # [x] TODO(deh): Remove Name when you refactor
             ev_g2 = self._fold_mid(env.local_extend(gc.name, ev_g1), gc.g2)
             return self._fold(key, [self.model.gletin, ev_g1, ev_g2])
         elif ty is GCases:
-            # TODO(deh): I expect this to be an issue, need to
-            # extend env probably
+            # [x] TODO(deh): I expect this to be an issue, need to extend env probably
             ccs = []
             for cc in gc.ccs:
-                # TODO(deh): Uncomment this
                 for cp in cc.cps:
                     for name in cp.get_names():
                         print("ADDING", name)
@@ -409,8 +409,10 @@ class TacStFolder(object):
             return self._fold(key, [self.model.gcases, *ccs])
         elif ty is GLetTuple:
             # ev_g1 = self._fold_mid(env, gc.g1)
-            # ev_g2 = self._fold_mid(env.local_extend(gc.name, ev_g1), gc.g2)
-            raise NameError("TODO LET TUPLE")
+            ev_g1_fst = self._fold_mid(env, GApp(GRef(ConstRef(Name("Coq.Init.Datatypes.fst"))), [gc.g1]))
+            ev_g1_snd = self._fold_mid(env, GApp(GRef(ConstRef(Name("Coq.Init.Datatypes.snd"))), [gc.g1]))
+            ev_g2 = self._fold_mid(env.local_extend(gc.names[0], ev_g1_fst).local_extend(gc.names[1], ev_g1_snd), gc.g2)
+            return ev_g2
         elif ty is GIf:
             ev_g1 = self._fold_mid(env, gc.g1)
             ev_g2 = self._fold_mid(env, gc.g2)
@@ -421,10 +423,6 @@ class TacStFolder(object):
             ev_bods = self._fold_mids(env, gc.gc_bods)
             return self._fold(key, [self.model.grec, *ev_tys, *ev_bods])
         elif ty is GSort:
-            # [x] TODO(deh): Fix GSort
-            # tag, body = sexpr_unpack(gc.gsort)
-            # return self.fold_local_var(None)
-            # TODO(deh): uncomment after fixing
             ev_sort = self.fold_sort_name(gc.gsort)
             return self._fold(key, [self.model.gsort, ev_sort])
         elif ty is GHole:

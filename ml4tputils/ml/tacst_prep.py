@@ -37,6 +37,9 @@ class PosEvalPt(object):
         else:
             self.subtr_bin = 2
         self.tac_bin = tac_bin
+
+        self.num_iargs = num_iargs
+        self.num_args = num_args
         # for idx, (tac_p, _) in enumerate(TACTIC_INFO):
         #     if tac[-1].name.startswith(tac_p):
         #         self.tac_bin = idx
@@ -112,12 +115,20 @@ class PosEvalDataset(object):
                 for edge in tactr.gid_tactic[node]:
                     self.tactics.add(edge.name)
         # print("TACTICS", self.tactics)
+
         sce = SizeConstr(tactr.decoder.decoded)
+        hgc = HistGlobConstr(tactr.mid_decoder.decoded)
         for _, gid, _, _, ctx, (concl_kdx, concl_mdx), tac in tactr.bfs_traverse():
             tacst_size = 0
             tacst_size += sce.decode_size(concl_kdx)
+            hgc.decode_hist(concl_mdx)
             for ident, kdx, mdx in ctx:
                 tacst_size += sce.decode_size(kdx)
+                hgc.decode_hist(mdx)
+
+            # TODO(deh): use me
+            hgc.num_iargs
+            hgc.num_args
 
             tac_bin = self.tac_bin(tac)
             pt = PosEvalPt(gid, ctx, (concl_kdx, concl_mdx), tac, tacst_size, subtr_size[gid], tac_bin)
