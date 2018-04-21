@@ -5,6 +5,78 @@ from coq.glob_constr import *
 # -------------------------------------------------
 # Computing size of Coq glob_constr
 
+class SizeGlobConstr(object):
+    def __init__(self, decoded, f_cntiarg=True):
+        self.decoded = decoded
+        self.size_ast = {}
+        self.cnt_iarg = f_cntiarg
+
+    def _sizecon(self, key, size):
+        self.size_ast[key] = hist
+        return size
+
+    def decode_size(self, key):
+        return self.size(self.decoded[key])
+
+    def size(self, gc):
+        key = gc.tag
+        if key in self.hist_ast:
+            hist = self.hist_ast[key]
+            return hist
+
+        ty = type(gc)
+        if ty is GRef:
+            return self._sizecon(key, 1)
+        elif ty is GVar:
+            return self._sizecon(key, 1)
+        elif ty is GEvar:
+            return self._sizecon(key, 1)
+        elif ty is GPatVar:
+            return self._sizecon(key, 1)
+        elif ty is GApp:
+            sz = 1 + self.size(gc.g)
+            if self.f_cntiarg:
+                for gc_p, iarg in zip(gc.gs, gc.iargs):
+                    sz +=self.size(gc_p)
+            else:
+                for gc_p, iarg in zip(gc.gs, gc.iargs):
+                    if iarg is None:
+                        sz +=self.size(gc_p)
+            return self._sizecon(key, sz)
+        elif ty is GLambda:
+            sz = 1 + self.size(gc.g_ty) + self.size(gc.g_bod)
+            return self._sizecon(key, sz)
+        elif ty is GProd:
+            sz = 1 + self.size(gc.g_ty) + self.size(gc.g_bod)
+            return self._sizecon(key, sz)
+        elif ty is GLetIn:
+            sz = 1 + self.size(gc.g1) + self.size(gc.g2)
+            return self._sizecon(key, sz)
+        elif ty is GCases:
+            gs = [cc.g for cc in gc.ccs]
+            sz = 1 + self.sizes(gs)
+            return self._sizecon(key, sz)
+        elif ty is GLetTuple:
+            sz = 1 + self.size(gc.g1) + self.size(gc.g2)
+            return self._sizecon(key, sz)
+        elif ty is GIf:
+            sz = 1 + self.size(gc.g1) + self.size(gc.g2) + self.size(gc.g3)
+            return self._sizecon(key, sz)
+        elif ty is GRec:
+            sz = 1 + self.sizes(gc.gc_tys) + self.sizes(gc.gc_bods)
+            return self._sizecon(key, sz)
+        elif ty is GSort:
+            return self._sizecon(key, 1)
+        elif ty is GHole:
+            return self._sizecon(key, 1)
+        elif ty is GCast:
+            sz = 1 + self.size(gc.g)
+            return self._sizecon(key, sz)
+        else:
+            raise NameError("Kind {} not supported".format(gc))
+
+    def sizes(self, cs):
+        return sum([self.size(c) for c in cs])
 
 
 # -------------------------------------------------

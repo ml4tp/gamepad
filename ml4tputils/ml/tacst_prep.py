@@ -4,6 +4,7 @@ import pickle
 
 from coq.tactics import TACTICS_EQUIV
 from coq.constr_util import SizeConstr
+from coq.glob_constr_util import SizeGlobConstr
 from recon.embed_tokens import EmbedTokens
 
 
@@ -26,9 +27,11 @@ np.random.seed(7)
 # Position Evaluation Dataset
 
 class PosEvalPt(object):
-    def __init__(self, gid, ctx, concl_idx, tac, tacst_size, subtr_size, tac_bin):
+    def __init__(self, gid, ctx, concl_idx, tac, tacst_size, tacst_mid_size, tacst_mid_noimp_size, subtr_size, tac_bin):
         self.tacst = (gid, ctx, concl_idx, tac)
         self.tacst_size = tacst_size
+        self.tacst_mid_size = tacst_mid_size
+        self.tacst_mid_noimp_size = tacst_mid_noimp_size
         self.subtr_size = subtr_size
         if subtr_size < 5:
             self.subtr_bin = 0
@@ -38,8 +41,8 @@ class PosEvalPt(object):
             self.subtr_bin = 2
         self.tac_bin = tac_bin
 
-        self.num_iargs = num_iargs
-        self.num_args = num_args
+        # self.num_iargs = num_iargs
+        # self.num_args = num_args
         # for idx, (tac_p, _) in enumerate(TACTIC_INFO):
         #     if tac[-1].name.startswith(tac_p):
         #         self.tac_bin = idx
@@ -117,21 +120,23 @@ class PosEvalDataset(object):
         # print("TACTICS", self.tactics)
 
         sce = SizeConstr(tactr.decoder.decoded)
-        hgc = HistGlobConstr(tactr.mid_decoder.decoded)
+        sgc = SizeGlobConstr(tactr.mid_decoder.decoded, f_cntiarg=True)
+        sgc_noimp = SizeGlobConstr(tactr.mid_decoder.decoded, f_cntiarg=False)
         for _, gid, _, _, ctx, (concl_kdx, concl_mdx), tac in tactr.bfs_traverse():
             tacst_size = 0
+            tacst_mid_size = 0
+            tacst_mid_noimp_size = 0
+
             tacst_size += sce.decode_size(concl_kdx)
-            hgc.decode_hist(concl_mdx)
+            tacst_mid_size += sgc.decode_size(concl_mdx)
+            tacst_mid_noimp_size += sgc.decode_size(concl_mdx)
             for ident, kdx, mdx in ctx:
                 tacst_size += sce.decode_size(kdx)
-                hgc.decode_hist(mdx)
-
-            # TODO(deh): use me
-            hgc.num_iargs
-            hgc.num_args
+                tacst_mid_size += sgc.decode_size(mdx)
+                tacst_mid_noimp_size += sgc.decode_size(mdx)
 
             tac_bin = self.tac_bin(tac)
-            pt = PosEvalPt(gid, ctx, (concl_kdx, concl_mdx), tac, tacst_size, subtr_size[gid], tac_bin)
+            pt = PosEvalPt(gid, ctx, (concl_kdx, concl_mdx), tac, tacst_size, tacst_mid_size, tacst_mid_noimp_size, subtr_size[gid], tac_bin)
             self.data[tactr_id].append(pt)
             self.tac_hist[pt.tac_bin] += 1
             self.num_tacst += 1
