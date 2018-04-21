@@ -37,11 +37,11 @@ class SizeGlobConstr(object):
             sz = 1 + self.size(gc.g)
             if self.f_cntiarg:
                 for gc_p, iarg in zip(gc.gs, gc.iargs):
-                    sz +=self.size(gc_p)
+                    sz += self.size(gc_p)
             else:
                 for gc_p, iarg in zip(gc.gs, gc.iargs):
                     if iarg is None:
-                        sz +=self.size(gc_p)
+                        sz += self.size(gc_p)
             return self._sizecon(key, sz)
         elif ty is GLambda:
             sz = 1 + self.size(gc.g_ty) + self.size(gc.g_bod)

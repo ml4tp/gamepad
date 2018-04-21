@@ -133,7 +133,7 @@ class PosEvalDataset(object):
             for ident, kdx, mdx in ctx:
                 tacst_size += sce.decode_size(kdx)
                 tacst_mid_size += sgc.decode_size(mdx)
-                tacst_mid_noimp_size += sgc.decode_size(mdx)
+                tacst_mid_noimp_size += sgc_noimp.decode_size(mdx)
 
             tac_bin = self.tac_bin(tac)
             pt = PosEvalPt(gid, ctx, (concl_kdx, concl_mdx), tac, tacst_size, tacst_mid_size, tacst_mid_noimp_size, subtr_size[gid], tac_bin)

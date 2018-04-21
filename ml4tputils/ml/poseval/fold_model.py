@@ -375,12 +375,17 @@ class TacStFolder(object):
             return self._fold(key, [self.model.gpatvar, ev_pv])
         elif ty is GApp:
             ev_gc = self._fold_mid(env, gc.g)
-            # ev_gcs = self._fold_mids(env, gc.gs)
-            # Use implicit args
             ev_gcs = []
-            for gc_p, iarg in zip(gc.gs, gc.iargs):
-                if iarg is None:
+            if self.model.f_useiarg:
+                # Use implicit args (i.e., use everything)
+                for gc_p, iarg in zip(gc.gs, gc.iargs):
                     ev_gcs += [self._fold_mid(env, gc_p)]
+            else:
+                # Omit implicit args
+                for gc_p, iarg in zip(gc.gs, gc.iargs):
+                    if iarg is None:
+                        ev_gcs += [self._fold_mid(env, gc_p)]
+
             return self._fold(key, [self.model.gapp, ev_gc, *ev_gcs])
         elif ty is GLambda:
             ev_x = self.fold_local_var(gc.g_ty)
@@ -503,14 +508,15 @@ class TreeLSTM(nn.Module):
 class PosEvalModel(nn.Module):
     def __init__(self, sort_to_idx, const_to_idx, ind_to_idx, conid_to_idx, evar_to_idx, fix_to_idx,
                  D=128, state=128, outsize=3, eps=1e-6, ln=False, treelstm=False, lstm=False, dropout=0.0,
-                 attention=False, heads=1, weight_dropout=0.0, variational=False, conclu_pos=0, f_mid=False):
+                 attention=False, heads=1, weight_dropout=0.0, variational=False, conclu_pos=0, f_mid=False, f_useiarg=True):
         super().__init__()
 
         # Dimensions
         self.D = D            # Dimension of embeddings
         self.state = state    # Dimension of GRU/LSTM/TreeLSTM state. For LSTM's, each of hidden state and cell state has that size
         self.outsize = outsize
-        self.f_mid = f_mid
+        self.f_mid = f_mid           # Use mid-level AST (as opposed to kernel-level AST)
+        self.f_useiarg = f_useiarg   # Use implicit arguments
 
         table_names = ['sort', 'const', 'ind', 'conid', 'evar', 'fix', 'fixbody']
         tables = [sort_to_idx, const_to_idx, ind_to_idx, conid_to_idx, evar_to_idx, fix_to_idx, fix_to_idx]
