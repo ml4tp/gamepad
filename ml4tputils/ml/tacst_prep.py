@@ -88,10 +88,12 @@ class PosEvalDataset(object):
     def mk_tactrs(self):
         self.data = {}
         self.sum_tacst_size = 0
+        self.sum_tacst_mid_size = 0
+        self.sum_tacst_mid_noimp_size = 0
         self.num_tacst = 0
         for tactr_id, tactr in enumerate(self.tactrs):
             self.mk_tactr(tactr_id, tactr)
-        print("tacsts {} avg_size {}".format(self.num_tacst, self.sum_tacst_size / self.num_tacst))
+        print("tacsts {} avg_size {} avg_mid_size {} avg_mid_noimp_size {}".format(self.num_tacst, self.sum_tacst_size / self.num_tacst, self.sum_tacst_mid_size / self.num_tacst, self.sum_tacst_mid_noimp_size / self.num_tacst))
         print("TACTICS", self.tactics)
         print("TACHIST")
         for idx, eq_tacs in enumerate(self.tactics_equiv):
@@ -141,6 +143,8 @@ class PosEvalDataset(object):
             self.tac_hist[pt.tac_bin] += 1
             self.num_tacst += 1
             self.sum_tacst_size += tacst_size
+            self.sum_tacst_mid_size += tacst_mid_size
+            self.sum_tacst_mid_noimp_size += tacst_mid_noimp_size
 
     def split_by_lemma(self, f_balance = True, num_train=None, num_test=None):
         if self.data == {}:

@@ -9,10 +9,10 @@ class SizeGlobConstr(object):
     def __init__(self, decoded, f_cntiarg=True):
         self.decoded = decoded
         self.size_ast = {}
-        self.cnt_iarg = f_cntiarg
+        self.f_cntiarg = f_cntiarg
 
     def _sizecon(self, key, size):
-        self.size_ast[key] = hist
+        self.size_ast[key] = size
         return size
 
     def decode_size(self, key):
@@ -20,8 +20,8 @@ class SizeGlobConstr(object):
 
     def size(self, gc):
         key = gc.tag
-        if key in self.hist_ast:
-            hist = self.hist_ast[key]
+        if key in self.size_ast:
+            hist = self.size_ast[key]
             return hist
 
         ty = type(gc)
