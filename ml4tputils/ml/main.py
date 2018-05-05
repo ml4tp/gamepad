@@ -49,7 +49,7 @@ if __name__ == "__main__":
     argparser.add_argument('--mload', type=str, default="", help='path to load saved model from')
     argparser.add_argument('--validate', action='store_true', default=False, help='only validate')
     argparser.add_argument('--midlvl', action='store_true', default=False, help='set to train on mid-level ast')
-    argparser.add_argument('--noimp', action='store_true', default=False, help='set to train on mid-level ast')
+    argparser.add_argument('--noimp', action='store_true', default=False, help='set flag if you do not want implicit arguments')
 
     args = argparser.parse_args()
     assert not (args.lstm and args.treelstm)

@@ -418,8 +418,17 @@ class TacStFolder(object):
             ev_g3 = self._fold_mid(env, gc.g3)
             return self._fold(key, [self.model.gif, ev_g1, ev_g2, ev_g3])
         elif ty is GRec:
-            ev_tys = self._fold_mids(env, gc.gc_tys)
-            ev_bods = self._fold_mids(env, gc.gc_bods)
+            # 1. Create initial embeddings
+            for name in gc.names:
+                ev = self.fold_fix_name(name)
+                env = env.local_extend(name, ev)
+
+            # 2. Use initial embeddings
+            ev_tys = []
+            ev_bods = []
+            for ty, body in zip(gc.gc_tys, gc.gc_bods):
+                ev_tys += [self._fold_mids(env, ty)]
+                ev_bods += [self._fold_mids(env, body)]
             return self._fold(key, [self.model.grec, *ev_tys, *ev_bods])
         elif ty is GSort:
             ev_sort = self.fold_sort_name(gc.gsort)
