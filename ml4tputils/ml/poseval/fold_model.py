@@ -419,7 +419,7 @@ class TacStFolder(object):
             return self._fold(key, [self.model.gif, ev_g1, ev_g2, ev_g3])
         elif ty is GRec:
             # 1. Create initial embeddings
-            for name in gc.names:
+            for name in gc.ids:
                 ev = self.fold_fix_name(name)
                 env = env.local_extend(name, ev)
 
