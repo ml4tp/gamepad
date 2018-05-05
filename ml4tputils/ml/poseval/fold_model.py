@@ -352,14 +352,6 @@ class TacStFolder(object):
         if ty is GRef:
             return self._fold(key, self._gref_args(env, gc.gref))
         elif ty is GVar:
-            # [x] TODO(deh): Unsanitise after sexexpr parsing is complete
-            # x = gc.x.replace("!@#", "'")
-            # try: ev_x = env.lookup_id(Name(x))
-            # except:
-            #     try: ev_x = env.lookup_id(Name(gc.x))
-            #     except:
-            #         print("Lookup error", gc.x, env)
-            #         ev_x = self.fold_local_var(None)
             try:
                 ev_x = env.lookup_id(Name(gc.x))
             except:
@@ -402,22 +394,24 @@ class TacStFolder(object):
             ev_g2 = self._fold_mid(env.local_extend(gc.name, ev_g1), gc.g2)
             return self._fold(key, [self.model.gletin, ev_g1, ev_g2])
         elif ty is GCases:
-            # [x] TODO(deh): I expect this to be an issue, need to extend env probably
             ccs = []
             for cc in gc.ccs:
                 for cp in cc.cps:
                     for name in cp.get_names():
-                        print("ADDING", name)
+                        # print("ADDING", name)
                         ev_x = self.fold_local_var(None)
                         env = env.local_extend(name, ev_x)
                 ccs += [self._fold_mid(env, cc.g)]
             return self._fold(key, [self.model.gcases, *ccs])
         elif ty is GLetTuple:
+            # TODO(deh): move the fst and snd projection into the parse
             # ev_g1 = self._fold_mid(env, gc.g1)
-            ev_g1_fst = self._fold_mid(env, GApp(GRef(ConstRef(Name("Coq.Init.Datatypes.fst"))), [gc.g1]))
-            ev_g1_snd = self._fold_mid(env, GApp(GRef(ConstRef(Name("Coq.Init.Datatypes.snd"))), [gc.g1]))
+            # ev_g1_fst = self._fold_mid(env, GApp(GRef(ConstRef(Name("Coq.Init.Datatypes.fst"))), [gc.g1]))
+            # ev_g1_snd = self._fold_mid(env, GApp(GRef(ConstRef(Name("Coq.Init.Datatypes.snd"))), [gc.g1]))
+            ev_g1_fst = self._fold_mid(env, gc.g1_fst)
+            ev_g1_snd = self._fold_mid(env, gc.g1_snd)
             ev_g2 = self._fold_mid(env.local_extend(gc.names[0], ev_g1_fst).local_extend(gc.names[1], ev_g1_snd), gc.g2)
-            return ev_g2
+            return self._fold(key, [self.model.glettuple, ev_g2])
         elif ty is GIf:
             ev_g1 = self._fold_mid(env, gc.g1)
             ev_g2 = self._fold_mid(env, gc.g2)

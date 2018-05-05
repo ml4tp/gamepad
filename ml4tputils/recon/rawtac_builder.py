@@ -1,4 +1,4 @@
-import sexpdata
+import lib.sexpdata as sexpdata
 
 from coq.tactics_util import FvsTactic
 from coq.tactics import TacKind

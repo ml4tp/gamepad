@@ -1,4 +1,4 @@
-import sexpdata
+import lib.sexpdata as sexpdata
 
 from lib.myfile import MyFile
 from lib.myutil import pp_tab
