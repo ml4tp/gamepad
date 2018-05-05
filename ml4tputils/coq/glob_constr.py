@@ -269,7 +269,11 @@ class GLetTuple(GExp):
         super().__init__()
         self.names = names
         self.m_name_and_ty = m_name_and_ty
-        self.g1 = g1
+
+        # Destruct g1 into fst and snd components
+        self.g1_fst = GApp(GRef(ConstRef(Name("Coq.Init.Datatypes.fst")), []), [g1], [None])
+        self.g1_snd = GApp(GRef(ConstRef(Name("Coq.Init.Datatypes.snd")), []), [g1], [None])
+
         self.g2 = g2
 
 

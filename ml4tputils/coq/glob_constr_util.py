@@ -57,7 +57,7 @@ class SizeGlobConstr(object):
             sz = 1 + self.sizes(gs)
             return self._sizecon(key, sz)
         elif ty is GLetTuple:
-            sz = 1 + self.size(gc.g1) + self.size(gc.g2)
+            sz = 1 + self.size(gc.g1_fst) + self.size(gc.g1_snd) + self.size(gc.g2)
             return self._sizecon(key, sz)
         elif ty is GIf:
             sz = 1 + self.size(gc.g1) + self.size(gc.g2) + self.size(gc.g3)
@@ -137,7 +137,7 @@ class HistGlobConstr(object):
             hist = COQGC_HIST.merges([self.hists(gs), COQGC_HIST.delta('GCases')])
             return self._histcon(key, hist)
         elif ty is GLetTuple:
-            hist = COQGC_HIST.merges([self.hist(gc.g1), self.hist(gc.g2),
+            hist = COQGC_HIST.merges([self.hist(gc.g1_fst), self.hist(gc.g1_snd), self.hist(gc.g2),
                                       COQGC_HIST.delta('GLetTuple')])
             return self._histcon(key, hist)
         elif ty is GIf:
@@ -237,11 +237,12 @@ class TokenGlobConstr(object):
                 self.token(cc.g)
             return self._seen(gc)
         elif ty is GLetTuple:
-            self.unique_const.add(Name("Coq.Init.Datatypes.fst"))
-            self.unique_const.add(Name("Coq.Init.Datatypes.snd"))
+            # self.unique_const.add(Name("Coq.Init.Datatypes.fst"))
+            # self.unique_const.add(Name("Coq.Init.Datatypes.snd"))
             if gc.m_name_and_ty[1]:
                 self.token(gc.m_name_and_ty[1])
-            self.token(gc.g1)
+            self.token(gc.g1_fst)
+            self.token(gc.g1_snd)
             self.token(gc.g2)
         elif ty is GIf:
             self.token(gc.g1)
@@ -255,16 +256,6 @@ class TokenGlobConstr(object):
             self.tokens(gc.gc_bods)
             return self._seen(gc)
         elif ty is GSort:
-            # [x] TODO(deh): Fix parsing to stirfy
-            # tag, body = sexpr_unpack(gc.gsort)
-            # if tag == "P":
-            #     self.unique_sort.add("P")
-            # elif tag == "S":
-            #     self.unique_sort.add("S")
-            # elif tag == "T":
-            #     self.unique_sort.add("T")
-            # else:
-            #     raise NameError("Tag {} not supported".format(tag))
             self.unique_sort.add(gc.gsort)
             return self._seen(gc)
         elif ty is GHole:
