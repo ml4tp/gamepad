@@ -25,6 +25,77 @@ np.random.seed(7)
 
 # -------------------------------------------------
 # Position Evaluation Dataset
+class TacstPt(object):
+    def __init__(self, tactr, tacst, subtr_size, tac_bin):
+        self.tactr = tactr
+        self.tacst = tacst
+        self.subtr_size = subtr_size
+        self.tac_bin = tac_bin
+        self._subtr_bin()
+
+        # Features
+        self._kern_size()
+        self._mid_size()
+        self._mid_noimp_size()
+        self._ctx_len()
+
+    # Prepares
+    def _subtr_bin(self):
+        if self.subtr_size < 5:
+            self.subtr_bin = 0
+        elif self.subtr_size < 20:
+            self.subtr_bin = 1
+        else:
+            self.subtr_bin = 2
+
+    def _kern_size(self):
+        _, ctx, (concl_kdx, _), _ = self.tacst
+        sc = SizeConstr(self.tactr.decoder.decoded)
+        concl_size = sc.decode_size(concl_kdx)
+        ctx_size = 0
+        for _, kdx, _ in ctx:
+            ctx_size += sc.decode_size(kdx)
+
+        self.kern_concl_size = concl_size
+        self.kern_ctx_size = ctx_size
+        self.kern_size = concl_size + ctx_size
+
+    def _mid_size(self):
+        _, ctx, (_, concl_mdx), _ = self.tacst
+        sgc = SizeGlobConstr(self.tactr.mid_decoder.decoded, f_cntiarg=True)
+        concl_size = sgc.decode_size(concl_mdx)
+        ctx_size = 0
+        for _, _, mdx in ctx:
+            ctx_size += sgc.decode_size(mdx)
+
+        self.mid_concl_size = concl_size
+        self.mid_ctx_size = ctx_size
+        self.mid_size = concl_size + ctx_size
+
+    def _mid_noimp_size(self):
+        _, ctx, (_, concl_mdx), _ = self.tacst
+        sgc = SizeGlobConstr(self.tactr.mid_decoder.decoded, f_cntiarg=False)
+        concl_size = sgc.decode_size(concl_mdx)
+        ctx_size = 0
+        for _, _, mdx in ctx:
+            ctx_size += sgc.decode_size(mdx)
+
+        self.mid_noimp_concl_size = concl_size
+        self.mid_noimp_ctx_size = ctx_size
+        self.mid_noimp_size = concl_size + ctx_size
+
+    def _ctx_len(self):
+        _, ctx, (_, _), _ = self.tacst
+        self.len_ctx = len(ctx)
+
+    # Getter's
+    def kern_tacst(self):
+        gid, ctx, (concl_kdx, _), tac = self.tacst
+        return gid, [(ty, kdx) for ty, kdx, _ in ctx], concl_kdx, tac
+
+    def mid_tacst(self):
+        gid, ctx, (_, concl_mdx), tac = self.tacst
+        return gid, [(ty, mdx) for ty, _, mdx in ctx], concl_mdx, tac
 
 class PosEvalPt(object):
     def __init__(self, gid, ctx, concl_idx, tac, tacst_size, tacst_mid_size, tacst_mid_noimp_size, subtr_size, tac_bin):
@@ -121,30 +192,18 @@ class PosEvalDataset(object):
                     self.tactics.add(edge.name)
         # print("TACTICS", self.tactics)
 
-        sce = SizeConstr(tactr.decoder.decoded)
-        sgc = SizeGlobConstr(tactr.mid_decoder.decoded, f_cntiarg=True)
-        sgc_noimp = SizeGlobConstr(tactr.mid_decoder.decoded, f_cntiarg=False)
         for _, gid, _, _, ctx, (concl_kdx, concl_mdx), tac in tactr.bfs_traverse():
-            tacst_size = 0
-            tacst_mid_size = 0
-            tacst_mid_noimp_size = 0
-
-            tacst_size += sce.decode_size(concl_kdx)
-            tacst_mid_size += sgc.decode_size(concl_mdx)
-            tacst_mid_noimp_size += sgc.decode_size(concl_mdx)
-            for ident, kdx, mdx in ctx:
-                tacst_size += sce.decode_size(kdx)
-                tacst_mid_size += sgc.decode_size(mdx)
-                tacst_mid_noimp_size += sgc_noimp.decode_size(mdx)
-
+            tacst = gid, ctx, (concl_kdx, concl_mdx), tac
             tac_bin = self.tac_bin(tac)
-            pt = PosEvalPt(gid, ctx, (concl_kdx, concl_mdx), tac, tacst_size, tacst_mid_size, tacst_mid_noimp_size, subtr_size[gid], tac_bin)
+
+            pt = TacstPt(tactr, tacst, subtr_size[gid], tac_bin)
+
             self.data[tactr_id].append(pt)
             self.tac_hist[pt.tac_bin] += 1
             self.num_tacst += 1
-            self.sum_tacst_size += tacst_size
-            self.sum_tacst_mid_size += tacst_mid_size
-            self.sum_tacst_mid_noimp_size += tacst_mid_noimp_size
+            self.sum_tacst_size += pt.kern_size
+            self.sum_tacst_mid_size += pt.mid_size
+            self.sum_tacst_mid_noimp_size += pt.mid_noimp_size
 
     def split_by_lemma(self, f_balance = True, num_train=None, num_test=None):
         if self.data == {}:

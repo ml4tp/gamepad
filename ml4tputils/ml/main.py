@@ -9,7 +9,7 @@ from ml.poseval.fold_train import PosEvalTrainer
 # from ml.rewrite.solver import to_goalattn_dataset, run
 from ml.rewrite.simprw import run_end2end
 from ml.rewrite.dataset_prep import to_goalattn_dataset
-from ml.tacst_prep import Dataset, PosEvalPt
+from ml.tacst_prep import Dataset, TacstPt
 
 """
 [Note]
