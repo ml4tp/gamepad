@@ -1,3 +1,5 @@
+from apted import APTED
+from apted.helpers import Tree
 import argparse
 import numpy as np
 import pickle
@@ -87,6 +89,28 @@ class TacStPt(object):
     def _ctx_len(self):
         _, ctx, (_, _), _ = self.tacst
         self.len_ctx = len(ctx)
+
+    def _tree_edit_dist(self):
+        _, ctx, (concl_kdx, concl_mdx), _ = self.tacst
+
+        def k2tr(kdx):
+            return Tree('FOO').from_text(self.tactr.decoder.decode_exp_by_key(kdx))
+
+        def m2tr(mdx):
+            return Tree('FOO').from_text(self.tactr.mid_decoder.decode_exp_by_key(mdx))
+
+        tree_kern_concl = k2tr(concl_kdx)
+        tree_mid_concl = m2tr(concl_mdx)
+        kern_dists = []
+        mid_dists = []
+        for _, kdx, mdx in ctx:
+            tree_kern_ident = k2tr(kdx)
+            kern_dists += [APTED(tree_kern_concl, tree_kern_ident).compute_edit_distance()]
+
+            tree_mid_ident = m2tr(mdx)
+            mid_dists += [APTED(tree_mid_concl, tree_mid_ident).compute_edit_distance()]
+
+        # TODO(deh): set top-K
 
     # Getter's
     def kern_tacst(self):

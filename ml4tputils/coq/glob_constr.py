@@ -15,6 +15,9 @@ class GExp(object):
     def __init__(self):
         self.tag = None
 
+    def apted_tree(self):
+        raise NotImplementedError
+
 
 # -------------------------------------------------
 # Global Reference
@@ -25,6 +28,7 @@ class GlobalReference(object):
 
 class VarRef(GlobalReference):
     def __init__(self, x):
+        assert isinstance(x, str)
         self.x = x
 
     def __str__(self):
@@ -37,7 +41,7 @@ class ConstRef(GlobalReference):
         self.const = const
 
     def __str__(self):
-        return self.const
+        return str(self.const)
 
 
 class IndRef(GlobalReference):
@@ -67,14 +71,23 @@ class CasesPattern(object):
     def get_names(self):
         raise NotImplementedError
 
+    def apted_tree(self):
+        raise NotImplementedError
+
 
 class PatVar(CasesPattern):
     def __init__(self, name):
         assert isinstance(name, Name)
         self.name = name
 
+    def __str__(self):
+        return str(self.name)
+
     def get_names(self):
         return [self.name]
+
+    def apted_tree(self):
+        return "{{{}}}".format(self.name)
 
 
 class PatCstr(CasesPattern):
@@ -89,10 +102,19 @@ class PatCstr(CasesPattern):
         self.cps = cps
         self.name = name
 
+    def __str__(self):
+        return str(self.name)
+
     def get_names(self):
         acc = []
         for cp in self.cps:
             acc += cp.get_names()
+        return acc
+
+    def apted_tree(self):
+        acc = ""
+        for cp in self.cps:
+            acc += cp.apted_tree
         return acc
 
 
@@ -104,6 +126,12 @@ class PredicatePattern(object):
         self.name = name
         self.m_ind_and_names = m_ind_and_names
 
+    def __str__(self):
+        return "{}".format(self.name)
+
+    def apted_tree(self):
+        return "{{{}}}".format(self.name)
+
 
 class TomatchTuple(object):
     def __init__(self, g, pp):
@@ -111,6 +139,12 @@ class TomatchTuple(object):
         assert isinstance(pp, PredicatePattern)
         self.g = g
         self.pp = pp
+
+    def __str__(self):
+        return "({} {})".format(str(self.g), str(self.pp))
+
+    def apted_tree(self):
+        return "{{{}}}".format(self.g.apted_tree(), self.pp.apted_tree())
 
 
 class CasesClause(object):
@@ -122,12 +156,31 @@ class CasesClause(object):
         self.cps = cps
         self.g = g
 
+    def __str__(self):
+        s_ids = "({})".format(" ".join([str(ident) for ident in self.ids]))
+        s_cps = "({})".format(" ".join([str(cp) for cp in self.cps]))
+        return "({} {} {})".format(s_ids, s_cps, str(self.g))
+
+    def apted_tree(self):
+        s_ids = "".join(["{{{}}}".format(ident) for ident in self.ids])
+        s_cps = "".join([cp.apted_tree() for cp in self.cps])
+        return "{{CC{}{}{}}}".format(s_ids, s_cps, self.g.apted_tree())
+
 
 class CastType(object):
     def __init__(self, kind, m_gc):
         assert m_gc is None or isinstance(m_gc, GExp)
         self.kind = kind
         self.m_gc = m_gc
+
+    def __str__(self):
+        return "(CT {} {})".format(self.kind, self.m_gc)
+
+    def apted_tree(self):
+        if self.m_gc is None:
+            return "{{CT{}{{{}}}}}".format(self.kind, "N")
+        else:
+            return "{{CT{}{{{}}}}}".format(self.kind, self.m_gc.apted_tree())
 
 
 # -------------------------------------------------
@@ -147,6 +200,9 @@ class GRef(GExp):
     def __str__(self):
         return str(self.gref)
 
+    def apted_tree(self):
+        return "{{{}}}".format(str(self))
+
 
 class GVar(GExp):
     """| GVar of (Loc.t * Id.t)
@@ -161,6 +217,9 @@ class GVar(GExp):
     def __str__(self):
         return self.x
 
+    def apted_tree(self):
+        return "{{{}}}".format(str(self))
+
 
 class GEvar(GExp):
     """| GEvar of Loc.t * existential_name * (Id.t * glob_constr) list
@@ -169,6 +228,12 @@ class GEvar(GExp):
         super().__init__()
         self.ev = ev
         self.id_and_globs = id_and_globs
+
+    def __str__(self):
+        return str(self.ev)
+
+    def apted_tree(self):
+        return "{{{}}}".format(str(self))
 
 
 class GPatVar(GExp):
@@ -179,6 +244,12 @@ class GPatVar(GExp):
         super().__init__()
         self.b = b
         self.pv = pv
+
+    def __str__(self):
+        return str(self.pv)
+
+    def apted_tree(self):
+        return "{{{}}}".format(str(self))
 
 
 class GApp(GExp):
@@ -194,14 +265,16 @@ class GApp(GExp):
         self.iargs = iargs
 
     def __str__(self):
-        return "({} {})".format(str(self.g), " ".join([str(g) for g in self.gs]))
+        return "(A {} {})".format(str(self.g), " ".join([str(g) for g in self.gs]))
+
+    def apted_tree(self):
+        return "{{A{}{}}}".format(self.g.apted_tree(), "".join([g.apted_tree() for g in self.gs]))
 
 
 class GLambda(GExp):
     """| GLambda of Loc.t * Name.t * binding_kind *  glob_constr * glob_constr
     """
     def __init__(self, name, bk, g_ty, g_bod):
-        # TODO(deh): Fix parsing to parse name
         assert isinstance(name, Name)
         assert isinstance(g_ty, GExp)
         assert isinstance(g_bod, GExp)
@@ -210,7 +283,13 @@ class GLambda(GExp):
         self.bk = bk
         self.g_ty = g_ty
         self.g_bod = g_bod
-    
+
+    def __str__(self):
+        return "(L {} {} {})".format(self.name, str(self.g_ty), str(self.g_bod))
+
+    def apted_tree(self):
+        return "{{L{{{}}}{}{}}}".format(self.name, self.g_ty.apted_tree(), self.g_bod.apted_tree())
+
 
 class GProd(GExp):
     """| GProd of Loc.t * Name.t * binding_kind * glob_constr * glob_constr
@@ -225,6 +304,12 @@ class GProd(GExp):
         self.g_ty = g_ty
         self.g_bod = g_bod
 
+    def __str__(self):
+        return "(P {} {} {})".format(self.name, str(self.g_ty), str(self.g_bod))
+
+    def apted_tree(self):
+        return "{{P{{{}}}{}{}}}".format(self.name, self.g_ty.apted_tree(), self.g_bod.apted_tree())
+
 
 class GLetIn(GExp):
     """| GLetIn of Loc.t * Name.t * glob_constr * glob_constr
@@ -237,6 +322,12 @@ class GLetIn(GExp):
         self.name = name
         self.g1 = g1
         self.g2 = g2
+
+    def __str__(self):
+        return "(LI {} {} {})".format(self.name, str(self.g1), str(self.g2))
+
+    def apted_tree(self):
+        return "{{LI{{{}}}{}{}}}}".format(self.name, self.g1.apted_tree(), self.g2.apted_tree())
 
 
 class GCases(GExp):
@@ -253,6 +344,16 @@ class GCases(GExp):
         self.m_g = m_g
         self.tmts = tmts
         self.ccs = ccs
+
+    def __str__(self):
+        s_tmts = "({})".format(" ".join([str(tmt) for tmt in self.tmts]))
+        s_ccs = "({})".format(" ".join([str(cc) for cc in self.ccs]))
+        return "(CA {} {})".format(s_tmts, s_ccs)
+
+    def apted_tree(self):
+        s_tmts = "".join([tmt.apted_tree() for tmt in self.tmts])
+        s_ccs = "".join([cc.apted_tree() for cc in self.ccs])
+        return "{{CA{}{}}}".format(s_tmts, s_ccs)
 
 
 class GLetTuple(GExp):
@@ -276,6 +377,14 @@ class GLetTuple(GExp):
 
         self.g2 = g2
 
+    def __str__(self):
+        s_names = "( )".format(" ".join([str(name) for name in self.names]))
+        return "(LT {} {} {})".format(s_names, str(self.g1_fst), str(self.g1_snd), str(self.g2))
+
+    def apted_tree(self):
+        s_names = " ".join([str(name) for name in self.names])
+        return "{{{LT{{{}}}{}{}{}}}}".format(s_names, self.g1_fst.apted_tree(), self.g1_snd.apted_tree(), self.g2.apted_tree())
+
 
 class GIf(GExp):
     """| GIf of Loc.t * glob_constr * (Name.t * glob_constr option) * glob_constr * glob_constr
@@ -291,6 +400,12 @@ class GIf(GExp):
         self.m_name_and_ty = m_name_and_ty
         self.g2 = g2
         self.g3 = g3
+
+    def __str__(self):
+        return "(I {} {} {})".format(str(self.g1), str(self.g2), str(self.g3))
+
+    def apted_tree(self):
+        return "{{I{}{}{}}}".format(self.g1.apted_tree(), self.g2.apted_tree(), self.g3.apted_tree())
 
 
 class GRec(GExp):
@@ -309,6 +424,18 @@ class GRec(GExp):
         self.gc_tys = gc_tys
         self.gc_bods = gc_bods
 
+    def __str__(self):
+        s_ids = "({})".format(" ".join([str(ident) for ident in self.ids]))
+        s_tys = "({})".format(" ".join([str(ty) for ty in self.gc_tys]))
+        s_bods = "({})".format(" ".join([str(bod) for bod in self.gc_bods]))
+        return "(R {} {} {})".format(s_ids, s_tys, s_bods)
+
+    def apted_tree(self):
+        s_ids = "".join([str(ident) for ident in self.ids])
+        s_tys = "".join([ty.apted_tree() for ty in self.gc_tys])
+        s_bods = "".join([bod.apted_tree() for bod in self.gc_bods])
+        return "{{R{}{}{}}}".format(s_ids, s_tys, s_bods)
+
 
 class GSort(GExp):
     """| GSort of Loc.t * glob_sort
@@ -316,6 +443,12 @@ class GSort(GExp):
     def __init__(self, gsort):
         super().__init__()
         self.gsort = gsort
+
+    def __str__(self):
+        return str(self.gsort)
+
+    def apted_tree(self):
+        return "{{{}}}".format(str(self))
 
 
 class GHole(GExp):
@@ -327,6 +460,12 @@ class GHole(GExp):
         self.ipne = ipne
         self.m_ga = m_ga
 
+    def __str__(self):
+        return str(self.ek)
+
+    def apted_tree(self):
+        return "{{{}}}".format(str(self))
+
 
 class GCast(GExp):
     """| GCast of Loc.t * glob_constr * glob_constr cast_type
@@ -337,6 +476,12 @@ class GCast(GExp):
         super().__init__()
         self.g = g
         self.g_cty = g_cty
+
+    def __str__(self):
+        return "(C {} {})".format(str(self.g), str(self.g_cty))
+
+    def apted_tree(self):
+        return "{{C{}{}}}".format(self.g.apted_tree(), self.g_cty.apted_tree())
 
 
 # -------------------------------------------------

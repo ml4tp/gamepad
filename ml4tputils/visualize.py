@@ -82,7 +82,6 @@ class Visualize(object):
             self.num_args += info['hist_gc'][2]
             print("iargs / args = {} / {}".format(self.num_iargs, self.num_args))
 
-
     def visualize_lemma(self, file, lemma):
         tactr = self.recon.recon_lemma(file, lemma, not self.f_jupyter)
         self.tactrs += [tactr]
