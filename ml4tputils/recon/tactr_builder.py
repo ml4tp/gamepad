@@ -286,16 +286,17 @@ class TacTreeBuilder(object):
         for _, gid, _, _, ctx, (concl_kdx, concl_mdx), tacs in tactr.bfs_traverse():
             assert isinstance(gid, int)
             assert isinstance(concl_kdx, int)
-            # kern2tr(tactr, concl_kdx)
+            # kern_concl_tr = kern2tr(tactr, concl_kdx)
             assert isinstance(concl_mdx, int)
-            mid_concl_tr = mid2tr(tactr, concl_mdx)
+            # mid_concl_tr = mid2tr(tactr, concl_mdx)
             for ident, ty_kdx, ty_mdx in ctx:
                 assert isinstance(ident, str)
                 assert isinstance(ty_kdx, int)
-                # kern2tr(tactr, ty_kdx)
+                # kern_ty_tr = kern2tr(tactr, ty_kdx)
                 assert isinstance(ty_mdx, int)
-                mid_ty_tr = mid2tr(tactr, ty_mdx)
-                print("MID EDIT DIST", tree_edit_dist(mid_concl_tr, mid_ty_tr))
+                # mid_ty_tr = mid2tr(tactr, ty_mdx)
+                # if tree_edit_dist(kern_concl_tr, kern_ty_tr) != tree_edit_dist(mid_concl_tr, mid_ty_tr):
+                #     print("KERN", tree_edit_dist(kern_concl_tr, kern_ty_tr), "MID", tree_edit_dist(mid_concl_tr, mid_ty_tr))
             for tac in tacs:
                 assert isinstance(tac, TacEdge)
 

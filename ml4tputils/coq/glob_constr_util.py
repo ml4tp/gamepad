@@ -252,8 +252,9 @@ class TokenGlobConstr(object):
             self.token(gc.g3)
             return self._seen(gc)
         elif ty is GRec:
-            for name in gc.ids:
-                self.unique_fix.add(name)
+            for ident in gc.ids:
+                # This is different from the kernel case!
+                self.unique_fix.add(ident)
             self.tokens(gc.gc_tys)
             self.tokens(gc.gc_bods)
             return self._seen(gc)

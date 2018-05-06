@@ -120,6 +120,9 @@ class Exp(object):
         c.tag = self.tag
         return c
 
+    def apted_tree(self):
+        raise NotImplementedError
+
     def copy(self):
         raise NotImplementedError
 
@@ -155,6 +158,9 @@ class RelExp(Exp):
     def __str__(self):
         return "R({})".format(self.idx)
 
+    def apted_tree(self):
+        return "{{R{}}}".format(self.idx)
+
     def copy(self):
         return self._tag(RelExp(self.idx))
 
@@ -185,6 +191,9 @@ class VarExp(Exp):
     def __str__(self):
         return "V({})".format(self.x)
 
+    def apted_tree(self):
+        return "{{V{}}}".format(self.x)
+
     def copy(self):
         return self._tag(VarExp(self.x))
 
@@ -214,6 +223,9 @@ class MetaExp(Exp):
 
     def __str__(self):
         return "M({})".format(self.mv)
+
+    def apted_tree(self):
+        return "{{M{}}}".format(self.mv)
 
     def copy(self):
         return self._tag(MetaExp(self.mv))
@@ -249,6 +261,9 @@ class EvarExp(Exp):
     def __str__(self):
         return "E({}, {})".format(self.exk, ",".join([str(c) for c in self.cs]))
 
+    def apted_tree(self):
+        return "{{E{}}}".format(self.exk)
+
     def copy(self):
         return self._tag(EvarExp(self.exk, [c.copy() for c in self.cs]))
 
@@ -281,6 +296,9 @@ class SortExp(Exp):
 
     def __str__(self):
         return "S({})".format(self.sort)
+
+    def apted_tree(self):
+        return "{{S{}}}".format(self.sort)
 
     def copy(self):
         return self._tag(SortExp(self.sort))
@@ -315,6 +333,9 @@ class CastExp(Exp):
 
     def __str__(self):
         return "CA({}, {}, {})".format(str(self.c), self.ck, str(self.ty))
+
+    def apted_tree(self):
+        return "{{CA{}{}}}".format(self.c.apted_tree(), self.ty.apted_tree())
 
     def copy(self):
         return self._tag(CastExp(self.c.copy(), self.ck, self.ty.copy()))
@@ -351,6 +372,9 @@ class ProdExp(Exp):
     def __str__(self):
         return "P({}, {}, {})".format(self.name, str(self.ty1), str(self.ty2))
 
+    def apted_tree(self):
+        return "{{P{{{}}}{}{}}}".format(self.name, self.ty1.apted_tree(), self.ty2.apted_tree())
+
     def copy(self):
         return self._tag(ProdExp(self.name, self.ty1.copy(), self.ty2.copy()))
 
@@ -385,6 +409,9 @@ class LambdaExp(Exp):
 
     def __str__(self):
         return "L({}, {}, {})".format(self.name, str(self.ty), str(self.c))
+
+    def apted_tree(self):
+        return "{{L{{{}}}{}{}}}".format(self.name, self.ty.apted_tree(), self.c.apted_tree())
 
     def copy(self):
         return self._tag(LambdaExp(self.name, self.ty.copy(), self.c.copy()))
@@ -423,6 +450,9 @@ class LetInExp(Exp):
     def __str__(self):
         return "LI({}, {}, {}, {})".format(self.name, str(self.c1), str(self.ty), str(self.c2))
 
+    def apted_tree(self):
+        return "{{LI{{{}}}{}{}}}".format(self.name, self.c1.apted_tree(), self.ty.apted_tree(), self.c2.apted_tree())
+
     def copy(self):
         return self._tag(LetInExp(self.name, self.c1.copy(), self.ty.copy(), self.c2.copy()))
 
@@ -457,6 +487,10 @@ class AppExp(Exp):
     def __str__(self):
         return "A({}, {})".format(str(self.c), ",".join([str(c) for c in self.cs]))
 
+    def apted_tree(self):
+        s_cs = "".join([c.apted_tree() for c in self.cs])
+        return "{{A{}{}}}".format(self.c.apted_tree(), s_cs)
+
     def copy(self):
         return self._tag(AppExp(self.c.copy(), [c.copy() for c in self.cs]))
 
@@ -489,6 +523,9 @@ class ConstExp(Exp):
     def __str__(self):
         return "C({}, {})".format(self.const, self.ui)
 
+    def apted_tree(self):
+        return "{{C{}}}".format(str(self.const))
+
     def copy(self):
         return self._tag(ConstExp(self.const, self.ui))
 
@@ -520,6 +557,9 @@ class IndExp(Exp):
 
     def __str__(self):
         return "I({}, {})".format(self.ind, self.ui)
+
+    def apted_tree(self):
+        return "{{I{}}}".format(self.ind)
 
     def copy(self):
         return self._tag(IndExp(self.ind, self.ui))
@@ -555,6 +595,9 @@ class ConstructExp(Exp):
 
     def __str__(self):
         return "CO({}, {}, {})".format(self.ind, self.conid, self.ui)
+
+    def apted_tree(self):
+        return "{{CO{}{}}}".format(self.ind, self.conid)
 
     def copy(self):
         return self._tag(ConstructExp(self.ind, self.conid, self.ui))
@@ -601,6 +644,10 @@ class CaseExp(Exp):
     def __str__(self):
         s_cases = ",".join([str(c) for c in self.cases])
         return "CS({}, {}, {}, {})".format(self.ci, str(self.ret), str(self.match), s_cases)
+
+    def apted_tree(self):
+        s_cases = "".join([c.apted_tree() for c in self.cases])
+        return "{{CS{}{}{}}}".format(self.ret.apted_tree(), self.match.apted_tree(), s_cases)
 
     def copy(self):
         return self._tag(CaseExp(self.ci, self.ret.copy(), self.match.copy(), [c.copy() for c in self.cases]))
@@ -675,6 +722,12 @@ class FixExp(Exp):
         s3 = ",".join([str(c) for c in self.cs])
         return "F({}, {}, {}, {}, {})".format(self.iarr, self.idx, s1, s2, s3)
 
+    def apted_tree(self):
+        s_names = "".join(["{{{}}}".format(name) for name in self.names])
+        s_tys = "".join([ty.apted_tree() for ty in self.tys])
+        s_cs = "".join([c.apted_tree() for c in self.cs])
+        return "{{F{}{}{}}}".format(s_names, s_tys, s_cs)
+
     def copy(self):
         return self._tag(FixExp(self.iarr, self.idx, self.names,
                                 [ty.copy() for ty in self.tys], [c.copy() for c in self.cs]))
@@ -721,6 +774,12 @@ class CoFixExp(Exp):
         s3 = ",".join([str(c) for c in self.cs])
         return "CF({}, {}, {}, {})".format(self.idx, s1, s2, s3)
 
+    def apted_tree(self):
+        s_names = "".join(["{{{}}}".format(name) for name in self.names])
+        s_tys = "".join([ty.apted_tree() for ty in self.tys])
+        s_cs = "".join([c.apted_tree() for c in self.cs])
+        return "{{CF{}{}{}}}".format(s_names, s_tys, s_cs)
+
     def copy(self):
         return self._tag(CoFixExp(self.idx, self.names, [ty.copy() for ty in self.tys], [c.copy() for c in self.cs]))
 
@@ -752,6 +811,9 @@ class ProjExp(Exp):
 
     def __str__(self):
         return "PJ({}, {})".format(self.proj, str(self.c))
+
+    def apted_tree(self):
+        return "{{PJ{{{}}}{}}}".format(self.proj, self.c.apted_tree())
 
     def copy(self):
         return self._tag(ProjExp(self.proj, self.c.copy()))
