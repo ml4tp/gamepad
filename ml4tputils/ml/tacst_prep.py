@@ -24,8 +24,8 @@ np.random.seed(7)
 
 
 # -------------------------------------------------
-# Position Evaluation Dataset
-class TacstPt(object):
+# Tactic States Dataset
+class TacStPt(object):
     def __init__(self, tactr, tacst, subtr_size, tac_bin):
         self.tactr = tactr
         self.tacst = tacst
@@ -97,12 +97,11 @@ class TacstPt(object):
         gid, ctx, (_, concl_mdx), tac = self.tacst
         return gid, [(ty, mdx) for ty, _, mdx in ctx], concl_mdx, tac
 
+# Old Version -> Should work with simprw
 class PosEvalPt(object):
-    def __init__(self, gid, ctx, concl_idx, tac, tacst_size, tacst_mid_size, tacst_mid_noimp_size, subtr_size, tac_bin):
+    def __init__(self, gid, ctx, concl_idx, tac, tacst_size, subtr_size, tac_bin):
         self.tacst = (gid, ctx, concl_idx, tac)
         self.tacst_size = tacst_size
-        self.tacst_mid_size = tacst_mid_size
-        self.tacst_mid_noimp_size = tacst_mid_noimp_size
         self.subtr_size = subtr_size
         if subtr_size < 5:
             self.subtr_bin = 0
@@ -117,15 +116,6 @@ class PosEvalPt(object):
         # for idx, (tac_p, _) in enumerate(TACTIC_INFO):
         #     if tac[-1].name.startswith(tac_p):
         #         self.tac_bin = idx
-
-    def kern_tacst(self):
-        gid, ctx, (concl_kdx, _), tac = self.tacst
-        return gid, [(ty, kdx) for ty, kdx, _ in ctx], concl_kdx, tac
-
-    def mid_tacst(self):
-        gid, ctx, (_, concl_mdx), tac = self.tacst
-        return gid, [(ty, mdx) for ty, _, mdx in ctx], concl_mdx, tac
-
 
 class SizeSubTr(object):
     def __init__(self, tactr):
@@ -148,7 +138,7 @@ class Dataset(object):
         self.test = test
 
 
-class PosEvalDataset(object):
+class TacStDataset(object):
     def __init__(self, tactics_equiv, tactrs):
         self.tactrs = tactrs
         self.data = {}
@@ -196,7 +186,7 @@ class PosEvalDataset(object):
             tacst = gid, ctx, (concl_kdx, concl_mdx), tac
             tac_bin = self.tac_bin(tac)
 
-            pt = TacstPt(tactr, tacst, subtr_size[gid], tac_bin)
+            pt = TacStPt(tactr, tacst, subtr_size[gid], tac_bin)
 
             self.data[tactr_id].append(pt)
             self.tac_hist[pt.tac_bin] += 1
@@ -249,9 +239,7 @@ if __name__ == "__main__":
     argparser = argparse.ArgumentParser()
     argparser.add_argument("-l", "--load", default="tactr.pickle",
                            type=str, help="Pickle file to load")
-    argparser.add_argument("-p", "--poseval", default="poseval.pickle",
-                           type=str, help="Pickle file to save to")
-    argparser.add_argument("-t", "--tacpred", default="tacpred.pickle",
+    argparser.add_argument("-p", "--tacst", default="tacst.pickle",
                            type=str, help="Pickle file to save to")
     argparser.add_argument("-v", "--verbose", action="store_true")
     argparser.add_argument("--simprw", action="store_true")
@@ -265,13 +253,13 @@ if __name__ == "__main__":
 
     if args.simprw:
         tactics_equiv = [["intros"], ["surgery"], ["<coretactics::reflexivity@0>"]]
-        poseval = PosEvalDataset(tactics_equiv, tactrs)
+        tacst = TacStDataset(tactics_equiv, tactrs)
     else:
-        poseval = PosEvalDataset(TACTICS_EQUIV, tactrs)
+        tacst = TacStDataset(TACTICS_EQUIV, tactrs)
     if args.simprw:
-        poseval_dataset = poseval.split_by_lemma(f_balance=False, num_train=400, num_test=50)
+        tacst_dataset = tacst.split_by_lemma(f_balance=False, num_train=400, num_test=50)
     else:
-        poseval_dataset = poseval.split_by_lemma()
+        tacst_dataset = tacst.split_by_lemma()
 
     kern_embed_tokens = EmbedTokens(f_mid=False)
     kern_embed_tokens.tokenize_tactrs(tactrs)
@@ -281,20 +269,14 @@ if __name__ == "__main__":
     mid_embed_tokens.tokenize_tactrs(tactrs)
     mid_tokens_to_idx = mid_embed_tokens.tokens_to_idx()
 
-    with open(args.poseval, 'wb') as f:
-        pickle.dump((poseval_dataset, kern_tokens_to_idx, mid_tokens_to_idx), f)
+    with open(args.tacst, 'wb') as f:
+        pickle.dump((tacst_dataset, kern_tokens_to_idx, mid_tokens_to_idx), f)
 
     if args.verbose:
-        with open(args.poseval, 'rb') as f:
+        with open(args.tacst, 'rb') as f:
             dataset, _ = pickle.load(f)
             for tactr_id, pt in dataset:
                 print(tactr_id, pt)
-
-        with open(args.tacpred, 'rb') as f:
-            dataset, _ = pickle.load(f)
-            for tactr_id, pt in dataset:
-                print(tactr_id, pt)
-
 
 # class TacPredPt(object):
 #     def __init__(self, tacst):
@@ -302,7 +284,7 @@ if __name__ == "__main__":
 #         self.tacst = tacst
 #
 #
-# def poseval_to_tacpred(dataset):
+# def tacst_to_tacpred(dataset):
 #     acc = []
 #     for tactrid, pt in dataset:
 #         acc += [(tactrid, TacPredPt(pt.tacst))]

@@ -508,7 +508,7 @@ class TreeLSTM(nn.Module):
 # -------------------------------------------------
 # Model
 
-class PosEvalModel(nn.Module):
+class TacStModel(nn.Module):
     def __init__(self, sort_to_idx, const_to_idx, ind_to_idx, conid_to_idx, evar_to_idx, fix_to_idx,
                  D=128, state=128, outsize=3, eps=1e-6, ln=False, treelstm=False, lstm=False, dropout=0.0,
                  attention=False, heads=1, weight_dropout=0.0, variational=False, conclu_pos=0, f_mid=False, f_useiarg=True):

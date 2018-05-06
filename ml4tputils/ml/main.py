@@ -3,13 +3,13 @@ import pickle
 import torch
 import numpy as np
 
-from ml.poseval.fold_model import PosEvalModel
-from ml.poseval.fold_train import PosEvalTrainer
+from ml.poseval.fold_model import TacStModel
+from ml.poseval.fold_train import TacStTrainer
 # from ipdb import launch_ipdb_on_exception
 # from ml.rewrite.solver import to_goalattn_dataset, run
 from ml.rewrite.simprw import run_end2end
 from ml.rewrite.dataset_prep import to_goalattn_dataset
-from ml.tacst_prep import Dataset, TacstPt
+from ml.tacst_prep import Dataset, TacStPt
 
 """
 [Note]
@@ -22,7 +22,7 @@ if __name__ == "__main__":
     argparser = argparse.ArgumentParser()
     argparser.add_argument("-l", "--load", default="tactr.pickle",
                            type=str, help="Pickle file to load")
-    argparser.add_argument("-p", "--poseval", default="poseval.pickle",
+    argparser.add_argument("-p", "--tacst", default="tacst.pickle",
                            type=str, help="Pickle file to save to")
 
     # Model/Experiment args
@@ -70,25 +70,25 @@ if __name__ == "__main__":
     with open(args.load, 'rb') as f:
         tactrs = pickle.load(f)
 
-    print("Loading poseval dataset ...")
-    with open(args.poseval, 'rb') as f:
-        poseval_dataset, kern_tokens_to_idx, mid_tokens_to_idx = pickle.load(f)
+    print("Loading tacst dataset ...")
+    with open(args.tacst, 'rb') as f:
+        tacst_dataset, kern_tokens_to_idx, mid_tokens_to_idx = pickle.load(f)
         if args.midlvl:
             tokens_to_idx = mid_tokens_to_idx
         else:
             tokens_to_idx = kern_tokens_to_idx
 
-    print("Points Train={} Val={} Test={}".format(len(poseval_dataset.train), len(poseval_dataset.val),
-                                                  len(poseval_dataset.test)))
+    print("Points Train={} Val={} Test={}".format(len(tacst_dataset.train), len(tacst_dataset.val),
+                                                  len(tacst_dataset.test)))
     # with launch_ipdb_on_exception():
     if not args.orig:
         if args.end2end:
-            dataset, test_lemmas, val_lemmas = to_goalattn_dataset("theorems", poseval_dataset)
-            model = PosEvalModel(*tokens_to_idx, ln=args.ln, treelstm=args.treelstm, lstm=args.lstm,
+            dataset, test_lemmas, val_lemmas = to_goalattn_dataset("theorems", tacst_dataset)
+            model = TacStModel(*tokens_to_idx, ln=args.ln, treelstm=args.treelstm, lstm=args.lstm,
                                  dropout=args.dropout, attention=args.attention, heads=args.heads, D=args.state,
                                  state=args.state, weight_dropout=args.weight_dropout, variational=args.variational,
                                  conclu_pos=args.conclu_pos, outsize=40, f_mid=args.midlvl, f_useiarg=not args.noimp)
-            trainer = PosEvalTrainer(model, tactrs, dataset, args)
+            trainer = TacStTrainer(model, tactrs, dataset, args)
             if args.validate:
                 # trainer.validate()
                 # run(trainer, test_lemmas, val_lemmas)
@@ -96,11 +96,11 @@ if __name__ == "__main__":
             else:
                 trainer.train()
         else:
-            model = PosEvalModel(*tokens_to_idx, ln=args.ln, treelstm=args.treelstm, lstm=args.lstm,
+            model = TacStModel(*tokens_to_idx, ln=args.ln, treelstm=args.treelstm, lstm=args.lstm,
                                  dropout=args.dropout, attention=args.attention, heads=args.heads, D=args.state,
                                  state=args.state, weight_dropout=args.weight_dropout, variational=args.variational,
                                  conclu_pos=args.conclu_pos, f_mid=args.midlvl, f_useiarg=not args.noimp)
-            trainer = PosEvalTrainer(model, tactrs, poseval_dataset, args)
+            trainer = TacStTrainer(model, tactrs, tacst_dataset, args)
             if args.validate:
                 trainer.validate()
             else:
@@ -112,5 +112,5 @@ if __name__ == "__main__":
 
         print("Original")
         model = MyModel(*tokens_to_idx)
-        trainer = PosEvalTrainer(model, tactrs, poseval_dataset.train)
+        trainer = PosEvalTrainer(model, tactrs, tacst_dataset.train)
         trainer.train()

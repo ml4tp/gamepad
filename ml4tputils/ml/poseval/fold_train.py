@@ -28,12 +28,12 @@ def iter_data(data, size, shuffle = False):
         yield data[start : start + size]
 
 
-class PosEvalTrainer(object):
-    def __init__(self, model, tactrs, poseval_dataset, args):
+class TacStTrainer(object):
+    def __init__(self, model, tactrs, tacst_dataset, args):
         # Other state
         self.args = args
         self.tactrs = tactrs
-        self.poseval_dataset = poseval_dataset
+        self.tacst_dataset = tacst_dataset
 
         # Model
         self.model = model       # PyTorch model
@@ -120,17 +120,18 @@ class PosEvalTrainer(object):
         all_logits2, all_targets2 = [], []
         astsizes = 0
         # Forward and Backward graph
-        for tactr_id, poseval_pt in minibatch:
+        for tactr_id, tacst_pt in minibatch:
             self.tacst_folder[tactr_id].reset()
 
-        for tactr_id, poseval_pt in minibatch:
+        for tactr_id, tacst_pt in minibatch:
             tacst_folder = self.tacst_folder[tactr_id]
-            astsizes += poseval_pt.tacst_size
+            #TODO (praf): Use different size depending on flag
+            astsizes += tacst_pt.kern_size
             # Apply forward pass
 
-            pred = tacst_folder.fold_tacst(self.get_tacst(poseval_pt))
+            pred = tacst_folder.fold_tacst(self.get_tacst(tacst_pt))
             all_logits += [pred]
-            all_targets += [poseval_pt.subtr_bin]
+            all_targets += [tacst_pt.subtr_bin]
 
         res = self.folder.apply(all_logits)
         logits = res[0]
@@ -149,12 +150,12 @@ class PosEvalTrainer(object):
 
         # Data info
         for k in ['train', 'val', 'test']:
-            data = getattr(self.poseval_dataset, k)
-            ys = [poseval_pt.subtr_bin for _, poseval_pt in data]
+            data = getattr(self.tacst_dataset, k)
+            ys = [tacst_pt.subtr_bin for _, tacst_pt in data]
             print("{} Len={} SubtrSizeBins={}".format(k, len(data), dict(zip(*np.unique(ys, return_counts=True)))))
 
         # Training info
-        data = self.poseval_dataset.train
+        data = self.tacst_dataset.train
         n_batch = self.args.nbatch
         n_train = len(data)
 
@@ -246,7 +247,7 @@ class PosEvalTrainer(object):
         print("Validating")
         epochs = self.epochs
         updates = self.updates
-        data = self.poseval_dataset.val
+        data = self.tacst_dataset.val
         n_batch = self.args.valbatch
         n_train = len(data)
         losses = []
@@ -285,18 +286,18 @@ class PosEvalTrainer(object):
 #         for tactr_id, tactr in enumerate(self.tactrs):
 #             self.tacst_folder[tactr_id] = TacStFolder(model, tactr, f_fold)
 #
-#     def infer(self, poseval_test):
+#     def infer(self, tacst_test):
 #         preds = []
-#         for idx, (tactr_id, poseval_pt) in enumerate(poseval_test):
+#         for idx, (tactr_id, tacst_pt) in enumerate(tacst_test):
 #             torun_logits, torun_labels = [], []
 #             folder = self.tacst_folder[tactr_id]
 #             folder.reset()
-#             torun_logits += [folder.fold_tacst(poseval_pt.tacst)]
+#             torun_logits += [folder.fold_tacst(tacst_pt.tacst)]
 #             torun_labels += [0]
 #             res = folder.apply(torun_logits, torun_labels)
 #             logits = res[0].data.numpy()
 #             preds += [np.argmax(logits)]
-#             print("Logits", logits, "Predicted", np.argmax(logits), "Actual", poseval_pt.subtr_bin)
+#             print("Logits", logits, "Predicted", np.argmax(logits), "Actual", tacst_pt.subtr_bin)
 #         return preds
 
 

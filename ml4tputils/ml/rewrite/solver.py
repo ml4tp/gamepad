@@ -225,7 +225,7 @@ class AstOp(object):
             cs_p = self._staples(c_skel.cs, pos, c_subst)
             return self._tag(c_skel, AppExp(c_p, cs_p))
         else:
-            raise NameError("Shouldn't happen {}".format(c))
+            raise NameError("Shouldn't happen {}".format(c_skel))
 
     def _staples(self, cs, pos, c_subst):
         return [self._staple(c, pos, c_subst) for c in cs]
