@@ -46,7 +46,7 @@ class PyCoqProver(object):
         return "Error" not in msg
 
     def _dump_ctx(self):
-        for ident, typ_idx in self.ctx:
+        for ident, typ_idx, _ in self.ctx:
             self._log("id({}): {}".format(ident, typ_idx, self.decoder.decode_exp_by_key(typ_idx)))
         if self.concl_idx != -1:
             c = self.decoder.decode_exp_by_key(self.concl_idx)
@@ -67,7 +67,8 @@ class PyCoqProver(object):
             # Update contex and conclusion if we made progress
             decl = lemma.decls[-1]
             self.ctx = decl.ctx.traverse()
-            self.concl_idx = decl.concl_idx
+            # self.concl_idx = decl.concl_idx
+            self.concl_idx = decl.concl_kdx
             self._dump_ctx()
 
 

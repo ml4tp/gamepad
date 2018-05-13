@@ -420,9 +420,8 @@ class TacStFolder(object):
         elif ty is GRec:
             # 1. Create initial embeddings
             for ident in gc.ids:
-                name = Name(ident)
-                ev = self.fold_fix_name(name)
-                env = env.local_extend(name, ev)
+                ev = self.fold_fix_name(ident)
+                env = env.local_extend(Name(ident), ev)
 
             # 2. Use initial embeddings
             ev_tys = []

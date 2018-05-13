@@ -566,6 +566,13 @@ class TacStParser(object):
         self._mylog("ignore_constr_inc<{}>".format(h_head.peek_line()))
 
         h_head.consume_line()
+        while not h_head.peek_line().startswith("Constrs"):
+            k, s_gc = self._parse_table_entry()
+            s_gc = s_gc.replace('\'', '!@#')
+            sexp_gc = sexpdata.loads(s_gc, true="true", false="false")
+            self.mid_share[int(k)] = sexp_gc
+
+        h_head.consume_line()
         while not h_head.peek_line().startswith(TOK_END_INC):
             k, v = self._parse_table_entry()
             self.constr_share[int(k)] = v
