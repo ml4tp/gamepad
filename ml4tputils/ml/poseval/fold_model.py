@@ -427,8 +427,8 @@ class TacStFolder(object):
             ev_tys = []
             ev_bods = []
             for ty, body in zip(gc.gc_tys, gc.gc_bods):
-                ev_tys += [self._fold_mids(env, ty)]
-                ev_bods += [self._fold_mids(env, body)]
+                ev_tys += [self._fold_mid(env, ty)]
+                ev_bods += [self._fold_mid(env, body)]
             return self._fold(key, [self.model.grec, *ev_tys, *ev_bods])
         elif ty is GSort:
             ev_sort = self.fold_sort_name(gc.gsort)
