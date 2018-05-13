@@ -327,7 +327,7 @@ class TacStFolder(object):
             try:
                 ev_x = env.lookup_id(Name(gref.x))
             except:
-                print("Lookup error", gc.x, env)
+                print("Lookup error at VARREF", gc.x, env)
                 ev_x = self.fold_local_var(None)
             return [self.model.gref_var, ev_x]
         elif ty is ConstRef:
@@ -355,7 +355,7 @@ class TacStFolder(object):
             try:
                 ev_x = env.lookup_id(Name(gc.x))
             except:
-                print("Lookup error", gc.x, env)
+                print("Lookup error at GVAR", gc.x, env)
                 ev_x = self.fold_local_var(None)
             return self._fold(key, [self.model.gvar, ev_x])
         elif ty is GEvar:
