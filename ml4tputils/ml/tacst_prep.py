@@ -1,5 +1,3 @@
-from apted import APTED
-from apted.helpers import Tree
 import argparse
 import numpy as np
 import pickle
@@ -7,6 +5,7 @@ import pickle
 from coq.tactics import TACTICS_EQUIV
 from coq.constr_util import SizeConstr
 from coq.glob_constr_util import SizeGlobConstr
+from lib.myedit import *
 from recon.embed_tokens import EmbedTokens
 
 
@@ -93,24 +92,22 @@ class TacStPt(object):
     def _tree_edit_dist(self):
         _, ctx, (concl_kdx, concl_mdx), _ = self.tacst
 
-        def k2tr(kdx):
-            return Tree('FOO').from_text(self.tactr.decoder.decode_exp_by_key(kdx))
-
-        def m2tr(mdx):
-            return Tree('FOO').from_text(self.tactr.mid_decoder.decode_exp_by_key(mdx))
-
-        tree_kern_concl = k2tr(concl_kdx)
-        tree_mid_concl = m2tr(concl_mdx)
+        kern_concl_tr = kern2tr(self.tactr, concl_kdx)
+        mid_concl_tr = mid2tr(self.tactr, concl_mdx)
         kern_dists = []
         mid_dists = []
-        for _, kdx, mdx in ctx:
-            tree_kern_ident = k2tr(kdx)
-            kern_dists += [APTED(tree_kern_concl, tree_kern_ident).compute_edit_distance()]
+        for _, ty_kdx, ty_mdx in ctx:
+            kern_ty_tr = kern2tr(self.tactr, ty_kdx)
+            kern_dists += [tree_edit_dist(kern_concl_tr, kern_ty_tr)]
 
-            tree_mid_ident = m2tr(mdx)
-            mid_dists += [APTED(tree_mid_concl, tree_mid_ident).compute_edit_distance()]
+            mid_ty_tr = mid2tr(self.tactr, ty_mdx)
+            mid_dists += [tree_edit_dist(mid_concl_tr, mid_ty_tr)]
 
-        # TODO(deh): set top-K
+        # Set largest distances first
+        sorted(kern_dists, reverse=True)
+        sorted(mid_dists, reverse=True)
+        self.kern_dists = kern_dists
+        self.mid_dists = mid_dists
 
     # Getter's
     def kern_tacst(self):
@@ -120,6 +117,7 @@ class TacStPt(object):
     def mid_tacst(self):
         gid, ctx, (_, concl_mdx), tac = self.tacst
         return gid, [(ty, mdx) for ty, _, mdx in ctx], concl_mdx, tac
+
 
 # Old Version -> Should work with simprw
 class PosEvalPt(object):

@@ -2,7 +2,7 @@ import networkx as nx
 
 from coq.constr_decode import DecodeConstr
 from coq.tactics import parse_full_tac, is_tclintros_intern, is_tclintros_all
-from lib.myedit import *
+# from lib.myedit import *
 from recon.rawtac_builder import *
 from recon.tactr import TacStKind, TacTrNode, TacEdge, TacTree
 
