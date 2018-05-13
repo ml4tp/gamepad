@@ -170,6 +170,7 @@ class TacStFolder(object):
 
     def fold_tacst(self, tacst):
         """Top-level fold function"""
+        print("FOLDING POINT IN", self.tactr.name)
         gid, ctx, concl_idx, tac = tacst
         env, foldeds = self.fold_ctx(gid, ctx)
         folded = self.fold_concl(gid, env, concl_idx)
