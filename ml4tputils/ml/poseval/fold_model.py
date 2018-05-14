@@ -424,7 +424,13 @@ class TacStFolder(object):
                 ev = self.fold_fix_name(ident)
                 env = env.local_extend(Name(ident), ev)
 
-            # 2. Use initial embeddings
+            # 2. Add in glog_decl arguments
+            for gdecls in gc.gdeclss:
+                for gdecl in gdecls:
+                    ev_foo = self._fold_mid(env, gdecl.gc)
+                    env = env.local_extend(gdecl.name, ev_foo)
+
+            # 3. Use initial embeddings
             ev_tys = []
             ev_bods = []
             for ty, body in zip(gc.gc_tys, gc.gc_bods):

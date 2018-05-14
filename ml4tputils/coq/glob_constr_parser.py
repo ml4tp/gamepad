@@ -116,6 +116,17 @@ class GlobConstrParser(object):
         else:
             return []
 
+    def parse_glob_decl(self, parse_gc, gdecl):
+        # print("HERE", gdecl)
+        name = Name(sexpr_strify(gdecl[0]))
+        bk = gdecl[1]
+        m_gc = self.parse_maybe(parse_gc, gdecl[2])
+        gc = parse_gc(gdecl[3])
+        return GlobDecl(name, bk, m_gc, gc)
+
+    def parse_glob_declss(self, parse_gc, gdecl_argss):
+        return self.parse_ls(lambda ls: self.parse_ls(lambda gdecl: self.parse_glob_decl(parse_gc, gdecl), ls), gdecl_argss)
+
     def parse_glob_constr(self, c):
         tag, body = sexpr_unpack(c)
         if tag == "!":
@@ -166,8 +177,9 @@ class GlobConstrParser(object):
                        self.parse_glob_constr(body[2]))
         elif tag == "R":
             ids = [sexpr_strify(x) for x in body[1]]
-            # gdecl_args = [[sexpr_strify(x) for x in xs] for xs in body[2]]   # TODO(deh): sigh* strify 4tw
-            return GRec(body[0], ids, body[2], self.parse_glob_constrs(body[3]), self.parse_glob_constrs(body[4]))
+            # g_decl_args = body[2]
+            gdecl_args = self.parse_glob_declss(self.parse_glob_constr, body[2])
+            return GRec(body[0], ids, gdecl_args, self.parse_glob_constrs(body[3]), self.parse_glob_constrs(body[4]))
         elif tag == "S":
             return GSort(self.parse_glob_sort(body[0]))
         elif tag == "H":
@@ -275,8 +287,8 @@ class GlobConstrDecoder(object):
         elif tag == "R":
             fix_kind = body[0]
             ids = [sexpr_strify(x) for x in body[1]]
-            gdecl_args = body[2]
-            # gdecl_args = [[sexpr_strify(x) for x in xs] for xs in body[2]]
+            # gdecl_args = body[2]
+            gdecl_args = self.parser.parse_glob_declss(self.decode_glob_constr, body[2])
             gc_tys = self.decode_glob_constrs(body[3])
             gc_bods = self.decode_glob_constrs(body[4])
             return self._mkcon(key, GRec(fix_kind, ids, gdecl_args, gc_tys, gc_bods))

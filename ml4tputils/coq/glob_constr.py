@@ -183,6 +183,18 @@ class CastType(object):
             return "{{CT{}{{{}}}}}".format(self.kind, self.m_gc.apted_tree())
 
 
+class GlobDecl(object):
+    def __init__(self, name, bk, m_gc, gc):
+        assert isinstance(name, Name)
+        # binding kind?
+        assert m_gc is None or isinstance(m_gc, GExp)
+        assert isinstance(gc, GExp)
+        self.name = name
+        self.bk = bk
+        self.m_gc = m_gc
+        self.gc = gc
+
+
 # -------------------------------------------------
 # Expressions
 
@@ -419,11 +431,13 @@ class GRec(GExp):
     """| GRec of Loc.t * fix_kind * Id.t array * glob_decl list array *
       glob_constr array * glob_constr array
     """
-    def __init__(self, fix_kind, ids, gdecl_args, gc_tys, gc_bods):
+    def __init__(self, fix_kind, ids, gdeclss, gc_tys, gc_bods):
         # TODO(deh): ignoring fix_kind for now
         for ident in ids:
             assert isinstance(ident, str)
-        # TODO(deh): ignoring gdecl_args for now
+        for gdecls in gdeclss:
+            for gdecl in gdecls:
+                assert isinstance(gdecl, GlobDecl)
         for gc in gc_tys:
             assert isinstance(gc, GExp)
         for gc in gc_bods:
@@ -431,7 +445,7 @@ class GRec(GExp):
         super().__init__()
         self.fix_kind = fix_kind
         self.ids = ids
-        self.gdecl_args = gdecl_args
+        self.gdeclss = gdeclss
         self.gc_tys = gc_tys
         self.gc_bods = gc_bods
 
