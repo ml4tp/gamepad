@@ -100,7 +100,9 @@ if __name__ == "__main__":
                                  dropout=args.dropout, attention=args.attention, heads=args.heads, D=args.state,
                                  state=args.state, weight_dropout=args.weight_dropout, variational=args.variational,
                                  conclu_pos=args.conclu_pos, f_mid=args.midlvl, f_useiarg=not args.noimp)
+            print("Made model")
             trainer = TacStTrainer(model, tactrs, tacst_dataset, args)
+            print("Made trainer")
             if args.validate:
                 trainer.validate()
             else:
