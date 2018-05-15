@@ -10,6 +10,7 @@ from ml.poseval.fold_train import TacStTrainer
 from ml.rewrite.simprw import run_end2end
 from ml.rewrite.dataset_prep import to_goalattn_dataset
 from ml.tacst_prep import Dataset, TacStPt
+from coq.tactics import TACTICS_EQUIV
 
 """
 [Note]
@@ -26,6 +27,7 @@ if __name__ == "__main__":
                            type=str, help="Pickle file to save to")
 
     # Model/Experiment args
+    argparser.add_argument('--task', type=str, default='pose', choices=['pose', 'tac'], help='which task')
     argparser.add_argument('--nbatch', type=int, default=32, help='minibatch size')
     argparser.add_argument('--lr', type=float, default=0.001, help='learning rate')
     argparser.add_argument('--state', type=int, default=128, help='state size')
@@ -53,6 +55,10 @@ if __name__ == "__main__":
 
     args = argparser.parse_args()
     assert not (args.lstm and args.treelstm)
+    if args.task == 'tac':
+        args.outsize = len(TACTICS_EQUIV)
+    else:
+        args.outsize = 3
 
     args.cuda = not args.no_cuda and torch.cuda.is_available()
     if args.debug:
@@ -99,8 +105,10 @@ if __name__ == "__main__":
             model = TacStModel(*tokens_to_idx, ln=args.ln, treelstm=args.treelstm, lstm=args.lstm,
                                  dropout=args.dropout, attention=args.attention, heads=args.heads, D=args.state,
                                  state=args.state, weight_dropout=args.weight_dropout, variational=args.variational,
-                                 conclu_pos=args.conclu_pos, f_mid=args.midlvl, f_useiarg=not args.noimp)
+                                 conclu_pos=args.conclu_pos, outsize = args.outsize, f_mid=args.midlvl, f_useiarg=not args.noimp)
+            print("Made model")
             trainer = TacStTrainer(model, tactrs, tacst_dataset, args)
+            print("Made trainer")
             if args.validate:
                 trainer.validate()
             else:
