@@ -40,6 +40,10 @@ class TacStPt(object):
         self._mid_noimp_size()
         self._ctx_len()
 
+        print("COMPUTING EDIT DISTANCE", tactr.name)
+        self._tree_edit_dist()
+        print("DONE!")
+
     # Prepares
     def _subtr_bin(self):
         if self.subtr_size < 5:
@@ -92,16 +96,22 @@ class TacStPt(object):
     def _tree_edit_dist(self):
         _, ctx, (concl_kdx, concl_mdx), _ = self.tacst
 
-        kern_concl_tr = kern2tr(self.tactr, concl_kdx)
-        mid_concl_tr = mid2tr(self.tactr, concl_mdx)
+        # kern_concl_tr = kern2tr(self.tactr, concl_kdx)
+        # mid_concl_tr = mid2tr(self.tactr, concl_mdx)
+        kern_concl_str = kern2str(self.tactr, concl_kdx)
+        mid_concl_str = mid2str(self.tactr, concl_mdx)
         kern_dists = []
         mid_dists = []
         for _, ty_kdx, ty_mdx in ctx:
-            kern_ty_tr = kern2tr(self.tactr, ty_kdx)
-            kern_dists += [tree_edit_dist(kern_concl_tr, kern_ty_tr)]
+            # kern_ty_tr = kern2tr(self.tactr, ty_kdx)
+            # kern_dists += [tree_edit_dist(kern_concl_tr, kern_ty_tr)]
+            kern_ty_str = kern2str(self.tactr, ty_kdx)
+            kern_dists += [string_edit_dist(kern_concl_str, kern_ty_str)]
 
-            mid_ty_tr = mid2tr(self.tactr, ty_mdx)
-            mid_dists += [tree_edit_dist(mid_concl_tr, mid_ty_tr)]
+            # mid_ty_tr = mid2tr(self.tactr, ty_mdx)
+            # mid_dists += [tree_edit_dist(mid_concl_tr, mid_ty_tr)]
+            mid_ty_str = mid2str(self.tactr, ty_mdx)
+            mid_dists += [string_edit_dist(mid_concl_str, mid_ty_str)]
 
         # Set largest distances first
         sorted(kern_dists, reverse=True)

@@ -344,7 +344,7 @@ class GLetIn(GExp):
         return "(LI {} {} {})".format(self.name, str(self.g1), str(self.g2))
 
     def apted_tree(self):
-        return "{{LI{{{}}}{}{}}}}".format(self.name, self.g1.apted_tree(), self.g2.apted_tree())
+        return "{{LI{{{}}}{}{}}}".format(self.name, self.g1.apted_tree(), self.g2.apted_tree())
 
 
 class GCases(GExp):
