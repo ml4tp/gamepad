@@ -147,9 +147,11 @@ class TacStFolder(object):
         self.f_save = False
 
         if self.model.f_mid:
+            self.get_tacst = lambda pt: pt.mid_tacst()
             self.fold_ast = lambda env, gc: self._fold_mid(env, gc)
             self.decode = lambda idx: tactr.mid_decoder.decode_exp_by_key(idx)
         else:
+            self.get_tacst = lambda pt: pt.kern_tacst()
             self.fold_ast = lambda env, c: self._fold_ast(env, Kind.TYPE, c)
             self.decode = lambda idx: tactr.decoder.decode_exp_by_key(idx)
 
@@ -168,9 +170,10 @@ class TacStFolder(object):
     # -------------------------------------------
     # Tactic state folding (Kernel)
 
-    def fold_tacst(self, tacst):
+    def fold_tacst(self, tacst_pt):
         """Top-level fold function"""
         # print("FOLDING POINT IN", self.tactr.name)
+        tacst = self.get_tacst(tacst_pt)
         gid, ctx, concl_idx, tac = tacst
         env, foldeds = self.fold_ctx(gid, ctx)
         folded = self.fold_concl(gid, env, concl_idx)
@@ -515,6 +518,33 @@ class TreeLSTM(nn.Module):
 # -------------------------------------------------
 # Model
 
+class LinearModel(nn.Module):
+    def __init__(self, insize=4, outsize=3, f_mid=False, f_useiarg=True):
+        self.outsize=3
+        self.f_mid = f_mid
+        self.f_useiarg = f_useiarg
+
+        if not self.f_mid:
+            self.typ = "kern" # Kern level
+        elif self.f_useiarg:
+            self.typ = "mid" # Midlevel with Imp args
+        else:
+            self.typ = "mid_noimp" # Midlvl with No imp args
+
+        # Features
+        size_features = ['%s_conclu_size' % self.typ, '%s_ctx_size' % self.typ]
+        len_features = ['len_ctx']
+        edit_dist_features = ['%s_dists' % self.typ]
+        features = size_features + len_features + edit_dist_features
+        def _get_features(pt, features = features):
+            return [getattr(pt, f) for f in features]
+        self.get_features = _get_features
+
+        # Model
+        self.f_linear = True
+        self.pred = nn.Linear(insize, outsize)
+
+
 class TacStModel(nn.Module):
     def __init__(self, sort_to_idx, const_to_idx, ind_to_idx, conid_to_idx, evar_to_idx, fix_to_idx,
                  D=128, state=128, outsize=3, eps=1e-6, ln=False, treelstm=False, lstm=False, dropout=0.0,
@@ -528,6 +558,8 @@ class TacStModel(nn.Module):
         self.f_mid = f_mid           # Use mid-level AST (as opposed to kernel-level AST)
         self.f_useiarg = f_useiarg   # Use implicit arguments
 
+        # Model
+        self.f_linear = False
         table_names = ['sort', 'const', 'ind', 'conid', 'evar', 'fix', 'fixbody']
         tables = [sort_to_idx, const_to_idx, ind_to_idx, conid_to_idx, evar_to_idx, fix_to_idx, fix_to_idx]
         shift = 0
@@ -623,8 +655,6 @@ class TacStModel(nn.Module):
         self.pred = self.ctx_func
         self.proj = nn.Linear(state + 1, state)
         self.final = nn.Linear(heads*state, outsize)
-        
-        self.loss_fn = nn.CrossEntropyLoss()
 
         # Extra vars
         self.register_buffer('concl_id', torch.ones([1,1]))
