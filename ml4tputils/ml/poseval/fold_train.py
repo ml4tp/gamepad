@@ -74,13 +74,14 @@ class TacStTrainer(object):
             self.torch = torch.cuda
             print("Moved model to GPU")
         # Select whether we want mid-level or kernel-level AST
-        if self.model.f_mid:
+        if self.args.midlvl:
             self.get_tacst = lambda pt: pt.mid_tacst()
         else:
             self.get_tacst = lambda pt: pt.kern_tacst()
 
         # Optimizer
         self.loss_fn =  nn.CrossEntropyLoss()
+        self.weigted_loss_fn = nn.CrossEntropyLoss(weight=self.torch.FloatTensor([0.1, 0.9]))
         self.opt = optim.Adam(self.model.parameters(), lr=args.lr)
 
         # Training
@@ -194,9 +195,14 @@ class TacStTrainer(object):
         for tactr_id, tacst_pt in minibatch:
             tacst_folder = self.tacst_folder[tactr_id]
             #TODO (praf): Use different size depending on flag
-            astsizes += tacst_pt.kern_size
-            # Apply forward pass
+            if not self.args.midlvl:
+                astsizes += tacst_pt.kern_size
+            elif not self.args.noimp:
+                astsizes += tacst_folder.mid_size
+            else:
+                astsizes += tacst_folder.mid_noimp_size
 
+            # Apply forward pass
             pred = tacst_folder.fold_tacst(self.get_tacst(tacst_pt))
             if self.args.lids:
                 pred, pred_lids = pred

@@ -23,6 +23,17 @@ Prepare data for:
 
 np.random.seed(7)
 
+# -------------------------------------------------
+# Lids helper function
+def one_hot_lid(ctx, lids):
+    #print(ctx, lids)
+    vec = [0 for _ in ctx]
+    for idx, (ident, _, _) in enumerate(ctx):
+        if ident in lids:
+            vec[idx] = 1
+    # if sum(vec) != len(list(lids)):
+    #      print(ctx, lids)
+    return vec
 
 # -------------------------------------------------
 # Tactic States Dataset
@@ -33,6 +44,7 @@ class TacStPt(object):
         self.subtr_size = subtr_size
         self.tac_bin = tac_bin
         self._subtr_bin()
+        self._lids()
 
         # Features
         self._kern_size()
@@ -41,6 +53,11 @@ class TacStPt(object):
         self._ctx_len()
 
     # Prepares
+    def _lids(self):
+        _, ctx, _, tac = self.tacst
+        self.tac = tac[-1]  # Only the last one counts
+        self.lids = one_hot_lid(ctx, self.tac.ftac.lids)
+
     def _subtr_bin(self):
         if self.subtr_size < 5:
             self.subtr_bin = 0
@@ -311,15 +328,6 @@ if __name__ == "__main__":
 #     for tactrid, pt in dataset:
 #         acc += [(tactrid, TacPredPt(pt.tacst))]
 #     return acc
-
-
-# def one_hot_lid(ctx, lids):
-#     vec = [0 for _ in ctx]
-#     for idx, (ident, _) in enumerate(ctx):
-#         if ident in lids:
-#             vec[idx] = 1
-#             break
-#     return vec
 #
 #
 # def one_hot_gid(tokens_to_idx, gids):
