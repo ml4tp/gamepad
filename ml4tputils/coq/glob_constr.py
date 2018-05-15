@@ -114,7 +114,7 @@ class PatCstr(CasesPattern):
     def apted_tree(self):
         acc = ""
         for cp in self.cps:
-            acc += cp.apted_tree
+            acc += cp.apted_tree()
         return acc
 
 
