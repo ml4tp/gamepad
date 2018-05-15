@@ -39,10 +39,7 @@ class TacStPt(object):
         self._mid_size()
         self._mid_noimp_size()
         self._ctx_len()
-
-        print("COMPUTING EDIT DISTANCE", tactr.name)
         self._tree_edit_dist()
-        print("DONE!")
 
     # Prepares
     def _subtr_bin(self):
