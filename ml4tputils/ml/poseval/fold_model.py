@@ -519,7 +519,7 @@ class TreeLSTM(nn.Module):
 # Model
 
 class LinearModel(nn.Module):
-    def __init__(self, insize=4, outsize=3, f_mid=False, f_useiarg=True):
+    def __init__(self, outsize=3, f_mid=False, f_useiarg=True):
         self.outsize=3
         self.f_mid = f_mid
         self.f_useiarg = f_useiarg
@@ -536,6 +536,7 @@ class LinearModel(nn.Module):
         len_features = ['len_ctx']
         edit_dist_features = ['%s_dists' % self.typ]
         features = size_features + len_features + edit_dist_features
+        insize = len(features)
         def _get_features(pt, features = features):
             return [getattr(pt, f) for f in features]
         self.get_features = _get_features

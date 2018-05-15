@@ -60,17 +60,22 @@ class TacStTrainer(object):
         self.best_loss = np.inf
         self.ts = None               # timestamp
 
-        # Folder
-        if not self.model.f_linear:
+        typ = "_".join([v for k, v in (zip([not (args.midlvl or args.noimp), args.midlvl, args.noimp],
+                                        ["kern", "midlvl", "noimp"])) if k])
+        if self.model.f_linear:
+            # Linear
+            basepath = 'mllogs/{}/type_{}_lr_{}_m_linear_r_{}'.format(args.task, typ, args.lr, args.name)
+        else:
+            # Folder
             self.folder = Folder(model, args.fold, args.cuda)
             self.tacst_folder = {}   # Folder to embed
             for tactr_id, tactr in enumerate(self.tactrs):
                 self.tacst_folder[tactr_id] = TacStFolder(model, tactr, self.folder)
 
-        misc = "_".join([v for k,v in (zip([not (args.lstm or args.treelstm), args.lstm, args.treelstm], ["gru", "lstm", "treelstm"])) if k])
-        type = "_".join([v for k,v in (zip([not (args.midlvl or args.noimp), args.midlvl, args.noimp], ["kern", "midlvl", "noimp"])) if k])
+            misc = "_".join([v for k,v in (zip([not (args.lstm or args.treelstm), args.lstm, args.treelstm], ["gru", "lstm", "treelstm"])) if k])
 
-        basepath = 'mllogs/{}/type_{}_state_{}_lr_{}_conclu_pos_{}_ln_{}_drop_{}_wd_{}_v_{}_attn_{}_heads_{}_m_{}_r_{}/'.format(args.task, type, args.state, args.lr, args.conclu_pos, args.ln, args.dropout, args.weight_dropout, args.variational, args.attention, args.heads, misc, args.name)
+            basepath = 'mllogs/{}/type_{}_state_{}_lr_{}_conclu_pos_{}_ln_{}_drop_{}_wd_{}_v_{}_attn_{}_heads_{}_m_{}_r_{}/'.format(args.task, typ, args.state, args.lr, args.conclu_pos, args.ln, args.dropout, args.weight_dropout, args.variational, args.attention, args.heads, misc, args.name)
+
         if args.mload:
             self.load(args.mload)
             basepath += 'load_{}/'.format(self.ts)  # So reloaded models saved in subdirectory
@@ -206,7 +211,7 @@ class TacStTrainer(object):
             print(k, v)
 
         # Train
-        smooth_acc = None; smooth_acc2 = None
+        smooth_acc = None;
         smooth_loss = None
         while self.epochs < self.max_epochs:
             testart = time()
