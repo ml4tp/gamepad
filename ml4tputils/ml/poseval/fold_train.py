@@ -69,7 +69,7 @@ class TacStTrainer(object):
         misc = "_".join([v for k,v in (zip([not (args.lstm or args.treelstm), args.lstm, args.treelstm], ["gru", "lstm", "treelstm"])) if k])
         type = "_".join([v for k,v in (zip([not (args.midlvl or args.noimp), args.midlvl, args.noimp], ["kern", "midlvl", "noimp"])) if k])
 
-        basepath = 'mllogs/type_{}_state_{}_lr_{}_conclu_pos_{}_ln_{}_drop_{}_wd_{}_v_{}_attn_{}_heads_{}_m_{}_r_{}/'.format(type, args.state, args.lr, args.conclu_pos, args.ln, args.dropout, args.weight_dropout, args.variational, args.attention, args.heads, misc, args.name)
+        basepath = 'mllogs/{}/type_{}_state_{}_lr_{}_conclu_pos_{}_ln_{}_drop_{}_wd_{}_v_{}_attn_{}_heads_{}_m_{}_r_{}/'.format(args.task, type, args.state, args.lr, args.conclu_pos, args.ln, args.dropout, args.weight_dropout, args.variational, args.attention, args.heads, misc, args.name)
         if args.mload:
             self.load(args.mload)
             basepath += 'load_{}/'.format(self.ts)  # So reloaded models saved in subdirectory
@@ -133,7 +133,10 @@ class TacStTrainer(object):
 
             pred = tacst_folder.fold_tacst(self.get_tacst(tacst_pt))
             all_logits += [pred]
-            all_targets += [tacst_pt.subtr_bin]
+            if self.args.task == 'pose':
+                all_targets += [tacst_pt.subtr_bin]
+            else:
+                all_targets += [tacst_pt.tac_bin]
 
         res = self.folder.apply(all_logits)
         logits = res[0]
@@ -153,7 +156,11 @@ class TacStTrainer(object):
         # Data info
         for k in ['train', 'val', 'test']:
             data = getattr(self.tacst_dataset, k)
-            ys = [tacst_pt.subtr_bin for _, tacst_pt in data]
+            if self.args.task == 'pose':
+                ys = [tacst_pt.subtr_bin for _, tacst_pt in data]
+            else:
+                ys = [tacst_pt.tac_bin for _, tacst_pt in data]
+
             print("{} Len={} SubtrSizeBins={}".format(k, len(data), dict(zip(*np.unique(ys, return_counts=True)))))
 
         # Training info
