@@ -39,6 +39,15 @@ def get_other(l, index):
     return l[index], l[:index] + l[index+1:]
 
 
+def seq_lids(folder, xs, hidden, conclu_pos):
+    preds = []
+
+    for x in xs:
+        pred = folder.add('final_lids_f', x, hidden)
+        preds.append(pred)
+
+    return preds
+
 def seq_embed(name, folder, xs, init, get_hiddens, ln, input_dropout, conclu_pos):
     # Preprocess for fold
     hidden = folder.add('identity', init)
@@ -518,7 +527,7 @@ class TreeLSTM(nn.Module):
 class TacStModel(nn.Module):
     def __init__(self, sort_to_idx, const_to_idx, ind_to_idx, conid_to_idx, evar_to_idx, fix_to_idx,
                  D=128, state=128, outsize=3, eps=1e-6, ln=False, treelstm=False, lstm=False, dropout=0.0,
-                 attention=False, heads=1, weight_dropout=0.0, variational=False, conclu_pos=0, f_mid=False, f_useiarg=True):
+                 attention=False, heads=1, weight_dropout=0.0, variational=False, conclu_pos=0, lids = False, f_mid=False, f_useiarg=True):
         super().__init__()
 
         # Dimensions
@@ -570,6 +579,8 @@ class TacStModel(nn.Module):
 
         # Conclusion position
         self.conclu_pos = conclu_pos
+        self.lids = lids
+        self.get_hiddens = lids
 
         # Sequence models
         seq_args = {'get_hiddens': False, 'ln': ln, 'input_dropout': dropout > 0.0, 'conclu_pos': self.conclu_pos}
@@ -599,7 +610,7 @@ class TacStModel(nn.Module):
             self.ast_cell = TreeLSTM(state, weight_dropout, variational)
             self.ast_emb_func = lambda folder, xs: seq_embed('ast_tree', folder, xs, self.ast_cell_init_state, **seq_args)
             self.ctx_cell = TreeLSTM(state, weight_dropout, variational)
-            self.ctx_emb_func = lambda folder, xs: seq_embed('ctx_tree', folder, xs, self.ctx_cell_init_state, **seq_args)
+            self.ctx_emb_func = lambda folder, xs: seq_embed('ctx_tree', folder, xs, self.ctx_cell_init_state, get_hiddens=self.get_hiddens, **seq_args)
         else:
             if self.lstm:
                 self.ast_cell = nn.LSTMCell(state, state)
@@ -612,7 +623,7 @@ class TacStModel(nn.Module):
                 name = ""
             self.ast_emb_func = lambda folder, xs: seq_embed('ast' + name, folder, xs, self.ast_cell_init_state, **seq_args)
             if not attention:
-                self.ctx_emb_func = lambda folder, xs: seq_embed('ctx' + name, folder, xs, self.ctx_cell_init_state, **seq_args)
+                self.ctx_emb_func = lambda folder, xs: seq_embed('ctx' + name, folder, xs, self.ctx_cell_init_state, get_hiddens = self.get_hiddens, **seq_args)
             else:
                 self.ctx_emb_func = lambda folder, xs: seq_sigmoid_attn_embed(folder, xs, self.attn_sv_init, **seq_args)
 
@@ -629,6 +640,9 @@ class TacStModel(nn.Module):
         # Extra vars
         self.register_buffer('concl_id', torch.ones([1,1]))
         self.register_buffer('state_id', torch.zeros([1,1]))
+
+        if lids:
+            self.final_lids = nn.Linear(heads * state * 2, 2)  # predict if selected or not
 
     # Folder forward functions
     def attn_identity(self, x):
@@ -759,11 +773,25 @@ class TacStModel(nn.Module):
         xs = self.mask(folder, tacst_evs)
         if self.conclu_pos != 0:
             xs = xs[1:] + xs[0:1] # moved to end
-        x = self.ctx_emb_func(folder, xs)
-        # Final layer for logits
-        pred1 = folder.add('final_f', x)
-        return pred1
-
+        # x = self.ctx_emb_func(folder, xs)
+        # # Final layer for logits
+        # pred1 = folder.add('final_f', x)
+        # return pred1
+        if self.lids:
+            x, xs = self.ctx_emb_func(folder, xs)
+            # Final layer for logits
+            pred_f = folder.add('final_f', x)
+            if self.conclu_pos != 0:
+                xs = xs[:-1]
+            else:
+                xs = xs[1:]
+            pred_lids = seq_lids(folder, xs, x, self.conclu_pos)
+            return pred_f, pred_lids
+        else:
+            x = self.ctx_emb_func(folder, xs)
+            # Final layer for logits
+            pred_f = folder.add('final_f', x)
+        return pred_f
 
 class WeightDrop(torch.nn.Module):
     def __init__(self, module, weights, dropout=0.0, variational=False):
