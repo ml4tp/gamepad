@@ -534,7 +534,7 @@ class LinearModel(nn.Module):
         # Features
         size_features = ['%s_conclu_size' % self.typ, '%s_ctx_size' % self.typ]
         len_features = ['len_ctx']
-        edit_dist_features = ['%s_dists' % self.typ]
+        edit_dist_features = ['%s_str_dists' % self.typ]
         features = size_features + len_features + edit_dist_features
         insize = len(features)
         def _get_features(pt, features = features):

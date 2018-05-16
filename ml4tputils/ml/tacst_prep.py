@@ -111,6 +111,7 @@ class TacStPt(object):
         sorted(mid_dists, reverse=True)
         self.kern_tr_dists = kern_dists
         self.mid_tr_dists = mid_dists
+        self.mid_noimp_dists = mid_dists
 
     def _string_edit_dist(self):
         _, ctx, (concl_kdx, concl_mdx), _ = self.tacst
@@ -131,6 +132,7 @@ class TacStPt(object):
         sorted(mid_dists, reverse=True)
         self.kern_str_dists = kern_dists
         self.mid_str_dists = mid_dists
+        self.mid_noimp_str_dists = mid_dists
 
     # Getter's
     def kern_tacst(self):
