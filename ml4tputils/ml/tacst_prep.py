@@ -117,14 +117,18 @@ class TacStPt(object):
 
         kern_concl_str = kern2str(self.tactr, concl_kdx)
         mid_concl_str = mid2str(self.tactr, concl_mdx)
-        kern_dists = []
-        mid_dists = []
+        kern_dists = []; kern_seen = set()
+        mid_dists = []; mid_seen = set()
         for _, ty_kdx, ty_mdx in ctx:
-            kern_ty_str = kern2str(self.tactr, ty_kdx)
-            kern_dists += [string_edit_dist(kern_concl_str, kern_ty_str)]
+            if ty_kdx not in kern_seen:
+                kern_ty_str = kern2str(self.tactr, ty_kdx)
+                kern_dists += [string_edit_dist(kern_concl_str, kern_ty_str)]
+                kern_seen.add(ty_kdx)
 
-            mid_ty_str = mid2str(self.tactr, ty_mdx)
-            mid_dists += [string_edit_dist(mid_concl_str, mid_ty_str)]
+            if ty_mdx not in mid_seen:
+                mid_ty_str = mid2str(self.tactr, ty_mdx)
+                mid_dists += [string_edit_dist(mid_concl_str, mid_ty_str)]
+                mid_seen.add(ty_mdx)
 
         # Set largest distances first
         sorted(kern_dists, reverse=True)
