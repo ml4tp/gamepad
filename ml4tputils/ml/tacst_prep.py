@@ -27,7 +27,7 @@ np.random.seed(7)
 # -------------------------------------------------
 # Tactic States Dataset
 class TacStPt(object):
-    def __init__(self, tactr, tacst, subtr_size, tac_bin):
+    def __init__(self, tactr, tacst, subtr_size, tac_bin, dict_kern_str_dists, dict_mid_str_dists):
         self.tactr = tactr
         self.tacst = tacst
         self.subtr_size = subtr_size
@@ -41,7 +41,11 @@ class TacStPt(object):
         self._ctx_len()
         # TOO SLOW
         # self._tree_edit_dist()
-        self._string_edit_dist()
+        self._string_edit_dist(dict_kern_str_dists, dict_mid_str_dists)
+        # self.kern_str_dists = kern_str_dists
+        # self.mid_str_dists = mid_str_dists
+        print("KERN", self.kern_str_dists)
+        print("MID", self.mid_str_dists)
 
     # Prepares
     def _subtr_bin(self):
@@ -112,27 +116,33 @@ class TacStPt(object):
         self.kern_tr_dists = kern_dists
         self.mid_tr_dists = mid_dists
 
-    def _string_edit_dist(self):
-        _, ctx, (concl_kdx, concl_mdx), _ = self.tacst
+    def _string_edit_dist(self, dict_kern_str_dists, dict_mid_str_dists):
+        _, ctx, _, _ = self.tacst
 
-        kern_concl_str = kern2str(self.tactr, concl_kdx)
-        mid_concl_str = mid2str(self.tactr, concl_mdx)
-        kern_dists = []; kern_seen = set()
-        mid_dists = []; mid_seen = set()
+        kern_dists = []
+        mid_dists = []
         for _, ty_kdx, ty_mdx in ctx:
-            if ty_kdx not in kern_seen:
-                kern_ty_str = kern2str(self.tactr, ty_kdx)
-                kern_dists += [string_edit_dist(kern_concl_str, kern_ty_str)]
-                kern_seen.add(ty_kdx)
+            kern_dists += [dict_kern_str_dists[ty_kdx]]
+            mid_dists += [dict_mid_str_dists[ty_mdx]]
 
-            if ty_mdx not in mid_seen:
-                mid_ty_str = mid2str(self.tactr, ty_mdx)
-                mid_dists += [string_edit_dist(mid_concl_str, mid_ty_str)]
-                mid_seen.add(ty_mdx)
+        # kern_concl_str = kern2str(self.tactr, concl_kdx)
+        # mid_concl_str = mid2str(self.tactr, concl_mdx)
+        # kern_dists = []; kern_seen = set()
+        # mid_dists = []; mid_seen = set()
+        # for _, ty_kdx, ty_mdx in ctx:
+        #     if ty_kdx not in kern_seen:
+        #         kern_ty_str = kern2str(self.tactr, ty_kdx)
+        #         kern_dists += [string_edit_dist(kern_concl_str, kern_ty_str)]
+        #         kern_seen.add(ty_kdx)
+        #
+        #     if ty_mdx not in mid_seen:
+        #         mid_ty_str = mid2str(self.tactr, ty_mdx)
+        #         mid_dists += [string_edit_dist(mid_concl_str, mid_ty_str)]
+        #         mid_seen.add(ty_mdx)
 
         # Set largest distances first
-        sorted(kern_dists, reverse=True)
-        sorted(mid_dists, reverse=True)
+        kern_dists = sorted(kern_dists, reverse=True)
+        mid_dists = sorted(mid_dists, reverse=True)
         self.kern_str_dists = kern_dists
         self.mid_str_dists = mid_dists
 
@@ -231,11 +241,26 @@ class TacStDataset(object):
                     self.tactics.add(edge.name)
         # print("TACTICS", self.tactics)
 
+        # Compute string edit distances
+        dict_kern_str_dists = {}
+        dict_mid_str_dists = {}
+        for _, gid, _, _, ctx, (concl_kdx, concl_mdx), tac in tactr.bfs_traverse():
+            kern_concl_str = kern2str(tactr, concl_kdx)
+            mid_concl_str = mid2str(tactr, concl_mdx)
+            for _, ty_kdx, ty_mdx in ctx:
+                if ty_kdx not in dict_kern_str_dists:
+                    kern_ty_str = kern2str(tactr, ty_kdx)
+                    dict_kern_str_dists[ty_kdx] = string_edit_dist(kern_concl_str, kern_ty_str)
+
+                if ty_mdx not in dict_mid_str_dists:
+                    mid_ty_str = mid2str(tactr, ty_mdx)
+                    dict_mid_str_dists[ty_mdx] = string_edit_dist(mid_concl_str, mid_ty_str)
+
         for _, gid, _, _, ctx, (concl_kdx, concl_mdx), tac in tactr.bfs_traverse():
             tacst = gid, ctx, (concl_kdx, concl_mdx), tac
             tac_bin = self.tac_bin(tac)
 
-            pt = TacStPt(tactr, tacst, subtr_size[gid], tac_bin)
+            pt = TacStPt(tactr, tacst, subtr_size[gid], tac_bin, dict_kern_str_dists, dict_mid_str_dists)
 
             self.data[tactr_id].append(pt)
             self.tac_hist[pt.tac_bin] += 1
