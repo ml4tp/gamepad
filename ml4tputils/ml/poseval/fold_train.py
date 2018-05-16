@@ -198,9 +198,9 @@ class TacStTrainer(object):
             if not self.args.midlvl:
                 astsizes += tacst_pt.kern_size
             elif not self.args.noimp:
-                astsizes += tacst_folder.mid_size
+                astsizes += tacst_pt.mid_size
             else:
-                astsizes += tacst_folder.mid_noimp_size
+                astsizes += tacst_pt.mid_noimp_size
 
             # Apply forward pass
             pred = tacst_folder.fold_tacst(self.get_tacst(tacst_pt))

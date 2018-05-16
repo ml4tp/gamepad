@@ -48,7 +48,7 @@ def seq_lids(folder, xs, hidden, conclu_pos):
 
     return preds
 
-def seq_embed(name, folder, xs, init, get_hiddens, ln, input_dropout, conclu_pos):
+def seq_embed(name, folder, xs, init, ln, input_dropout, conclu_pos, get_hiddens = False):
     # Preprocess for fold
     hidden = folder.add('identity', init)
 
@@ -583,7 +583,7 @@ class TacStModel(nn.Module):
         self.get_hiddens = lids
 
         # Sequence models
-        seq_args = {'get_hiddens': False, 'ln': ln, 'input_dropout': dropout > 0.0, 'conclu_pos': self.conclu_pos}
+        seq_args = {'ln': ln, 'input_dropout': dropout > 0.0, 'conclu_pos': self.conclu_pos}
         if seq_args['ln']:
             # Layer Norm
             self.ast_gamma = nn.Parameter(torch.ones(self.init_state))
@@ -745,6 +745,14 @@ class TacStModel(nn.Module):
             # Only apply final to hidden
             x = x.chunk(2,-1)[0]
         return self.final(x)
+
+    def final_lids_f(self, x, hidden):
+        if self.tup:
+            # Only use hiddens not cells
+            x = x.chunk(2, -1)[0]
+            hidden = hidden.chunk(2, -1)[0]
+
+        return self.final_lids(torch.cat([x, hidden], dim=-1))
 
     def proj_f(self, *xs):
         if self.tup:
