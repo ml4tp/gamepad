@@ -402,7 +402,7 @@ class GLetTuple(GExp):
 
     def apted_tree(self):
         s_names = " ".join([str(name) for name in self.names])
-        return "{{{LT{{{}}}{}{}{}}}}".format(s_names, self.g1_fst.apted_tree(), self.g1_snd.apted_tree(), self.g2.apted_tree())
+        return "{{LT{{{}}}{}{}{}}}".format(s_names, self.g1_fst.apted_tree(), self.g1_snd.apted_tree(), self.g2.apted_tree())
 
 
 class GIf(GExp):
