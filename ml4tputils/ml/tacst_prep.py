@@ -35,22 +35,18 @@ class TacStPt(object):
         self._subtr_bin()
 
         # Features
+        self._kern_size()
+        self._mid_size()
+        self._mid_noimp_size()
+        self._ctx_len()
         if f_feature:
-            self._kern_size()
-            self._mid_size()
-            self._mid_noimp_size()
-            self._ctx_len()
             # TOO SLOW
             # self._tree_edit_dist()
             self._string_edit_dist(dict_kern_str_dists, dict_mid_str_dists)
             # self.kern_str_dists = kern_str_dists
             # self.mid_str_dists = mid_str_dists
-            print("KERN", self.kern_str_dists)
-            print("MID", self.mid_str_dists)
-        else:
-            self.kern_size = 0
-            self.mid_size = 0
-            self.mid_noimp_size = 0
+            # print("KERN", self.kern_str_dists)
+            # print("MID", self.mid_str_dists)
 
     # Prepares
     def _subtr_bin(self):
@@ -261,17 +257,19 @@ class TacStDataset(object):
         # Compute string edit distances
         dict_kern_str_dists = {}
         dict_mid_str_dists = {}
+        dict_kern_str = {}
+        dict_mid_str = {}
         for _, gid, _, _, ctx, (concl_kdx, concl_mdx), tac in tactr.bfs_traverse():
-            kern_concl_str = kern2str(tactr, concl_kdx)
-            mid_concl_str = mid2str(tactr, concl_mdx)
+            kern_concl_str = dict_kern_str.setdefault(concl_kdx, kern2str(tactr, concl_kdx))
+            mid_concl_str =  dict_mid_str.setdefault(concl_mdx, mid2str(tactr, concl_mdx))
 
             for _, ty_kdx, ty_mdx in ctx:
                 if (concl_kdx, ty_kdx) not in dict_kern_str_dists:
-                    kern_ty_str = kern2str(tactr, ty_kdx)
+                    kern_ty_str = dict_kern_str.setdefault(ty_kdx, kern2str(tactr, ty_kdx))
                     dict_kern_str_dists[(concl_kdx, ty_kdx)] = string_edit_dist(kern_concl_str, kern_ty_str)
 
                 if (concl_mdx, ty_mdx) not in dict_mid_str_dists:
-                    mid_ty_str = mid2str(tactr, ty_mdx)
+                    mid_ty_str = dict_mid_str.setdefault(ty_mdx, mid2str(tactr, ty_mdx))
                     dict_mid_str_dists[(concl_mdx, ty_mdx)] = string_edit_dist(mid_concl_str, mid_ty_str)
 
         for _, gid, _, _, ctx, (concl_kdx, concl_mdx), tac in tactr.bfs_traverse():
