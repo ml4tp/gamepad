@@ -27,7 +27,7 @@ np.random.seed(7)
 # -------------------------------------------------
 # Tactic States Dataset
 class TacStPt(object):
-    def __init__(self, tactr, tacst, subtr_size, tac_bin, dict_kern_str_dists, dict_mid_str_dists):
+    def __init__(self, tactr, tacst, subtr_size, tac_bin, dict_kern_str_dists, dict_mid_str_dists, f_feature=True):
         self.tactr = tactr
         self.tacst = tacst
         self.subtr_size = subtr_size
@@ -35,17 +35,22 @@ class TacStPt(object):
         self._subtr_bin()
 
         # Features
-        self._kern_size()
-        self._mid_size()
-        self._mid_noimp_size()
-        self._ctx_len()
-        # TOO SLOW
-        # self._tree_edit_dist()
-        self._string_edit_dist(dict_kern_str_dists, dict_mid_str_dists)
-        # self.kern_str_dists = kern_str_dists
-        # self.mid_str_dists = mid_str_dists
-        print("KERN", self.kern_str_dists)
-        print("MID", self.mid_str_dists)
+        if f_feature:
+            self._kern_size()
+            self._mid_size()
+            self._mid_noimp_size()
+            self._ctx_len()
+            # TOO SLOW
+            # self._tree_edit_dist()
+            self._string_edit_dist(dict_kern_str_dists, dict_mid_str_dists)
+            # self.kern_str_dists = kern_str_dists
+            # self.mid_str_dists = mid_str_dists
+            print("KERN", self.kern_str_dists)
+            print("MID", self.mid_str_dists)
+        else:
+            self.kern_size = 0
+            self.mid_size = 0
+            self.mid_noimp_size = 0
 
     # Prepares
     def _subtr_bin(self):

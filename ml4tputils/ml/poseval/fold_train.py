@@ -128,7 +128,11 @@ class TacStTrainer(object):
         for tactr_id, tacst_pt in minibatch:
             tacst_folder = self.tacst_folder[tactr_id]
             #TODO (praf): Use different size depending on flag
-            astsizes += tacst_pt.kern_size
+            print("HERE", type(tacst_pt))
+            if self.model.f_mid:
+                astsizes += tacst_pt.mid_size
+            else:
+                astsizes += tacst_pt.kern_size
             # Apply forward pass
 
             pred = tacst_folder.fold_tacst(self.get_tacst(tacst_pt))

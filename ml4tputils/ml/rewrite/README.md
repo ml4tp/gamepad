@@ -39,6 +39,16 @@
 
 ## Experiments
 
+NIPS version:
+
+python ml4tputils/ml/main.py --end2end --mload mllogs/state_128_lr_0.001_conclu_pos_0_ln_False_drop_0.0_wd_0.0_v_False_attn_False_heads_1_m__r_/2018-05-14T224446.674225.pth --validate 
+
+simprw-2018-05-16T212811.543397.log
+
+fully-solved 10/50
+relaxed fully-solved 50/50
+avg. ratio 0.157
+
 ICML version:
 
 1. Command
