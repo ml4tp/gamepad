@@ -111,20 +111,25 @@ class TacStPt(object):
             mid_dists += [tree_edit_dist(mid_concl_tr, mid_ty_tr)]
 
         # Set largest distances first
-        sorted(kern_dists, reverse=True)
-        sorted(mid_dists, reverse=True)
+        sorted(kern_dists)
+        sorted(mid_dists)
+
+        # All distances, smallest first
         self.kern_tr_dists = kern_dists
         self.mid_tr_dists = mid_dists
-        self.mid_noimp_dists = mid_dists
+        self.mid_noimp_tr_dists = mid_dists
 
     def _string_edit_dist(self, dict_kern_str_dists, dict_mid_str_dists):
-        _, ctx, _, _ = self.tacst
+        _, ctx, (concl_kdx, concl_mdx), _ = self.tacst
 
-        kern_dists = []
-        mid_dists = []
+        kern_concl_str = kern2str(self.tactr, concl_kdx)
+        mid_concl_str = mid2str(self.tactr, concl_mdx)
+
+        kern_dists = [len(kern_concl_str)]
+        mid_dists = [len(mid_concl_str)]
         for _, ty_kdx, ty_mdx in ctx:
-            kern_dists += [dict_kern_str_dists[ty_kdx]]
-            mid_dists += [dict_mid_str_dists[ty_mdx]]
+            kern_dists += [dict_kern_str_dists[(concl_kdx, ty_kdx)]]
+            mid_dists += [dict_mid_str_dists[(concl_mdx, ty_mdx)]]
 
         # kern_concl_str = kern2str(self.tactr, concl_kdx)
         # mid_concl_str = mid2str(self.tactr, concl_mdx)
@@ -141,12 +146,17 @@ class TacStPt(object):
         #         mid_dists += [string_edit_dist(mid_concl_str, mid_ty_str)]
         #         mid_seen.add(ty_mdx)
 
-        # Set largest distances first
-        kern_dists = sorted(kern_dists, reverse=True)
-        mid_dists = sorted(mid_dists, reverse=True)
+        # All distance, smallest first
+        kern_dists = sorted(kern_dists)
+        mid_dists = sorted(mid_dists)
         self.kern_str_dists = kern_dists
         self.mid_str_dists = mid_dists
         self.mid_noimp_str_dists = mid_dists
+
+        # Top-1
+        self.kern_str_dist = self.kern_str_dists[0]
+        self.mid_str_dist = self.mid_str_dists[0]
+        self.mid_noimp_str_dist = self.mid_noimp_str_dists[0]
 
     # Getter's
     def kern_tacst(self):
@@ -249,14 +259,15 @@ class TacStDataset(object):
         for _, gid, _, _, ctx, (concl_kdx, concl_mdx), tac in tactr.bfs_traverse():
             kern_concl_str = kern2str(tactr, concl_kdx)
             mid_concl_str = mid2str(tactr, concl_mdx)
-            for _, ty_kdx, ty_mdx in ctx:
-                if ty_kdx not in dict_kern_str_dists:
-                    kern_ty_str = kern2str(tactr, ty_kdx)
-                    dict_kern_str_dists[ty_kdx] = string_edit_dist(kern_concl_str, kern_ty_str)
 
-                if ty_mdx not in dict_mid_str_dists:
+            for _, ty_kdx, ty_mdx in ctx:
+                if (concl_kdx, ty_kdx) not in dict_kern_str_dists:
+                    kern_ty_str = kern2str(tactr, ty_kdx)
+                    dict_kern_str_dists[(concl_kdx, ty_kdx)] = string_edit_dist(kern_concl_str, kern_ty_str)
+
+                if (concl_mdx, ty_mdx) not in dict_mid_str_dists:
                     mid_ty_str = mid2str(tactr, ty_mdx)
-                    dict_mid_str_dists[ty_mdx] = string_edit_dist(mid_concl_str, mid_ty_str)
+                    dict_mid_str_dists[(concl_mdx, ty_mdx)] = string_edit_dist(mid_concl_str, mid_ty_str)
 
         for _, gid, _, _, ctx, (concl_kdx, concl_mdx), tac in tactr.bfs_traverse():
             tacst = gid, ctx, (concl_kdx, concl_mdx), tac
