@@ -42,11 +42,11 @@ class TacStTrainer(object):
             self.model.cuda()
             self.torch = torch.cuda
 
-        # Select whether we want mid-level or kernel-level AST
-        if self.model.f_mid:
-            self.get_tacst = lambda pt: pt.mid_tacst()
-        else:
-            self.get_tacst = lambda pt: pt.kern_tacst()
+        # # Select whether we want mid-level or kernel-level AST
+        # if self.model.f_mid:
+        #     self.get_tacst = lambda pt: pt.mid_tacst()
+        # else:
+        #     self.get_tacst = lambda pt: pt.kern_tacst()
 
         # Optimizer
         self.loss_fn =  nn.CrossEntropyLoss()
@@ -60,16 +60,22 @@ class TacStTrainer(object):
         self.best_loss = np.inf
         self.ts = None               # timestamp
 
-        # Folder
-        self.folder = Folder(model, args.fold, args.cuda)
-        self.tacst_folder = {}   # Folder to embed
-        for tactr_id, tactr in enumerate(self.tactrs):
-            self.tacst_folder[tactr_id] = TacStFolder(model, tactr, self.folder)
+        typ = "_".join([v for k, v in (zip([not (args.midlvl or args.noimp), args.midlvl, args.noimp],
+                                        ["kern", "midlvl", "noimp"])) if k])
+        if self.model.f_linear:
+            # Linear
+            basepath = 'mllogs/{}/type_{}_lr_{}_m_linear_r_{}'.format(args.task, typ, args.lr, args.name)
+        else:
+            # Folder
+            self.folder = Folder(model, args.fold, args.cuda)
+            self.tacst_folder = {}   # Folder to embed
+            for tactr_id, tactr in enumerate(self.tactrs):
+                self.tacst_folder[tactr_id] = TacStFolder(model, tactr, self.folder)
 
-        misc = "_".join([v for k,v in (zip([not (args.lstm or args.treelstm), args.lstm, args.treelstm], ["gru", "lstm", "treelstm"])) if k])
-        type = "_".join([v for k,v in (zip([not (args.midlvl or args.noimp), args.midlvl, args.noimp], ["kern", "midlvl", "noimp"])) if k])
+            misc = "_".join([v for k,v in (zip([not (args.lstm or args.treelstm), args.lstm, args.treelstm], ["gru", "lstm", "treelstm"])) if k])
 
-        basepath = 'mllogs/{}/type_{}_state_{}_lr_{}_conclu_pos_{}_ln_{}_drop_{}_wd_{}_v_{}_attn_{}_heads_{}_m_{}_r_{}/'.format(args.task, type, args.state, args.lr, args.conclu_pos, args.ln, args.dropout, args.weight_dropout, args.variational, args.attention, args.heads, misc, args.name)
+            basepath = 'mllogs/{}/type_{}_state_{}_lr_{}_conclu_pos_{}_ln_{}_drop_{}_wd_{}_v_{}_attn_{}_heads_{}_m_{}_r_{}/'.format(args.task, typ, args.state, args.lr, args.conclu_pos, args.ln, args.dropout, args.weight_dropout, args.variational, args.attention, args.heads, misc, args.name)
+
         if args.mload:
             self.load(args.mload)
             basepath += 'load_{}/'.format(self.ts)  # So reloaded models saved in subdirectory
@@ -117,34 +123,38 @@ class TacStTrainer(object):
 
     def forward(self, minibatch):
         n_batch = len(minibatch)
-        self.folder.reset()  # Before or after?
-        all_logits, all_targets = [], []
-        all_logits2, all_targets2 = [], []
-        astsizes = 0
-        # Forward and Backward graph
-        for tactr_id, tacst_pt in minibatch:
-            self.tacst_folder[tactr_id].reset()
-
-        for tactr_id, tacst_pt in minibatch:
-            tacst_folder = self.tacst_folder[tactr_id]
-            #TODO (praf): Use different size depending on flag
-            print("HERE", type(tacst_pt))
-            if self.model.f_mid:
-                astsizes += tacst_pt.mid_size
-            else:
+        if self.model.f_linear:
+            # Simple linear model
+            features = []
+            astsizes = 0
+            for tactr_id, tacst_pt in minibatch:
+                features.append(self.model.get_features(tacst_pt))
                 astsizes += tacst_pt.kern_size
-            # Apply forward pass
+            features = autograd.Variable(self.torch.FloatTensor(features))
+            logits = self.model.pred(features)
+        else:
+            # Folding model
+            self.folder.reset()  # Before or after?
+            logits, targets = [], []
+            astsizes = 0
+            # Forward and Backward graph
+            for tactr_id, tacst_pt in minibatch:
+                self.tacst_folder[tactr_id].reset()
+            for tactr_id, tacst_pt in minibatch:
+                tacst_folder = self.tacst_folder[tactr_id]
+                # TODO (praf): Use different size depending on flag
+                astsizes += tacst_pt.kern_size
+                # Apply forward pass
 
-            pred = tacst_folder.fold_tacst(self.get_tacst(tacst_pt))
-            all_logits += [pred]
-            if self.args.task == 'pose':
-                all_targets += [tacst_pt.subtr_bin]
-            else:
-                all_targets += [tacst_pt.tac_bin]
+                pred = tacst_folder.fold_tacst(tacst_pt)
+                logits += [pred]
+                if self.args.task == 'pose':
+                    targets += [tacst_pt.subtr_bin]
+                else:
+                    targets += [tacst_pt.tac_bin]
+            logits = self.folder.apply(logits)[0] # Folded model
 
-        res = self.folder.apply(all_logits)
-        logits = res[0]
-        targets = autograd.Variable(self.torch.LongTensor(all_targets), requires_grad=False)
+        targets = autograd.Variable(self.torch.LongTensor(targets), requires_grad=False)
         assert logits.shape == torch.Size([n_batch, self.model.outsize])  # , folded_logits[0].shape
         loss = self.loss_fn(logits, targets)
         preds = torch.max(logits, dim=-1)[1]  # 0-th is max values, 1-st is max location
@@ -201,7 +211,7 @@ class TacStTrainer(object):
             print(k, v)
 
         # Train
-        smooth_acc = None; smooth_acc2 = None
+        smooth_acc = None;
         smooth_loss = None
         while self.epochs < self.max_epochs:
             testart = time()

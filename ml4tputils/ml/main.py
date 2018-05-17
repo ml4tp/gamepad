@@ -3,7 +3,7 @@ import pickle
 import torch
 import numpy as np
 
-from ml.poseval.fold_model import TacStModel
+from ml.poseval.fold_model import LinearModel, TacStModel
 from ml.poseval.fold_train import TacStTrainer
 # from ipdb import launch_ipdb_on_exception
 # from ml.rewrite.solver import to_goalattn_dataset, run
@@ -30,6 +30,7 @@ if __name__ == "__main__":
     argparser.add_argument('--task', type=str, default='pose', choices=['pose', 'tac'], help='which task')
     argparser.add_argument('--nbatch', type=int, default=32, help='minibatch size')
     argparser.add_argument('--lr', type=float, default=0.001, help='learning rate')
+    argparser.add_argument('--linear', action='store_true', default=False, help='simple linear model or not')
     argparser.add_argument('--state', type=int, default=128, help='state size')
     argparser.add_argument("--ln", action='store_true', help="To norm or not to norm")
     argparser.add_argument('--conclu_pos', type=int, choices=[0, -1], default=0, help='conclusion at start or end')
@@ -60,7 +61,7 @@ if __name__ == "__main__":
     else:
         args.outsize = 3
 
-    args.cuda = not args.no_cuda and torch.cuda.is_available()
+    args.cuda = not args.linear and not args.no_cuda and torch.cuda.is_available()
     if args.debug:
         args.name = "debug_" + args.name
     np.random.seed(0)
@@ -102,7 +103,10 @@ if __name__ == "__main__":
             else:
                 trainer.train()
         else:
-            model = TacStModel(*tokens_to_idx, ln=args.ln, treelstm=args.treelstm, lstm=args.lstm,
+            if args.linear:
+                model = LinearModel(outsize=args.outsize, f_mid=args.midlvl, f_useiarg=not args.noimp)
+            else:
+                model = TacStModel(*tokens_to_idx, ln=args.ln, treelstm=args.treelstm, lstm=args.lstm,
                                  dropout=args.dropout, attention=args.attention, heads=args.heads, D=args.state,
                                  state=args.state, weight_dropout=args.weight_dropout, variational=args.variational,
                                  conclu_pos=args.conclu_pos, outsize = args.outsize, f_mid=args.midlvl, f_useiarg=not args.noimp)
