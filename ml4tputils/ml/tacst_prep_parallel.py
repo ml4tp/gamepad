@@ -265,7 +265,7 @@ class TacStDataset(object):
         # Process trees
         import glob
         pths = glob.glob("tactr_pts/*.pickle")
-        print("Loading {} paths", len(pths))
+        print("Loading {} paths".format(len(pths)))
         for pth in pths:
             with open(pth, "rb") as f:
                 result = pickle.load(f)

@@ -27,7 +27,7 @@ np.random.seed(7)
 # -------------------------------------------------
 # Tactic States Dataset
 class TacStPt(object):
-    def __init__(self, tactr, tacst, subtr_size, tac_bin, dict_kern_str_dists, dict_mid_str_dists, f_feature=True):
+    def __init__(self, tactr, tacst, subtr_size, tac_bin, dict_kern_str_dists, dict_mid_str_dists, f_feature=True, f_edit_feature=True):
         self.tactr = tactr
         self.tacst = tacst
         self.subtr_size = subtr_size
@@ -40,9 +40,11 @@ class TacStPt(object):
             self._mid_size()
             self._mid_noimp_size()
             self._ctx_len()
-            # TOO SLOW
-            # self._tree_edit_dist()
-            self._string_edit_dist(dict_kern_str_dists, dict_mid_str_dists)
+            if f_edit_feature:
+                # TOO SLOW
+                # self._tree_edit_dist()
+                self._string_edit_dist(dict_kern_str_dists, dict_mid_str_dists)
+
         else:
             # Use for creating artificial tacst points for testing
             self.kern_concl_size = 0
@@ -55,6 +57,9 @@ class TacStPt(object):
             self.mid_noimp_ctx_size = 0
             self.mid_noimp_size = 0
             self.len_ctx = 0
+
+
+
 
     # Prepares
     def _subtr_bin(self):
@@ -184,11 +189,12 @@ class Dataset(object):
 
 
 class TacStDataset(object):
-    def __init__(self, tactics_equiv, tactrs):
+    def __init__(self, tactics_equiv, tactrs, args):
         self.tactrs = tactrs
         self.tactics = set()
         self.tactics_equiv = tactics_equiv
         self.tac_hist = [0 for _ in tactics_equiv]
+        self.args = args
 
         self.data = {}
         self.sum_tacst_size = 0
@@ -233,24 +239,25 @@ class TacStDataset(object):
         dict_mid_str_dists = {}
         dict_kern_str = {}
         dict_mid_str = {}
-        for _, gid, _, _, ctx, (concl_kdx, concl_mdx), tac in tactr.bfs_traverse():
-            kern_concl_str = dict_kern_str.setdefault(concl_kdx, kern2str(tactr, concl_kdx))
-            mid_concl_str =  dict_mid_str.setdefault(concl_mdx, mid2str(tactr, concl_mdx))
+        if self.args.edit_features:
+            for _, gid, _, _, ctx, (concl_kdx, concl_mdx), tac in tactr.bfs_traverse():
+                kern_concl_str = dict_kern_str.setdefault(concl_kdx, kern2str(tactr, concl_kdx))
+                mid_concl_str =  dict_mid_str.setdefault(concl_mdx, mid2str(tactr, concl_mdx))
 
-            for _, ty_kdx, ty_mdx in ctx:
-                if (concl_kdx, ty_kdx) not in dict_kern_str_dists:
-                    kern_ty_str = dict_kern_str.setdefault(ty_kdx, kern2str(tactr, ty_kdx))
-                    dict_kern_str_dists[(concl_kdx, ty_kdx)] = string_edit_dist(kern_concl_str, kern_ty_str)
+                for _, ty_kdx, ty_mdx in ctx:
+                    if (concl_kdx, ty_kdx) not in dict_kern_str_dists:
+                        kern_ty_str = dict_kern_str.setdefault(ty_kdx, kern2str(tactr, ty_kdx))
+                        dict_kern_str_dists[(concl_kdx, ty_kdx)] = string_edit_dist(kern_concl_str, kern_ty_str)
 
-                if (concl_mdx, ty_mdx) not in dict_mid_str_dists:
-                    mid_ty_str = dict_mid_str.setdefault(ty_mdx, mid2str(tactr, ty_mdx))
-                    dict_mid_str_dists[(concl_mdx, ty_mdx)] = string_edit_dist(mid_concl_str, mid_ty_str)
+                    if (concl_mdx, ty_mdx) not in dict_mid_str_dists:
+                        mid_ty_str = dict_mid_str.setdefault(ty_mdx, mid2str(tactr, ty_mdx))
+                        dict_mid_str_dists[(concl_mdx, ty_mdx)] = string_edit_dist(mid_concl_str, mid_ty_str)
 
         for _, gid, _, _, ctx, (concl_kdx, concl_mdx), tac in tactr.bfs_traverse():
             tacst = gid, ctx, (concl_kdx, concl_mdx), tac
             tac_bin = self.tac_bin(tac)
 
-            pt = TacStPt(tactr, tacst, subtr_size[gid], tac_bin, dict_kern_str_dists, dict_mid_str_dists)
+            pt = TacStPt(tactr, tacst, subtr_size[gid], tac_bin, dict_kern_str_dists, dict_mid_str_dists, f_edit_feature=args.edit_features)
 
             self.data[tactr_id].append(pt)
             self.tac_hist[pt.tac_bin] += 1
@@ -307,6 +314,8 @@ if __name__ == "__main__":
                            type=str, help="Pickle file to save to")
     argparser.add_argument("-v", "--verbose", action="store_true")
     argparser.add_argument("--simprw", action="store_true")
+    argparser.add_argument("--edit_features", action="store_true", help="Compute edit distance features")
+
     args = argparser.parse_args()
 
     with open(args.load, 'rb') as f:
@@ -317,9 +326,8 @@ if __name__ == "__main__":
 
     if args.simprw:
         tactics_equiv = [["intros"], ["surgery"], ["<coretactics::reflexivity@0>"]]
-        tacst = TacStDataset(tactics_equiv, tactrs)
-    else:
-        tacst = TacStDataset(TACTICS_EQUIV, tactrs)
+        tacst = TacStDataset(tactics_equiv, tactrs, args)
+        tacst = TacStDataset(TACTICS_EQUIV, tactrs, args)
     if args.simprw:
         tacst_dataset = tacst.split_by_lemma(f_balance=False, num_train=400, num_test=50)
     else:
