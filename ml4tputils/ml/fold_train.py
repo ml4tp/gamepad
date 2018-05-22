@@ -1,18 +1,15 @@
+import os
 from time import time
 
+import numpy as np
 import torch
 import torch.autograd as autograd
 import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
 from tqdm import tqdm
-import numpy as np
-import os
 
-# -------------------------------------------------
-# Helper
-from ml.poseval.fold_model import TacStFolder, Folder
-from ml.utils import ResultLogger, cpu_stats, Timer, curr_timestamp, torch_summarize_df, flatten
+from ml.fold_model import TacStFolder, Folder
+from ml.utils import ResultLogger, Timer, curr_timestamp, torch_summarize_df
 
 
 # -------------------------------------------------

@@ -1,13 +1,14 @@
 import argparse
 import pickle
-import torch
-import numpy as np
 
-from ml.poseval.fold_model import LinearModel, TacStModel
-from ml.poseval.fold_train import TacStTrainer
-from ml.rewrite.simprw import run_end2end
-from ml.rewrite.dataset_prep import to_goalattn_dataset
+import numpy as np
+import torch
+
 from coq.tactics import TACTICS_EQUIV
+from ml.fold_model import LinearModel, TacStModel
+from ml.fold_train import TacStTrainer
+from ml.rewrite.dataset_prep import to_goalattn_dataset
+from ml.rewrite.simprw import run_end2end
 
 """
 [Note]
