@@ -21,7 +21,6 @@ Axiom id_r : forall a, a <+> m = a.
 (* [e] is the left-identity for all elements [a] *)
 Axiom id_l : forall a, e <+> a = a.
 
-
 Ltac surgery dir e1 e2 :=
   match goal with
   | [ |- _ ] =>
@@ -29,11 +28,6 @@ Ltac surgery dir e1 e2 :=
     (have H : e1 = e2 by repeat (rewrite dir); reflexivity); rewrite H; clear H
   end.
 
-(*
-Ltac surgery dir e1 e2 :=
-  let H := fresh in
-  (have H : e1 = e2 by repeat (rewrite dir); reflexivity); rewrite H; clear H.
-*)
 Lemma rewrite_eq_0: forall b: G, ((e <+> (e <+> m)) <+> ((b <+> ((m <+> m) <+> m)) <+> ((e <+> e) <+> m))) = b.
 Proof.
 intros.
