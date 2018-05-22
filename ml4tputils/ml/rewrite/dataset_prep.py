@@ -1,6 +1,6 @@
 from coq.glob_constr import *
 from coq.glob_constr_parser import GlobConstrParser
-from ml.tacst_prep import PosEvalPt, Dataset
+from ml.tacst_prep import Dataset
 
 
 class DiffGlobConstr(object):
@@ -71,7 +71,6 @@ def to_goalattn_dataset(module_name, poseval_dataset):
                 orig_ast = GlobConstrParser().parse_glob_constr(args[1])
                 rw_ast = GlobConstrParser().parse_glob_constr(args[2])
                 pos = DiffGlobConstr().diff_ast(orig_ast, rw_ast)
-                # print("DIFF", pos, orig_ast, rw_ast)
                 # Put the tactic in tac_bin
                 # Put the position of the ast in the subtr_bin
                 if "{}.id_r".format(module_name) in tac.ftac.gids:

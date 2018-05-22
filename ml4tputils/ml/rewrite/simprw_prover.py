@@ -1,6 +1,6 @@
 from coq.constr import *
 from ml.rewrite.pycoq_prover import PyCoqProver
-from ml.tacst_prep import TacStPt, PosEvalPt
+from ml.tacst_prep import TacStPt
 from ml.rewrite.utils import IdLaw, SimpRWPP, SimpRWRewriter, SIMPRW_PRELUDE
 
 
@@ -40,13 +40,8 @@ class PyCoqTrainedProver(PyCoqProver):
 
     def infer_proof_step(self, goal_c):
         # 1. Create data set point
-        # tactr, tacst, subtr_size, tac_bin, dict_kern_str_dists, dict_mid_str_dists, f_feature = True
-        # gid, ctx, (concl_kdx, concl_mdx), tac
         tacst = 0, self.ctx, (self.concl_idx, self.concl_idx), "FOO"
         poseval_pt = TacStPt(None, tacst, 0, 0, {}, {}, f_feature=False)
-        # edge = FakeTacEdge("rewrite")
-        # poseval_pt = PosEvalPt(0, self.ctx, self.concl_idx, [edge], 0, 0, 0)
-        # poseval_pt.tac_bin = 0
 
         # 2. Perform inference and sort by likelihood
         posdir_logits, _, _, _ = self.trainer.forward([(0, poseval_pt)])

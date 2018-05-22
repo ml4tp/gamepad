@@ -5,7 +5,7 @@ import random
 
 from ml.rewrite.pycoq_prover import PyCoqProver
 from ml.rewrite.simprw_prover import PyCoqTrainedProver
-from ml.rewrite.utils import SIMPRW_PRELUDE, SimpRWGen, SimpRWSolver, SolverStuckError
+from ml.rewrite.utils import SIMPRW_PRELUDE, SimpRWGen, SimpRWSolver
 from ml.utils import curr_timestamp
 
 

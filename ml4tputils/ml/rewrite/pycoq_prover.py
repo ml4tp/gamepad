@@ -55,7 +55,6 @@ class PyCoqProver(object):
     def _load_tcoq_result(self, res):
         # Update result
         self.last_res = res
-        print("AT THE", res)
 
         # TODO(deh): can optimize to not read whole file
         # Parse and update AST decoder
@@ -67,13 +66,8 @@ class PyCoqProver(object):
             # Update contex and conclusion if we made progress
             decl = lemma.decls[-1]
             self.ctx = decl.ctx.traverse()
-            print("LEMMA TYPE", type(lemma))
-            print("DECL TYPE", type(decl))
-            print("OMG", self.ctx)
-            # self.concl_idx = decl.concl_idx
             self.concl_idx = decl.concl_kdx
             self._dump_ctx()
-
 
     # -------------------------------------------------
     # API
