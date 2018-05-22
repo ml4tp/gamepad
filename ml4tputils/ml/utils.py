@@ -41,7 +41,8 @@ class Timer(object):
 
 
 def cpu_stats():
-    # TODO(prafulla): @prafulla where did you get this from?
+    # Taken from:
+    # https://stackoverflow.com/questions/276052/how-to-get-current-cpu-and-ram-usage-in-python
     print(sys.version)
     print(psutil.cpu_percent())
     print(psutil.virtual_memory())  # physical memory usage

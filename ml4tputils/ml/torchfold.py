@@ -1,10 +1,31 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
 import collections
 
 import torch
 from torch.autograd import Variable
-import torch.nn as nn
-from torch import optim
-import torch.nn.functional as F
+
+"""
+[Note]
+
+Modified from:
+https://github.com/nearai/pytorch-tools/blob/master/pytorch_tools/torchfold.py
+"""
 
 
 class Fold(object):
@@ -19,7 +40,6 @@ class Fold(object):
             self.args = args
             self.split_idx = -1
             self.batch = True
-            # self.depth = 0
 
         def split(self, num):
             """Split resulting node, if function returns multiple values."""
@@ -78,7 +98,6 @@ class Fold(object):
     def _batch_args(self, arg_lists, values):
         res = []
         for arg in arg_lists:
-            #print(arg_lists)
             r = []
             try:
                 # Fixed torchfold so it doesnt only check arg[0] for type. Removed aility to accept ints though
@@ -92,30 +111,6 @@ class Fold(object):
                 print("Accepting only Fold.Node or torch tensors/variables. No ints")
                 print("Constructing batched arg from %s" % str(arg))
                 raise
-
-            # if isinstance(arg[0], Fold.Node):
-            #     if arg[0].batch:
-            #         for x in arg:
-            #             r.append(x.get(values))
-            #         res.append(torch.cat(r, 0))
-            #     else:
-            #         for i in range(2, len(arg)):
-            #             if arg[i] != arg[0]:
-            #                 raise ValueError("Can not use more then one of nobatch argument, got: %s." % str(arg))
-            #         x = arg[0]
-            #         res.append(x.get(values))
-            # elif isinstance(arg[0], (torch.tensor._TensorBase, Variable)):
-            #     res.append(torch.cat(arg, 0))
-            # else:
-            #     try:
-            #         if self._cuda:
-            #             var = Variable(torch.cuda.LongTensor(arg), volatile=self.volatile)
-            #         else:
-            #             var = Variable(torch.LongTensor(arg), volatile=self.volatile)
-            #         res.append(var)
-            #     except:
-            #         print("Constructing LongTensor from %s" % str(arg))
-            #         raise
         return res
 
     def reshuffle(self):
@@ -145,7 +140,6 @@ class Fold(object):
                     arg_size = batched_args[0].size()[0]
                 else:
                     arg_size = 1
-                #print("batching ", op, arg_size)
                 res = func(*batched_args)
                 if isinstance(res, (tuple, list)):
                     values[step][op] = []
