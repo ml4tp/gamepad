@@ -10,6 +10,8 @@ from lib.myedit import *
 from recon.embed_tokens import EmbedTokens
 
 from multiprocessing import Pool
+from itertools import repeat
+
 
 """
 [Note]
@@ -34,7 +36,7 @@ def _tac_bin(tac, tactics_equiv=TACTICS_EQUIV):
     raise NameError("Not assigned to bin", tac[-1].name)
 
 
-def mk_tactr(tactr_id):
+def mk_tactr(tactr_id, args):
     print("Working on {}".format(tactr_id))
     with open("tactrs/%s.pickle" % tactr_id, 'rb') as f:
         tactr = pickle.load(f)
@@ -53,24 +55,25 @@ def mk_tactr(tactr_id):
     dict_mid_str_dists = {}
     dict_kern_str = {}
     dict_mid_str = {}
-    for _, gid, _, _, ctx, (concl_kdx, concl_mdx), tac in tactr.bfs_traverse():
-        kern_concl_str = dict_kern_str.setdefault(concl_kdx, kern2str(tactr, concl_kdx))
-        mid_concl_str = dict_mid_str.setdefault(concl_mdx, mid2str(tactr, concl_mdx))
+    if args.edit_features:
+        for _, gid, _, _, ctx, (concl_kdx, concl_mdx), tac in tactr.bfs_traverse():
+            kern_concl_str = dict_kern_str.setdefault(concl_kdx, kern2str(tactr, concl_kdx))
+            mid_concl_str = dict_mid_str.setdefault(concl_mdx, mid2str(tactr, concl_mdx))
 
-        for _, ty_kdx, ty_mdx in ctx:
-            if (concl_kdx, ty_kdx) not in dict_kern_str_dists:
-                kern_ty_str = dict_kern_str.setdefault(ty_kdx, kern2str(tactr, ty_kdx))
-                dict_kern_str_dists[(concl_kdx, ty_kdx)] = string_edit_dist(kern_concl_str, kern_ty_str)
+            for _, ty_kdx, ty_mdx in ctx:
+                if (concl_kdx, ty_kdx) not in dict_kern_str_dists:
+                    kern_ty_str = dict_kern_str.setdefault(ty_kdx, kern2str(tactr, ty_kdx))
+                    dict_kern_str_dists[(concl_kdx, ty_kdx)] = string_edit_dist(kern_concl_str, kern_ty_str)
 
-            if (concl_mdx, ty_mdx) not in dict_mid_str_dists:
-                mid_ty_str = dict_mid_str.setdefault(ty_mdx, mid2str(tactr, ty_mdx))
-                dict_mid_str_dists[(concl_mdx, ty_mdx)] = string_edit_dist(mid_concl_str, mid_ty_str)
+                if (concl_mdx, ty_mdx) not in dict_mid_str_dists:
+                    mid_ty_str = dict_mid_str.setdefault(ty_mdx, mid2str(tactr, ty_mdx))
+                    dict_mid_str_dists[(concl_mdx, ty_mdx)] = string_edit_dist(mid_concl_str, mid_ty_str)
 
     for _, gid, _, _, ctx, (concl_kdx, concl_mdx), tac in tactr.bfs_traverse():
         tacst = gid, ctx, (concl_kdx, concl_mdx), tac
         tac_bin = _tac_bin(tac)
 
-        pt = TacStPt(tactr, tacst, subtr_size[gid], tac_bin, dict_kern_str_dists, dict_mid_str_dists)
+        pt = TacStPt(tactr, tacst, subtr_size[gid], tac_bin, dict_kern_str_dists, dict_mid_str_dists, f_edit_feature=args.edit_features)
 
         data.append(pt)
 
@@ -84,7 +87,7 @@ def mk_tactr(tactr_id):
 # Tactic States Dataset
 
 class TacStPt(object):
-    def __init__(self, tactr, tacst, subtr_size, tac_bin, dict_kern_str_dists, dict_mid_str_dists, f_feature=True):
+    def __init__(self, tactr, tacst, subtr_size, tac_bin, dict_kern_str_dists, dict_mid_str_dists, f_feature=True, f_edit_feature=True):
         self.tactr = tactr
         self.tacst = tacst
         self.subtr_size = subtr_size
@@ -92,11 +95,13 @@ class TacStPt(object):
         self._subtr_bin()
 
         # Features
-        self._kern_size()
-        self._mid_size()
-        self._mid_noimp_size()
-        self._ctx_len()
         if f_feature:
+            self._kern_size()
+            self._mid_size()
+            self._mid_noimp_size()
+            self._ctx_len()
+
+        if f_edit_feature:
             # NOTE(deh): very slow
             # self._tree_edit_dist()
             self._string_edit_dist(dict_kern_str_dists, dict_mid_str_dists)
@@ -260,14 +265,15 @@ class TacStDataset(object):
         # Process trees
         import glob
         pths = glob.glob("tactr_pts/*.pickle")
+        print("Loading {} paths", len(pths))
         for pth in pths:
             with open(pth, "rb") as f:
                 result = pickle.load(f)
             data, tactics = result
             tactr_id = int(pth.split("/")[-1][:-7])
-            print(pth, tactr_id)
+            #print(pth, tactr_id)
             self.data[tactr_id] = data
-            self.tactics.union(tactics)
+            self.tactics = self.tactics.union(tactics)
             for pt in data:
                 self.tac_hist[pt.tac_bin] += 1
                 self.num_tacst += 1
@@ -333,15 +339,14 @@ def dump_trees(args):
         with open("tactrs/%s.pickle" % tactr_id, 'wb') as f:
             pickle.dump(tactr, f)
 
-def process_trees():
+    return tactrs
+
+def process_trees(args):
+    os.mkdir("tactr_pts")
     with Pool() as p:
-        p.map(mk_tactr, list(range(1602)))
+        p.starmap(mk_tactr, zip(list(range(args.trees)), repeat(args, args.trees)))
 
-def create_dataset(args):
-    with open(args.load, 'rb') as f:
-        print("Loading {}...".format(args.load))
-        tactrs = pickle.load(f)
-
+def create_dataset(args, tactrs):
     tacst = TacStDataset(TACTICS_EQUIV)
     tacst_dataset = tacst.split_by_lemma()
 
@@ -370,13 +375,17 @@ if __name__ == "__main__":
                            type=str, help="Pickle file to save to")
     argparser.add_argument("-v", "--verbose", action="store_true")
     argparser.add_argument("--simprw", action="store_true")
+    argparser.add_argument("--edit_features", action="store_true", help="Compute edit distance features")
     args = argparser.parse_args()
 
     print("Dumping separated tactr pickles")
-    dump_trees(args)
+    tactrs = dump_trees(args)
+    args.trees = len(tactrs)
+    print("Dumped {} trees".format(args.trees))
 
     print("Dumping processed tacst points per tree. In parallel")
-    process_trees()
+    process_trees(args)
+    print("Dumped processed tacst pts")
 
     print("Creating dataset")
-    create_dataset(args)
+    create_dataset(args, tactrs)
