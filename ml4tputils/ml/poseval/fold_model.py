@@ -1,23 +1,14 @@
-import gc
 import numpy as np
 
 import torch
 import torch.autograd as autograd
 import torch.nn as nn
-import torch.nn.functional as F
-from torch.nn import Parameter
+import torch.nn.functional
 
 from coq.constr import *
 from coq.glob_constr import *
 from lib.myenv import FastEnv
 import ml.torchfold as ptf
-from lib.mysexpr import sexpr_unpack
-
-import torch.optim as optim
-from coq.constr_decode import DecodeConstr
-from lib.myutil import NotFound
-from coq.constr_util import SizeConstr
-from ml.utils import ResultLogger
 
 
 """
@@ -46,12 +37,12 @@ def seq_embed(name, folder, xs, init, get_hiddens, ln, input_dropout, conclu_pos
     # Input dropout
     if input_dropout:
         hidden = folder.add('input_dropout_f', hidden)
-        for i,x in enumerate(xs):
+        for i, x in enumerate(xs):
             xs[i] = folder.add('input_dropout_f', x)
 
     hiddens = []
     # Cell sequence
-    for i,x in enumerate(xs):
+    for i, x in enumerate(xs):
         hidden = folder.add(name + '_cell_f', x, hidden)
         hiddens.append(hidden)
 
@@ -86,7 +77,8 @@ class Folder(object):
     def __init__(self, model, foldy, cuda):
         # Folding state
         self.model = model
-        self.foldy = foldy
+        self.foldy = foldy       # fold or not?
+        self._folder = None      # which folder to use
         self.cuda = cuda
         self.max_batch_ops = {}
         if not self.cuda:
@@ -108,10 +100,8 @@ class Folder(object):
     def reset(self):
         """Reset folding state"""
         if self.foldy:
-            # print("Folding")
-            self._folder = ptf.Fold(max_batch_ops = self.max_batch_ops)
+            self._folder = ptf.Fold(max_batch_ops=self.max_batch_ops)
         else:
-            # print("Not folding")
             self._folder = ptf.Unfold(self.model)
         if self.cuda:
             self._folder.cuda()
@@ -172,7 +162,6 @@ class TacStFolder(object):
 
     def fold_tacst(self, tacst_pt):
         """Top-level fold function"""
-        # print("FOLDING POINT IN", self.tactr.name)
         tacst = self.get_tacst(tacst_pt)
         gid, ctx, concl_idx, tac = tacst
         env, foldeds = self.fold_ctx(gid, ctx)
@@ -190,7 +179,6 @@ class TacStFolder(object):
 
     def fold_ctx_ident(self, gid, env, typ_idx):
         # NOTE(deh): Do not need context sharing because of AST sharing
-        # c = self.tactr.decoder.decode_exp_by_key(typ_idx)
         c = self.decode(typ_idx)
         return self.fold_ast(env, c)
 
@@ -198,7 +186,6 @@ class TacStFolder(object):
         # NOTE(deh): Do not need conclusion sharing because of AST sharing
         self.f_save = True
         self.reset_ast()
-        # c = self.tactr.decoder.decode_exp_by_key(concl_idx)
         c = self.decode(concl_idx)
         self.f_save = False
         return self.fold_ast(env, c)
@@ -206,13 +193,7 @@ class TacStFolder(object):
     # -------------------------------------------
     # Kernel-level AST folding
 
-    # def fold_ast(self, env, c):
-    #     return self._fold_ast(env, Kind.TERM, c)
-
     def _fold(self, key, args):
-        # for i,arg in enumerate(args):
-        #     print(i, arg.shape)
-
         fold = self.model.ast_emb_func(self.folder, args)
         self.folded[key] = fold
         if self.f_save:
@@ -301,8 +282,7 @@ class TacStFolder(object):
             for ty, body in zip(c.tys, c.cs):
                 ev_tys += [self._fold_ast(env, Kind.TYPE, ty)]
                 ev_c = self._fold_ast(env, Kind.TERM, body)
-                # TODO(deh): wtf?
-                # Tie the knot appropriately
+                # NOTE(deh): Tie the knot appropriately
                 # self.fix_embed[name] = ev_c
                 ev_cs += [ev_c]
             return self._fold(key, [self.model.fix, *ev_tys, *ev_cs])
@@ -318,7 +298,6 @@ class TacStFolder(object):
             raise NameError("Kind {} not supported".format(c))
 
     def _fold_asts(self, env, kind, cs):
-        # TODO(deh): may need to fix this for fold to work
         return [self._fold_ast(env, kind, c) for c in cs]
 
     # -------------------------------------------
@@ -327,11 +306,10 @@ class TacStFolder(object):
     def _gref_args(self, env, gref):
         ty = type(gref)
         if ty is VarRef:
-            # TODO(deh): wtf is this?
             try:
                 ev_x = env.lookup_id(Name(gref.x))
             except:
-                print("Lookup error at VARREF", gc.x, env)
+                print("Lookup error at VARREF", gref.x, env)
                 ev_x = self.fold_local_var(None)
             return [self.model.gref_var, ev_x]
         elif ty is ConstRef:
@@ -345,7 +323,7 @@ class TacStFolder(object):
             ev_conid = self.fold_conid_name((gref.ind, gref.conid))
             return [self.model.gref_construct, ev_ind, ev_conid]
         else:
-            raise NameError("Gref {} not supported".format(gc))
+            raise NameError("Gref {} not supported".format(gref))
 
     def _fold_mid(self, env, gc):
         key = gc.tag
@@ -366,7 +344,6 @@ class TacStFolder(object):
             ev_ek = self.fold_evar_name(gc.ev)
             return self._fold(key, [self.model.gevar, ev_ek])
         elif ty is GPatVar:
-            # TODO(deh): I expect this to be an issue
             ev_pv = env.lookup_id(gc.pv)
             return self._fold(key, [self.model.gpatvar, ev_pv])
         elif ty is GApp:
@@ -408,10 +385,6 @@ class TacStFolder(object):
                 ccs += [self._fold_mid(env, cc.g)]
             return self._fold(key, [self.model.gcases, *ccs])
         elif ty is GLetTuple:
-            # TODO(deh): move the fst and snd projection into the parse
-            # ev_g1 = self._fold_mid(env, gc.g1)
-            # ev_g1_fst = self._fold_mid(env, GApp(GRef(ConstRef(Name("Coq.Init.Datatypes.fst"))), [gc.g1]))
-            # ev_g1_snd = self._fold_mid(env, GApp(GRef(ConstRef(Name("Coq.Init.Datatypes.snd"))), [gc.g1]))
             ev_g1_fst = self._fold_mid(env, gc.g1_fst)
             ev_g1_snd = self._fold_mid(env, gc.g1_snd)
             ev_g2 = self._fold_mid(env.local_extend(gc.names[0], ev_g1_fst).local_extend(gc.names[1], ev_g1_snd), gc.g2)
@@ -466,9 +439,6 @@ class TacStFolder(object):
 
     def fold_const_name(self, const):
         """Override Me"""
-        # print("LOOKING UP", const)
-        # for k in self.model.const_to_idx.keys():
-        #     print(k)
         id = self.model.fix_id('const', self.model.const_to_idx[const])
         return self.lookup(id)
 
@@ -508,11 +478,12 @@ class TreeLSTM(nn.Module):
         if weight_dropout:
             self.whx = WeightDrop(self.whx, ["weight"], weight_dropout, variational)
 
-    def forward(self, right_h, right_c, left_h, left_c): #takes x as first arg, h as second
-        a, i, f1, f2, o = self.whx(torch.cat([left_h, right_h], dim = -1)).chunk(5, -1)
+    def forward(self, right_h, right_c, left_h, left_c):
+        # takes x as first arg, h as second
+        a, i, f1, f2, o = self.whx(torch.cat([left_h, right_h], dim=-1)).chunk(5, -1)
         c = (a.tanh() * i.sigmoid() + f1.sigmoid() * left_c + f2.sigmoid() * right_c)
         h = o.sigmoid() * c.tanh()
-        return h,c
+        return h, c
 
 
 # -------------------------------------------------
@@ -520,16 +491,19 @@ class TreeLSTM(nn.Module):
 
 class LinearModel(nn.Module):
     def __init__(self, outsize=3, f_mid=False, f_useiarg=True):
-        self.outsize=3
+        self.outsize = 3
         self.f_mid = f_mid
         self.f_useiarg = f_useiarg
 
         if not self.f_mid:
-            self.typ = "kern" # Kern level
+            # Kern level
+            self.typ = "kern"
         elif self.f_useiarg:
-            self.typ = "mid" # Midlevel with Imp args
+            # Midlevel with Imp args
+            self.typ = "mid"
         else:
-            self.typ = "mid_noimp" # Midlvl with No imp args
+            # Midlvl with No imp args
+            self.typ = "mid_noimp"
 
         # Features
         size_features = ['%s_conclu_size' % self.typ, '%s_ctx_size' % self.typ]
@@ -537,8 +511,10 @@ class LinearModel(nn.Module):
         edit_dist_features = ['%s_str_dists' % self.typ]
         features = size_features + len_features + edit_dist_features
         insize = len(features)
-        def _get_features(pt, features = features):
+
+        def _get_features(pt, features=features):
             return [getattr(pt, f) for f in features]
+
         self.get_features = _get_features
 
         # Model
@@ -554,7 +530,9 @@ class TacStModel(nn.Module):
 
         # Dimensions
         self.D = D            # Dimension of embeddings
-        self.state = state    # Dimension of GRU/LSTM/TreeLSTM state. For LSTM's, each of hidden state and cell state has that size
+        # Dimension of GRU/LSTM/TreeLSTM state.
+        # For LSTM's, each of hidden state and cell state has that size
+        self.state = state
         self.outsize = outsize
         self.f_mid = f_mid           # Use mid-level AST (as opposed to kernel-level AST)
         self.f_useiarg = f_useiarg   # Use implicit arguments
@@ -568,10 +546,11 @@ class TacStModel(nn.Module):
         for table_name, table in zip(table_names, tables):
             self.shifts[table_name] = shift
             shift += len(table)
-        # print(self.shifts, shift)
         self.treelstm = treelstm
         self.lstm = lstm
-        self.tup = self.treelstm or self.lstm # So, we have hidden, state; instead of just state
+
+        # So, we have hidden, state; instead of just state
+        self.tup = self.treelstm or self.lstm
 
         if self.tup:
             # Initial state
@@ -590,7 +569,6 @@ class TacStModel(nn.Module):
         self.conid_to_idx = conid_to_idx
         self.evar_to_idx = evar_to_idx
         self.fix_to_idx = fix_to_idx
-
 
         if self.f_mid:
             attrs = ["gref_var", "gref_const", "gref_ind", "gref_construct", "gvar", "gevar", "gpatvar", "gapp",
@@ -624,7 +602,6 @@ class TacStModel(nn.Module):
             self.attn_q = nn.Linear(state, heads*state)
             self.attn_kv = nn.Linear(state, 2*heads*state)
 
-
         self.ast_cell_init_state = nn.Parameter(torch.randn(1, self.init_state))
         self.ctx_cell_init_state = nn.Parameter(torch.randn(1, self.init_state))
 
@@ -651,15 +628,15 @@ class TacStModel(nn.Module):
 
         if weight_dropout and not treelstm:
             weights = ["weight_hh"]
-            self.ast_cell = WeightDrop(self.ast_cell, weights=weights, dropout = weight_dropout, variational=variational)
-            self.ctx_cell = WeightDrop(self.ctx_cell, weights=weights, dropout = weight_dropout, variational= variational)
+            self.ast_cell = WeightDrop(self.ast_cell, weights=weights, dropout=weight_dropout, variational=variational)
+            self.ctx_cell = WeightDrop(self.ctx_cell, weights=weights, dropout=weight_dropout, variational=variational)
         self.pred = self.ctx_func
         self.proj = nn.Linear(state + 1, state)
         self.final = nn.Linear(heads*state, outsize)
 
         # Extra vars
-        self.register_buffer('concl_id', torch.ones([1,1]))
-        self.register_buffer('state_id', torch.zeros([1,1]))
+        self.register_buffer('concl_id', torch.ones([1, 1]))
+        self.register_buffer('state_id', torch.zeros([1, 1]))
 
     # Folder forward functions
     def attn_identity(self, x):
@@ -668,13 +645,13 @@ class TacStModel(nn.Module):
     def attn_q_f(self, x):
         if self.tup:
             # Only use hidden state
-            x = x.chunk(2,-1)[0]
+            x = x.chunk(2, -1)[0]
         return self.attn_q(x)
 
     def attn_sv_f(self, q, x, sv):
         if self.tup:
             # Only use hidden state
-            x = x.chunk(2,-1)[0]
+            x = x.chunk(2, -1)[0]
         batch, state = x.shape
         # q is [b, m*state], x is [b, state], k,v will bbe [b, m*state]
         k, v = self.attn_kv(x).chunk(2, -1)
@@ -691,15 +668,13 @@ class TacStModel(nn.Module):
             prod = torch.bmm(k, q).view(batch*self.m, 1) / float(np.sqrt(state))
             prsg = prod.sigmoid()
             sv = sv + (prsg * v).view(batch, self.m*state)
-        # print("prod std dev {}".format(torch.sqrt(torch.mean(prod*prod)).data))
-        # print("sigmoid std dev {}".format(torch.sqrt(torch.mean(prsg*prsg)).data))
         return sv
 
     def input_dropout_f(self, x):
         return self.input_dropout(x)
 
     def var_normal(self, x):
-        return autograd.Variable(x.normal_(), requires_grad = False)
+        return autograd.Variable(x.normal_(), requires_grad=False)
 
     def identity(self, x):
         return x
@@ -707,13 +682,11 @@ class TacStModel(nn.Module):
     def tup_identity(self, *args):
         return args
 
-    def fix_id(self, table_name, id):
-        # print(table_name, id, )
-        # print(self.embed_table(autograd.Variable(torch.LongTensor([self.shifts[table_name] + id]))))
-        return self.shifts[table_name] + id
+    def fix_id(self, table_name, ident):
+        return self.shifts[table_name] + ident
 
-    def embed_lookup_f(self, id):
-        return self.embed_table(id)
+    def embed_lookup_f(self, ident):
+        return self.embed_table(ident)
 
     def ast_cell_f(self, x, hidden):
         hidden = self.ast_cell(x, hidden)
@@ -724,27 +697,27 @@ class TacStModel(nn.Module):
         return hidden
 
     def ast_lstm_cell_f(self, right, left):
-        right_h, right_c = right.chunk(2,-1)
-        left_h, left_c = left.chunk(2,-1)
-        hidden = torch.cat(self.ast_cell(right_h, (left_h, left_c)),-1)
+        right_h, right_c = right.chunk(2, -1)
+        left_h, left_c = left.chunk(2, -1)
+        hidden = torch.cat(self.ast_cell(right_h, (left_h, left_c)), -1)
         return hidden
 
     def ctx_lstm_cell_f(self, right, left):
-        right_h, right_c = right.chunk(2,-1)
-        left_h, left_c = left.chunk(2,-1)
-        hidden = torch.cat(self.ctx_cell(right_h, (left_h, left_c)),-1)
+        right_h, right_c = right.chunk(2, -1)
+        left_h, left_c = left.chunk(2, -1)
+        hidden = torch.cat(self.ctx_cell(right_h, (left_h, left_c)), -1)
         return hidden
 
     def ast_tree_cell_f(self, right, left):
-        right_h, right_c = right.chunk(2,-1)
-        left_h, left_c = left.chunk(2,-1)
-        out = torch.cat(self.ast_cell(right_h, right_c, left_h, left_c),-1)
+        right_h, right_c = right.chunk(2, -1)
+        left_h, left_c = left.chunk(2, -1)
+        out = torch.cat(self.ast_cell(right_h, right_c, left_h, left_c), -1)
         return out
 
     def ctx_tree_cell_f(self, right, left):
-        right_h, right_c = right.chunk(2,-1)
-        left_h, left_c = left.chunk(2,-1)
-        out = torch.cat(self.ctx_cell(right_h, right_c, left_h, left_c),-1)
+        right_h, right_c = right.chunk(2, -1)
+        left_h, left_c = left.chunk(2, -1)
+        out = torch.cat(self.ctx_cell(right_h, right_c, left_h, left_c), -1)
         return out
 
     def ast_ln_f(self, x):
@@ -760,36 +733,37 @@ class TacStModel(nn.Module):
     def final_f(self, x):
         if self.tup:
             # Only apply final to hidden
-            x = x.chunk(2,-1)[0]
+            x = x.chunk(2, -1)[0]
         return self.final(x)
 
     def proj_f(self, *xs):
         if self.tup:
             # Only apply proj to hidden
-            x, cell = xs[0].chunk(2,-1)
-            x = torch.cat([x,xs[1]], dim = -1)
+            x, cell = xs[0].chunk(2, -1)
+            x = torch.cat([x, xs[1]], dim=-1)
             x = self.proj(x)
-            return torch.cat([x, cell], dim = -1)
+            return torch.cat([x, cell], dim=-1)
         else:
-            x = torch.cat(xs, dim = -1)
+            x = torch.cat(xs, dim=-1)
             return self.proj(x)
 
     # Folder helper functions, call the forward functions
     def mask(self, folder, xs):
         # First element is conclu, rest is state
         projs = []
-        for i,x in enumerate(xs):
+        for i, x in enumerate(xs):
             if i == 0:
-                id = self.concl_id
+                ident = self.concl_id
             else:
-                id = self.state_id
-            projs.append(folder.add('proj_f', x, autograd.Variable(id)))
+                ident = self.state_id
+            projs.append(folder.add('proj_f', x, autograd.Variable(ident)))
         return projs
 
     def ctx_func(self, folder, *tacst_evs):
         xs = self.mask(folder, tacst_evs)
         if self.conclu_pos != 0:
-            xs = xs[1:] + xs[0:1] # moved to end
+            # moved to end
+            xs = xs[1:] + xs[0:1]
         x = self.ctx_emb_func(folder, xs)
         # Final layer for logits
         pred1 = folder.add('final_f', x)
@@ -797,9 +771,9 @@ class TacStModel(nn.Module):
 
 
 class WeightDrop(torch.nn.Module):
-    def __init__(self, module, weights, dropout=0.0, variational=False):
+    def __init__(self, nnmodule, weights, dropout=0.0, variational=False):
         super(WeightDrop, self).__init__()
-        self.module = module
+        self.nnmodule = nnmodule
         self.weights = weights
         self.dropout = dropout
         self.variational = variational
@@ -814,67 +788,28 @@ class WeightDrop(torch.nn.Module):
 
     def _setup(self):
         # Terrible temporary solution to an issue regarding compacting weights re: CUDNN RNN
-        if issubclass(type(self.module), torch.nn.RNNBase):
-            self.module.flatten_parameters = self.widget_demagnetizer_y2k_edition
+        if issubclass(type(self.nnmodule), torch.nn.RNNBase):
+            self.nnmodule.flatten_parameters = self.widget_demagnetizer_y2k_edition
 
         for name_w in self.weights:
             print('Applying weight drop of {} to {}'.format(self.dropout, name_w))
-            w = getattr(self.module, name_w)
-            del self.module._parameters[name_w]
-            self.module.register_parameter(name_w + '_raw', Parameter(w.data))
+            w = getattr(self.nnmodule, name_w)
+            del self.nnmodule._parameters[name_w]
+            self.nnmodule.register_parameter(name_w + '_raw', nn.Parameter(w.data))
 
     def _setweights(self):
         for name_w in self.weights:
-            raw_w = getattr(self.module, name_w + '_raw')
-            w = None
+            raw_w = getattr(self.nnmodule, name_w + '_raw')
             if self.variational:
                 mask = torch.autograd.Variable(torch.ones(raw_w.size(0), 1))
-                if raw_w.is_cuda: mask = mask.cuda()
+                if raw_w.is_cuda:
+                    mask = mask.cuda()
                 mask = torch.nn.functional.dropout(mask, p=self.dropout, training=True)
                 w = mask.expand_as(raw_w) * raw_w
             else:
                 w = torch.nn.functional.dropout(raw_w, p=self.dropout, training=self.training)
-            setattr(self.module, name_w, w)
+            setattr(self.nnmodule, name_w, w)
 
     def forward(self, *args):
         self._setweights()
-        return self.module.forward(*args)
-
-
-# def ast_embed(folder, xs, init, ln):
-#     hidden = init
-#     for i, x in enumerate(xs):
-#         #print("GRU Embed ",i, x.shape)
-#         hidden = folder.add('ast_cell_f', x, hidden) #cell(x.view(1, -1, 128), hidden)
-#     #print("hidden shape", hidden.shape)
-#     if ln:
-#         #print("using ln")
-#         hidden = folder.add('ast_ln_f', hidden)
-#     return hidden
-#
-# def ctx_embed(folder, xs, init, ln):
-#     hidden = folder.add('ctx_identity', init)
-#     for i, x in enumerate(xs):
-#         #print("GRU Embed ",i, x.shape)
-#         hidden = folder.add('ctx_cell_f', x, hidden) #cell(x.view(1, -1, 128), hidden)
-#     #print("hidden shape", hidden.shape)
-#     if ln:
-#         # Weird version of Layernorm
-#         #print("using ln")
-#         hidden = folder.add('ctx_ln_f', hidden)
-#     return hidden
-
-
-#
-# class TreeGRU(nn.Module):
-#     def __init__(self, state):
-#         super().__init__()
-#         self.whx = nn.Linear(state * 2, state * 3)
-#         self.
-#
-#     def forward(self, right_h, left_h):  # takes x as first arg, h as second
-#         z, r1, r2 = self.whx(torch.cat([left_h, right_h], dim=-1)).chunk(3, -1)
-#
-#         c = (a.tanh() * i.sigmoid() + r1.sigmoid() * left_c + r2.sigmoid() * right_c)
-#         h = o.sigmoid() * c.tanh()
-#         return h, c
+        return self.nnmodule.forward(*args)
