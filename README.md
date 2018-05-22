@@ -79,7 +79,7 @@ Step 2 above can be broken down into:
 
 * To begin, run 'chunk.py` to break up the odd-order's build.log
    ```
-   python utils/chunk.py <path-to-odd-order-build.log> <output-directory>
+   python chunk.py <path-to-odd-order-build.log> <output-directory>
    ```
    We recommend having a top-level `data` folder and setting `<output-directory> = data/odd-order`.
 
