@@ -377,7 +377,6 @@ class TacTree(object):
                 acc += [hgc.decode_hist(concl_mdx)]
                 seen.add(concl_mdx)
 
-        print("HERE", hgc.num_iargs, hgc.num_args)
         return COQGC_HIST.merges(acc), hgc.num_iargs, hgc.num_args
 
     def tokenize_kern(self):
