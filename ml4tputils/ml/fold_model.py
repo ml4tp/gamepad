@@ -74,10 +74,10 @@ def seq_sigmoid_attn_embed(folder, xs, sv_init, ln, input_dropout, conclu_pos):
 # Fold over anything
 
 class Folder(object):
-    def __init__(self, model, foldy, cuda):
+    def __init__(self, model, f_fold, cuda):
         # Folding state
         self.model = model
-        self.foldy = foldy       # fold or not?
+        self.f_fold = f_fold       # whether to fold or not
         self._folder = None      # which folder to use
         self.cuda = cuda
         self.max_batch_ops = {}
@@ -99,7 +99,7 @@ class Folder(object):
 
     def reset(self):
         """Reset folding state"""
-        if self.foldy:
+        if self.f_fold:
             self._folder = ptf.Fold(max_batch_ops=self.max_batch_ops)
         else:
             self._folder = ptf.Unfold(self.model)
