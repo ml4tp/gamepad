@@ -52,20 +52,6 @@ class TacTrNode(object):
         self.gid = gid        # Goal identifier
         self.kind = kind      # live/dead/terminal
         self.order = order    # TODO(deh): deprecate me?
-        # self._uid()           # Tactic state identifier
-
-    # def _uid(self):
-    #     if self.order is not None:
-    #         x = "{}-{}".format(self.gid, self.order)
-    #     else:
-    #         x = str(self.gid)
-    #
-    #     if self.kind == TacStKind.TERM:
-    #         self.uid = "T{}".format(x)
-    #     elif self.kind == TacStKind.DEAD:
-    #         self.uid = "E{}".format(x)
-    #     else:
-    #         self.uid = x
 
     def __eq__(self, other):
         return (isinstance(other, TacTrNode) and
@@ -492,11 +478,6 @@ class TacTree(object):
             print("notok: {}, total: {}".format(len(self.notok), len(self.tactics())))
             print("# connected components: {}".format(n))
         return n == 1, n
-
-    # def show(self):
-    #     if self.graph.edges:
-    #         nx.drawing.nx_pylab.draw_kamada_kawai(self.graph, with_labels=True)
-    #         plt.show()
 
     def show_jupyter(self):
         """

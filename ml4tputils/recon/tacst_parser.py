@@ -274,7 +274,6 @@ class TacStParser(object):
             # Unpack
             hdr = TacStHdr(callid, mode, tac, kind, FullTac(""), GID_SOLVED, 0, loc)
             ctx = TacStCtx([])
-            # concl_idx = -1
             kern_idx = -1
             mid_idx = -1
         elif TOK_SEP in h_head.peek_line():
@@ -307,11 +306,9 @@ class TacStParser(object):
 
             # Unpack (note that we handle error and success here)
             hdr = TacStHdr(callid, mode, tac, kind, ftac, gid, ngs, loc)
-            # ctx, concl_idx = self.parse_decl_body()
             ctx, kern_idx, mid_idx = self.parse_decl_body()
         else:
             raise NameError("Parsing error @line{}: {}".format(h_head.line, h_head.peek_line()))
-        # return TacStDecl(hdr, ctx, concl_idx)
         return TacStDecl(hdr, ctx, kern_idx, mid_idx)
 
     def parse_begin_pf(self):
