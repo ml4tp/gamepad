@@ -44,9 +44,9 @@ We start in the project root directory.
    ```
    python ml4tputils/ml/tacst_prep.py
    ```
-   This produces `tacpred.pickle` and `poseval.pickle` in current working directory.
+   This produces `tacst.pickle` in current working directory.
 3. Run ML
    ```
-   python ml4tputils/ml/main.py
+   python ml4tputils/ml/main.py --fold
    ```
-   This runs the model on the tactr.pickle file.
+   This trains the model on the tacst.pickle file.
