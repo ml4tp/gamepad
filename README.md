@@ -52,7 +52,11 @@ Step 2 above can be broken down into:
    ```
    source build_config.sh
    ```
-3. Build mathematical components and Feit-Thompson
+3. Patch mathematical components SSreflect
+   ```
+   patch math-comp/mathcomp/ssreflect.ml4 ssreflect/ssreflect.ml4.patch
+   ```
+4. Build mathematical components and Feit-Thompson
    ```
    ./build_mathcomp.sh; ./build_oddorder.sh
    ```
