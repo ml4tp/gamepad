@@ -1,4 +1,7 @@
 class MyIter(object):
+    """
+    Iterator wrapper.
+    """
     def __init__(self, data):
         self.data = data
         self.idx = 0

@@ -1,4 +1,7 @@
 class MyFile(object):
+    """
+    Wrapper around Python file for parsing purposes.
+    """
     def __init__(self, filename):
         self.filename = filename
         self.f_head = open(filename, 'r')

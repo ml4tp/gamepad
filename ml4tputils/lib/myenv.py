@@ -3,6 +3,9 @@ from lib.myutil import NotFound
 
 
 class MyEnv(object):
+    """
+    Environment for interpreter-inspired embeddings.
+    """
     def __init__(self, env, order):
         self.env = env
         self.order = order
@@ -36,6 +39,10 @@ class MyEnv(object):
 
 
 class FastEnv(object):
+    """
+    Environment for interpreter-inspired embeddings. Distinguishes
+    local environment (lambdas) from context environment (proof context).
+    """
     def __init__(self, ctx_env, local_env, ctx_order, local_order):
         self.ctx_env = ctx_env
         self.local_env = local_env

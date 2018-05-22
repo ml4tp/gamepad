@@ -1,4 +1,7 @@
 class MyHist(object):
+    """
+    Histograming class.
+    """
     def __init__(self, binids):
         self.binids = binids
 

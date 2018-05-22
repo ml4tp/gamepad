@@ -1,4 +1,6 @@
 class GenSym(object):
+    """Symbol generation
+    """
     def __init__(self, prefix=None):
         self.cnt = 0
         self.prefix = prefix

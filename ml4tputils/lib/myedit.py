@@ -3,6 +3,13 @@ from apted.helpers import Tree
 import editdistance
 
 
+"""
+[Note]
+
+For edit-distance calculations. Tree edit distance is really slow.
+"""
+
+
 def kern2tr(tactr, kdx):
     return Tree("FOO").from_text(tactr.decoder.decode_exp_by_key(kdx).apted_tree())
 
