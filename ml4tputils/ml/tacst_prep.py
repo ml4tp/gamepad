@@ -35,18 +35,26 @@ class TacStPt(object):
         self._subtr_bin()
 
         # Features
-        self._kern_size()
-        self._mid_size()
-        self._mid_noimp_size()
-        self._ctx_len()
         if f_feature:
+            self._kern_size()
+            self._mid_size()
+            self._mid_noimp_size()
+            self._ctx_len()
             # TOO SLOW
             # self._tree_edit_dist()
             self._string_edit_dist(dict_kern_str_dists, dict_mid_str_dists)
-            # self.kern_str_dists = kern_str_dists
-            # self.mid_str_dists = mid_str_dists
-            # print("KERN", self.kern_str_dists)
-            # print("MID", self.mid_str_dists)
+        else:
+            # Use for creating artificial tacst points for testing
+            self.kern_concl_size = 0
+            self.kern_ctx_size = 0
+            self.kern_size = 0
+            self.mid_concl_size = 0
+            self.mid_ctx_size = 0
+            self.mid_size = 0
+            self.mid_noimp_concl_size = 0
+            self.mid_noimp_ctx_size = 0
+            self.mid_noimp_size = 0
+            self.len_ctx = 0
 
     # Prepares
     def _subtr_bin(self):
@@ -112,8 +120,8 @@ class TacStPt(object):
             mid_dists += [tree_edit_dist(mid_concl_tr, mid_ty_tr)]
 
         # Set largest distances first
-        sorted(kern_dists)
-        sorted(mid_dists)
+        kern_dists = sorted(kern_dists)
+        mid_dists = sorted(mid_dists)
 
         # All distances, smallest first
         self.kern_tr_dists = kern_dists
@@ -131,21 +139,6 @@ class TacStPt(object):
         for _, ty_kdx, ty_mdx in ctx:
             kern_dists += [dict_kern_str_dists[(concl_kdx, ty_kdx)]]
             mid_dists += [dict_mid_str_dists[(concl_mdx, ty_mdx)]]
-
-        # kern_concl_str = kern2str(self.tactr, concl_kdx)
-        # mid_concl_str = mid2str(self.tactr, concl_mdx)
-        # kern_dists = []; kern_seen = set()
-        # mid_dists = []; mid_seen = set()
-        # for _, ty_kdx, ty_mdx in ctx:
-        #     if ty_kdx not in kern_seen:
-        #         kern_ty_str = kern2str(self.tactr, ty_kdx)
-        #         kern_dists += [string_edit_dist(kern_concl_str, kern_ty_str)]
-        #         kern_seen.add(ty_kdx)
-        #
-        #     if ty_mdx not in mid_seen:
-        #         mid_ty_str = mid2str(self.tactr, ty_mdx)
-        #         mid_dists += [string_edit_dist(mid_concl_str, mid_ty_str)]
-        #         mid_seen.add(ty_mdx)
 
         # All distance, smallest first
         kern_dists = sorted(kern_dists)
@@ -169,26 +162,6 @@ class TacStPt(object):
         return gid, [(ty, mdx) for ty, _, mdx in ctx], concl_mdx, tac
 
 
-# Old Version -> Should work with simprw
-class PosEvalPt(object):
-    def __init__(self, gid, ctx, concl_idx, tac, tacst_size, subtr_size, tac_bin):
-        self.tacst = (gid, ctx, concl_idx, tac)
-        self.tacst_size = tacst_size
-        self.subtr_size = subtr_size
-        if subtr_size < 5:
-            self.subtr_bin = 0
-        elif subtr_size < 20:
-            self.subtr_bin = 1
-        else:
-            self.subtr_bin = 2
-        self.tac_bin = tac_bin
-
-        # self.num_iargs = num_iargs
-        # self.num_args = num_args
-        # for idx, (tac_p, _) in enumerate(TACTIC_INFO):
-        #     if tac[-1].name.startswith(tac_p):
-        #         self.tac_bin = idx
-
 class SizeSubTr(object):
     def __init__(self, tactr):
         self.tactr = tactr
@@ -197,7 +170,7 @@ class SizeSubTr(object):
         children = list(self.tactr.graph.successors(node))
         size = 1
         for child in children:
-            # TODO(deh): ignore self-edges
+            # NOTE(deh): ignore self-edges
             if child != node:
                 size += self.size(child)
         return size
@@ -213,10 +186,15 @@ class Dataset(object):
 class TacStDataset(object):
     def __init__(self, tactics_equiv, tactrs):
         self.tactrs = tactrs
-        self.data = {}
         self.tactics = set()
         self.tactics_equiv = tactics_equiv
         self.tac_hist = [0 for _ in tactics_equiv]
+
+        self.data = {}
+        self.sum_tacst_size = 0
+        self.sum_tacst_mid_size = 0
+        self.sum_tacst_mid_noimp_size = 0
+        self.num_tacst = 0
 
     def mk_tactrs(self):
         self.data = {}
@@ -231,7 +209,6 @@ class TacStDataset(object):
         print("TACHIST")
         for idx, eq_tacs in enumerate(self.tactics_equiv):
             print("TAC", eq_tacs[0], self.tac_hist[idx])
-        # assert False
 
     def tac_bin(self, tac):
         for idx, eq_tacs in enumerate(self.tactics_equiv):
@@ -247,12 +224,9 @@ class TacStDataset(object):
         size_subtr = SizeSubTr(tactr)
         for node in tactr.graph.nodes():
             subtr_size[node.gid] = size_subtr.size(node)
-            # for k, v in tactr.gid_tactic.items():
-            #     print("HERE", k, v)
             if node in tactr.gid_tactic:
                 for edge in tactr.gid_tactic[node]:
                     self.tactics.add(edge.name)
-        # print("TACTICS", self.tactics)
 
         # Compute string edit distances
         dict_kern_str_dists = {}
@@ -367,33 +341,3 @@ if __name__ == "__main__":
             dataset, _ = pickle.load(f)
             for tactr_id, pt in dataset:
                 print(tactr_id, pt)
-
-# class TacPredPt(object):
-#     def __init__(self, tacst):
-#         # (gid, ctx, concl_idx, tac)
-#         self.tacst = tacst
-#
-#
-# def tacst_to_tacpred(dataset):
-#     acc = []
-#     for tactrid, pt in dataset:
-#         acc += [(tactrid, TacPredPt(pt.tacst))]
-#     return acc
-
-
-# def one_hot_lid(ctx, lids):
-#     vec = [0 for _ in ctx]
-#     for idx, (ident, _) in enumerate(ctx):
-#         if ident in lids:
-#             vec[idx] = 1
-#             break
-#     return vec
-#
-#
-# def one_hot_gid(tokens_to_idx, gids):
-#     vec = [0 for _ in tokens_to_idx]
-#     for idx, (k, v) in enumerate(tokens_to_idx.items()):
-#         if k in gids:
-#             vec[idx] = 1
-#             break
-#     return vec
