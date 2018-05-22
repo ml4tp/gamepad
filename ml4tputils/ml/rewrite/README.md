@@ -1,3 +1,5 @@
+## Usage
+
 1. Generate data (this saves to ./theorems.v)
     ```
 	python ml4tputils/ml/rewrite/simprw.py
