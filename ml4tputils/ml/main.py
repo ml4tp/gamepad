@@ -5,11 +5,8 @@ import numpy as np
 
 from ml.poseval.fold_model import LinearModel, TacStModel
 from ml.poseval.fold_train import TacStTrainer
-# from ipdb import launch_ipdb_on_exception
-# from ml.rewrite.solver import to_goalattn_dataset, run
 from ml.rewrite.simprw import run_end2end
 from ml.rewrite.dataset_prep import to_goalattn_dataset
-from ml.tacst_prep import Dataset, TacStPt
 from coq.tactics import TACTICS_EQUIV
 
 """
@@ -92,14 +89,13 @@ if __name__ == "__main__":
         if args.end2end:
             dataset, test_lemmas, val_lemmas = to_goalattn_dataset("theorems", tacst_dataset)
             model = TacStModel(*tokens_to_idx, ln=args.ln, treelstm=args.treelstm, lstm=args.lstm,
-                                 dropout=args.dropout, attention=args.attention, heads=args.heads, D=args.state,
-                                 state=args.state, weight_dropout=args.weight_dropout, variational=args.variational,
-                                 conclu_pos=args.conclu_pos, outsize=40, f_mid=args.midlvl, f_useiarg=not args.noimp)
+                               dropout=args.dropout, attention=args.attention, heads=args.heads, D=args.state,
+                               state=args.state, weight_dropout=args.weight_dropout, variational=args.variational,
+                               conclu_pos=args.conclu_pos, outsize=40, f_mid=args.midlvl, f_useiarg=not args.noimp)
             trainer = TacStTrainer(model, tactrs, dataset, args)
             if args.validate:
-                # trainer.validate()
-                # run(trainer, test_lemmas, val_lemmas)
                 run_end2end(trainer, test_lemmas, val_lemmas)
+                trainer.validate()
             else:
                 trainer.train()
         else:
@@ -107,9 +103,9 @@ if __name__ == "__main__":
                 model = LinearModel(outsize=args.outsize, f_mid=args.midlvl, f_useiarg=not args.noimp)
             else:
                 model = TacStModel(*tokens_to_idx, ln=args.ln, treelstm=args.treelstm, lstm=args.lstm,
-                                 dropout=args.dropout, attention=args.attention, heads=args.heads, D=args.state,
-                                 state=args.state, weight_dropout=args.weight_dropout, variational=args.variational,
-                                 conclu_pos=args.conclu_pos, outsize = args.outsize, f_mid=args.midlvl, f_useiarg=not args.noimp)
+                                   dropout=args.dropout, attention=args.attention, heads=args.heads, D=args.state,
+                                   state=args.state, weight_dropout=args.weight_dropout, variational=args.variational,
+                                   conclu_pos=args.conclu_pos, outsize = args.outsize, f_mid=args.midlvl, f_useiarg=not args.noimp)
             print("Made model")
             trainer = TacStTrainer(model, tactrs, tacst_dataset, args)
             print("Made trainer")
