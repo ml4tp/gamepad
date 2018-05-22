@@ -1,5 +1,4 @@
 from coq.glob_constr import *
-# from lib.mysexpr import sexpr_unpack, sexpr_strify
 
 
 # -------------------------------------------------
@@ -197,7 +196,6 @@ class TokenGlobConstr(object):
             gref = gc.gref
             ty2 = type(gref)
             if ty2 is VarRef:
-                # TODO(deh): should we add it here?
                 self.unique_const.add(gref.x)
             elif ty2 is ConstRef:
                 self.unique_const.add(gref.const)
@@ -237,8 +235,6 @@ class TokenGlobConstr(object):
                 self.token(cc.g)
             return self._seen(gc)
         elif ty is GLetTuple:
-            # self.unique_const.add(Name("Coq.Init.Datatypes.fst"))
-            # self.unique_const.add(Name("Coq.Init.Datatypes.snd"))
             if gc.m_name_and_ty[1]:
                 self.token(gc.m_name_and_ty[1])
             self.token(gc.g1_fst)

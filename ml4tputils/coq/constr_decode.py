@@ -80,7 +80,7 @@ class DecodeConstr(object):
         return [int(idx.strip()) for idx in c_idxs.split()]
 
     def _split_entry(self, entry):
-        # NOTE(deh): FML fucking bullshit python
+        # NOTE(deh): dealing with nested []
         toks = re.findall(r'\[[^}]*?\]|\S+', entry)
         return toks
 

@@ -15,7 +15,6 @@ class FvsTactic(object):
         self.globs = set()
 
     def _log(self, msg):
-        # print(msg)
         pass
 
     # -------------------------------------------------
@@ -58,13 +57,10 @@ class FvsTactic(object):
         tag, body = sexpr_unpack(ipe)
         self._log("@fvs_intro_pattern_expr | tag={}; raw={}".format(tag, ipe))
         if tag == "F":
-            # Printf.sprintf "F(%b)" b
             return set()
         elif tag == "N":
-            # Printf.sprintf "N(%s)" (show_intro_pattern_naming_expr ipne)
             return self.fvs_intro_pattern_naming_expr(body[0])
         elif tag == "A":
-            # Printf.sprintf "A(%s)" (show_intro_pattern_action_expr show ipae)
             return self.fvs_intro_pattern_action_expr(fvs, body[0])
         else:
             raise NameError("Tag {} not supported".format(tag))
@@ -73,13 +69,10 @@ class FvsTactic(object):
         tag, body = sexpr_unpack(ipne)
         self._log("@fvs_intro_pattern_naming_expr | tag={}; raw={}".format(tag, ipne))
         if tag == "I":
-            # Printf.sprintf "I(%s)" (show_id id)
             return self.fvs_id(body[0])
         elif tag == "F":
-            # Printf.sprintf "F(%s)" (show_id id)
             return self.fvs_id(body[0])
         elif tag == "A":
-            # "A()"
             return set()
         else:
             raise NameError("Tag {} not supported".format(tag))
@@ -88,21 +81,16 @@ class FvsTactic(object):
         tag, body = sexpr_unpack(ipae)
         
         if tag == "W":
-            # "W()"
             return set()
         elif tag == "O":
-            # Printf.sprintf "O(%s)" (show_or_and_intro_pattern_expr show oaipe)
             return self.fvs_or_and_intro_pattern_expr(body[0])
         elif tag == "I":
-            # Printf.sprintf "I(%s)" (brackets (show_ls (fun (loc, ipe) -> show_intro_pattern_expr show ipe) ", " ls))
             return self.fvs_or_and_intro_pattern_expr(body[0])
         elif tag == "A":
-            # Printf.sprintf "A(%s, %s)" (show a) (show_intro_pattern_expr show ipe)
             fvs0 = fvs(body[0])
             fvs1 = self.fvs_intro_pattern_expr(fvs, body[1])
             return fvs0.union(fvs1)
         elif tag == "R":
-            # Printf.sprintf "R(%b)" b
             return set()
         else:
             raise NameError("Tag {} not supported".format(tag))
@@ -119,12 +107,11 @@ class FvsTactic(object):
     def fvs_cases_pattern(self, cp):
         tag, body = sexpr_unpack(cp)
         if tag == "V":
-            # Printf.sprintf "V(%s)" (show_name n)
             return self.fvs_name(body[0])
         elif tag == "C":
             self.globs.add(sexpr_strify(body[0]))
             fvs3 = self.fvs_ls(self.fvs_cases_pattern, body[3])
-            fvs4 = self.fvs_name(body[4])  # set([sexpr_strify(body[4])])
+            fvs4 = self.fvs_name(body[4])
             return fvs3.union(fvs4)
         else:
             raise NameError("Tag {} not supported".format(tag))
@@ -146,78 +133,56 @@ class FvsTactic(object):
         tag, body = sexpr_unpack(gc)
         self._log("@fvs_glob_constr | tag={}; raw={}".format(tag, gc))
         if tag == "!":
-            # Printf.sprintf "!(%s)" (show_global_reference gr)
             return self.fvs_global_reference(body[0])
         elif tag == "V":
-            # Printf.sprintf "V(%s)" (show_id id)
             return self.fvs_id(body[0])
         elif tag == "E":
-            # let f (id, gc) = Printf.sprintf "(%s, %s)" (show_id id) (show_glob_constr gc) in
-            # Printf.sprintf "(E %s %s)" (show_id en) (show_sexpr_ls f args)
             fvs0 = self.fvs_id(body[0])
             fvs1 = self.fvs_glob_constrs(body[1])
             return fvs0.union(fvs1)
         elif tag == "PV":
-            # Printf.sprintf "(PV %b %s)" b (show_id pv)
             return self.fvs_id(body[1])
         elif tag == "A":
-            # Printf.sprintf "(A %s %s)" (show_glob_constr gc) (show_glob_constrs gcs)
             fvs0 = self.fvs_glob_constr(body[0])
             fvs1 = self.fvs_glob_constrs(body[1])
             return fvs0.union(fvs1)
         elif tag == "L":
-            # Printf.sprintf "(L %s %s %s %s)" (show_name n) (show_binding_kind bk)
-            # (show_glob_constr gc1) (show_glob_constr gc2)
             fvs1 = self.fvs_glob_constr(body[2])
             fvs2 = self.fvs_glob_constr(body[3])
             return fvs1.union(fvs2).difference(self.fvs_name(body[0]))
         elif tag == "P":
-            # Printf.sprintf "(P %s %s %s %s)" (show_name n) (show_binding_kind bk)
-            # (show_glob_constr gc1) (show_glob_constr gc2)
             fvs1 = self.fvs_glob_constr(body[2])
             fvs2 = self.fvs_glob_constr(body[3])
             return fvs1.union(fvs2).difference(self.fvs_name(body[0]))
         elif tag == "LI":
-            # Printf.sprintf "(LI %s %s %s)" (show_name n) (show_glob_constr gc1) (show_glob_constr gc2)
             fvs1 = self.fvs_glob_constr(body[1])
             fvs2 = self.fvs_glob_constr(body[2])
             return fvs1.union(fvs2).difference(self.fvs_name(body[0]))
         elif tag == "C":
-            # Printf.sprintf "C(%s, %s, %s, %s)" "MEH" (show_maybe show_glob_constr m_gc) (show_tomatch_tuples tups)
-            # (show_case_clauses ccs)
             fvs0 = self.fvs_maybe(self.fvs_glob_constr, body[1])
             fvs1 = self.fvs_tomatch_tuples(body[2])
             fvs2 = self.fvs_case_clauses(body[3])
             return fvs0.union(fvs2).difference(fvs1)
         elif tag == "LT":
-            # let f (name, m_gc) = Printf.sprintf "(%s %s)" (show_name name) (show_maybe show_glob_constr m_gc) in
-            # Printf.sprintf "(LT %s %s %s %s)" (show_sexpr_ls show_name ns) (f arg) (show_glob_constr gc1)
-            # (show_glob_constr gc2)
             bnd0 = self.fvs_ls(lambda x: sexpr_strify(x), body[0])
             fvs2 = self.fvs_glob_constr(body[2])
             fvs3 = self.fvs_glob_constr(body[3])
             return fvs2.union(fvs3.difference(bnd0))
         elif tag == "I":
-            # Printf.sprintf "(I %s %s %s)" (show_glob_constr gc) (show_glob_constr gc2) (show_glob_constr gc3)
             fvs0 = self.fvs_glob_constr(body[0])
             fvs1 = self.fvs_glob_constr(body[1])
             fvs2 = self.fvs_glob_constr(body[2])
             return fvs0.union(fvs1).union(fvs2)
         elif tag == "R":
-            # Printf.sprintf "R(%s, %s, %s, %s, %s)" "MEH" (brackets (show_arr show_id ", " ids)) "MEH"
-            # (show_glob_constr_arr gcs1) (show_glob_constr_arr gcs2)
             bnd = self.fvs_ls(self.fvs_id, body[1])
             fvs3 = self.fvs_glob_constrs(body[3])
             fvs4 = self.fvs_glob_constrs(body[4])
             return fvs3.union(fvs4).difference(bnd)
         elif tag == "S":
-            # Printf.sprintf "S(%s)" (show_glob_sort gsort)
             return set()
         elif tag == "H":
-            # Printf.sprintf "H(%s, %s, %s)" "MEH" (show_intro_pattern_naming_expr ipne) "MEH"
             return self.fvs_intro_pattern_naming_expr(body[1])
         elif tag == "T":
-            # Printf.sprintf "T(%s, %s)" (show_glob_constr gc) (show_cast_type show_glob_constr gc_ty)
             fvs0 = self.fvs_glob_constr(body[0])
             fvs1 = self.fvs_cast_type(body[1])
             return fvs0.union(fvs1)
@@ -234,9 +199,6 @@ class FvsTactic(object):
         return {sexpr_strify(x)}
 
     def fvs_predicate_pattern(self, parg):
-        # let f (loc, (mutind, i), ns) = Printf.sprintf "(%s, %d, %s)" (Names.MutInd.to_string mutind) i
-        # (brackets (show_ls show_name ", " ns)) in
-        # Printf.sprintf "(%s, %s)" (show_name n) (show_maybe f m_args)
         fvs0 = {sexpr_strify(parg[0])}
         tag, body = sexpr_unpack(parg[1])
         if tag == "N":
@@ -250,19 +212,15 @@ class FvsTactic(object):
         return fvs0.union(fvs1)
 
     def fvs_tomatch_tuple(self, tmt):
-        # Printf.sprintf "(%s, %s)" (show_glob_constr gc) (show_predicate_pattern pp)
         fvs0 = self.fvs_glob_constr(tmt[0])
         fvs1 = self.fvs_predicate_pattern(tmt[1])
         return fvs0.union(fvs1)
 
     def fvs_tomatch_tuples(self, tmts):
-        # brackets (show_ls show_tomatch_tuple ", " tmts)
         return self.fvs_ls(self.fvs_tomatch_tuple, tmts)
 
     def fvs_case_clause(self, cc):
         body = cc
-        # Printf.sprintf "(%s, %s, %s)" (brackets (show_ls show_id ", " ids))
-        # (brackets (show_ls show_cases_pattern ", " cps)) (show_glob_constr gc)
         fvs0 = self.fvs_ls(self.fvs_id, body[0])
         fvs1 = self.fvs_ls(self.fvs_cases_pattern, body[1])
         fvs2 = self.fvs_glob_constr(body[2])
@@ -286,7 +244,6 @@ class FvsTactic(object):
             return self.fvs_ls(fvs, body[0])
 
     def fvs_occurrences_expr(self, oe):
-        # return self.fvs_occurrences_gen(lambda x: set(), oe)
         return set()
 
     def fvs_with_occurrences(self, fvs, woccs):
@@ -426,30 +383,22 @@ class FvsTactic(object):
         tag, body = sexpr_unpack(targ)
         self._log("@fvs_tactic_arg | tag={}; raw={}".format(tag, targ))
         if tag == "G":
-            # Printf.sprintf "(G %s)" (show_generic_arg ga)
             return self.fvs_generic_arg(body[0])
         elif tag == "ME":
-            # Printf.sprintf "(ME %s)" (show_may_eval mev)
             return self.fvs_may_eval(body[0])
         elif tag == "R":
-            # Printf.sprintf "(R %s)" (show_g_reference r)
             return self.fvs_g_reference(body[0])
         elif tag == "C":
-            # Printf.sprintf "(C %s %s)" (show_g_reference r) (show_tactic_args targs)
             fvs0 = self.fvs_g_reference(body[0])
             fvs1 = self.fvs_tactic_args(body[1])
             return fvs0.union(fvs1)
         elif tag == "F":
-            # Printf.sprintf "(F %s)" (show_sexpr_ls (fun x -> show_or_var (fun x -> x) x) sovs)
             return self.fvs_ls(lambda x: self.fvs_or_var(lambda y: y, x), body[0])
         elif tag == "E":
-            # Printf.sprintf "(E %s)" (show_tac tac)
             return self.fvs_tac(body[0])
         elif tag == "P":
-            # Printf.sprintf "(P %s)" (show_gtrm c)
             return self.fvs_gtrm(body[0])
         elif tag == "N":
-            # "N"
             return set()
         else:
             raise NameError("Tag {} not supported".format(tag))
@@ -461,84 +410,54 @@ class FvsTactic(object):
         tag, body = sexpr_unpack(atac)
         self._log("@fvs_atomic_tac | tag={}; raw={}".format(tag, atac))
         if tag == "IntroPattern":
-            # let f (loc, ipe) = show_intro_pattern_expr show_gtrm ipe in
-            # Printf.sprintf "(IntroPattern %b %s)" ef (show_sexpr_ls f ipes)
             return self.fvs_ls(lambda x: self.fvs_intro_pattern_expr(self.fvs_gtrm, x), body[1])
         elif tag == "Apply":
-            # let f (loc, ipe) = show_intro_pattern_expr show_gtrm ipe in
-            # let g (gnm, x) = Printf.sprintf "(%s %s)" (show_gname gnm) (show_maybe f x) in
-            # Printf.sprintf "(Apply %b %b %s %s)" af ef (show_sexpr_ls (show_with_bindings_arg show_gtrm)
-            # bargss) (show_maybe g gnm_and_ipe)
             fvs2 = self.fvs_ls(lambda x: self.fvs_with_bindings_arg(self.fvs_gtrm, x), body[2])
             fvs3 = self.fvs_maybe(lambda gnm, x: self.fvs_gname(gnm).union(self.fvs_maybe(lambda y: self.fvs_intro_pattern_expr(self.fvs_gtrm, y)), x), body[3])
             return fvs2.union(fvs3)
         elif tag == "Elim":
-            # Printf.sprintf "(Elim %b %s %s)" ef (show_with_bindings_arg show_gtrm bargs)
-            # (show_maybe (show_with_bindings show_gtrm) maybe_wb)
             fvs1 = self.fvs_with_bindings_arg(self.fvs_gtrm, body[1])
             fvs2 = self.fvs_maybe(lambda x: self.fvs_with_bindings(self.fvs_gtrm, x), body[2])
             return fvs1.union(fvs2)
         elif tag == "Case":
-            # Printf.sprintf "(Case %b %s)" ef (show_with_bindings_arg show_gtrm bargs)
             return self.fvs_with_bindings_arg(self.fvs_gtrm, body[1])
         elif tag == "MutualFix":
-            # let f (id, c) = Printf.sprintf "(%s, %s)" (show_id id) (show_gtrm c) in
-            # Printf.sprintf "(MutualCofix %s %s)" (show_id id) (show_sexpr_ls f body)
             fvs1 = set([self.fvs_gtrm(c) for x, i, c in body[1]])
             ids = set([x[0] for x in body[1]])
             return fvs1.difference(ids)
         elif tag == "MutualCofix":
-            # let f (id, c) = Printf.sprintf "(%s, %s)" (show_id id) (show_gtrm c) in
-            # Printf.sprintf "MutualCofix(%s,  %s)" (show_id id) (brackets (show_ls f ", " body))
             fvs1 = set([self.fvs_gtrm(c) for x, c in body[1]])
             ids = set([x[0] for x in body[1]])
             return fvs1.difference(ids)
         elif tag == "Assert":
-            # let f (loc, ipe) = show_intro_pattern_expr show_gtrm ipe in
-            # let g = show_maybe f in
-            # Printf.sprintf "(Assert %b %s %s %s)" b (show_maybe (show_maybe show_tac) mm_tac) (g ml_ipe) (show_gtrm c)
             fvs1 = self.fvs_maybe(lambda x: self.fvs_maybe(self.fvs_tac, x), body[1])
             f = lambda x: self.fvs_intro_pattern_expr(self.fvs_gtrm, x)
             fvs2 = self.fvs_maybe(f, body[2])
             fvs3 = self.fvs_gtrm(body[3])
             return fvs1.union(fvs2).union(fvs3)
         elif tag == "Generalize":
-            # let f (wo, name) = Printf.sprintf "(%s, %s)" (show_with_occurrences show_gtrm wo) (show_name name) in
-            # Printf.sprintf "Generalize(%s)" (brackets (show_ls f ", " ls))
             f = lambda wo, name: self.fvs_with_occurrences(self.fvs_gtrm, wo).union(self.fvs_name(name))
             return self.fvs_ls(f, body[0])
         elif tag == "LetTac":
-            # let f (loc, ipne) = show_intro_pattern_naming_expr ipne in
-            # Printf.sprintf "LetTac(%s, %s, %s, %b, %s)" (show_name name) (show_gtrm c) (show_clause_expr ce) lf
-            # (show_maybe f ml_ipe)
             fvs1 = self.fvs_gtrm(body[1])
             fvs2 = self.fvs_clause_expr(body[2])
             fvs3 = self.fvs_maybe(self.fvs_gtrm(body[4]))
             return fvs1.union(fvs2).union(fvs3).difference(self.fvs_name(body[0]))
         elif tag == "InductionDestruct":
-            # Printf.sprintf "InductionDestruct(%b, %b, %s)" rf ef (show_induction_clause_list ics)
             return self.fvs_induction_clause_list(body[2])
         elif tag == "Reduce":
-            # Printf.sprintf "Reduce(%s, %s)" "MEH" (show_clause_expr ce)
             return self.fvs_clause_expr(body[1])
         elif tag == "Change":
-            # let f (_, gtrm, cpat) = show_gtrm gtrm in
-            # Printf.sprintf "(Change %s %s %s)" (show_maybe f maybe_pat) (show_gtrm dtrm) (show_clause_expr ce)
-            # return ("Change", "MEH", self.fvs_gtrm(body[1]), self.fvs_clause_expr(body[2]))
             fvs0 = self.fvs_maybe(self.fvs_pattern, body[0])
             fvs1 = self.fvs_gtrm(body[1])
             fvs2 = self.fvs_clause_expr(body[2])
             return fvs0.union(fvs1).union(fvs2)
         elif tag == "Rewrite":
-            # let f (b, m, barg) = Printf.sprintf "(%b %s %s)" b (show_multi m) (show_with_bindings_arg show_gtrm barg)
-            # Printf.sprintf "(Rewrite %b %s %s %s)" ef (show_sexpr_ls f rargs) (show_clause_expr ce)
-            # (show_maybe show_tac maybe_tac)
             fvs1 = self.fvs_ls(lambda x: self.fvs_with_bindings_arg(self.fvs_gtrm, x[2]) , body[1])
             fvs2 = self.fvs_clause_expr(body[2])
             fvs3 = self.fvs_maybe(self.fvs_tac, body[3])
             return fvs1.union(fvs2).union(fvs3)
         elif tag == "Inversion":
-            # Printf.sprintf "(Inversion %s %s)" (show_inversion_strength is) (show_quantified_hypothesis qhyp)
             return self.fvs_quantified_hypothesis(body[1])
         else:
             raise NameError("Tag {} not supported".format(tag))
@@ -549,140 +468,98 @@ class FvsTactic(object):
         tag, body = sexpr_unpack(tac)
         self._log("@fvs_tac | tag={}; raw={}".format(tag, tac))
         if tag == "Atom":
-            # Printf.sprintf "(Atom %s)" (show_atomic_tac atac)
             return self.fvs_atomic_tac(body[0])
         elif tag == "Then":
-            # Printf.sprintf "Then(%s, %s)" (show_tac tac1) (show_tac tac2)
             fvs0 = self.fvs_tac(body[0])
             fvs1 = self.fvs_tac(body[1])
             return fvs0.union(fvs1)
         elif tag == "Dispatch":
-            # Printf.sprintf "Dispatch(%s)" (show_tacs tacs)
             return self.fvs_tacs(body[0])
         elif tag == "ExtendTac":
-            # Printf.sprintf "ExtendTac(%s, %s, %s)" (show_tac_arr tacs1) (show_tac tac) (show_tac_arr tacs2)
             fvs0 = self.fvs_tacs(body[0])
             fvs1 = self.fvs_tac(body[1])
             fvs2 = self.fvs_tacs(body[0])
             return fvs0.union(fvs1).union(fvs2)
         elif tag == "Thens":
-            # Printf.sprintf "Thens(%s, %s)" (show_tac tac) (show_tacs tacs)
             fvs0 = self.fvs_tac(body[0])
             fvs1 = self.fvs_tacs(body[1])
             return fvs0.union(fvs1)
         elif tag == "Thens3parts":
-            # Printf.sprintf "Thens3parts(%s, %s, %s, %s)" (show_tac tac1) (show_tac_arr tac1s) (show_tac tac2)
-            # (show_tac_arr tac2s)
             fvs0 = self.fvs_tac(body[0])
             fvs1 = self.fvs_tacs(body[1])
             fvs2 = self.fvs_tac(body[2])
             fvs3 = self.fvs_tac(body[3])
             return fvs0.union(fvs1).union(fvs2).union(fvs3)
         elif tag == "First":
-            # Printf.sprintf "First(%s)" (show_tacs tacs)
             return self.fvs_tacs(body[0])
         elif tag == "Complete":
-            # Printf.sprintf "Complete(%s)" (show_tac tac)
             return self.fvs_tac(body[0])
         elif tag == "Solve":
-            # Printf.sprintf "Solve(%s)" (show_tacs tacs)
             return self.fvs_tacs(body[0])
         elif tag == "Try":
-            # Printf.sprintf "Try(%s)" (show_tac tac)
             return self.fvs_tac(body[0])
         elif tag == "Or":
-            # Printf.sprintf "Or(%s, %s)" (show_tac tac1) (show_tac tac2)
             fvs0 = self.fvs_tac(body[0])
             fvs1 = self.fvs_tac(body[1])
             return self.fvs_tac(fvs0).union(fvs1)
         elif tag == "Once":
-            # Printf.sprintf "Once(%s)" (show_tac tac)
             return self.fvs_tac(body[0])
         elif tag == "ExactlyOnce":
-            # Printf.sprintf "ExactlyOnce(%s)" (show_tac tac)
             return self.fvs_tac(body[0])
         elif tag == "IfThenCatch":
-            # Printf.sprintf "IfThenCatch(%s, %s, %s)" (show_tac tac1) (show_tac tac2) (show_tac tac3)
             fvs0 = self.fvs_tac(body[0])
             fvs1 = self.fvs_tac(body[1])
             fvs2 = self.fvs_tac(body[2])
             return fvs0.union(fvs1).union(fvs2)
         elif tag == "Orelse":
-            # Printf.sprintf "Orelse(%s, %s)" (show_tac tac1) (show_tac tac2)
             fvs0 = self.fvs_tac(body[0])
             fvs1 = self.fvs_tac(body[1])
             return fvs0.union(fvs1)
         elif tag == "Do":
-            # Printf.sprintf "Do(%s, %s)" (show_or_var string_of_int iov) (show_tac tac)
             return self.fvs_tac(body[1])
         elif tag == "Timeout":
-            # Printf.sprintf "Timeout(%s, %s)" (show_or_var string_of_int iov) (show_tac tac)
             return self.fvs_tac(body[1])
         elif tag == "Time":
-            # Printf.sprintf "Time(%s, %s)" (show_maybe (fun x -> x) maybe_str) (show_tac tac)
             return self.fvs_tac(body[1])
         elif tag == "Repeat":
-            # Printf.sprintf "Repeat(%s)" (show_tac tac)
             return self.fvs_tac(body[0])
         elif tag == "Progress":
-            # Printf.sprintf "Progress(%s)" (show_tac tac)
             return self.fvs_tac(body[0])
         elif tag == "ShowHyps":
-            # Printf.sprintf "ShowHyps(%s)" (show_tac tac)
             return self.fvs_tac(body[0])
         elif tag == "Abstract":
-            # Printf.sprintf "Asbtract(%s, %s)" (show_tac tac) (show_maybe show_id maybe_id)
             fvs0 = self.fvs_tac(body[0])
             fvs1 = self.fvs_maybe(self.fvs_id, body[1])
             return fvs0.union(fvs1)
         elif tag == "Id":
-            # Printf.sprintf "Id(%s)" (brackets (show_ls show_message_token ", " msgs))
             return self.fvs_ls(self.fvs_message_token, body[0])
         elif tag == "Fail":
-            # Printf.sprintf "Info(%s, %s, %s)" (show_global_flag gf) (show_or_var string_of_int iov)
-            # (brackets (show_ls show_message_token ", " msgs))
             return set()
         elif tag == "Info":
-            # Printf.sprintf "Info(%s)" (show_tac tac)
             return self.fvs_tac(body[0])
         elif tag == "Let":
-            # let f ((loc, id), targ) = Printf.sprintf "(%s, %s)" (show_id id) (show_tactic_arg targ) in
-            # Printf.sprintf "Let(%b, %s, %s)" rf (brackets (show_ls f ", " bindings)) (show_tac tac)
             bnd = self.fvs_ls(lambda x: self.fvs_id(x[0]), body[1])
             fvs1 = self.fvs_ls(lambda x: self.fvs_tactic_arg(x[1]), body[1])
             fvs2 = self.fvs_tac(body[2])
             return fvs1.union(fvs2.difference(bnd))
         elif tag == "Match":
-            # let show_pat (bbvs, gtrm, cpat) = Printf.sprintf "(%s %s %s)"
-            # (show_sexpr_ls show_id (Id.Set.elements bbvs)) (show_gtrm gtrm) (show_constr_pattern cpat) in
-            # Printf.sprintf "(Match %s %s %s)" (show_lazy_flag lf) (show_tac tac) (show_match_rules show_pat show_tac mrules)
             fvs1 = self.fvs_tac(body[1])
             fvs2 = self.fvs_match_rules(lambda x: self.fvs_gtrm(x[1]), self.fvs_tac, body[2])
             return fvs1.union(fvs2)
         elif tag == "MatchGoal":
-            # let show_pat (bbvs, gtrm, cpat) = Printf.sprintf "(%s %s %s)"
-            # (show_sexpr_ls show_id (Id.Set.elements bbvs)) (show_gtrm gtrm) (show_constr_pattern cpat) in
-            # Printf.sprintf "(MatchGoal %s %b %s)" (show_lazy_flag lf) df (show_match_rules show_pat show_tac mrules)
             return self.fvs_match_rules(lambda x: self.fvs_gtrm(x[1]), self.fvs_tac, body[2])
         elif tag == "Fun":
-            # Printf.sprintf "Fun(%s, %s)" (brackets (show_ls (show_maybe show_id) ", " maybe_ids)) (show_tac tac)
             bnd0 = self.fvs_ls(lambda x: self.fvs_maybe(self.fvs_id, x), body[0])
             fvs1 = self.fvs_tac(body[1])
             return fvs1.difference(bnd0)
         elif tag == "Arg":
-            # Printf.sprintf "Arg(%s)" (show_tactic_arg targ)
             return self.fvs_tactic_arg(body[0])
         elif tag == "Select":
-            # Printf.sprintf "Select(%s, %s)" (show_goal_selector gs) (show_tac tac)
-            # fvs1 = self.fvs_goal_selector(body[0])
             fvs2 = self.fvs_tac(body[1])
-            # return fvs1.union(fvs2)
             return fvs2
         elif tag == "ML":
-            # Printf.sprintf "ML(%s, %s)" (show_ml_tactic_entry mlen) (show_tactic_args targs)
             return self.fvs_tactic_args(body[1])
         elif tag == "Alias":
-            # Printf.sprintf "Alias(%s, %s)" (KerName.to_string kername) (show_tactic_args targs)
             return self.fvs_tactic_args(body[1])
         else:
             raise NameError("Tag {} not supported".format(tag))
@@ -734,21 +611,15 @@ class FvsTactic(object):
     # Ssreflect tactics
 
     def fvs_ssrortacs(self, ortacs):
-        # Pml4tp.show_sexpr_ls (fun m_tac -> Pml4tp.show_maybe Pml4tp.show_tac m_tac) ortacs
         return self.fvs_ls(lambda x: self.fvs_maybe(self.fvs_tac, x), ortacs)
 
     def fvs_ssrhintarg(self, ha):
-        # Printf.sprintf "(%b %s)" b (show_ssrortacs ortacs)
         return self.fvs_ssrortacs(ha[1])
 
     def fvs_ssrhyp(self, hyp):
-        # Pml4tp.show_id id
-        # return set([sexpr_strify(hyp)])
         return self.fvs_id(hyp)
 
     def fvs_ssrhyprep(self, hyp):
-        # Pml4tp.show_id id
-        # return set([sexpr_strify(hyp)])
         return self.fvs_id(hyp)
 
     def fvs_ssrhoirep(self, hoirep):
@@ -773,8 +644,6 @@ class FvsTactic(object):
         return self.fvs_ssrhyps(clr)
 
     def fvs_ssrwgen(self, wgen):
-        # let f ((id, k), c_p) = Printf.sprintf "(%s %s %s)" k (show_hoi id) (Pml4tp.show_maybe show_cpattern c_p) in
-        # Printf.sprintf "(%s %s)" (show_clear clr) (Pml4tp.show_maybe f x)
         def f(x):
             fvs1_p = self.fvs_ssrhoirep(x[0])
             fvs2_p = self.fvs_maybe(self.fvs_cpattern, x[1])
@@ -822,7 +691,6 @@ class FvsTactic(object):
         tag, body = sexpr_unpack(ipat)
         if tag == "I":
             return self.fvs_id(body[0])
-            # return set()
         elif tag == "S":
             fvs0 = self.fvs_ssrclear(body[0])
             fvs1 = self.fvs_ssrsimpl(body[1])

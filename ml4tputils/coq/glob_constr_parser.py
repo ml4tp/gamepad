@@ -98,7 +98,6 @@ class GlobConstrParser(object):
 
     def parse_case_clause(self, parse_gc, cc):
         ids = self.parse_ls(lambda x: x, cc[0])
-        # [x] TODO(deh): parse_cases_pattern
         cps = self.parse_ls(self.parse_cases_pattern, cc[1])
         gc = parse_gc(cc[2])
         return CasesClause(ids, cps, gc)
@@ -117,7 +116,6 @@ class GlobConstrParser(object):
             return []
 
     def parse_glob_decl(self, parse_gc, gdecl):
-        # print("HERE", gdecl)
         name = Name(sexpr_strify(gdecl[0]))
         bk = gdecl[1]
         m_gc = self.parse_maybe(parse_gc, gdecl[2])
@@ -177,7 +175,6 @@ class GlobConstrParser(object):
                        self.parse_glob_constr(body[2]))
         elif tag == "R":
             ids = [sexpr_strify(x) for x in body[1]]
-            # g_decl_args = body[2]
             gdecl_args = self.parse_glob_declss(self.parse_glob_constr, body[2])
             return GRec(body[0], ids, gdecl_args, self.parse_glob_constrs(body[3]), self.parse_glob_constrs(body[4]))
         elif tag == "S":
@@ -287,7 +284,6 @@ class GlobConstrDecoder(object):
         elif tag == "R":
             fix_kind = body[0]
             ids = [sexpr_strify(x) for x in body[1]]
-            # gdecl_args = body[2]
             gdecl_args = self.parser.parse_glob_declss(self.decode_glob_constr, body[2])
             gc_tys = self.decode_glob_constrs(body[3])
             gc_bods = self.decode_glob_constrs(body[4])
