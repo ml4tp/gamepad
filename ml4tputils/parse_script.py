@@ -7,9 +7,6 @@ from lib.myfile import MyFile
 
 
 def create_lemma(f_out, hdr, body):
-    # print("Header", hdr)
-    # print("Body", body)
-
     # Unpack
     s_hdr = "\n".join(hdr)
     toks = s_hdr.split()
