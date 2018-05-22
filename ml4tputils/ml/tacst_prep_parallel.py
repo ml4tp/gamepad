@@ -6,7 +6,6 @@ from coq.tactics import TACTICS_EQUIV
 from coq.constr_util import SizeConstr
 from coq.glob_constr_util import SizeGlobConstr
 from lib.myedit import *
-from recon.embed_tokens import EmbedTokens
 
 from multiprocessing import Pool
 
@@ -32,6 +31,7 @@ def _tac_bin(tac, tactics_equiv=TACTICS_EQUIV):
                 return idx
     raise NameError("Not assigned to bin", tac[-1].name)
 
+
 def mk_tactr(tactr_id):
     print("Working on {}".format(tactr_id))
     with open("tactrs/%s.pickle" % tactr_id, 'rb') as f:
@@ -42,12 +42,9 @@ def mk_tactr(tactr_id):
     size_subtr = SizeSubTr(tactr)
     for node in tactr.graph.nodes():
         subtr_size[node.gid] = size_subtr.size(node)
-        # for k, v in tactr.gid_tactic.items():
-        #     print("HERE", k, v)
         if node in tactr.gid_tactic:
             for edge in tactr.gid_tactic[node]:
                 tactics.add(edge.name)
-    # print("TACTICS", self.tactics)
 
     # Compute string edit distances
     dict_kern_str_dists = {}
@@ -80,8 +77,10 @@ def mk_tactr(tactr_id):
         pickle.dump(result, f)
     print("Done {}".format(tactr_id))
 
+
 # -------------------------------------------------
 # Tactic States Dataset
+
 class TacStPt(object):
     def __init__(self, tactr, tacst, subtr_size, tac_bin, dict_kern_str_dists, dict_mid_str_dists, f_feature=True):
         self.tactr = tactr
@@ -96,13 +95,9 @@ class TacStPt(object):
         self._mid_noimp_size()
         self._ctx_len()
         if f_feature:
-            # TOO SLOW
+            # NOTE(deh): very slow
             # self._tree_edit_dist()
             self._string_edit_dist(dict_kern_str_dists, dict_mid_str_dists)
-            # self.kern_str_dists = kern_str_dists
-            # self.mid_str_dists = mid_str_dists
-            # print("KERN", self.kern_str_dists)
-            # print("MID", self.mid_str_dists)
 
     # Prepares
     def _subtr_bin(self):
@@ -188,21 +183,6 @@ class TacStPt(object):
             kern_dists += [dict_kern_str_dists[(concl_kdx, ty_kdx)]]
             mid_dists += [dict_mid_str_dists[(concl_mdx, ty_mdx)]]
 
-        # kern_concl_str = kern2str(self.tactr, concl_kdx)
-        # mid_concl_str = mid2str(self.tactr, concl_mdx)
-        # kern_dists = []; kern_seen = set()
-        # mid_dists = []; mid_seen = set()
-        # for _, ty_kdx, ty_mdx in ctx:
-        #     if ty_kdx not in kern_seen:
-        #         kern_ty_str = kern2str(self.tactr, ty_kdx)
-        #         kern_dists += [string_edit_dist(kern_concl_str, kern_ty_str)]
-        #         kern_seen.add(ty_kdx)
-        #
-        #     if ty_mdx not in mid_seen:
-        #         mid_ty_str = mid2str(self.tactr, ty_mdx)
-        #         mid_dists += [string_edit_dist(mid_concl_str, mid_ty_str)]
-        #         mid_seen.add(ty_mdx)
-
         # All distance, smallest first
         kern_dists = sorted(kern_dists)
         mid_dists = sorted(mid_dists)
@@ -225,26 +205,6 @@ class TacStPt(object):
         return gid, [(ty, mdx) for ty, _, mdx in ctx], concl_mdx, tac
 
 
-# Old Version -> Should work with simprw
-# class PosEvalPt(object):
-#     def __init__(self, gid, ctx, concl_idx, tac, tacst_size, subtr_size, tac_bin):
-#         self.tacst = (gid, ctx, concl_idx, tac)
-#         self.tacst_size = tacst_size
-#         self.subtr_size = subtr_size
-#         if subtr_size < 5:
-#             self.subtr_bin = 0
-#         elif subtr_size < 20:
-#             self.subtr_bin = 1
-#         else:
-#             self.subtr_bin = 2
-#         self.tac_bin = tac_bin
-
-        # self.num_iargs = num_iargs
-        # self.num_args = num_args
-        # for idx, (tac_p, _) in enumerate(TACTIC_INFO):
-        #     if tac[-1].name.startswith(tac_p):
-        #         self.tac_bin = idx
-
 class SizeSubTr(object):
     def __init__(self, tactr):
         self.tactr = tactr
@@ -257,95 +217,6 @@ class SizeSubTr(object):
             if child != node:
                 size += self.size(child)
         return size
-
-
-# class Dataset(object):
-#     def __init__(self, train, val, test):
-#         self.train = train
-#         self.val = val
-#         self.test = test
-#
-#
-# class TacStDataset(object):
-#     def __init__(self, tactics_equiv, tactrs):
-#         self.tactrs = tactrs
-#         self.data = {}
-#         self.tactics = set()
-#         self.tactics_equiv = tactics_equiv
-#         self.tac_hist = [0 for _ in tactics_equiv]
-#
-#     def mk_tactrs(self):
-#         self.data = {}
-#         self.sum_tacst_size = 0
-#         self.sum_tacst_mid_size = 0
-#         self.sum_tacst_mid_noimp_size = 0
-#         self.num_tacst = 0
-#
-#         # Process trees in parallel
-#         with Pool() as p:
-#             results = p.map(mk_tactr, enumerate(self.tactrs))
-#
-#         for tactr_id, result in enumerate(results):
-#             data, tactics = result
-#             self.data[tactr_id] = data
-#             self.tactics.union(tactics)
-#             for pt in data:
-#                 self.tac_hist[pt.tac_bin] += 1
-#                 self.num_tacst += 1
-#                 self.sum_tacst_size += pt.kern_size
-#                 self.sum_tacst_mid_size += pt.mid_size
-#                 self.sum_tacst_mid_noimp_size += pt.mid_noimp_size
-#
-#         print("tacsts {} avg_size {} avg_mid_size {} avg_mid_noimp_size {}".format(self.num_tacst, self.sum_tacst_size / self.num_tacst, self.sum_tacst_mid_size / self.num_tacst, self.sum_tacst_mid_noimp_size / self.num_tacst))
-#         print("TACTICS", self.tactics)
-#         print("TACHIST")
-#         for idx, eq_tacs in enumerate(self.tactics_equiv):
-#             print("TAC", eq_tacs[0], self.tac_hist[idx])
-#         # assert False
-#
-#
-#
-#
-#
-#
-#     def split_by_lemma(self, f_balance = True, num_train=None, num_test=None):
-#         if self.data == {}:
-#             self.mk_tactrs()
-#
-#         tlen = len(self.tactrs)
-#         perm = np.random.permutation(tlen)
-#         if num_train is None and num_test is None:
-#             strain, sval, stest = 0.8, 0.1, 0.1
-#             s1 = int(tlen * strain) + 1
-#             s2 = s1 + int(tlen * sval)
-#             train, val, test = perm[:s1], perm[s1:s2], perm[s2:]
-#         else:
-#             s1 = num_train
-#             s2 = num_train + num_test
-#             train, val, test = perm[:s1], perm[s1:s2], perm[s2:]
-#         if len(train) + len(val) + len(test) != tlen:
-#             raise NameError("Train={}, Valid={}, Test={} must sum to {}".format(len(train), len(val), len(test), tlen))
-#
-#         def f(ids):
-#             pts = []
-#             for tactr_id in ids:
-#                 for pt in self.data[tactr_id]:
-#                     pts.append((tactr_id, pt))
-#             return pts
-#
-#         data_train, data_val, data_test = f(train), f(val), f(test)
-#         print("Split Train={} Valid={} Test={}".format(len(train), len(val), len(test)))
-#         print("Split Tactrs Train={} Valid={} Test={}".format(len(data_train), len(data_val), len(data_test)))
-#         ps = [len(data_train) / len(train), len(data_val) / len(val), len(data_test) / len(test)]
-#         print("ps ", ps)
-#         if f_balance:
-#             # Balance to make sure that splits are roughly equal in numebr of tacsts too
-#             mean = sum(ps) / len(ps)
-#             threshold = 1.5**2
-#             for p in ps:
-#                 if (p - mean)**2 > threshold:
-#                     return self.split_by_lemma(f_balance, num_train, num_test)
-#         return Dataset(data_train, data_val, data_test)
 
 
 if __name__ == "__main__":
