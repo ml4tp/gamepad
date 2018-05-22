@@ -1,11 +1,13 @@
 import argparse
 import numpy as np
 import pickle
+import os
 
 from coq.tactics import TACTICS_EQUIV
 from coq.constr_util import SizeConstr
 from coq.glob_constr_util import SizeGlobConstr
 from lib.myedit import *
+from recon.embed_tokens import EmbedTokens
 
 from multiprocessing import Pool
 
@@ -205,6 +207,21 @@ class TacStPt(object):
         return gid, [(ty, mdx) for ty, _, mdx in ctx], concl_mdx, tac
 
 
+# Old Version -> Should work with simprw
+class PosEvalPt(object):
+    def __init__(self, gid, ctx, concl_idx, tac, tacst_size, subtr_size, tac_bin):
+        self.tacst = (gid, ctx, concl_idx, tac)
+        self.tacst_size = tacst_size
+        self.subtr_size = subtr_size
+        if subtr_size < 5:
+            self.subtr_bin = 0
+        elif subtr_size < 20:
+            self.subtr_bin = 1
+        else:
+            self.subtr_bin = 2
+        self.tac_bin = tac_bin
+
+
 class SizeSubTr(object):
     def __init__(self, tactr):
         self.tactr = tactr
@@ -219,6 +236,132 @@ class SizeSubTr(object):
         return size
 
 
+class Dataset(object):
+    def __init__(self, train, val, test):
+        self.train = train
+        self.val = val
+        self.test = test
+
+
+class TacStDataset(object):
+    def __init__(self, tactics_equiv):
+        self.data = {}
+        self.tactics = set()
+        self.tactics_equiv = tactics_equiv
+        self.tac_hist = [0 for _ in tactics_equiv]
+
+    def mk_tactrs(self):
+        self.data = {}
+        self.sum_tacst_size = 0
+        self.sum_tacst_mid_size = 0
+        self.sum_tacst_mid_noimp_size = 0
+        self.num_tacst = 0
+
+        # Process trees
+        import glob
+        pths = glob.glob("tactr_pts/*.pickle")
+        for pth in pths:
+            with open(pth, "rb") as f:
+                result = pickle.load(f)
+            data, tactics = result
+            tactr_id = int(pth.split("/")[-1][:-7])
+            print(pth, tactr_id)
+            self.data[tactr_id] = data
+            self.tactics.union(tactics)
+            for pt in data:
+                self.tac_hist[pt.tac_bin] += 1
+                self.num_tacst += 1
+                self.sum_tacst_size += pt.kern_size
+                self.sum_tacst_mid_size += pt.mid_size
+                self.sum_tacst_mid_noimp_size += pt.mid_noimp_size
+
+        self.tactr_ids = list(self.data.keys())
+        print("TACTR_IDS {} {}", len(self.tactr_ids), self.tactr_ids)
+        print("tacsts {} avg_size {} avg_mid_size {} avg_mid_noimp_size {}".format(self.num_tacst, self.sum_tacst_size / self.num_tacst, self.sum_tacst_mid_size / self.num_tacst, self.sum_tacst_mid_noimp_size / self.num_tacst))
+        print("TACTICS", self.tactics)
+        print("TACHIST")
+        for idx, eq_tacs in enumerate(self.tactics_equiv):
+            print("TAC", eq_tacs[0], self.tac_hist[idx])
+        # assert False
+
+    def split_by_lemma(self, f_balance = True, num_train=None, num_test=None):
+        if self.data == {}:
+            self.mk_tactrs()
+
+        tlen = len(self.tactr_ids)
+        perm = np.random.permutation(self.tactr_ids)
+        if num_train is None and num_test is None:
+            strain, sval, stest = 0.8, 0.1, 0.1
+            s1 = int(tlen * strain) + 1
+            s2 = s1 + int(tlen * sval)
+            train, val, test = perm[:s1], perm[s1:s2], perm[s2:]
+        else:
+            s1 = num_train
+            s2 = num_train + num_test
+            train, val, test = perm[:s1], perm[s1:s2], perm[s2:]
+        if len(train) + len(val) + len(test) != tlen:
+            raise NameError("Train={}, Valid={}, Test={} must sum to {}".format(len(train), len(val), len(test), tlen))
+
+        def f(ids):
+            pts = []
+            for tactr_id in ids:
+                for pt in self.data[tactr_id]:
+                    pts.append((tactr_id, pt))
+            return pts
+
+        data_train, data_val, data_test = f(train), f(val), f(test)
+        print("Split Train={} Valid={} Test={}".format(len(train), len(val), len(test)))
+        print("Split Tactrs Train={} Valid={} Test={}".format(len(data_train), len(data_val), len(data_test)))
+        ps = [len(data_train) / len(train), len(data_val) / len(val), len(data_test) / len(test)]
+        print("ps ", ps)
+        if f_balance:
+            # Balance to make sure that splits are roughly equal in numebr of tacsts too
+            mean = sum(ps) / len(ps)
+            threshold = 1.5**2
+            for p in ps:
+                if (p - mean)**2 > threshold:
+                    return self.split_by_lemma(f_balance, num_train, num_test)
+        return Dataset(data_train, data_val, data_test)
+
+def dump_trees(args):
+    with open(args.load, 'rb') as f:
+        print("Loading {}...".format(args.load))
+        tactrs = pickle.load(f)
+
+    os.mkdir("tactrs")
+    for tactr_id, tactr in enumerate(tactrs):
+        with open("tactrs/%s.pickle" % tactr_id, 'wb') as f:
+            pickle.dump(tactr, f)
+
+def process_trees():
+    with Pool() as p:
+        p.map(mk_tactr, list(range(1602)))
+
+def create_dataset(args):
+    with open(args.load, 'rb') as f:
+        print("Loading {}...".format(args.load))
+        tactrs = pickle.load(f)
+
+    tacst = TacStDataset(TACTICS_EQUIV)
+    tacst_dataset = tacst.split_by_lemma()
+
+    kern_embed_tokens = EmbedTokens(f_mid=False)
+    kern_embed_tokens.tokenize_tactrs(tactrs)
+    kern_tokens_to_idx = kern_embed_tokens.tokens_to_idx()
+
+    mid_embed_tokens = EmbedTokens(f_mid=True)
+    mid_embed_tokens.tokenize_tactrs(tactrs)
+    mid_tokens_to_idx = mid_embed_tokens.tokens_to_idx()
+
+    with open(args.tacst, 'wb') as f:
+        pickle.dump((tacst_dataset, kern_tokens_to_idx, mid_tokens_to_idx), f)
+
+    if args.verbose:
+        with open(args.tacst, 'rb') as f:
+            dataset, _ = pickle.load(f)
+            for tactr_id, pt in dataset:
+                print(tactr_id, pt)
+
 if __name__ == "__main__":
     argparser = argparse.ArgumentParser()
     argparser.add_argument("-l", "--load", default="tactr.pickle",
@@ -229,73 +372,11 @@ if __name__ == "__main__":
     argparser.add_argument("--simprw", action="store_true")
     args = argparser.parse_args()
 
-    # with open(args.load, 'rb') as f:
-    #     print("Loading {}...".format(args.load))
-    #     tactrs = pickle.load(f)
-    #
-    # for tactr_id, tactr in enumerate(tactrs):
-    #     with open("tactrs/%s.pickle" % tactr_id, 'wb') as f:
-    #         pickle.dump(tactr, f)
-    #
-    # exit()
-    print("Creating dataset {}...".format(args.load))
+    print("Dumping separated tactr pickles")
+    dump_trees(args)
 
-    with Pool() as p:
-        p.map(mk_tactr, list(range(1602)))
+    print("Dumping processed tacst points per tree. In parallel")
+    process_trees()
 
-    # if args.simprw:
-    #     tactics_equiv = [["intros"], ["surgery"], ["<coretactics::reflexivity@0>"]]
-    #     tacst = TacStDataset(tactics_equiv, tactrs)
-    # else:
-    #     tacst = TacStDataset(TACTICS_EQUIV, tactrs)
-    # if args.simprw:
-    #     tacst_dataset = tacst.split_by_lemma(f_balance=False, num_train=400, num_test=50)
-    # else:
-    #     tacst_dataset = tacst.split_by_lemma()
-    #
-    # kern_embed_tokens = EmbedTokens(f_mid=False)
-    # kern_embed_tokens.tokenize_tactrs(tactrs)
-    # kern_tokens_to_idx = kern_embed_tokens.tokens_to_idx()
-    #
-    # mid_embed_tokens = EmbedTokens(f_mid=True)
-    # mid_embed_tokens.tokenize_tactrs(tactrs)
-    # mid_tokens_to_idx = mid_embed_tokens.tokens_to_idx()
-    #
-    # with open(args.tacst, 'wb') as f:
-    #     pickle.dump((tacst_dataset, kern_tokens_to_idx, mid_tokens_to_idx), f)
-    #
-    # if args.verbose:
-    #     with open(args.tacst, 'rb') as f:
-    #         dataset, _ = pickle.load(f)
-    #         for tactr_id, pt in dataset:
-    #             print(tactr_id, pt)
-
-# class TacPredPt(object):
-#     def __init__(self, tacst):
-#         # (gid, ctx, concl_idx, tac)
-#         self.tacst = tacst
-#
-#
-# def tacst_to_tacpred(dataset):
-#     acc = []
-#     for tactrid, pt in dataset:
-#         acc += [(tactrid, TacPredPt(pt.tacst))]
-#     return acc
-
-
-# def one_hot_lid(ctx, lids):
-#     vec = [0 for _ in ctx]
-#     for idx, (ident, _) in enumerate(ctx):
-#         if ident in lids:
-#             vec[idx] = 1
-#             break
-#     return vec
-#
-#
-# def one_hot_gid(tokens_to_idx, gids):
-#     vec = [0 for _ in tokens_to_idx]
-#     for idx, (k, v) in enumerate(tokens_to_idx.items()):
-#         if k in gids:
-#             vec[idx] = 1
-#             break
-#     return vec
+    print("Creating dataset")
+    create_dataset(args)
