@@ -88,12 +88,3 @@ Step 2 above can be broken down into:
       ```
       python utils/visualize.py data/odd-order/BGsection1.v.dump -l minnormal_solvable_Fitting_center -d
       ``` 
- 
-TODO(deh): reconstruct tactics. The number of connected components should be 1 if the tree has been successfully reconstructed.
-
-
-# Other
-
-TODO(deh): missing requirements.txt
-
-For training, you need `pytorch-tools`, which is located here: https://github.com/nearai/pytorch-tools. Run `python3 setup.py develop` inside this repository.
