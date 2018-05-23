@@ -28,7 +28,7 @@ Descriptions
 
 Use Python 3.
 
-Run `python3 setup.py develop` inside `ml4tputils/`.
+Run `python3 setup.py develop` inside `gamepad/`.
 
 
 ## Usage: Constructing Tactic Trees from TCoq Dump Files
@@ -37,16 +37,16 @@ We start in the project root directory.
 1. Produce tactic tree pickle file
    ```
    coqc <path-to-coq-files> thm.dump
-   python ml4tputils/visualize.py -p <path-to-coq-files> thm.dump
+   python gamepad/visualize.py -p <path-to-coq-files> thm.dump
    ```
    This produces `tactr.pickle` file in current working directory.
 2. Create datasets
    ```
-   python ml4tputils/ml/tacst_prep.py
+   python gamepad/ml/tacst_prep.py
    ```
    This produces `tacst.pickle` in current working directory.
 3. Run ML
    ```
-   python ml4tputils/ml/main.py --fold
+   python gamepad/ml/main.py --fold
    ```
    This trains the model on the tacst.pickle file.

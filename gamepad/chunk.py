@@ -6,7 +6,7 @@ import argparse
 
 Chunk a build.log by file
 
-python ml4tputils/chunk.py <path/to/odd-order-build.log> <path/to/chunked>
+python gamepad/chunk.py <path/to/odd-order-build.log> <path/to/chunked>
 """
 
 
