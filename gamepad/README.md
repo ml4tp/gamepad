@@ -13,42 +13,53 @@
 ```
 
 
-## Setup
-
-Use Python 3.
-
-Run `python3 setup.py develop` inside `gamepad/`.
+## Constructing Tactic Tree Data Sets
 
 
-## Usage: Constructing Tactic Trees from TCoq Dump Files
+We have two ways of constructing tactic tree data sets.
+1. Apply GamePad to a single Coq file.
+2. Apply GamePad to a file listing Coq dump files (e.g., Feit-Thompson).
+
+
+### Usage 1: Constructing tactic trees from single coq file
 
 We start in the project root directory.
-1. Produce tactic tree pickle file
+1. (OPTIONAL) Compile Coq source file with tcoq to generate dump file if you are not using Feit-Thompson data set. For instance, you can compile any of the `.v` files under `examples/`:
    ```
-   coqc <path-to-coq-files> > thm.dump
-   python gamepad/visualize.py -p <path-to-coq-files> thm.dump
+   coqc examples/<foo.v> > examples/foo.dump
+   ```
+2. Produce tactic tree pickle file:
+   ```
+   python gamepad/visualize.py file foo.dump -p examples
    ```
    This produces `tactr.pickle` file in current working directory.
-2. Create datasets
+3. Prepare tactic tree pickle for machine learning:
    ```
    python gamepad/ml/tacst_prep.py
    ```
-   This produces `tacst.pickle` in current working directory.
+   This produces `tacst.pickle` in current working directory. It splits tactic trees into individual tactic states as well as partition the data set into train/test/validate sets.
+
+
+### Usage 2: Constructing tactic trees from list of files such as Feit-Thompson
+
+We start in the project root directory.
+1. Produce tactic tree pickle file:
+   ```
+   python gamepad/visualize.py files odd_order_files.txt
+   ```
+   This produces `tactr.pickle` file in current working directory.
+2. Prepare tactic tree pickle for machine learning:
+   ```
+   python gamepad/ml/tacst_prep.py
+   ```
+   This produces `tacst.pickle` in current working directory. It splits tactic trees into individual tactic states as well as partition the data set into train/test/validate sets.
+
+
+## Usage
+
+
 3. Run ML
    ```
    python gamepad/ml/main.py --fold
    ```
    This trains the model on the tacst.pickle file.
-
-
-## Usage: Old
-
-* You you can use 'visualize.py` to visualize the tactic traces. This will attempt to reconstruct the tactic traces and record relevant statistics. Here are some example invocations:
-   1. Visualize a file, saving raw tactic (before attempting to reconstruct trace) statistics to `log/rawtac.log` and outputing reconstruction statistics to `log/recon.log`. Omitting `-s` and/or `-o` means that these logs will be written to `./rawtac.log` and `./recon.log` respectively.
-      ```
-      python utils/visualize.py data/odd-order/BGsection1.v.dump -s log/rawtac.log -o log/recon.log
-      ```
-   2. Visualize the lemma `minnormal_solvable_Fitting_center` within the file and display (`-d`) the tactic trace.
-      ```
-      python utils/visualize.py data/odd-order/BGsection1.v.dump -l minnormal_solvable_Fitting_center -d
-      ``` 
