@@ -12,45 +12,6 @@ Reconstruct tactic trees from tcoq dump files.
 
 
 # -------------------------------------------------
-# Files in dataset
-
-FILES = ["BGsection1.v.dump",
-         "BGsection2.v.dump",
-         "BGappendixAB.v.dump",
-         "BGappendixC.v.dump",
-         "wielandt_fixpoint.v.dump",
-         "BGsection3.v.dump",
-         "BGsection4.v.dump",
-         "BGsection5.v.dump",
-         "BGsection6.v.dump",
-         "BGsection7.v.dump",
-         "BGsection8.v.dump",
-         "BGsection9.v.dump",
-         "BGsection10.v.dump",
-         "BGsection11.v.dump",
-         "BGsection12.v.dump",
-         "BGsection13.v.dump",
-         "BGsection14.v.dump",
-         "BGsection15.v.dump",
-         "BGsection16.v.dump",
-         "PFsection1.v.dump",
-         "PFsection2.v.dump",
-         "PFsection3.v.dump",
-         "PFsection4.v.dump",
-         "PFsection5.v.dump",
-         "PFsection6.v.dump",
-         "PFsection7.v.dump",
-         "PFsection8.v.dump",
-         "PFsection9.v.dump",
-         "PFsection10.v.dump",
-         "PFsection11.v.dump",
-         "PFsection12.v.dump",
-         "PFsection13.v.dump",
-         "PFsection14.v.dump",
-         "stripped_odd_order_theorem.v.dump"]
-
-
-# -------------------------------------------------
 # Reconstructing
 
 class Recon(object):
