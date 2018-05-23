@@ -1,27 +1,16 @@
 ## Directory Contents
 
 ```
-|- coq
-|- lib
-|- ml
-  |- rewrite
-|- pycoqtop
-|- recon
+|- coq                 (Python representation of Coq data structures and parsing)
+|- lib                 (library of utility classes)
+|- ml                  (machine learning functionality)
+  |- rewrite           (simprw example)
+|- pycoqtop            (wrapper around interaction with coqtop)
+|- recon               (reconstructs tactic trees from tcoq dump)
 |- chunk.py
-|- exp_tactr_stats.py
-|- visualize.py
+|- exp_tactr_stats.py  (explore tactic tree statistics)
+|- visualize.py        (generates tactic tree pickle from raw data)
 ```
-
-Descriptions
-- coq: contains Python representation of Coq data structures and parsing
-- lib: library of utility classes
-- ml: machine learning functionality
-	- rewrite: contains simple rewrite
-- pycoqtop: lightweight interaction with coqtop
-- recon: reconstructs tactic trees from TCoq dump
-- chunk.py: break up odd-order.log raw data into individual files
-- exp_tactr_stats.py: functionality for explore tactic tree statistics
-- visualize.py: generates tactic tree pickle from raw data
 
 
 ## Setup
