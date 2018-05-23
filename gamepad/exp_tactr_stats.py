@@ -38,6 +38,10 @@ def load_tactr_stats(filename):
             elif line.startswith("UNIQUE-FIX"):
                 toks = line.split()
                 unique['fix'] = int(toks[1].strip())
+            elif line.startswith("NUM_IARG"):
+                pass
+            elif line.startswith("NUM_ARGS"):
+                pass
             else:
                 line = line.strip()
                 x = json.loads(line)
@@ -179,7 +183,8 @@ class TacTrStats(object):
                 norm[depth] += 1
 
         for depth in range(1, max_depth):
-            hist[depth] /= norm[depth]
+            if norm[depth] > 0:
+                hist[depth] /= norm[depth]
         del hist[0]
         return hist
 
@@ -219,5 +224,5 @@ class TacTrStats(object):
 
 
 if __name__ == "__main__":
-    stats = load_tactr_stats("log/tactr-build-10.log")
+    stats = load_tactr_stats("data/feit-tactr.log")
     tactr_stats = TacTrStats(stats)
