@@ -36,7 +36,7 @@ Run `python3 setup.py develop` inside `gamepad/`.
 We start in the project root directory.
 1. Produce tactic tree pickle file
    ```
-   coqc <path-to-coq-files> thm.dump
+   coqc <path-to-coq-files> > thm.dump
    python gamepad/visualize.py -p <path-to-coq-files> thm.dump
    ```
    This produces `tactr.pickle` file in current working directory.

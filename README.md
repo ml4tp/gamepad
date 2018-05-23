@@ -1,18 +1,28 @@
+# GamePad: A learning environemnt for theorem proving
+GamePad is a Python library that exposes parts of the Coq ITP to enable machine learning. 
+
+## Representing Coq proofs
+We expose the proof trace obtained from Coq as Python data structures, including Coq’s mid-level and kernel-level term languages, proof states, proof steps, and proof trees so that they can be manipulated with arbitrary Python code. 
+
+## Lightweight interaction 
+The API provides a thin wrapper around coqtop, the Coq repl, which can be used to interactively construct proof scripts from within Python. This component mediates all interaction with Coq, including proof state parsing into GamePad’s representation of Coq proofs and sending tactic actions
+
+For more infromation, check out the associated paper [GamePad: A Learning Environment for Theorem Proving](www.google.com)
+
+To cite this repository in publications:
+
 # Directory Structure
 
 coq, mathcomp-1.6.1, and mathcomp-odd-order-1.6.1 come from different repos.
 
 ```
++ examples (example coq tactic scripts and their corresponding traces) 
++ gamepad (python learning environment for coq proofs)
++ ssreflect (patch for ssreflect)
 + tcoq (modified version of coq)
-
-+ odd-order (feit-thompson)
-+ math-comp (ssreflect stuff)
-
-+ ex (example coq tactic scripts and their corresponding traces) 
-+ notes (notes for ourselves)
-+ utils (right now, python tools for working with the data)
++ odd-order (feit-thompson coq repo)
++ math-comp (ssreflect coq repo)
 ```
-
 
 # Initial Setup
 
