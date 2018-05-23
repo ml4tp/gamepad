@@ -1,9 +1,9 @@
 apted==1.0.3
 editdistance==0.4
-matplotlib==2.2.2
-networkx==2.1
+matplotlib==2.0.2
+networkx==2.0
 numpy==1.14.3
-pandas==0.23.0
+pandas==0.22.0
 plotly==2.2.1
 psutil==5.4.5
 scipy==1.1.0
