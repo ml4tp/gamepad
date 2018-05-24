@@ -53,13 +53,3 @@ We start in the project root directory.
    python gamepad/ml/tacst_prep.py
    ```
    This produces `tacst.pickle` in current working directory. It splits tactic trees into individual tactic states as well as partition the data set into train/test/validate sets.
-
-
-## Usage
-
-
-3. Run ML
-   ```
-   python gamepad/ml/main.py --fold
-   ```
-   This trains the model on the tacst.pickle file.
