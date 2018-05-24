@@ -13,6 +13,6 @@ setup(
                       'plotly',
                       'psutil',
                       'scipy',
-                      'torch'
-                      ]
+                      'torch',
+                      'tqdm']
 )
