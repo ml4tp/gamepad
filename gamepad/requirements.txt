@@ -4,6 +4,7 @@ matplotlib==2.0.2
 networkx==2.0
 numpy==1.14.3
 pandas==0.22.0
+pexpect==4.2.1
 plotly==2.2.1
 psutil==5.4.5
 scipy==1.1.0

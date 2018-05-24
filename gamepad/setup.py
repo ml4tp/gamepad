@@ -9,6 +9,7 @@ setup(
                       'networkx',
                       'numpy',
                       'pandas',
+                      'pexpect',
                       'plotly',
                       'psutil',
                       'scipy',
