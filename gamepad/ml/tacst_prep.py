@@ -36,6 +36,8 @@ class TacStPt(object):
 
         # Features
         if f_feature:
+            import sys
+            sys.setrecursionlimit(1500)
             self._kern_size()
             self._mid_size()
             self._mid_noimp_size()
@@ -57,9 +59,6 @@ class TacStPt(object):
             self.mid_noimp_ctx_size = 0
             self.mid_noimp_size = 0
             self.len_ctx = 0
-
-
-
 
     # Prepares
     def _subtr_bin(self):
@@ -327,6 +326,7 @@ if __name__ == "__main__":
     if args.simprw:
         tactics_equiv = [["intros"], ["surgery"], ["<coretactics::reflexivity@0>"]]
         tacst = TacStDataset(tactics_equiv, tactrs, args)
+    else:
         tacst = TacStDataset(TACTICS_EQUIV, tactrs, args)
     if args.simprw:
         tacst_dataset = tacst.split_by_lemma(f_balance=False, num_train=400, num_test=50)
