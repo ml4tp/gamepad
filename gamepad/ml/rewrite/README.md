@@ -28,13 +28,17 @@
 
 6. Train model. This saves a log file to <path/to/mllogs/file>
     ```
-    python gamepad/ml/main.py --end2end
+    python gamepad/ml/main.py --simprw
     ```
 
-7. Test model.
+7. Test model tactic prediction.
     ```
-    python gamepad/ml/main.py --end2end --validate --mload <path/to/mllogs/file>
+    python gamepad/ml/main.py --simprw --mload <path/to/mllogs/file> --validate
     ```
+8. Run trained model end2end.
+    ```
+	python gamepad/ml/main.py --simprw --mload <path/to/mllogs/file> --teste2e
+	```
 
 
 ## Experiments

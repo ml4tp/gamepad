@@ -44,12 +44,13 @@ if __name__ == "__main__":
     argparser.add_argument('--name', type=str, default="", help='name of experiment')
     argparser.add_argument("--debug", action='store_true', help="debug training")
     argparser.add_argument("--orig", action='store_true', help="Old is gold")
-    argparser.add_argument("--end2end", action='store_true', help="run end-to-end model")
+    argparser.add_argument("--simprw", action='store_true', help="run simple rewrite model")
 
     argparser.add_argument("-f", "--fold", action='store_true', help="To fold or not to fold")
     argparser.add_argument('--no-cuda', action='store_true', default=False, help='disables CUDA training')
     argparser.add_argument('--mload', type=str, default="", help='path to load saved model from')
     argparser.add_argument('--validate', action='store_true', default=False, help='only validate')
+    argparser.add_argument('--teste2e', action='store_true', default=False, help='test end2end')
     argparser.add_argument('--midlvl', action='store_true', default=False, help='set to train on mid-level ast')
     argparser.add_argument('--noimp', action='store_true', default=False, help='set flag if you do not want implicit arguments')
 
@@ -88,7 +89,7 @@ if __name__ == "__main__":
                                                   len(tacst_dataset.test)))
     # with launch_ipdb_on_exception():
     if not args.orig:
-        if args.end2end:
+        if args.simprw:
             dataset, test_lemmas, val_lemmas = to_goalattn_dataset("theorems", tacst_dataset)
             model = TacStModel(*tokens_to_idx, ln=args.ln, treelstm=args.treelstm, lstm=args.lstm,
                                dropout=args.dropout, attention=args.attention, heads=args.heads, D=args.state,
@@ -96,8 +97,9 @@ if __name__ == "__main__":
                                conclu_pos=args.conclu_pos, outsize=40, f_mid=args.midlvl, f_useiarg=not args.noimp)
             trainer = TacStTrainer(model, tactrs, dataset, args)
             if args.validate:
-                run_end2end(trainer, test_lemmas, val_lemmas)
                 trainer.validate()
+            elif args.teste2e:
+                run_end2end(trainer, test_lemmas, val_lemmas)
             else:
                 trainer.train()
         else:
