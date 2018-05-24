@@ -98,9 +98,12 @@ To obtain the auxilliary repositories, you can run `./get_data.sh` (this obtains
 
 ## Setup GamePad
 
-As a reminder, use Python3.
-
-Run `python3 setup.py develop` inside `./gamepad/`.
+As a reminder, use Python3. Change to the GamePad directory `cd gamepad`.
+```
+pip install -r requirements.txt
+```
+You can also install the gamepad package locally.
+Run `python setup.py develop` inside `./gamepad/`.
 
 
 # Usage
