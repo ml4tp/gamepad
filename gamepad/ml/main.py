@@ -9,6 +9,7 @@ from ml.fold_model import LinearModel, TacStModel
 from ml.fold_train import TacStTrainer
 from ml.rewrite.dataset_prep import to_goalattn_dataset
 from ml.rewrite.simprw import run_end2end
+from ml.tacst_prep import Dataset, TacStPt      # NOTE(deh): Need this for loading pickle
 
 """
 [Note]

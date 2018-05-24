@@ -1,39 +1,37 @@
 ## Usage
 
-1. Generate data (this saves to ./theorems.v)
+1. Set TCOQ_DUMP
+    ```
+    export TCOQ_DUMP=/tmp/tcoq.log
+    ```
+    Also, make sure that you are using TCoq.
+
+2. Generate data (this saves to ./theorems.v)
     ```
 	python gamepad/ml/rewrite/simprw.py
     ```
 
-2. Extract data using TCoq. Use the first command if TCOQ_DUMP=/tmp/tcoq.log. Use the second command otherwise.
+3. Extract data using TCoq.
     ```
     coqc theorems.v; cp /tmp/tcoq.log theorems.dump
     ```
-    
-    ```
-    coqc theorems.v > theorems.dump
-    ```
 
-3. Visualize data using ML4Coq. This creates tactr.pickle in the current directory.
-
+4. Create tactr.pickle in the current directory.
     ```
-    python gamepad/visualize.py -p . theorems.dump
+    python gamepad/visualize.py file theorems.dump -p .
     ```
 
-4. Create train/test/validation split. This creates poseval.pickle in the current directory.
-
+5. Create train/test/validation split. This creates poseval.pickle in the current directory.
     ```
     python gamepad/ml/tacst_prep.py --simprw
     ```
 
-5. Train model. This saves a log file to <path/to/mllogs/file>
-
+6. Train model. This saves a log file to <path/to/mllogs/file>
     ```
     python gamepad/ml/main.py --end2end
     ```
 
-6. Test model.
-
+7. Test model.
     ```
     python gamepad/ml/main.py --end2end --validate --mload <path/to/mllogs/file>
     ```

@@ -139,6 +139,8 @@ if __name__ == "__main__":
             vis.visualize_lemma(file, args.lemma)
         else:
             vis.visualize_file(file)
+            vis.finalize()
+            vis.save_tactrs()
     else:
         with open(args.file, 'r') as h_files:
             files = []
