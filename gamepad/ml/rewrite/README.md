@@ -18,7 +18,7 @@
 
 4. Create tactr.pickle in the current directory.
     ```
-    python gamepad/visualize.py file theorems.dump -p .
+    python gamepad/tactr_prep.py file theorems.dump -p .
     ```
 
 5. Create train/test/validation split. This creates poseval.pickle in the current directory.

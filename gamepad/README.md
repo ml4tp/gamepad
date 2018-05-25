@@ -9,7 +9,7 @@
 |- recon               (reconstructs tactic trees from tcoq dump)
 |- chunk.py
 |- exp_tactr_stats.py  (explore tactic tree statistics)
-|- visualize.py        (generates tactic tree pickle from raw data)
+|- tactr_prep.py        (generates tactic tree pickle from raw data)
 ```
 
 
@@ -30,7 +30,7 @@ We start in the project root directory.
    ```
 2. Produce tactic tree pickle file:
    ```
-   python gamepad/visualize.py file foo.dump -p examples
+   python gamepad/tactr_prep.py file foo.dump -p examples
    ```
    This produces `tactr.pickle` file in current working directory.
 3. Prepare tactic tree pickle for machine learning:
@@ -45,7 +45,7 @@ We start in the project root directory.
 We start in the project root directory.
 1. Produce tactic tree pickle file:
    ```
-   python gamepad/visualize.py files odd_order_files.txt
+   python gamepad/tactr_prep.py files odd_order_files.txt
    ```
    This produces `tactr.pickle` file in current working directory.
 2. Prepare tactic tree pickle for machine learning:
