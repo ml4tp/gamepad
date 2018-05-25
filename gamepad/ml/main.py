@@ -109,7 +109,7 @@ if __name__ == "__main__":
                 model = TacStModel(*tokens_to_idx, ln=args.ln, treelstm=args.treelstm, lstm=args.lstm,
                                    dropout=args.dropout, attention=args.attention, heads=args.heads, D=args.state,
                                    state=args.state, weight_dropout=args.weight_dropout, variational=args.variational,
-                                   conclu_pos=args.conclu_pos, outsize = args.outsize, f_mid=args.midlvl, f_useiarg=not args.noimp)
+                                   conclu_pos=args.conclu_pos, outsize=args.outsize, f_mid=args.midlvl, f_useiarg=not args.noimp)
             print("Made model")
             trainer = TacStTrainer(model, tactrs, tacst_dataset, args)
             print("Made trainer")

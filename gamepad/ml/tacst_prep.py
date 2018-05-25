@@ -241,7 +241,7 @@ class TacStDataset(object):
         if self.args.edit_features:
             for _, gid, _, _, ctx, (concl_kdx, concl_mdx), tac in tactr.bfs_traverse():
                 kern_concl_str = dict_kern_str.setdefault(concl_kdx, kern2str(tactr, concl_kdx))
-                mid_concl_str =  dict_mid_str.setdefault(concl_mdx, mid2str(tactr, concl_mdx))
+                mid_concl_str = dict_mid_str.setdefault(concl_mdx, mid2str(tactr, concl_mdx))
 
                 for _, ty_kdx, ty_mdx in ctx:
                     if (concl_kdx, ty_kdx) not in dict_kern_str_dists:
@@ -265,7 +265,7 @@ class TacStDataset(object):
             self.sum_tacst_mid_size += pt.mid_size
             self.sum_tacst_mid_noimp_size += pt.mid_noimp_size
 
-    def split_by_lemma(self, f_balance = True, num_train=None, num_test=None):
+    def split_by_lemma(self, f_balance=True, num_train=None, num_test=None):
         if self.data == {}:
             self.mk_tactrs()
 
