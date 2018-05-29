@@ -15,14 +15,14 @@ from ml.utils import ResultLogger, Timer, curr_timestamp, torch_summarize_df
 # -------------------------------------------------
 # Training
 
-def iter_data(data, size, shuffle = False):
+def iter_data(data, size, shuffle=False):
     n = len(data)
     n_end = (n // size)*size
     if shuffle:
         perm = np.random.permutation(n)[:n_end]
         data = [data[i] for i in perm]
     for start in range(0, n_end, size):
-        yield data[start : start + size]
+        yield data[start: start + size]
 
 
 class TacStTrainer(object):
@@ -248,7 +248,9 @@ class TacStTrainer(object):
 
                 self.updates += 1
                 tqdm.write("Update %d Loss %.4f Accuracy %0.4f SmAccuracy %.4f Interval %.4f AstSizes %d TpN %0.4f TpE %0.4f" % (self.updates, loss.data, accuracy, smooth_acc, t.interval, astsizes, t.interval*1e3 / astsizes, t.interval / n_batch))
-                self.logger.log(epoch=self.epochs, updates=self.updates, loss="%0.4f" % loss.data, acc="%0.4f" % accuracy, smooth_loss="%0.4f" % smooth_loss, smooth_acc="%0.4f" % smooth_acc, **grads)
+                self.logger.log(epoch=self.epochs, updates=self.updates, loss="%0.4f" % loss.data,
+                                acc="%0.4f" % accuracy, smooth_loss="%0.4f" % smooth_loss,
+                                smooth_acc="%0.4f" % smooth_acc, **grads)
                 if self.updates % 10 == 0 or self.args.debug:
                     tqdm.write("Grad norms")
                     for gg in sgrads.items():
@@ -271,8 +273,8 @@ class TacStTrainer(object):
         n_batch = self.args.valbatch
         n_train = len(data)
         losses = []
-        accuracies = []; accuracies2 = []
-        for minibatch in tqdm(iter_data(data, shuffle = False, size = n_batch), total = n_train // n_batch, ncols = 80, leave = False):
+        accuracies = []
+        for minibatch in tqdm(iter_data(data, shuffle=False, size=n_batch), total=n_train // n_batch, ncols=80, leave=False):
             with Timer() as t:
                 _, loss, accuracy, astsizes = self.forward(minibatch)
             losses.append(loss.data)
@@ -284,61 +286,6 @@ class TacStTrainer(object):
         self.best_loss = min(self.best_loss, loss)
         self.best_accuracy = max(self.best_accuracy, accuracy)
         tqdm.write("Epoch %d Updates %d Loss %0.4f Accuracy %0.4f" % (self.epochs, self.updates, loss, accuracy))
-        self.vallogger.log(epoch=epochs, updates=updates, loss="%0.4f" % loss, acc = "%0.4f" % accuracy, best_loss = "%0.4f" % self.best_loss, best_acc = "%0.4f" % self.best_accuracy)
+        self.vallogger.log(epoch=epochs, updates=updates, loss="%0.4f" % loss, acc="%0.4f" % accuracy,
+                           best_loss="%0.4f" % self.best_loss, best_acc="%0.4f" % self.best_accuracy)
         self.save(accuracy, loss)
-
-#     def finalize(self):
-#         # Save the model (parameters only)
-#         timestamp = currTS()
-#         dirname = "mllogs/"
-#         filename = "./" + dirname + "model-{}.params".format(timestamp)
-#         print("Saving model to {}...".format(filename))
-#         torch.save(self.model.state_dict(), filename)
-#         self.logger.close()
-#         return filename
-#
-# class PosEvalInfer(object):
-#     def __init__(self, tactrs, model, f_fold=True):
-#         self.tactrs = tactrs
-#         self.model = model
-#
-#         self.tacst_folder = {}   # Folder to embed
-#         for tactr_id, tactr in enumerate(self.tactrs):
-#             self.tacst_folder[tactr_id] = TacStFolder(model, tactr, f_fold)
-#
-#     def infer(self, tacst_test):
-#         preds = []
-#         for idx, (tactr_id, tacst_pt) in enumerate(tacst_test):
-#             torun_logits, torun_labels = [], []
-#             folder = self.tacst_folder[tactr_id]
-#             folder.reset()
-#             torun_logits += [folder.fold_tacst(tacst_pt.tacst)]
-#             torun_labels += [0]
-#             res = folder.apply(torun_logits, torun_labels)
-#             logits = res[0].data.numpy()
-#             preds += [np.argmax(logits)]
-#             print("Logits", logits, "Predicted", np.argmax(logits), "Actual", tacst_pt.subtr_bin)
-#         return preds
-
-
-# -------------------------------------------------
-# Debugging helper
-
-# class ChkPosEvalTrainer(object):
-#     def __init__(self, trainer1, trainer2):
-#         assert isinstance(trainer1, PosEvalTrainer)
-#         assert isinstance(trainer2, PosEvalTrainer)
-#
-#         self.trainer1 = trainer1
-#         self.trainer1.f_dbg = True
-#         self.trainer2 = trainer2
-#         self.trainer2.f_dbg = True
-#
-#     def check(self):
-#         losses1 = self.trainer1.train(epochs=1)
-#         losses2 = self.trainer2.train(epochs=1)
-#         print("Losses1: ", losses1)
-#         print("Losses2: ", losses2)
-#         diff = [l1 - l2 for l1, l2 in zip(losses1, losses2)]
-#         print("Diff: ", diff)
-        # print(all(map(lambda x: x < 0.001, diff)))
