@@ -100,6 +100,13 @@ To obtain the auxilliary repositories, you can run `./get_data.sh` (this obtains
 
 As a reminder, use Python3. Change to the GamePad directory `cd gamepad`.
 1. We recommend that you create a virutal environment (e.g., an environment called `gamepad3`).
+    ```
+    virtualenv -p python3 gamepad3
+    ```
+    If you have virtualenv wrapper, you can use the command below instead.
+    ```
+    mkvirtualenv --python=<path/to/local/python3> gamepad3
+    ```
 2. Install the requirements in the environment.
     ```
     pip install -r requirements.txt
