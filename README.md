@@ -92,18 +92,22 @@ To obtain the auxilliary repositories, you can run `./get_data.sh` (this obtains
    ```
    We recommend having a top-level `data` folder and setting `<output-directory> = data/odd-order`. For example,
    ```
-   python chunk.py odd-order/mathcomp/odd_order/build.log ./data
+   python chunk.py odd-order/mathcomp/odd_order/build.log ./data/odd-order
    ```
 
 
 ## Setup GamePad
 
 As a reminder, use Python3. Change to the GamePad directory `cd gamepad`.
-```
-pip install -r requirements.txt
-```
-You can also install the gamepad package locally.
-Run `python setup.py develop` inside `./gamepad/`.
+1. We recommend that you create a virutal environment (e.g., an environment called `gamepad3`).
+2. Install the requirements in the environment.
+    ```
+    pip install -r requirements.txt
+    ```
+3. Install the gamepad package locally as a development.
+    ```
+    python setup.py develop
+    ```
 
 
 # Usage
