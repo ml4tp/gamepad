@@ -27,7 +27,8 @@ np.random.seed(7)
 # -------------------------------------------------
 # Tactic States Dataset
 class TacStPt(object):
-    def __init__(self, tactr, tacst, subtr_size, tac_bin, dict_kern_str_dists, dict_mid_str_dists, f_feature=True, f_edit_feature=True):
+    def __init__(self, tactr, tacst, subtr_size, tac_bin, dict_kern_str_dists, dict_mid_str_dists,
+                 f_feature=True, f_edit_feature=True):
         self.tactr = tactr
         self.tacst = tacst
         self.subtr_size = subtr_size

@@ -39,14 +39,8 @@ class TacStTrainer(object):
             self.model.cuda()
             self.torch = torch.cuda
 
-        # # Select whether we want mid-level or kernel-level AST
-        # if self.model.f_mid:
-        #     self.get_tacst = lambda pt: pt.mid_tacst()
-        # else:
-        #     self.get_tacst = lambda pt: pt.kern_tacst()
-
         # Optimizer
-        self.loss_fn =  nn.CrossEntropyLoss()
+        self.loss_fn = nn.CrossEntropyLoss()
         self.opt = optim.Adam(self.model.parameters(), lr=args.lr)
 
         # Training
@@ -58,7 +52,7 @@ class TacStTrainer(object):
         self.ts = None               # timestamp
 
         typ = "_".join([v for k, v in (zip([not (args.midlvl or args.noimp), args.midlvl, args.noimp],
-                                        ["kern", "midlvl", "noimp"])) if k])
+                                           ["kern", "midlvl", "noimp"])) if k])
         if self.model.f_linear:
             # Linear
             basepath = 'mllogs/{}/type_{}_lr_{}_m_linear_r_{}'.format(args.task, typ, args.lr, args.name)
@@ -69,7 +63,8 @@ class TacStTrainer(object):
             for tactr_id, tactr in enumerate(self.tactrs):
                 self.tacst_folder[tactr_id] = TacStFolder(model, tactr, self.folder)
 
-            misc = "_".join([v for k,v in (zip([not (args.lstm or args.treelstm), args.lstm, args.treelstm], ["gru", "lstm", "treelstm"])) if k])
+            misc = "_".join([v for k, v in (zip([not (args.lstm or args.treelstm), args.lstm, args.treelstm],
+                                                ["gru", "lstm", "treelstm"])) if k])
 
             basepath = 'mllogs/{}/type_{}_state_{}_lr_{}_conclu_pos_{}_ln_{}_drop_{}_wd_{}_v_{}_attn_{}_heads_{}_m_{}_r_{}/'.format(args.task, typ, args.state, args.lr, args.conclu_pos, args.ln, args.dropout, args.weight_dropout, args.variational, args.attention, args.heads, misc, args.name)
 
@@ -149,7 +144,7 @@ class TacStTrainer(object):
                     targets += [tacst_pt.subtr_bin]
                 else:
                     targets += [tacst_pt.tac_bin]
-            logits = self.folder.apply(logits)[0] # Folded model
+            logits = self.folder.apply(logits)[0]  # Folded model
 
         targets = autograd.Variable(self.torch.LongTensor(targets), requires_grad=False)
         assert logits.shape == torch.Size([n_batch, self.model.outsize])  # , folded_logits[0].shape
@@ -186,7 +181,7 @@ class TacStTrainer(object):
         total_params = 0
         learnable_params = 0
         param_names = set()
-        for name,param in self.model.named_parameters():
+        for name, param in self.model.named_parameters():
             param_names.add(name)
             total_params += np.prod(param.shape)
             if param.requires_grad:
@@ -196,23 +191,24 @@ class TacStTrainer(object):
         print("Total Parameters", total_params)
         print("Learnable Parameters", learnable_params)
 
-        grad_params = [(name,p) for name,p in self.model.named_parameters() if p.requires_grad]
+        grad_params = [(name, p) for name, p in self.model.named_parameters() if p.requires_grad]
 
         # Other model state
-        for k,v in self.model.state_dict().items():
+        for k, v in self.model.state_dict().items():
             if k not in param_names:
-                print(k,v.shape, "False", "state")
+                print(k, v.shape, "False", "state")
 
         # Optimizer State info
-        for k,v in self.opt.state_dict().items():
+        for k, v in self.opt.state_dict().items():
             print(k, v)
 
         # Train
-        smooth_acc = None;
+        smooth_acc = None
         smooth_loss = None
         while self.epochs < self.max_epochs:
             testart = time()
-            for minibatch in tqdm(iter_data(data, shuffle=True, size=n_batch), total=n_train // n_batch, ncols=80, leave=False):
+            for minibatch in tqdm(iter_data(data, shuffle=True, size=n_batch),
+                                  total=n_train // n_batch, ncols=80, leave=False):
                 with Timer() as t:
                     # Set model to traiing mode (needed for dropout, batchnorm etc)
                     self.model.train()
@@ -274,7 +270,8 @@ class TacStTrainer(object):
         n_train = len(data)
         losses = []
         accuracies = []
-        for minibatch in tqdm(iter_data(data, shuffle=False, size=n_batch), total=n_train // n_batch, ncols=80, leave=False):
+        for minibatch in tqdm(iter_data(data, shuffle=False, size=n_batch),
+                              total=n_train // n_batch, ncols=80, leave=False):
             with Timer() as t:
                 _, loss, accuracy, astsizes = self.forward(minibatch)
             losses.append(loss.data)
