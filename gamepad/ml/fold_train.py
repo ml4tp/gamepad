@@ -105,7 +105,6 @@ class TacStTrainer(object):
         checkpoint = torch.load(path)
         self.model.load_state_dict(checkpoint['model'])
         self.opt.load_state_dict(checkpoint['opt'])
-        # self.args = checkpoint.args  # Use currently passed arguments
         self.epochs = checkpoint['epochs']
         self.updates = checkpoint['updates']
         self.best_accuracy = checkpoint['accuracy']
@@ -156,9 +155,6 @@ class TacStTrainer(object):
         return logits, loss, accuracy, astsizes
 
     def train(self):
-        # if args.mload:
-        #     self.load(args.mload)
-
         # Data info
         for k in ['train', 'val', 'test']:
             data = getattr(self.tacst_dataset, k)
