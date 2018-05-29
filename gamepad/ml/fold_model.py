@@ -8,6 +8,7 @@ import torch.nn.functional
 from coq.constr import *
 from coq.glob_constr import *
 from lib.myenv import FastEnv
+from lib.myutil import NotFound
 import ml.torchfold as ptf
 
 
@@ -308,7 +309,7 @@ class TacStFolder(object):
         if ty is VarRef:
             try:
                 ev_x = env.lookup_id(Name(gref.x))
-            except:
+            except NotFound:
                 print("Lookup error at VARREF", gref.x, env)
                 ev_x = self.fold_local_var(None)
             return [self.model.gref_var, ev_x]
@@ -336,7 +337,7 @@ class TacStFolder(object):
         elif ty is GVar:
             try:
                 ev_x = env.lookup_id(Name(gc.x))
-            except:
+            except NotFound:
                 print("Lookup error at GVAR", gc.x, env)
                 ev_x = self.fold_local_var(None)
             return self._fold(key, [self.model.gvar, ev_x])
@@ -379,7 +380,6 @@ class TacStFolder(object):
             for cc in gc.ccs:
                 for cp in cc.cps:
                     for name in cp.get_names():
-                        # print("ADDING", name)
                         ev_x = self.fold_local_var(None)
                         env = env.local_extend(name, ev_x)
                 ccs += [self._fold_mid(env, cc.g)]
@@ -434,41 +434,41 @@ class TacStFolder(object):
 
     def fold_evar_name(self, exk):
         """Override Me"""
-        id = self.model.fix_id('evar', self.model.evar_to_idx[exk])
-        return self.lookup(id)
+        ident = self.model.fix_id('evar', self.model.evar_to_idx[exk])
+        return self.lookup(ident)
 
     def fold_const_name(self, const):
         """Override Me"""
-        id = self.model.fix_id('const', self.model.const_to_idx[const])
-        return self.lookup(id)
+        ident = self.model.fix_id('const', self.model.const_to_idx[const])
+        return self.lookup(ident)
 
     def fold_sort_name(self, sort):
         """Override Me"""
-        id = self.model.fix_id('sort', self.model.sort_to_idx[sort])
-        return self.lookup(id)
+        ident = self.model.fix_id('sort', self.model.sort_to_idx[sort])
+        return self.lookup(ident)
 
     def fold_ind_name(self, ind):
         """Override Me"""
-        id = self.model.fix_id('ind', self.model.ind_to_idx[ind.mutind])
-        return self.lookup(id)
+        ident = self.model.fix_id('ind', self.model.ind_to_idx[ind.mutind])
+        return self.lookup(ident)
 
     def fold_conid_name(self, ind_and_conid):
         """Override Me"""
         ind, conid = ind_and_conid
-        id = self.model.fix_id('conid', self.model.conid_to_idx[(ind.mutind, conid)])
-        return self.lookup(id)
+        ident = self.model.fix_id('conid', self.model.conid_to_idx[(ind.mutind, conid)])
+        return self.lookup(ident)
 
     def fold_fix_name(self, name):
         """Override Me"""
-        id = self.model.fix_id('fix', self.model.fix_to_idx[name])
-        return self.lookup(id)
+        ident = self.model.fix_id('fix', self.model.fix_to_idx[name])
+        return self.lookup(ident)
 
     # -------------------------------------------
     # Local variable folding
 
     def fold_local_var(self, ty):
         """Override Me"""
-        return self.folder.add('var_normal', self.torch.FloatTensor(1,self.model.init_D))
+        return self.folder.add('var_normal', self.torch.FloatTensor(1, self.model.init_D))
 
 
 class TreeLSTM(nn.Module):
@@ -525,7 +525,8 @@ class LinearModel(nn.Module):
 class TacStModel(nn.Module):
     def __init__(self, sort_to_idx, const_to_idx, ind_to_idx, conid_to_idx, evar_to_idx, fix_to_idx,
                  D=128, state=128, outsize=3, eps=1e-6, ln=False, treelstm=False, lstm=False, dropout=0.0,
-                 attention=False, heads=1, weight_dropout=0.0, variational=False, conclu_pos=0, f_mid=False, f_useiarg=True):
+                 attention=False, heads=1, weight_dropout=0.0, variational=False, conclu_pos=0,
+                 f_mid=False, f_useiarg=True):
         super().__init__()
 
         # Dimensions
@@ -653,7 +654,7 @@ class TacStModel(nn.Module):
             # Only use hidden state
             x = x.chunk(2, -1)[0]
         batch, state = x.shape
-        # q is [b, m*state], x is [b, state], k,v will bbe [b, m*state]
+        # q is [b, m*state], x is [b, state], k,v will be [b, m*state]
         k, v = self.attn_kv(x).chunk(2, -1)
         if self.m == 1:
             k = k.unsqueeze(1)
