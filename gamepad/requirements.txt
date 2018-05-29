@@ -8,5 +8,5 @@ pexpect==4.2.1
 plotly==2.2.1
 psutil==5.4.5
 scipy==1.1.0
-torch==0.4.0
+torch==0.3.0.post4
 tqdm==4.19.5
