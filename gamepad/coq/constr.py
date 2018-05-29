@@ -850,27 +850,3 @@ COQEXP = ['RelExp',
 
 
 COQEXP_HIST = MyHist(COQEXP)
-
-
-# -------------------------------------------------
-# Junk
-
-# class DecodeName(object):
-#     def __init__(self):
-#         self.names = {}
-#
-#     def _hcons(self, tok):
-#         if tok in self.names:
-#
-#     def str_to_name(self, s):
-#         toks = s.split('.')
-#         if len(toks) == 0:
-#             raise NameError("Cannot convert empty string {}".format(s))
-#         elif len(toks) == 1:
-#             return Name(toks[0])
-#         else:
-#             name = Name(toks[-1])
-#             toks = toks[:-1]
-#             for tok in toks[::-1]:
-#                 name = Name(tok, name)
-#         return name
