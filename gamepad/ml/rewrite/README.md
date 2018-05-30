@@ -41,9 +41,7 @@
 	```
 
 
-## Experiments
-
-NIPS version:
+## NIPS Experiments
 
 python gamepad/ml/main.py --end2end --mload mllogs/state_128_lr_0.001_conclu_pos_0_ln_False_drop_0.0_wd_0.0_v_False_attn_False_heads_1_m__r_/2018-05-14T224446.674225.pth --validate 
 
