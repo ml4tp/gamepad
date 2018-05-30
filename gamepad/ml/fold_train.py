@@ -58,7 +58,7 @@ class TacStTrainer(object):
             basepath = 'mllogs/{}/type_{}_lr_{}_m_linear_r_{}'.format(args.task, typ, args.lr, args.name)
         else:
             # Folder
-            self.folder = Folder(model, args.fold, args.cuda)
+            self.folder = Folder(model, args.fold, args.sharing, args.cuda)
             self.tacst_folder = {}   # Folder to embed
             for tactr_id, tactr in enumerate(self.tactrs):
                 self.tacst_folder[tactr_id] = TacStFolder(model, tactr, self.folder)

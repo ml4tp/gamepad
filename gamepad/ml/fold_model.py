@@ -75,11 +75,12 @@ def seq_sigmoid_attn_embed(folder, xs, sv_init, ln, input_dropout, conclu_pos):
 # Fold over anything
 
 class Folder(object):
-    def __init__(self, model, f_fold, cuda):
+    def __init__(self, model, f_fold, f_sharing, cuda):
         # Folding state
         self.model = model
         self.f_fold = f_fold       # whether to fold or not
-        self._folder = None      # which folder to use
+        self.f_sharing = f_sharing # whether to use shared embeddings
+        self._folder = None        # which folder to use
         self.cuda = cuda
         self.max_batch_ops = {}
         if not self.cuda:
@@ -128,14 +129,11 @@ class TacStFolder(object):
 
         self.folder = folder
         self.folded = {}
+        self.f_sharing = folder.f_sharing
         if folder.cuda:
             self.torch = torch.cuda
         else:
             self.torch = torch
-
-        self.ast_cnt = 0
-        self.goal_ast = {}
-        self.f_save = False
 
         if self.model.f_mid:
             self.get_tacst = lambda pt: pt.mid_tacst()
@@ -148,15 +146,6 @@ class TacStFolder(object):
 
     def reset(self):
         self.folded = {}
-
-    def reset_ast(self):
-        self.ast_cnt = 0
-        self.goal_ast = {}
-
-    def save_ast(self, c):
-        idx = self.ast_cnt
-        self.ast_cnt += 1
-        self.goal_ast[idx] = c
 
     # -------------------------------------------
     # Tactic state folding (Kernel)
@@ -185,10 +174,7 @@ class TacStFolder(object):
 
     def fold_concl(self, gid, env, concl_idx):
         # NOTE(deh): Do not need conclusion sharing because of AST sharing
-        self.f_save = True
-        self.reset_ast()
         c = self.decode(concl_idx)
-        self.f_save = False
         return self.fold_ast(env, c)
 
     # -------------------------------------------
@@ -197,15 +183,13 @@ class TacStFolder(object):
     def _fold(self, key, args):
         fold = self.model.ast_emb_func(self.folder, args)
         self.folded[key] = fold
-        if self.f_save:
-            for node in args[1:]:
-                self.save_ast(node)
         return fold
 
     def _fold_ast(self, env, kind, c):
         key = c.tag
-        if key in self.folded:
-            return self.folded[key]
+        if self.f_sharing:
+            if key in self.folded:
+                return self.folded[key]
 
         # Ordered by number of occurances, better would be a dict.
         typ = type(c)
@@ -328,8 +312,9 @@ class TacStFolder(object):
 
     def _fold_mid(self, env, gc):
         key = gc.tag
-        if key in self.folded:
-            return self.folded[key]
+        if self.f_sharing:
+            if key in self.folded:
+                return self.folded[key]
 
         ty = type(gc)
         if ty is GRef:

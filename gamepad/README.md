@@ -45,7 +45,7 @@ We start in the project root directory.
 We start in the project root directory.
 1. Produce tactic tree pickle file:
    ```
-   python gamepad/tactr_prep.py files odd_order_files.txt
+   python gamepad/tactr_prep.py files odd_order_files.txt -p data/odd-order
    ```
    This produces `tactr.pickle` file in current working directory.
 2. Prepare tactic tree pickle for machine learning:
