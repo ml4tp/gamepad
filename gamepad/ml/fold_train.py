@@ -86,8 +86,8 @@ class TacStTrainer(object):
 
         self.ts = None               # timestamp
 
-        typ = "_".join([v for k, v in (zip([not (args.midlvl or args.noimp), args.midlvl, args.noimp],
-                                           ["kern", "midlvl", "noimp"])) if k])
+        self.typ = "_".join([v for k, v in (zip([not args.midlvl, args.midlvl and not args.noimp, args.midlvl and args.noimp],
+                                           ["kern", "mid", "mid_noimp"])) if k])
         if self.model.f_linear:
             # Linear
             basepath = 'mllogs/{}/type_{}_lr_{}_m_linear_r_{}'.format(args.task, typ, args.lr, args.name)
@@ -104,7 +104,7 @@ class TacStTrainer(object):
                 base_dir = args.task + "_lids"
             else:
                 base_dir = args.task
-            basepath = 'mllogs/{}/type_{}_state_{}_lr_{}_conclu_pos_{}_ln_{}_drop_{}_wd_{}_v_{}_attn_{}_heads_{}_m_{}_r_{}/'.format(base_dir, typ, args.state, args.lr, args.conclu_pos, args.ln, args.dropout, args.weight_dropout, args.variational, args.attention, args.heads, misc, args.name)
+            basepath = 'mllogs/{}/type_{}_state_{}_lr_{}_conclu_pos_{}_ln_{}_drop_{}_wd_{}_v_{}_attn_{}_heads_{}_m_{}_r_{}/'.format(base_dir, self.typ, args.state, args.lr, args.conclu_pos, args.ln, args.dropout, args.weight_dropout, args.variational, args.attention, args.heads, misc, args.name)
 
         if args.mload:
             self.load(args.mload)
@@ -151,7 +151,6 @@ class TacStTrainer(object):
         print("Done loading")
 
     def final(self, logits, targets, batch, outsize, flid=False):
-        # logits = self.folder.apply(logits)[0]  # Returns a list of results per arg, so 0-th entry is logits
         # print("\nTargets ", dict(zip(*np.unique(targets, return_counts=True))))
         targets = autograd.Variable(self.torch.LongTensor(targets), requires_grad=False)
         assert logits.shape == torch.Size([batch, outsize])  # , folded_logits[0].shape
@@ -163,9 +162,6 @@ class TacStTrainer(object):
         preds = torch.max(logits, dim=-1)[1]  # 0-th is max values, 1-st is max location
         preds, targets = preds.data.cpu().numpy().astype(int), targets.data.cpu().numpy().astype(int)
         correct = np.sum(np.equal(preds, targets))
-        # correct = torch.sum(torch.eq(preds, targets).long())
-        # print("Preds ",  dict(zip(*np.unique(preds, return_counts=True))))
-        # print("Correct ", float(correct), float(np.prod(preds.shape)))
         accuracy = float(correct) / float(np.prod(preds.shape))
         if flid:
             eps = 1e-5
@@ -178,57 +174,70 @@ class TacStTrainer(object):
 
     def forward(self, minibatch):
         n_batch = len(minibatch)
-        self.folder.reset()  # Before or after?
-        logits, targets = [], []
-        if self.args.lids:
-            n_lids = 0
-            logits_lids, targets_lids = [], []
-        astsizes = 0
-        # Forward and Backward graph
+
+        # Targets
+        targets = []
         for tactr_id, tacst_pt in minibatch:
-            self.tacst_folder[tactr_id].reset()
-
-        for tactr_id, tacst_pt in minibatch:
-            tacst_folder = self.tacst_folder[tactr_id]
-            #TODO (praf): Use different size depending on flag
-            if not self.args.midlvl:
-                astsizes += tacst_pt.kern_size
-            elif not self.args.noimp:
-                astsizes += tacst_pt.mid_size
-            else:
-                astsizes += tacst_pt.mid_noimp_size
-
-            # Apply forward pass
-            pred = tacst_folder.fold_tacst(tacst_pt)
-            if self.args.lids:
-                pred, pred_lids = pred
-                logits.append(pred)
-
-                # Masked negative mining
-                lids = tacst_pt.lids
-                if self.args.mask:
-                    mask = get_mask(lids)
-                    pred_lids, lids = apply_mask(pred_lids, lids, mask)
-                logits_lids.extend(pred_lids)
-                targets_lids.extend(lids)
-                n_lids += len(lids)
-            else:
-                logits.append(pred)
-
             if self.args.task == 'pose':
                 targets += [tacst_pt.subtr_bin]
             else:
                 targets += [tacst_pt.tac_bin]
 
+        # Predictions
+        if self.model.f_linear:
+            # Simple linear model
+            features = []
+            astsizes = 0
+            for tactr_id, tacst_pt in minibatch:
+                features.append(self.model.get_features(tacst_pt))
+                astsizes += getattr(tacst_pt, "%s_size" % self.typ)
+            features = autograd.Variable(self.torch.FloatTensor(features))
+            logits = self.model.pred(features)
+        else:
+            # Folding model
+            self.folder.reset()
+            logits = []
+            astsizes = 0
+            if self.args.lids:
+                n_lids = 0
+                logits_lids, targets_lids = [], []
+
+            # Forward graph
+            for tactr_id, tacst_pt in minibatch:
+                self.tacst_folder[tactr_id].reset()
+
+            for tactr_id, tacst_pt in minibatch:
+                tacst_folder = self.tacst_folder[tactr_id]
+                astsizes += getattr(tacst_pt, "%s_size" % self.typ)
+
+                # Apply forward pass
+                pred = tacst_folder.fold_tacst(tacst_pt)
+                if self.args.lids:
+                    pred, pred_lids = pred
+                    logits.append(pred)
+
+                    # Masked negative mining
+                    lids = tacst_pt.lids
+                    if self.args.mask:
+                        mask = get_mask(lids)
+                        pred_lids, lids = apply_mask(pred_lids, lids, mask)
+                    logits_lids.extend(pred_lids)
+                    targets_lids.extend(lids)
+                    n_lids += len(lids)
+                else:
+                    logits.append(pred)
+
+            if self.args.lids:
+                logits, logits_lids = self.folder.apply(logits, logits_lids)
+            else:
+                logits = self.folder.apply(logits)[0]
+
+        # Loss and metrics
         if self.args.lids:
-            logits, logits_lids = self.folder.apply(logits, logits_lids)
             loss, accuracy = self.final(logits, targets, n_batch, self.args.outsize)
-            loss_lids, accuracy_lids, precision, recall = self.final(logits_lids, targets_lids, n_lids, 2,
-                                                                     flid=True)
-            # print("Losses", loss.data, loss_lids.data)
+            loss_lids, accuracy_lids, precision, recall = self.final(logits_lids, targets_lids, n_lids, 2, flid=True)
             return loss + loss_lids, accuracy, accuracy_lids, precision, recall, astsizes
         else:
-            logits = self.folder.apply(logits)[0]
             loss, accuracy = self.final(logits, targets, n_batch, self.args.outsize)
             return loss, accuracy, astsizes
 
