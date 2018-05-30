@@ -68,7 +68,7 @@ To obtain the auxilliary repositories, you can run `./get_data.sh` (this obtains
    ```
 5. Patch mathematical components SSreflect
    ```
-   patch math-comp/mathcomp/ssreflect/plugin/v8.6/ssreflect.ml4 ssreflect/ssreflect.ml4.patch2
+   patch math-comp/mathcomp/ssreflect/plugin/v8.6/ssreflect.ml4 ssreflect/ssreflect.ml4.patch
    ```
 6. Build mathematical components (i.e. ssreflect)
    ```
