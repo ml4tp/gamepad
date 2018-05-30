@@ -45,6 +45,7 @@ To obtain the auxilliary repositories, you can run `./get_data.sh` (this obtains
 
 1. Python3: GamePad does not support Python2.
 2. OCaml 4.05.0: in order to build tcoq, make sure you use OCaml 4.05.0. It does not work with OCaml 4.06.0.
+3. Coq 8.6.1: tcoq is a patch to Coq 8.6.1.
 
 
 ## Step 1: Build Traced Coq (TCoq) and Mathematical Components
