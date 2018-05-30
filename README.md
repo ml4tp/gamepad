@@ -24,9 +24,10 @@ coq, mathcomp-1.6.1, and mathcomp-odd-order-1.6.1 come from different repos.
 |- examples   (example Coq tactic scripts and their corresponding traces) 
 |- gamepad    (Python learning environment for Coq proofs)
 |- ssreflect  (patch for ssreflect)
-|- tcoq       ("Traced Coq", i.e., modified version of Coq)
-|- odd-order  (Feit-Thompson Coq repo)
-|- math-comp  (Ssreflect Coq repo)
+|- tcoq       ("Traced Coq", i.e., modified version of Coq; created by get_data.sh)
+|- odd-order  (Feit-Thompson Coq repo; created by get_data.sh)
+|- math-comp  (Ssreflect Coq repo; created by get_data.sh)
+|- mllogs     (hold ml logs, will be auto-generated)
 ```
 
 
