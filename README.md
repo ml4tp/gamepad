@@ -114,7 +114,7 @@ As a reminder, use Python3. Change to the GamePad directory `cd gamepad`.
     ```
 3. Install the gamepad package locally as a development.
     ```
-    python setup.py develop
+    pip install -e .
     ```
 
 
