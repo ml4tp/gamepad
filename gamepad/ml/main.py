@@ -49,7 +49,9 @@ if __name__ == "__main__":
     argparser.add_argument('--nbatch', type=int, default=32, help='minibatch size')
     argparser.add_argument('--lr', type=float, default=0.001, help='learning rate')
     argparser.add_argument('--valbatch', type=int, default=32, help='minibatch size for validation')
-    
+    argparser.add_argument('--weighted', action='store_true', help='use weighted cross entropy loss for lids')
+    argparser.add_argument('--mask', action='store_true', help='use masked negative mining for lids')
+
     # Speed args
     argparser.add_argument('--no_fold', action='store_true', help='disables folding ie dynamic batching')
     argparser.add_argument('--no_sharing', action='store_true', help='disables embedding sharing')
@@ -64,8 +66,10 @@ if __name__ == "__main__":
 
     args = argparser.parse_args()
 
-    assert not (args.lstm and args.treelstm)
-    
+    assert not (args.lstm and args.treelstm), "Can only pick one model"
+    assert not ((not args.midlvl) and args.noimp), "Implicit args removed on midlvl only"
+    assert not ((args.task == 'pose') and args.lids), "Local ids only for tactic argument prediction task"
+
     if args.task == 'tac':
         args.outsize = len(TACTICS_EQUIV)
     else:

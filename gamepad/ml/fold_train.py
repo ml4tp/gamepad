@@ -90,7 +90,7 @@ class TacStTrainer(object):
                                            ["kern", "mid", "mid_noimp"])) if k])
         if self.model.f_linear:
             # Linear
-            basepath = 'mllogs/{}/type_{}_lr_{}_m_linear_r_{}'.format(args.task, typ, args.lr, args.name)
+            basepath = 'mllogs/{}/type_{}_lr_{}_m_linear_r_{}'.format(args.task, self.typ, args.lr, args.name)
         else:
             # Folder
             self.folder = Folder(model, args.fold, args.sharing, args.cuda)
@@ -104,7 +104,7 @@ class TacStTrainer(object):
                 base_dir = args.task + "_lids"
             else:
                 base_dir = args.task
-            basepath = 'mllogs/{}/type_{}_state_{}_lr_{}_conclu_pos_{}_ln_{}_drop_{}_wd_{}_v_{}_attn_{}_heads_{}_m_{}_r_{}/'.format(base_dir, self.typ, args.state, args.lr, args.conclu_pos, args.ln, args.dropout, args.weight_dropout, args.variational, args.attention, args.heads, misc, args.name)
+            basepath = 'mllogs/{}/type_{}_state_{}_lr_{}_conclu_pos_{}_ln_{}_drop_{}_wd_{}_v_{}_attn_{}_heads_{}_mask_{}_weight_{}_m_{}_r_{}/'.format(base_dir, self.typ, args.state, args.lr, args.conclu_pos, args.ln, args.dropout, args.weight_dropout, args.variational, args.attention, args.heads, args.mask, args.weighted, misc, args.name)
 
         if args.mload:
             self.load(args.mload)
