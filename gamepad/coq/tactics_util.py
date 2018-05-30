@@ -379,6 +379,20 @@ class FvsTactic(object):
             else:
                 raise NameError("Tag {} not supported".format(tag))
 
+    def fvs_may_eval(self, me):
+        tag, body = sexpr_unpack(me)
+        self._log("@fvs_may_eval | tag={}; raw={}".format(tag, me))
+        if tag == "E":
+            return self.fvs_gtrm(body[1])
+        elif tag == "C":
+            return self.fvs_id(body[0]).union(self.fvs_gtrm(body[1]))
+        elif tag == "T":
+            return self.fvs_gtrm(body[0])
+        elif tag == "M":
+            return self.fvs_gtrm(body[0])
+        else:
+            raise NameError("Tag {} not supported".format(tag))
+
     def fvs_tactic_arg(self, targ):
         tag, body = sexpr_unpack(targ)
         self._log("@fvs_tactic_arg | tag={}; raw={}".format(tag, targ))
@@ -406,6 +420,32 @@ class FvsTactic(object):
     def fvs_tactic_args(self, targs):
         return self.fvs_ls(self.fvs_tactic_arg, targs)
 
+    def fvs_core_destruction_arg(self, f, cda):
+        tag, body = sexpr_unpack(cda)
+        if tag == "C":
+            return f(body[0])
+        elif tag == "I":
+            return self.fvs_id(body[0])
+        elif tag == "A":
+            return set()
+        else:
+            raise NameError("Tag {} not supported".format(tag))
+
+    def fvs_destruction_arg(self, f, da):
+        return self.fvs_core_destruction_arg(f, da[1])
+
+    def fvs_induction_clause(self, ic):
+        fvs0 = self.fvs_destruction_arg(lambda x: self.fvs_with_bindings(self.fvs_gtrm, x), ic[0])
+        fvs1 = self.fvs_maybe(self.fvs_intro_pattern_naming_expr, ic[1])
+        fvs2 = self.fvs_maybe(lambda x: self.fvs_or_var(self.fvs_or_and_intro_pattern_expr, x), ic[2])
+        fvs3 = self.fvs_maybe(self.fvs_clause_expr, ic[3])
+        return fvs0.union(fvs1).union(fvs2).union(fvs3)
+
+    def fvs_induction_clause_list(self, ics):
+        fvs0 = self.fvs_ls(self.fvs_induction_clause, ics[0])
+        fvs1 = self.fvs_maybe(lambda x: self.fvs_with_bindings(self.fvs_gtrm, x), ics[1])
+        return fvs0.union(fvs1)
+
     def fvs_atomic_tac(self, atac):
         tag, body = sexpr_unpack(atac)
         self._log("@fvs_atomic_tac | tag={}; raw={}".format(tag, atac))
@@ -413,7 +453,8 @@ class FvsTactic(object):
             return self.fvs_ls(lambda x: self.fvs_intro_pattern_expr(self.fvs_gtrm, x), body[1])
         elif tag == "Apply":
             fvs2 = self.fvs_ls(lambda x: self.fvs_with_bindings_arg(self.fvs_gtrm, x), body[2])
-            fvs3 = self.fvs_maybe(lambda gnm, x: self.fvs_gname(gnm).union(self.fvs_maybe(lambda y: self.fvs_intro_pattern_expr(self.fvs_gtrm, y)), x), body[3])
+            fvs3 = self.fvs_maybe(lambda gnm, x: self.fvs_gname(gnm).union(
+                self.fvs_maybe(lambda y: self.fvs_intro_pattern_expr(self.fvs_gtrm, y), x)), body[3])
             return fvs2.union(fvs3)
         elif tag == "Elim":
             fvs1 = self.fvs_with_bindings_arg(self.fvs_gtrm, body[1])
@@ -431,17 +472,16 @@ class FvsTactic(object):
             return fvs1.difference(ids)
         elif tag == "Assert":
             fvs1 = self.fvs_maybe(lambda x: self.fvs_maybe(self.fvs_tac, x), body[1])
-            f = lambda x: self.fvs_intro_pattern_expr(self.fvs_gtrm, x)
-            fvs2 = self.fvs_maybe(f, body[2])
+            fvs2 = self.fvs_maybe(lambda x: self.fvs_intro_pattern_expr(self.fvs_gtrm, x), body[2])
             fvs3 = self.fvs_gtrm(body[3])
             return fvs1.union(fvs2).union(fvs3)
         elif tag == "Generalize":
-            f = lambda wo, name: self.fvs_with_occurrences(self.fvs_gtrm, wo).union(self.fvs_name(name))
-            return self.fvs_ls(f, body[0])
+            return self.fvs_ls(lambda wo, name: self.fvs_with_occurrences(
+                self.fvs_gtrm, wo).union(self.fvs_name(name)), body[0])
         elif tag == "LetTac":
             fvs1 = self.fvs_gtrm(body[1])
             fvs2 = self.fvs_clause_expr(body[2])
-            fvs3 = self.fvs_maybe(self.fvs_gtrm(body[4]))
+            fvs3 = self.fvs_maybe(self.fvs_gtrm, body[4])
             return fvs1.union(fvs2).union(fvs3).difference(self.fvs_name(body[0]))
         elif tag == "InductionDestruct":
             return self.fvs_induction_clause_list(body[2])
@@ -453,7 +493,7 @@ class FvsTactic(object):
             fvs2 = self.fvs_clause_expr(body[2])
             return fvs0.union(fvs1).union(fvs2)
         elif tag == "Rewrite":
-            fvs1 = self.fvs_ls(lambda x: self.fvs_with_bindings_arg(self.fvs_gtrm, x[2]) , body[1])
+            fvs1 = self.fvs_ls(lambda x: self.fvs_with_bindings_arg(self.fvs_gtrm, x[2]), body[1])
             fvs2 = self.fvs_clause_expr(body[2])
             fvs3 = self.fvs_maybe(self.fvs_tac, body[3])
             return fvs1.union(fvs2).union(fvs3)
@@ -928,5 +968,5 @@ class FvsTactic(object):
         return self.fvs_ssripat(rpat)
 
     def fvs_ssrfixfwd(self, fwd):
-        # TODO(deh): huh?
+        # NOTE(deh): huh?
         return set()
