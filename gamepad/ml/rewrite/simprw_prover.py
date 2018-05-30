@@ -101,7 +101,7 @@ class PyCoqTrainedProver(PyCoqProver):
                 # Case B1: The inferred step was successful.
                 self.proof += [step_infer]
             else:
-                # Case B2: The inferred step was successful.
+                # Case B2: The inferred step was not successful.
                 self.num_bad_infer += 1
                 self.bad_steps.add(self.num_steps)
 
