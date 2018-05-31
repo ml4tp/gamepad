@@ -25,9 +25,9 @@ from recon.recon import Recon
 [Note]
 
 1. Visualize all files
-    python ml4tp/tactr_prep.py all
+    python gamepad/tactr_prep.py files <file-list.txt>
 2. Visualize a lemma in a specific file
-    python ml4tp/tactr_prep.py <file> -l <lemma>
+    python gamepad/tactr_prep.py file <file.dump> -l <lemma>
 """
 
 
