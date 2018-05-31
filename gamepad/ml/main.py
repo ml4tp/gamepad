@@ -52,7 +52,7 @@ if __name__ == "__main__":
     argparser.add_argument('--lstm', action='store_true', help='use lstm model')
     argparser.add_argument('--state', type=int, default=128, help='state size')
     argparser.add_argument('--ln', action='store_true', help='use simple layer norm')
-    argparser.add_argument('--conclu_pos', type=int, choices=[0, -1], default=0, help='place conclusion at start or end (0 or -1)')
+    argparser.add_argument('--conclu_pos', type=int, choices=[0, -1], default=-1, help='place conclusion at start or end (0 or -1)')
     argparser.add_argument('--dropout', type=float, default=0.0, help='dropout rate')
     argparser.add_argument('--weight_dropout', type=float, default=0.0, help='weight dropout rate')
     argparser.add_argument('--variational', action='store_true', help='use variational dropout')

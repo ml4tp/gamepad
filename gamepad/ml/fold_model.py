@@ -490,10 +490,12 @@ class TreeLSTM(nn.Module):
 # Model
 
 class LinearModel(nn.Module):
-    def __init__(self, outsize=3, f_mid=False, f_useiarg=True):
+    def __init__(self, outsize=3, f_mid=False, f_useiarg=True, f_useedit=False):
+        super().__init__()
         self.outsize = 3
         self.f_mid = f_mid
         self.f_useiarg = f_useiarg
+        self.f_useedit = f_useedit
 
         if not self.f_mid:
             # Kern level
@@ -506,9 +508,11 @@ class LinearModel(nn.Module):
             self.typ = "mid_noimp"
 
         # Features
-        size_features = ['%s_conclu_size' % self.typ, '%s_ctx_size' % self.typ]
+        size_features = ['%s_concl_size' % self.typ, '%s_ctx_size' % self.typ]
         len_features = ['len_ctx']
-        edit_dist_features = ['%s_str_dists' % self.typ]
+        edit_dist_features = []
+        if f_useedit:
+            edit_dist_features = ['%s_str_dists' % self.typ]
         features = size_features + len_features + edit_dist_features
         insize = len(features)
 
