@@ -9,7 +9,7 @@
 |- recon               (reconstructs tactic trees from tcoq dump)
 |- chunk.py
 |- exp_tactr_stats.py  (explore tactic tree statistics)
-|- tactr_prep.py        (generates tactic tree pickle from raw data)
+|- tactr_prep.py       (generates tactic tree pickle from raw data)
 ```
 
 
