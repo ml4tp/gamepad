@@ -1,3 +1,6 @@
+## Contents
+
+
 ## Usage
 
 1. Set TCOQ_DUMP
@@ -10,6 +13,7 @@
     ```
     python gamepad/ml/rewrite/simprw.py
     ```
+    The theorems.v in this directory is an example output.
 
 3. Extract data using TCoq.
     ```
