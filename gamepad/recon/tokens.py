@@ -48,6 +48,8 @@ TOK_PRBODS = "PrBods"
 TOK_PRGLS = "PrGls"
 TOK_BEG_INC = "bg(inc)"
 TOK_END_INC = "en(inc)"
+TOK_BULLET = "!@B"
+TOK_PFSTEP = "!@PS"
 
 
 def is_after(mode):
