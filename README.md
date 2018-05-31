@@ -89,13 +89,13 @@ To obtain the auxilliary repositories, you can run `./get_data.sh` (this obtains
    ./build_oddorder.sh
    ```
 3. Break up the Feit-Thompson log file.
-```
-   python chunk.py <path-to-odd-order-build.log> <output-directory>
-   ```
-   We recommend having a top-level `data` folder and setting `<output-directory> = data/odd-order`. For example,
-   ```
-   python chunk.py odd-order/mathcomp/odd_order/build.log ./data/odd-order
-   ```
+    ```
+    python chunk.py <path-to-odd-order-build.log> <output-directory>
+    ```
+    We recommend having a top-level `data` folder and setting `<output-directory> = data/odd-order`. For example,
+    ```
+    python chunk.py odd-order/mathcomp/odd_order/build.log ./data/odd-order
+    ```
 
 
 ## Setup GamePad
