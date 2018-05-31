@@ -8,7 +8,7 @@
 
 2. Generate data (this saves to ./theorems.v)
     ```
-	python gamepad/ml/rewrite/simprw.py
+    python gamepad/ml/rewrite/simprw.py
     ```
 
 3. Extract data using TCoq.
@@ -37,8 +37,8 @@
     ```
 8. Run trained model end2end.
     ```
-	python gamepad/ml/main.py --simprw --mload <path/to/mllogs/file> --teste2e
-	```
+    python gamepad/ml/main.py --simprw --mload <path/to/mllogs/file> --teste2e
+    ```
 
 
 ## Experiments
@@ -52,3 +52,4 @@ simprw-2018-05-16T212811.543397.log
 fully-solved 10/50
 relaxed fully-solved 50/50
 avg. ratio 0.157
+

@@ -87,17 +87,20 @@ def run_end2end_one(trainer, lemma):
 
 def run_end2end(trainer, test_lemmas, val_lemmas):
     mystats = {}
+    num_incomplete = 0
     for lem_id, lemma in val_lemmas.items():
         print("DOING", lemma)
         prover = PyCoqTrainedProver(SimpRWSolver(), lemma, trainer)
         prover.attempt_proof()
-        assert prover.num_steps == 9
+        if prover.num_steps != 9:
+            num_incomplete += 1
         mystats[lem_id] = {"lemma": lemma,
                            "num_steps": prover.num_steps,
                            "bad_steps": list(prover.bad_steps),
                            "bad_infer": prover.num_bad_infer,
                            "bad_ast": prover.num_bad_ast}
         print("Statistics", mystats[lem_id])
+    print("Number incomplete", num_incomplete)
 
     with open('mllogs/simprw-{}.log'.format(curr_timestamp()), 'w') as f:
         f.write(json.dumps([v for k, v in mystats.items()]))
