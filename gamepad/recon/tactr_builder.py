@@ -188,6 +188,7 @@ class TacTreeBuilder(object):
             self._add_edges(edges)
             return
         elif tac.name == "surgery":
+            # TODO(deh): change this to a blackbox tactic list
             edges = self._mk_edge(tac, tac.bf_decl, tac.af_decls[0])
             self._add_edges(edges)
             return

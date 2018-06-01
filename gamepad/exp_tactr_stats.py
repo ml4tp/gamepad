@@ -19,7 +19,7 @@ import numpy as np
 import scipy.stats as sps
 
 from lib.myutil import inc_update
-from coq.tactics import TACTIC_HIST
+from coq.tactics import TACTIC_HIST, TACTICS_INFO_EQUIV
 from coq.constr_util import COQEXP_HIST
 
 
@@ -102,9 +102,17 @@ class TacTrStats(object):
         for lemma, info in self.stats.items():
             hist = TACTIC_HIST.merge(hist, info['hist'])
 
-        total = len(self.stats)
-        avg = TACTIC_HIST.map(hist, lambda x: x / total)
-        return TACTIC_HIST.view(avg, f_sort)
+        # total = len(self.stats)
+        # avg = TACTIC_HIST.map(hist, lambda x: x / total)
+        # return TACTIC_HIST.view(avg, f_sort)
+        acc = []
+        for tac, cnt in TACTIC_HIST.view(hist, f_sort):
+            for pp_tac, eq_tacs_kinds in TACTICS_INFO_EQUIV:
+                eq_tacs = set(tac for tac, _ in eq_tacs_kinds)
+                if tac in eq_tacs:
+                    acc += [(pp_tac, cnt)]
+                    break
+        return acc
 
     def descrip_tacs(self):
         """Descriptive statistics on number of tactics used per lemma"""

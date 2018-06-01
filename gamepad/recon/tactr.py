@@ -291,16 +291,14 @@ class TacTree(object):
 
     def view_tactic_hist(self, f_compress=False):
         hist = TACTIC_HIST.empty()
-        for k, tacs in self.tactics().items():
-            # TODO(deh): Check that we have atomic tactics for non-ssreflect developments
-            tac = tacs[0]
-            if tac.tkind == TacKind.ML:
-                tac_name = tac.name.split()[0]
-                hist = TACTIC_HIST.inc_insert(hist, tac_name, 1)
+        for _, _, _, _, _, _, tac in self.bfs_traverse():
+            tac_name = tac[-1].name.split()[0]
+            hist = TACTIC_HIST.inc_insert(hist, tac_name, 1)
+
         if f_compress:
-            return [v for _, v in TACTIC_HIST.view(hist)]
+            return [v for _, v in TACTIC_HIST.view(hist, f_sort=False)]
         else:
-            return TACTIC_HIST.view(hist)
+            return TACTIC_HIST.view(hist, f_sort=False)
 
     def view_depth_ctx_items(self):
         hist = {}
