@@ -103,7 +103,7 @@ class TacTreeBuilder(object):
     def _select_ftac(self, rawtac, bf_decl):
         if rawtac.tkind == TacKind.ATOMIC:
             ftac = rawtac.ftac
-        elif rawtac.name == "tcoq.MYDONE":
+        elif rawtac.name == "ml4tp.MYDONE":
             ftac = rawtac.ftac
             ftac.pp_tac = "ssrdone"
         elif self.ftac_inscope:
@@ -183,7 +183,7 @@ class TacTreeBuilder(object):
 
         tac = next(it_rawtacs)
 
-        if tac.name == "tcoq.MYDONE":
+        if tac.name == "ml4tp.MYDONE":
             edges = self._mk_edge(tac, tac.bf_decl, tac.af_decls[0])
             self._add_edges(edges)
             return
@@ -196,8 +196,8 @@ class TacTreeBuilder(object):
             # 1. Recursively connect up body
             if is_tclintros_all(tac):
                 ftac = self.ftac_inscope
-            elif (tac.name.startswith("tcoq.TacSolveIn") or
-                  tac.name.startswith("tcoq.TacFirstIn")):
+            elif (tac.name.startswith("ml4tp.TacSolveIn") or
+                  tac.name.startswith("ml4tp.TacFirstIn")):
                 ftac = tac.ftac
             else:
                 ftac = tac.ftac
@@ -223,7 +223,7 @@ class TacTreeBuilder(object):
 
             # 3. Handle tacticals that can try multiple possibilities
             #    with failure. Add error node to those that don't go anywhere.
-            if tac.name.startswith("tcoq.TacSolveIn") or tac.name.startswith("tcoq.TacFirstIn"):
+            if tac.name.startswith("ml4tp.TacSolveIn") or tac.name.startswith("ml4tp.TacFirstIn"):
                 for node in body_graph.nodes():
                     if node.kind != TacStKind.LIVE:
                         continue
@@ -252,7 +252,7 @@ class TacTreeBuilder(object):
             for af_decl in tac.af_decls:
                 edges += self._mk_edge(tac, tac.bf_decl, af_decl)
             self._add_edges(edges)
-        elif tac.name.startswith("tcoq.DOEND"):
+        elif tac.name.startswith("ml4tp.DOEND"):
             # 5. Handle the end of a do
             edges = []
             for af_decl in tac.af_decls:
@@ -261,7 +261,7 @@ class TacTreeBuilder(object):
         elif tac.name.startswith("<ssreflect_plugin::ssrapply"):
             # 6. Apply uses the intros tactical (look at ssreflect source code)
             #    Connect if intros tactical was not used.
-            if not any([tac_p.name == "tcoq.SI" for tac_p in tac.body]):
+            if not any([tac_p.name == "ml4tp.SI" for tac_p in tac.body]):
                 edges = []
                 for af_decl in tac.af_decls:
                     edges += self._mk_edge(tac, tac.bf_decl, af_decl)
