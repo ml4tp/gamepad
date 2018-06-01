@@ -96,11 +96,11 @@ TACTIC_INFO = [("<coretactics::intro@0>", Type.COQ_ML),
                ("<ssreflect_plugin::ssrwlog@0>", Type.SSR_ML),
                ("<ssreflect_plugin::ssrwlogs@0>", Type.SSR_ML),
                ("<ssreflect_plugin::ssrwlogss@0>", Type.SSR_ML),
-               ("ml4tp.MYDONE", Type.SSR_AUX),   # ssr done
-               ("ml4tp.SI", Type.SSR_AUX),       # ssr internal intros inside tclintros
-               ("ml4tp.SC", Type.SSR_AUX),       # ssr internal clear inside tclintros
-               ("ml4tp.SPS", Type.SSR_AUX),      # ssr internal simpl pattern
-               ("ml4tp.SPC2", Type.SSR_AUX)      # ssr internal case pattern
+               ("tcoq.MYDONE", Type.SSR_AUX),   # ssr done
+               ("tcoq.SI", Type.SSR_AUX),       # ssr internal intros inside tclintros
+               ("tcoq.SC", Type.SSR_AUX),       # ssr internal clear inside tclintros
+               ("tcoq.SPS", Type.SSR_AUX),      # ssr internal simpl pattern
+               ("tcoq.SPC2", Type.SSR_AUX)      # ssr internal case pattern
                ]
 
 
@@ -112,19 +112,19 @@ TACTIC_HIST = MyHist(TACTICS)
 
 def is_tclintros_intern(tac):
     """
-    ml4tp.SI      ssr internal intros inside tclintros
-    ml4tp.SC      ssr internal clear inside tclintros
-    ml4tp.SPS     ssr internal simpl pattern
-    ml4tp.SPC2    ssr internal intros on case pattern
+    tcoq.SI      ssr internal intros inside tclintros
+    tcoq.SC      ssr internal clear inside tclintros
+    tcoq.SPS     ssr internal simpl pattern
+    tcoq.SPC2    ssr internal intros on case pattern
     """
-    return (tac.name == "ml4tp.SI" or    # intro part of tclintros
-            tac.name == "ml4tp.SC" or    # clear part of tclintros
-            tac.name == "ml4tp.SPS" or   # simpl pattern
-            tac.name == "ml4tp.SPC2")    # case pattern
+    return (tac.name == "tcoq.SI" or    # intro part of tclintros
+            tac.name == "tcoq.SC" or    # clear part of tclintros
+            tac.name == "tcoq.SPS" or   # simpl pattern
+            tac.name == "tcoq.SPC2")    # case pattern
 
 
 def is_tclintros_all(tac):
-    return (tac.name == "ml4tp.SIO" or  # original tactic wrapped by tclintros
+    return (tac.name == "tcoq.SIO" or  # original tactic wrapped by tclintros
             is_tclintros_intern(tac))
 
 
@@ -132,9 +132,9 @@ def parse_full_tac(tac_str):
     return tac_str
 
 
-TACTICS_INFO_EQUIV = [[("<coretactics::intro@0>", Type.COQ_ML), ("intros", Type.ATOM), ("<ssreflect_plugin::ssrtclintros@0>", Type.SSR_ML), ("ml4tp.SI", Type.SSR_AUX), ("ml4tp.SPC2", Type.SSR_AUX)],
-                      [("ml4tp.MYDONE", Type.SSR_AUX), ("<coretactics::assumption@0>", Type.COQ_ML), ("<g_auto::trivial@0>", Type.COQ_ML), ("<coretactics::reflexivity@0>", Type.COQ_ML), ("<extratactics::discriminate@0>", Type.COQ_ML), ("<extratactics::contradiction@0>", Type.COQ_ML)],
-                      [("<coretactics::clear@0>", Type.COQ_ML), ("<ssreflect_plugin::ssrclear@0>", Type.SSR_ML), ("<coretactics::clearbody@0>", Type.COQ_ML), ("ml4tp.SC", Type.SSR_AUX), ("ml4tp.DOEND", Type.SSR_AUX)],
+TACTICS_INFO_EQUIV = [[("<coretactics::intro@0>", Type.COQ_ML), ("intros", Type.ATOM), ("<ssreflect_plugin::ssrtclintros@0>", Type.SSR_ML), ("tcoq.SI", Type.SSR_AUX), ("tcoq.SPC2", Type.SSR_AUX)],
+                      [("tcoq.MYDONE", Type.SSR_AUX), ("<coretactics::assumption@0>", Type.COQ_ML), ("<g_auto::trivial@0>", Type.COQ_ML), ("<coretactics::reflexivity@0>", Type.COQ_ML), ("<extratactics::discriminate@0>", Type.COQ_ML), ("<extratactics::contradiction@0>", Type.COQ_ML)],
+                      [("<coretactics::clear@0>", Type.COQ_ML), ("<ssreflect_plugin::ssrclear@0>", Type.SSR_ML), ("<coretactics::clearbody@0>", Type.COQ_ML), ("tcoq.SC", Type.SSR_AUX), ("tcoq.DOEND", Type.SSR_AUX)],
                       [("<coretactics::exact@0>", Type.COQ_ML), ("<ssreflect_plugin::ssrexact@0>", Type.SSR_ML), ("<ssreflect_plugin::ssrexact@1>", Type.SSR_ML)],
                       [("<coretactics::constructor@0>", Type.COQ_ML), ("<coretactics::constructor@1>", Type.COQ_ML)],
                       [("<coretactics::left@0>", Type.COQ_ML), ("<coretactics::left_with@0>", Type.COQ_ML)],
@@ -145,7 +145,7 @@ TACTICS_INFO_EQUIV = [[("<coretactics::intro@0>", Type.COQ_ML), ("intros", Type.
                       [("<g_auto::auto@0>", Type.COQ_ML), ("<g_auto::eauto@0>", Type.COQ_ML)],
                       [("apply", Type.ATOM), ("<ssreflect_plugin::ssrapply@0>", Type.SSR_ML), ("<ssreflect_plugin::ssrapply@1>", Type.SSR_ML)],
                       [("case", Type.ATOM), ("<ssreflect_plugin::ssrcase@0>", Type.SSR_ML), ("<ssreflect_plugin::ssrcase@1>", Type.SSR_ML)],
-                      [("compute", Type.ATOM), ("red", Type.ATOM), ("simpl", Type.ATOM), ("ml4tp.SPS", Type.SSR_AUX)],
+                      [("compute", Type.ATOM), ("red", Type.ATOM), ("simpl", Type.ATOM), ("tcoq.SPS", Type.SSR_AUX)],
                       [("<ssreflect_plugin::ssrcongr@0>", Type.SSR_ML)],
                       [("<ssreflect_plugin::ssrelim@0>", Type.SSR_ML)],
                       [("<ssreflect_plugin::ssrhave@0>", Type.SSR_ML), ("<coretactics::exists@0>", Type.COQ_ML), ("<coretactics::exists@1>", Type.COQ_ML)],
