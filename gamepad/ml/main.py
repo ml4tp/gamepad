@@ -1,3 +1,18 @@
+# Copyright 2018 The GamePad Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
+
 import argparse
 import pickle
 
@@ -38,7 +53,7 @@ if __name__ == "__main__":
     argparser.add_argument('--lstm', action='store_true', help='use lstm model')
     argparser.add_argument('--state', type=int, default=128, help='state size')
     argparser.add_argument('--ln', action='store_true', help='use simple layer norm')
-    argparser.add_argument('--conclu_pos', type=int, choices=[0, -1], default=0, help='place conclusion at start or end (0 or -1)')
+    argparser.add_argument('--conclu_pos', type=int, choices=[0, -1], default=-1, help='place conclusion at start or end (0 or -1)')
     argparser.add_argument('--dropout', type=float, default=0.0, help='dropout rate')
     argparser.add_argument('--weight_dropout', type=float, default=0.0, help='weight dropout rate')
     argparser.add_argument('--variational', action='store_true', help='use variational dropout')

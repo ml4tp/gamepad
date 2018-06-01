@@ -1,3 +1,18 @@
+# Copyright 2018 The GamePad Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
+
 import lib.sexpdata as sexpdata
 
 from lib.myfile import MyFile
@@ -325,18 +340,10 @@ class TacStParser(object):
                     h_head.progress(), lem_name), True)
         return lem_name
 
-    def parse_begsubpf(self):
+    def parse_skip(self, kind):
         # Internal
         h_head = self.h_head
-        self._mylog("@parse_begsubpf:before<{}>".format(h_head.peek_line()))
-
-        # Parse
-        return h_head.consume_line()
-
-    def parse_endsubpf(self):
-        # Internal
-        h_head = self.h_head
-        self._mylog("@parse_endsubpf:before<{}>".format(h_head.peek_line()))
+        self._mylog("@parse_{}:before<{}>".format(kind, h_head.peek_line()))
 
         # Parse
         return h_head.consume_line()
@@ -516,10 +523,16 @@ class TacStParser(object):
                 return lemma
             elif line.startswith(TOK_BEG_SUB_PF):
                 # Not keeping track of this
-                self.parse_begsubpf()
+                self.parse_skip("begsubpf")
             elif line.startswith(TOK_END_SUB_PF):
                 # Not keeping track of this
-                self.parse_endsubpf()
+                self.parse_skip("endsubpf")
+            elif line.startswith(TOK_BULLET):
+                # Not keeping track of this
+                self.parse_skip("bullet")
+            elif line.startswith(TOK_PFSTEP):
+                # Not keeping track of this
+                self.parse_skip("pfstep")
             elif line.startswith(TOK_BEG_TAC_ST):
                 callid, mode, tac, kind, loc = self.parse_begtacst()
                 decl = self.parse_decl(callid, mode, tac, kind, loc)
@@ -611,10 +624,16 @@ class TacStParser(object):
                 return lemma
             elif line.startswith(TOK_BEG_SUB_PF):
                 # Not keeping track of this
-                self.parse_begsubpf()
+                self.parse_skip("begsubpf")
             elif line.startswith(TOK_END_SUB_PF):
                 # Not keeping track of this
-                self.parse_endsubpf()
+                self.parse_skip("endsubpf")
+            elif line.startswith(TOK_BULLET):
+                # Not keeping track of this
+                self.parse_skip("bullet")
+            elif line.startswith(TOK_PFSTEP):
+                # Not keeping track of this
+                self.parse_skip("pfstep")
             elif line.startswith(TOK_BEG_TAC_ST):
                 callid, mode, tac, kind, loc = self.parse_begtacst()
                 decl = self.parse_decl(callid, mode, tac, kind, loc)

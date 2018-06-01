@@ -1,12 +1,15 @@
 """
-NOTE(deh):
-Taken from: https://github.com/cpitclaudel/coq-rst/blob/master/utils/python/coqrst/repl/coqtop.py
-
-
 Drive Coqtop with Python!
 =========================
 This module is a simple pexpect-based driver for coqtop, based on the old
 REPL interface.
+"""
+
+
+"""
+NOTE(deh):
+
+Taken from: https://github.com/cpitclaudel/coq-rst/blob/master/utils/python/coqrst/repl/coqtop.py
 """
 
 import os

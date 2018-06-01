@@ -1,3 +1,18 @@
+# Copyright 2018 The GamePad Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
+
 import argparse
 import json
 import numpy as np
@@ -72,17 +87,20 @@ def run_end2end_one(trainer, lemma):
 
 def run_end2end(trainer, test_lemmas, val_lemmas):
     mystats = {}
+    num_incomplete = 0
     for lem_id, lemma in val_lemmas.items():
         print("DOING", lemma)
         prover = PyCoqTrainedProver(SimpRWSolver(), lemma, trainer)
         prover.attempt_proof()
-        assert prover.num_steps == 9
+        if prover.num_steps != 9:
+            num_incomplete += 1
         mystats[lem_id] = {"lemma": lemma,
                            "num_steps": prover.num_steps,
                            "bad_steps": list(prover.bad_steps),
                            "bad_infer": prover.num_bad_infer,
                            "bad_ast": prover.num_bad_ast}
         print("Statistics", mystats[lem_id])
+    print("Number incomplete", num_incomplete)
 
     with open('mllogs/simprw-{}.log'.format(curr_timestamp()), 'w') as f:
         f.write(json.dumps([v for k, v in mystats.items()]))
