@@ -28,7 +28,7 @@ We start in the project root directory.
    ```
    coqc examples/<foo.v> > examples/foo.dump
    ```
-2. Produce tactic tree pickle file:
+2. Produce tactic tree pickle file (takes around 30 minutes):
    ```
    python gamepad/tactr_prep.py file foo.dump -p examples
    ```
