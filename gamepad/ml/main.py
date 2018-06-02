@@ -127,7 +127,7 @@ if __name__ == "__main__":
         if args.validate:
             trainer.validate()
         elif args.teste2e:
-            run_end2end(trainer, test_lemmas, val_lemmas)
+            run_end2end(trainer, test_lemmas, val_lemmas, args.mload)
         else:
             trainer.train()
     else:

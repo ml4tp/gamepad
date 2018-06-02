@@ -17,6 +17,7 @@ import argparse
 import json
 import numpy as np
 import random
+import os.path
 
 from ml.rewrite.pycoq_prover import PyCoqProver
 from ml.rewrite.simprw_prover import PyCoqTrainedProver, IncompleteProofError
@@ -85,7 +86,8 @@ def run_end2end_one(trainer, lemma):
     print("# bad ast {}".format(prover.num_bad_ast))
 
 
-def run_end2end(trainer, test_lemmas, val_lemmas):
+def run_end2end(trainer, test_lemmas, val_lemmas, mload):
+    model_name = os.path.split(mload)[-1]
     mystats = {}
     num_incomplete = 0
     for lem_id, lemma in val_lemmas.items():
@@ -103,7 +105,7 @@ def run_end2end(trainer, test_lemmas, val_lemmas):
         print("Statistics", mystats[lem_id])
     print("Number incomplete", num_incomplete)
 
-    with open('mllogs/simprw-{}.log'.format(curr_timestamp()), 'w') as f:
+    with open('mllogs/simprw-{}.log'.format(model_name), 'w') as f:
         f.write(json.dumps([v for k, v in mystats.items()]))
 
 
