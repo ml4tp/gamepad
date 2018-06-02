@@ -39,11 +39,19 @@ class MyHist(object):
         return hist
 
     def insert(self, hist, key, value):
-        hist[self.bin2id[key]] = value
+        try:
+            hist[self.bin2id[key]] = value
+        except KeyError:
+            # NOTE(deh): ignore for now
+            pass
         return hist
 
     def inc_insert(self, hist, key, value):
-        hist[self.bin2id[key]] += value
+        try:
+            hist[self.bin2id[key]] += value
+        except KeyError:
+            # NOTE(deh): ignore for now
+            pass
         return hist
 
     def merge(self, hist1, hist2):
