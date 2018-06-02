@@ -19,7 +19,7 @@ import numpy as np
 import random
 
 from ml.rewrite.pycoq_prover import PyCoqProver
-from ml.rewrite.simprw_prover import PyCoqTrainedProver
+from ml.rewrite.simprw_prover import PyCoqTrainedProver, IncompleteProofError
 from ml.rewrite.utils import SIMPRW_PRELUDE, SimpRWGen, SimpRWSolver
 from ml.utils import curr_timestamp
 
@@ -91,8 +91,9 @@ def run_end2end(trainer, test_lemmas, val_lemmas):
     for lem_id, lemma in val_lemmas.items():
         print("DOING", lemma)
         prover = PyCoqTrainedProver(SimpRWSolver(), lemma, trainer)
-        prover.attempt_proof()
-        if prover.num_steps != 9:
+        try:
+            prover.attempt_proof()
+        except IncompleteProofError:
             num_incomplete += 1
         mystats[lem_id] = {"lemma": lemma,
                            "num_steps": prover.num_steps,

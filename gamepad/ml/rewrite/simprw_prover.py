@@ -16,7 +16,7 @@
 from coq.constr import *
 from ml.rewrite.pycoq_prover import PyCoqProver
 from ml.tacst_prep import TacStPt
-from ml.rewrite.utils import IdLaw, SimpRWPP, SimpRWRewriter, SIMPRW_PRELUDE
+from ml.rewrite.utils import IdLaw, SimpRWPP, SimpRWRewriter, SIMPRW_PRELUDE, SolverStuckError
 
 
 # -------------------------------------------------
@@ -28,6 +28,13 @@ class FakeTacEdge(object):
     def __init__(self, name):
         self.name = name
 
+
+class IncompleteProofError(Exception):
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return repr(self.value)
 
 # -------------------------------------------------
 # Prover that uses pre-trained model
@@ -93,8 +100,11 @@ class PyCoqTrainedProver(PyCoqProver):
         print("GOAL", goal_c)
         print("LEFT", left_c)
         print("LEFT COPY", left_c.copy())
-        step_det = self.policy.next_proof_step(left_c.copy())
-        self._log("Deterministic step  : {}".format(step_det))
+        try:
+            step_det = self.policy.next_proof_step(left_c.copy())
+            self._log("Deterministic step  : {}".format(step_det))
+        except SolverStuckError:
+            step_det = None
         step_infer = self.infer_proof_step(left_c.copy())
         self._log("Inferred step       : {}".format(step_infer))
 
@@ -104,8 +114,11 @@ class PyCoqTrainedProver(PyCoqProver):
             self.bad_steps.add(self.num_steps)
 
             # Take the deterministic solver step.
-            self.proof += [step_det]
-            res = self.top.sendone(step_det)
+            if step_det:
+                self.proof += [step_det]
+                res = self.top.sendone(step_det)
+            else:
+                raise IncompleteProofError("Cannot solve {}".format(goal_c))
         else:
             # Case B: The inferred step produced a well-formed AST.
 
@@ -121,8 +134,11 @@ class PyCoqTrainedProver(PyCoqProver):
                 self.bad_steps.add(self.num_steps)
 
                 # Take the deterministic solver step.
-                self.proof += [step_det]
-                res = self.top.sendone(step_det)
+                if step_det:
+                    self.proof += [step_det]
+                    res = self.top.sendone(step_det)
+                else:
+                    raise IncompleteProofError("Cannot solve {}".format(goal_c))
 
         # 3. Prepare for next the iteration (load result and update AST decoder)
         self._load_tcoq_result(res)
