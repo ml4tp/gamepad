@@ -17,9 +17,9 @@ To cite this repository in publications:
 ```
 @article{huang2018gamepad,
   title={{GamePad: A Learning Environment for Theorem Proving}},
-  author={Huang, Daniel and Dhariwal, Prafulla and Song, Dawn and Sutskever, Ilya},
+  author={Daniel Huang and Prafulla Dhariwal and Dawn Song and Ilya Sutskever},
   journal={arXiv preprint arXiv:1806.00608},
-  year={2018}
+  year={2018},
 }
 ```
 
