@@ -11,10 +11,17 @@ We expose the proof trace obtained from Coq as Python data structures, including
 
 The API provides a thin wrapper around coqtop, the Coq repl, which can be used to interactively construct proof scripts from within Python. This component mediates all interaction with Coq, including proof state parsing into GamePad’s representation of Coq proofs and sending tactic actions
 
-For more infromation, check out the associated paper [GamePad: A Learning Environment for Theorem Proving](www.google.com)
+For more infromation, check out the associated paper [GamePad: A Learning Environment for Theorem Proving](https://arxiv.org/abs/1806.00608). For datasets, models and results from the paper, check out the [Google drive folder](https://drive.google.com/drive/folders/1tdltTB1ng7SGN1JqsuOjFLCcZBdFiPrc)
 
 To cite this repository in publications:
-
+```
+@article{huang2018gamepad,
+  title={{GamePad: A Learning Environment for Theorem Proving}},
+  author={Huang, Daniel and Dhariwal, Prafulla and Song, Dawn and Sutskever, Ilya},
+  journal={arXiv preprint arXiv:1806.00608},
+  year={2018}
+}
+```
 
 # Directory Structure
 
