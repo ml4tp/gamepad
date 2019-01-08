@@ -56,7 +56,7 @@ To obtain the auxilliary repositories, you can run `./get_data.sh` (this obtains
    opam install camlp4
    opam install ocamlfind
    ```
-2. Configure tcoq.
+2. Configure tcoq. (Make sure to pull the tcoq submodule first, e.g., with `./get_data.sh`.)
    ```
    ./setup_tcoq.sh
    ```
