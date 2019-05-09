@@ -389,7 +389,8 @@ class FvsTactic(object):
                 tag == "casted_constr" or
                 tag == "natural" or
                 tag == "var" or
-                tag == "int_or_var"):
+                tag == "int_or_var" or
+                tag == "ident"):
                 return set()
             else:
                 raise NameError("Tag {} not supported".format(tag))
