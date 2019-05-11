@@ -67,7 +67,7 @@ To obtain the auxilliary repositories, you can run `./get_data.sh` (this obtains
    ```
    ./setup_tcoq.sh
    ```
-3. Build tcoq.
+3. Build tcoq. If you want extract the dumps for the Coq standard library, you will need to remove the `-j4` flag from `./build_tcoq.sh` so that the log files will be output in order.
    ```
    ./build_tcoq.sh
    ```
