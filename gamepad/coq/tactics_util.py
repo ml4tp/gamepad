@@ -70,13 +70,19 @@ class FvsTactic(object):
 
     def fvs_intro_pattern_expr(self, fvs, ipe):
         tag, body = sexpr_unpack(ipe)
-        self._log("@fvs_intro_pattern_expr | tag={}; raw={}".format(tag, ipe))
+        self._log("@fvs_intro_pattern_expr | tag={}; raw={}".format(tag, body))
+
+        if not body:
+            return set()
+        
         if tag == "F":
             return set()
         elif tag == "N":
             return self.fvs_intro_pattern_naming_expr(body[0])
         elif tag == "A":
             return self.fvs_intro_pattern_action_expr(fvs, body[0])
+        elif tag == "I":
+            return self.fvs_id(body[0])
         else:
             raise NameError("Tag {} not supported".format(tag))
 
@@ -112,10 +118,13 @@ class FvsTactic(object):
 
     def fvs_or_and_intro_pattern_expr(self, oaipe):
         tag, body = sexpr_unpack(oaipe)
+        self._log("@fvs_or_and_intro_pattern_expr | tag={}; raw={}".format(tag, body))
         if tag == "I":
-            return self.fvs_ls(self.fvs_intro_pattern_expr, body[0])
+            return self.fvs_ls(lambda y: self.fvs_ls(lambda x: self.fvs_intro_pattern_expr(self.fvs_gtrm, x), y), body[0])
+            # return self.fvs_ls(lambda x: self.fvs_intro_pattern_expr(self.fvs_gtrm, x), body[0])
         elif tag == "A":
-            return self.fvs_ls(self.fvs_intro_pattern_expr, body[0])
+            return self.fvs_ls(lambda y: self.fvs_ls(lambda x: self.fvs_intro_pattern_expr(self.fvs_gtrm, x), y), body[0])
+            # return self.fvs_ls(lambda x: self.fvs_intro_pattern_expr(self.fvs_gtrm, x), body[0])
         else:
             raise NameError("Tag {} not supported".format(tag))
 
@@ -390,7 +399,8 @@ class FvsTactic(object):
                 tag == "natural" or
                 tag == "var" or
                 tag == "int_or_var" or
-                tag == "ident"):
+                tag == "ident" or
+                tag == "preident"):
                 return set()
             else:
                 raise NameError("Tag {} not supported".format(tag))
@@ -469,8 +479,8 @@ class FvsTactic(object):
             return self.fvs_ls(lambda x: self.fvs_intro_pattern_expr(self.fvs_gtrm, x), body[1])
         elif tag == "Apply":
             fvs2 = self.fvs_ls(lambda x: self.fvs_with_bindings_arg(self.fvs_gtrm, x), body[2])
-            fvs3 = self.fvs_maybe(lambda gnm, x: self.fvs_gname(gnm).union(
-                self.fvs_maybe(lambda y: self.fvs_intro_pattern_expr(self.fvs_gtrm, y), x)), body[3])
+            fvs3 = self.fvs_maybe(lambda x: self.fvs_gname(x[0]).union(
+                self.fvs_maybe(lambda y: self.fvs_intro_pattern_expr(self.fvs_gtrm, y), x[1])), body[3])
             return fvs2.union(fvs3)
         elif tag == "Elim":
             fvs1 = self.fvs_with_bindings_arg(self.fvs_gtrm, body[1])
@@ -492,8 +502,8 @@ class FvsTactic(object):
             fvs3 = self.fvs_gtrm(body[3])
             return fvs1.union(fvs2).union(fvs3)
         elif tag == "Generalize":
-            return self.fvs_ls(lambda wo, name: self.fvs_with_occurrences(
-                self.fvs_gtrm, wo).union(self.fvs_name(name)), body[0])
+            return self.fvs_ls(lambda x: self.fvs_with_occurrences(
+                self.fvs_gtrm, x[0]).union(self.fvs_name(x[1])), body[0])
         elif tag == "LetTac":
             fvs1 = self.fvs_gtrm(body[1])
             fvs2 = self.fvs_clause_expr(body[2])
@@ -616,7 +626,11 @@ class FvsTactic(object):
         elif tag == "ML":
             return self.fvs_tactic_args(body[1])
         elif tag == "Alias":
-            return self.fvs_tactic_args(body[1])
+            # Some aliases have parentheses in them so it messes up sexpressions
+            if sexpr_strify(body[0]).find('(') == -1:
+                return self.fvs_tactic_args(body[1])
+            else:
+                return set()
         else:
             raise NameError("Tag {} not supported".format(tag))
 
@@ -634,6 +648,9 @@ class FvsTactic(object):
         self._log("@fvs_pattern | tag={}; raw={}".format(tag, pat))
         if tag == "T":
             return self.fvs_term(body[0])
+        elif tag == "A":
+            # TODO(deh): Not sure about this case
+            return set()
         elif tag == "IT":
             return self.fvs_term(body[0])
         elif tag == "XT":
