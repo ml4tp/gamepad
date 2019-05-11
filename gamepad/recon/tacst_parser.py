@@ -224,6 +224,9 @@ class TacStParser(object):
         self.f_log = f_log
         self.exhausted = False
 
+        # Check if we are inside a proof
+        self.in_pf = False
+
         # Lemma-specific state
         self.decls = []          # Accumlated decls in lemma
 
@@ -504,9 +507,11 @@ class TacStParser(object):
         while line != "":
             line = line.rstrip()
             if line.startswith(TOK_BEG_PF):
+                self.in_pf = True
                 lem_name = self.parse_begin_pf()
                 lemname_stk.append(lem_name)
             elif line.startswith(TOK_END_PF):
+                self.in_pf = False
                 self.parse_qed()
                 # Accumulate lemma
                 lem_name = lemname_stk.pop()
@@ -521,31 +526,34 @@ class TacStParser(object):
                 self._reset()
 
                 return lemma
-            elif line.startswith(TOK_BEG_SUB_PF):
-                # Not keeping track of this
-                self.parse_skip("begsubpf")
-            elif line.startswith(TOK_END_SUB_PF):
-                # Not keeping track of this
-                self.parse_skip("endsubpf")
-            elif line.startswith(TOK_BULLET):
-                # Not keeping track of this
-                self.parse_skip("bullet")
-            elif line.startswith(TOK_PFSTEP):
-                # Not keeping track of this
-                self.parse_skip("pfstep")
-            elif line.startswith(TOK_BEG_TAC_ST):
-                callid, mode, tac, kind, loc = self.parse_begtacst()
-                decl = self.parse_decl(callid, mode, tac, kind, loc)
-                self.decls += [decl]
-            elif line.startswith(TOK_END_TAC_ST):
-                self.parse_endtacst()
-            elif line.startswith(TOK_BEG_INC):
-                self.ignore_constr_inc()
-            elif line.startswith(TOK_CONSTRS):
-                self.parse_epilogue()
             else:
-                raise NameError("Parsing error at line {}: {}".format(
-                                h_head.line, h_head.peek_line()))
+                if not self.in_pf:
+                    self.parse_skip("Warning: not in proof")
+                elif line.startswith(TOK_BEG_SUB_PF):
+                    # Not keeping track of this
+                    self.parse_skip("begsubpf")
+                elif line.startswith(TOK_END_SUB_PF):
+                    # Not keeping track of this
+                    self.parse_skip("endsubpf")
+                elif line.startswith(TOK_BULLET):
+                    # Not keeping track of this
+                    self.parse_skip("bullet")
+                elif line.startswith(TOK_PFSTEP):
+                    # Not keeping track of this
+                    self.parse_skip("pfstep")
+                elif line.startswith(TOK_BEG_TAC_ST):
+                    callid, mode, tac, kind, loc = self.parse_begtacst()
+                    decl = self.parse_decl(callid, mode, tac, kind, loc)
+                    self.decls += [decl]
+                elif line.startswith(TOK_END_TAC_ST):
+                    self.parse_endtacst()
+                elif line.startswith(TOK_BEG_INC):
+                    self.ignore_constr_inc()
+                elif line.startswith(TOK_CONSTRS):
+                    self.parse_epilogue()
+                else:
+                    raise NameError("Parsing error at line {}: {}".format(
+                                    h_head.line, h_head.peek_line()))
             line = h_head.raw_peek_line()
 
     def parse_file(self):
@@ -605,9 +613,11 @@ class TacStParser(object):
         while line != "":
             line = line.rstrip()
             if line.startswith(TOK_BEG_PF):
+                self.in_pf = True
                 lem_name = self.parse_begin_pf()
                 lemname_stk.append(lem_name)
             elif line.startswith(TOK_END_PF):
+                self.in_pf = False
                 self.parse_qed()
                 # Accumulate lemma
                 lem_name = lemname_stk.pop()
@@ -622,31 +632,34 @@ class TacStParser(object):
                 self._reset()
 
                 return lemma
-            elif line.startswith(TOK_BEG_SUB_PF):
-                # Not keeping track of this
-                self.parse_skip("begsubpf")
-            elif line.startswith(TOK_END_SUB_PF):
-                # Not keeping track of this
-                self.parse_skip("endsubpf")
-            elif line.startswith(TOK_BULLET):
-                # Not keeping track of this
-                self.parse_skip("bullet")
-            elif line.startswith(TOK_PFSTEP):
-                # Not keeping track of this
-                self.parse_skip("pfstep")
-            elif line.startswith(TOK_BEG_TAC_ST):
-                callid, mode, tac, kind, loc = self.parse_begtacst()
-                decl = self.parse_decl(callid, mode, tac, kind, loc)
-                self.decls += [decl]
-            elif line.startswith(TOK_END_TAC_ST):
-                self.parse_endtacst()
-            elif line.startswith(TOK_BEG_INC):
-                self.parse_constr_inc()
-            elif line.startswith(TOK_CONSTRS):
-                self.parse_epilogue()
             else:
-                raise NameError("Parsing error at line {}: {}".format(
-                                h_head.line, h_head.peek_line()))
+                if not self.in_pf:
+                    self.parse_skip("Warning: not in proof")
+                elif line.startswith(TOK_BEG_SUB_PF):
+                    # Not keeping track of this
+                    self.parse_skip("begsubpf")
+                elif line.startswith(TOK_END_SUB_PF):
+                    # Not keeping track of this
+                    self.parse_skip("endsubpf")
+                elif line.startswith(TOK_BULLET):
+                    # Not keeping track of this
+                    self.parse_skip("bullet")
+                elif line.startswith(TOK_PFSTEP):
+                    # Not keeping track of this
+                    self.parse_skip("pfstep")
+                elif line.startswith(TOK_BEG_TAC_ST):
+                    callid, mode, tac, kind, loc = self.parse_begtacst()
+                    decl = self.parse_decl(callid, mode, tac, kind, loc)
+                    self.decls += [decl]
+                elif line.startswith(TOK_END_TAC_ST):
+                    self.parse_endtacst()
+                elif line.startswith(TOK_BEG_INC):
+                    self.parse_constr_inc()
+                elif line.startswith(TOK_CONSTRS):
+                    self.parse_epilogue()
+                else:
+                    raise NameError("Parsing error at line {}: {}".format(
+                                    h_head.line, h_head.peek_line()))
             line = h_head.raw_peek_line()
         # Accumulate lemma
         lem_name = lemname_stk.pop()

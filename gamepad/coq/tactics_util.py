@@ -14,6 +14,7 @@
 # ==============================================================================
 
 from lib.mysexpr import *
+from lib.sexpdata import Bracket
 
 
 """
@@ -389,32 +390,35 @@ class FvsTactic(object):
             method = getattr(self, "fvs_{}".format(sexpr_strify(body[0])))
             return method(body[1])
         else:
-            if (tag == "auto_using" or
-                tag == "hintbases" or
-                tag == "bindings" or
-                tag == "intropattern" or
-                tag == "constr" or       # NOTE(deh): huh??
-                tag == "uconstr" or
-                tag == "casted_constr" or
-                tag == "natural" or
-                tag == "var" or
-                tag == "int_or_var" or
-                tag == "ident" or
-                tag == "preident" or
-                tag == "clause_dft_concl" or
-                tag == "by_arg_tac" or
-                tag == "firstorder_using" or
-                tag == "tactic" or
-                tag == "destruction_arg" or
-                tag == "constr_with_bindings" or
-                tag == "rename" or
-                tag == "quant_hyp" or
-                tag == "orient" or
-                tag == "glob_constr_with_bindings" or
-                tag == "in_clause"):
-                return set()
-            else:
-                raise NameError("Tag {} not supported".format(tag))
+            return set()
+            # if (tag == "auto_using" or
+            #     tag == "hintbases" or
+            #     tag == "bindings" or
+            #     tag == "intropattern" or
+            #     tag == "constr" or       # NOTE(deh): huh??
+            #     tag == "uconstr" or
+            #     tag == "casted_constr" or
+            #     tag == "natural" or
+            #     tag == "var" or
+            #     tag == "int_or_var" or
+            #     tag == "ident" or
+            #     tag == "preident" or
+            #     tag == "clause_dft_concl" or
+            #     tag == "by_arg_tac" or
+            #     tag == "firstorder_using" or
+            #     tag == "tactic" or
+            #     tag == "destruction_arg" or
+            #     tag == "constr_with_bindings" or
+            #     tag == "rename" or
+            #     tag == "quant_hyp" or
+            #     tag == "orient" or
+            #     tag == "glob_constr_with_bindings" or
+            #     tag == "in_clause" or
+            #     tag == "fun_ind_using" or
+            #     tag == "with_names"):
+            #     return set()
+            # else:
+            #     raise NameError("Tag {} not supported".format(tag))
 
     def fvs_may_eval(self, me):
         tag, body = sexpr_unpack(me)
@@ -638,8 +642,10 @@ class FvsTactic(object):
         elif tag == "ML":
             return self.fvs_tactic_args(body[1])
         elif tag == "Alias":
+            # TODO(deh): should sanitize on TCoq side
             # Some aliases have parentheses in them so it messes up sexpressions
-            if sexpr_strify(body[0]).find(".evar_") == -1:
+            # Some aliases also have brackets which also messed up sexpression parsing
+            if sexpr_strify(body[0]).find(".evar_") == -1 and not isinstance(body[1], Bracket):
                 return self.fvs_tactic_args(body[1])
             else:
                 return set()
