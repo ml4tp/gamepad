@@ -1,0 +1,10 @@
+GamePad bundles some modifications and snippets of open-source software.
+
+1. gamepad/pycoqtop/coqtop.py is:
+   https://github.com/cpitclaudel/coq-rst/blob/master/utils/python/coqrst/repl/coqtop.py
+
+2. gamepad/ml/torchfold.py is a modification of:
+   https://github.com/nearai/pytorch-tools/blob/master/pytorch_tools/torchfold.py
+
+3. gamepad/lib/sexpdata.py is a modification of:
+   https://github.com/tkf/sexpdata/blob/master/sexpdata.py
