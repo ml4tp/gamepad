@@ -57,8 +57,12 @@ class Recon(object):
         while not ts_parser.exhausted:
             # Coq output file to [TacStDecl] tokens
             lemma = ts_parser.parse_lemma()
-            tactr = self._recon_lemma(lemma)
-            tactrs += [tactr]
+            # TODO(deh): Why is ts_parser.exhausted not set correctly?
+            #            For the time being, we can just check that the lemma is there and break.
+            if lemma:
+                tactrs += self._recon_lemma(lemma)
+            else:
+                break
 
         self.tactrs += tactrs
         return tactrs
@@ -78,14 +82,16 @@ class Recon(object):
             # print(lemma.pp())
             print("<<<<<<<<<<<<<<<<<<<<<")
 
-        tactr = self._recon_lemma(lemma)
-        self.tactrs += [tactr]
+        self.tactrs += self._recon_lemma(lemma)
         return tactr
 
     def _recon_lemma(self, lemma):
         # [TacStDecl] tokens to [RawTac]
         tr_parser = RawTacParser(lemma, f_log=False)
         tacs, _ = tr_parser.parse_rawtacs()
+        if not tacs:
+            print("WARNING: {} has empty proof so we are skipping".format(lemma.name))
+            return []
 
         # [RawTac] to tactic tree
         tr_builder = TacTreeBuilder(lemma.name, tacs, lemma.get_tacst_info(), {}, {},
@@ -97,4 +103,4 @@ class Recon(object):
         if self.f_token:
             self.embed_tokens.tokenize_tactr(tactr)
 
-        return tactr
+        return [tactr]

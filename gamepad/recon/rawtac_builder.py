@@ -168,6 +168,8 @@ class RawTacParser(object):
         """
         # Internal
         it = self.it
+        if not it.has_next():
+            return [], []
         self._mylog("@parse_rawtac:before<{}>".format(it.peek()))
 
         # Reconstruct tactic tree

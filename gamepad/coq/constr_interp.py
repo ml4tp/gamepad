@@ -106,7 +106,7 @@ class BaseVal(Val):
 
 class EvarVal(Val):
     def __init__(self, exk, vs):
-        assert isinstance(exk, Name)
+        assert isinstance(exk, int)
         for v in vs:
             assert isinstance(v, Val)
         self.exk = exk
@@ -208,7 +208,7 @@ class InterpCBName(object):
         elif isinstance(c, MetaExp):
             assert False
         elif isinstance(c, EvarExp):
-            vs = self.interp(env, c.cs)
+            vs = self.interps(env, c.cs)
             return EvarVal(c.exk, vs)
         elif isinstance(c, SortExp):
             return BaseVal(c)
